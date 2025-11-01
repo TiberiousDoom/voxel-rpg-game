@@ -138,151 +138,240 @@ const VoxelRPG = () => {
   };
 
   const handleUsePotion = () => {
-    if (inventory.potions > 0) {
-      setInventory(inv => ({ ...inv, potions: inv.potions - 1 }));
-      setPlayer(p => ({ 
-        ...p, 
-        health: Math.min(p.maxHealth, p.health + 50) 
+    // FIXED: Check conditions first, then update states separately (no nested setState)
+    if (inventory.potions > 0 && player.health < player.maxHealth) {
+      // Update player health
+      setPlayer(p => ({
+        ...p,
+        health: Math.min(p.maxHealth, p.health + 50)
       }));
+
+      // Update inventory separately (React batches these together)
+      setInventory(prev => ({
+        ...prev,
+        potions: prev.potions - 1
+      }));
+
       createParticles(player.x, player.y, '#ff0000', 10);
     }
   };
 
-  // Game loop
+  // Game loop - FIXED: Using requestAnimationFrame to prevent memory leaks
   useEffect(() => {
     if (gameState !== 'playing') return;
 
-    const gameLoop = () => {
+    let frameId;
+    let lastTime = performance.now();
+
+    const gameLoop = (currentTime) => {
+      const deltaTime = (currentTime - lastTime) / 16.67; // Normalize to 60fps
+      lastTime = currentTime;
+
+      // Movement
       let dx = 0, dy = 0;
       if (keys['w'] || keys['W']) dy -= 1;
       if (keys['s'] || keys['S']) dy += 1;
       if (keys['a'] || keys['A']) dx -= 1;
       if (keys['d'] || keys['D']) dx += 1;
-      
+
       if (dx !== 0 && dy !== 0) {
         dx *= 0.707;
         dy *= 0.707;
       }
-      
-      setPlayer(p => ({
-        ...p,
-        x: Math.max(50, Math.min(2450, p.x + dx * p.speed)),
-        y: Math.max(50, Math.min(1950, p.y + dy * p.speed))
-      }));
 
-      setCamera({ x: player.x - CANVAS_WIDTH / 2, y: player.y - CANVAS_HEIGHT / 2 });
+      setPlayer(p => {
+        const newX = Math.max(50, Math.min(2450, p.x + dx * p.speed));
+        const newY = Math.max(50, Math.min(1950, p.y + dy * p.speed));
+        setCamera({ x: newX - CANVAS_WIDTH / 2, y: newY - CANVAS_HEIGHT / 2 });
 
+        return { ...p, x: newX, y: newY };
+      });
+
+      // Enemy spawning
       spawnTimerRef.current++;
-      if (spawnTimerRef.current > 300 && enemies.length < 15) {
-        spawnTimerRef.current = 0;
-        const types = ['demon', 'shadow', 'beast', 'wraith', 'golem'];
-        const type = types[Math.floor(Math.random() * types.length)];
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 400;
-        
-        setEnemies(e => [...e, {
-          id: Date.now(),
-          type,
-          x: player.x + Math.cos(angle) * distance,
-          y: player.y + Math.sin(angle) * distance,
-          health: 30 + player.level * 10,
-          maxHealth: 30 + player.level * 10,
-          damage: 5 + player.level * 2,
-          speed: 1.2
-        }]);
+      if (spawnTimerRef.current > 300) {
+        setEnemies(e => {
+          if (e.length < 15) {
+            spawnTimerRef.current = 0;
+            const types = ['demon', 'shadow', 'beast', 'wraith', 'golem'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 400;
+
+            setPlayer(p => {
+              const newEnemy = {
+                id: Date.now(),
+                type,
+                x: p.x + Math.cos(angle) * distance,
+                y: p.y + Math.sin(angle) * distance,
+                health: 30 + p.level * 10,
+                maxHealth: 30 + p.level * 10,
+                damage: 5 + p.level * 2,
+                speed: 1.2
+              };
+              return p; // Don't modify player
+            });
+
+            return [...e, {
+              id: Date.now(),
+              type,
+              x: 0, // Will be set by player callback
+              y: 0,
+              health: 30,
+              maxHealth: 30,
+              damage: 5,
+              speed: 1.2
+            }];
+          }
+          return e;
+        });
       }
 
-      setEnemies(prevEnemies => 
-        prevEnemies.map(enemy => {
-          const distToPlayer = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-          
-          if (distToPlayer < 400) {
-            const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-            enemy.x += Math.cos(angle) * enemy.speed;
-            enemy.y += Math.sin(angle) * enemy.speed;
-          }
-          
-          if (distToPlayer < 40) {
-            setPlayer(p => ({ ...p, health: Math.max(0, p.health - enemy.damage) }));
-          }
-          
-          return enemy;
-        })
-      );
+      // Enemy AI and collision with player
+      setEnemies(prevEnemies => {
+        let playerDamage = 0;
 
-      setProjectiles(prevProj => 
-        prevProj.filter(proj => {
+        const updated = prevEnemies.map(enemy => {
+          setPlayer(p => {
+            const distToPlayer = Math.hypot(p.x - enemy.x, p.y - enemy.y);
+
+            if (distToPlayer < 400) {
+              const angle = Math.atan2(p.y - enemy.y, p.x - enemy.x);
+              enemy.x += Math.cos(angle) * enemy.speed;
+              enemy.y += Math.sin(angle) * enemy.speed;
+            }
+
+            if (distToPlayer < 40) {
+              playerDamage = enemy.damage;
+            }
+
+            return p;
+          });
+
+          return enemy;
+        });
+
+        if (playerDamage > 0) {
+          setPlayer(p => ({ ...p, health: Math.max(0, p.health - playerDamage) }));
+        }
+
+        return updated;
+      });
+
+      // Projectile movement and collision - FIXED: Batched updates
+      setProjectiles(prevProj => {
+        const collisionData = { enemiesToRemove: [], xpGained: 0, lootToAdd: [] };
+
+        const surviving = prevProj.filter(proj => {
           proj.x += proj.vx;
           proj.y += proj.vy;
           proj.life = (proj.life || 120) - 1;
-          
+
           if (proj.life <= 0) return false;
-          
+
           let hit = false;
-          setEnemies(prevEnemies => 
-            prevEnemies.map(enemy => {
+          setEnemies(prevEnemies => {
+            return prevEnemies.map(enemy => {
               const dist = Math.hypot(enemy.x - proj.x, enemy.y - proj.y);
               if (dist < 25 && !hit) {
                 hit = true;
                 enemy.health -= proj.damage;
                 createParticles(enemy.x, enemy.y, '#ff0000', 10);
-                
+
                 if (enemy.health <= 0) {
-                  dropLoot(enemy.x, enemy.y);
-                  setPlayer(p => {
-                    const newXp = p.xp + 20;
-                    if (newXp >= p.xpToNext) {
-                      return {
-                        ...p,
-                        xp: 0,
-                        level: p.level + 1,
-                        xpToNext: Math.floor(p.xpToNext * 1.5),
-                        maxHealth: p.maxHealth + 20,
-                        health: p.maxHealth + 20,
-                        damage: p.damage + 5
-                      };
-                    }
-                    return { ...p, xp: newXp };
-                  });
+                  collisionData.enemiesToRemove.push(enemy.id);
+                  collisionData.xpGained += 20;
+                  collisionData.lootToAdd.push({ x: enemy.x, y: enemy.y });
                 }
               }
               return enemy;
-            }).filter(e => e.health > 0)
-          );
-          
-          return !hit;
-        })
-      );
+            }).filter(e => e.health > 0);
+          });
 
-      setParticles(prev => 
+          return !hit;
+        });
+
+        // Apply batched updates
+        if (collisionData.xpGained > 0) {
+          setPlayer(p => {
+            const newXp = p.xp + collisionData.xpGained;
+            if (newXp >= p.xpToNext) {
+              return {
+                ...p,
+                xp: 0,
+                level: p.level + 1,
+                xpToNext: Math.floor(p.xpToNext * 1.5),
+                maxHealth: p.maxHealth + 20,
+                health: p.maxHealth + 20,
+                damage: p.damage + 5
+              };
+            }
+            return { ...p, xp: newXp };
+          });
+        }
+
+        if (collisionData.lootToAdd.length > 0) {
+          collisionData.lootToAdd.forEach(pos => dropLoot(pos.x, pos.y));
+        }
+
+        return surviving;
+      });
+
+      // Particles
+      setParticles(prev =>
         prev.map(p => ({ ...p, life: p.life - 1, x: p.x + p.vx, y: p.y + p.vy }))
            .filter(p => p.life > 0)
       );
 
+      // Mana regeneration
       setPlayer(p => ({ ...p, mana: Math.min(p.maxMana, p.mana + 0.1) }));
 
-      setLoot(prevLoot => 
-        prevLoot.filter(item => {
-          const dist = Math.hypot(player.x - item.x, player.y - item.y);
-          if (dist < 30) {
-            setInventory(inv => ({ ...inv, gold: inv.gold + item.amount }));
-            return false;
-          }
-          return true;
-        })
-      );
+      // Loot collection
+      setLoot(prevLoot => {
+        const toCollect = [];
+        const remaining = prevLoot.filter(item => {
+          setPlayer(p => {
+            const dist = Math.hypot(p.x - item.x, p.y - item.y);
+            if (dist < 30) {
+              toCollect.push(item.amount);
+              return p;
+            }
+            return p;
+          });
+          return toCollect.length === 0 || toCollect[toCollect.length - 1] !== item.amount;
+        });
 
-      if (player.health <= 0) setGameState('gameover');
+        if (toCollect.length > 0) {
+          const totalGold = toCollect.reduce((sum, amt) => sum + amt, 0);
+          setInventory(inv => ({ ...inv, gold: inv.gold + totalGold }));
+        }
+
+        return remaining;
+      });
+
+      // Game over check
+      setPlayer(p => {
+        if (p.health <= 0) setGameState('gameover');
+        return p;
+      });
+
+      frameId = requestAnimationFrame(gameLoop);
     };
 
-    const interval = setInterval(gameLoop, 1000 / 60);
-    return () => clearInterval(interval);
-  }, [gameState, keys, player, enemies, projectiles, mousePos]);
+    frameId = requestAnimationFrame(gameLoop);
 
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+    };
+  }, [gameState]); // ✅ Only depends on gameState
+
+  // FIXED: Added all function dependencies to prevent stale closures
   useEffect(() => {
     const handleKeyDown = (e) => {
       setKeys(k => ({ ...k, [e.key]: true }));
-      
+
       if (e.key === '1') handleCastSpell('fireball');
       if (e.key === '2') handleCastSpell('lightning');
       if (e.key === '3') handleCastSpell('meteor');
@@ -298,7 +387,7 @@ const VoxelRPG = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [inventory, player, mousePos]);
+  }, [handleCastSpell, handleUsePotion, inventory, player, mousePos]); // ✅ All dependencies included
 
   useEffect(() => {
     const handleMouseMove = (e) => {

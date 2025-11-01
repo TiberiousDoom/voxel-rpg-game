@@ -125,7 +125,7 @@ const VoxelRPG = () => {
     }, 4000);
   };
 
-  const usePotion = () => {
+  const handleUsePotion = () => {
     setInventory(prev => {
       if (prev.potions > 0 && player.health < player.maxHealth) {
         setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + 50) }));
@@ -382,7 +382,7 @@ const VoxelRPG = () => {
         setShowBase(prev => !prev);
         if (!showBase) setBuildMode(null);
       }
-      if (e.key === 'h' || e.key === 'H') usePotion();
+      if (e.key === 'h' || e.key === 'H') handleUsePotion();
       if (e.key === 'e' || e.key === 'E') {
         if (inDungeon !== null) {
           const dungeon = dungeons.find(d => d.id === inDungeon);
@@ -1199,5 +1199,6 @@ const VoxelRPG = () => {
     </div>
   );
 };
+
 
 export default VoxelRPG;

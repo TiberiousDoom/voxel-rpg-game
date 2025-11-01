@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/voxel-rpg-game/static/css/main.bca3f68d.css",
+    "main.js": "/voxel-rpg-game/static/js/main.1cb3e097.js",
+    "index.html": "/voxel-rpg-game/index.html",
+    "main.bca3f68d.css.map": "/voxel-rpg-game/static/css/main.bca3f68d.css.map",
+    "main.1cb3e097.js.map": "/voxel-rpg-game/static/js/main.1cb3e097.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.bca3f68d.css",
+    "static/js/main.1cb3e097.js"
+  ]
+}

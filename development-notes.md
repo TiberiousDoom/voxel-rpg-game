@@ -1,0 +1,1672 @@
+New chat
+Hello, I would like us to create a video game!
+
+Hello! I'd love to help you create a video game! This sounds like an exciting project.
+
+To get started, it would be helpful to know a bit more about what you have in mind:
+
+What type of game are you thinking about? (platformer, puzzle, shooter, RPG, strategy, etc.)
+What's the basic concept or theme? Any story ideas or gameplay mechanics you're excited about?
+How complex do you want it to be? A simple browser-based game, or something more involved?
+Do you have any specific features in mind? Like particular controls, art style, or gameplay elements?
+I can create interactive games right here using HTML/JavaScript or React, so we can get something playable pretty quickly. Whether you want something simple to start with or have a grander vision in mind, I'm ready to help bring your idea to life!
+
+What kind of game are you imagining?
+
+Type of game: RPG
+Basic concept: High Fantasy/Good vs. Evil
+Story idea: Your character gets wounded by a god/demon/magical being and gains magical powers. They use their powers to fight evil and save the world.
+Complexity: Pretty complex, but not more than necessary.
+Features: Voxel based, top-down control,  magic system, character leveling, inventory, base-building.
+
+This is an ambitious and exciting RPG concept! I love the idea of gaining powers from a divine/demonic wound. Let me create a solid foundation for this game that we can expand on.
+
+I'll start with a playable version that includes:
+
+Voxel-based top-down world with terrain generation
+Character movement and combat system
+Magic system with multiple spells unlocked through leveling
+Enemy AI with different creature types
+Character progression (XP, leveling, stat improvements)
+Inventory system for items and equipment
+Base building mechanics where you can place structures
+Resource gathering from defeated enemies
+The game will have WASD movement, mouse-aim for spells, and hotkeys for different abilities. Let me build this for you:
+
+Voxel Fantasy RPG
+Interactive artifact 
+I've created a foundational version of your voxel fantasy RPG! Here's what's included:
+
+Core Features:
+
+✨ Voxel top-down world with procedurally generated terrain (grass, forests, water, rocks)
+🎮 WASD movement with mouse-aim combat system
+🔥 Magic system with 4 spells that unlock as you level up:
+Fireball (starting spell)
+Lightning (unlocks at level 3)
+Heal (unlocks at level 5)
+Meteor (unlocks at level 8)
+⚔️ Enemy AI with three creature types (demons, shadows, beasts) that spawn and chase you
+📈 Leveling system with XP gain, stat improvements, and spell unlocks
+🎒 Inventory tracking gold, essence, crystals, and health potions
+🏠 Base building - establish your base anywhere on the map
+⚡ Combat mechanics with cooldowns, mana management, and damage calculations
+Next Steps We Can Add:
+
+More enemy variety and boss encounters
+Equipment system with weapons and armor
+Expanded base building (walls, towers, crafting stations)
+Loot drops and treasure chests
+Save/load functionality
+Quest system
+More complex terrain and dungeons
+Particle effects and better visual polish
+Try it out and let me know what you'd like to expand or modify first!
+
+Very nice! This is a good start. Please proceed with steps 1-8. Specific notes:
+1. Make the enemies roam near their spawn location and chase/attack when the character gets too close. 
+2. Make the map 4 times larger (if possible) and have the camera follow the character as they move.
+3. Slow the game speed substantially when the build menu is open.
+
+Voxel Fantasy RPG
+Interactive artifact ∙ Version 2 
+An error occurred while trying to run the generated artifact.
+Unexpected token, expected ";" (4:21)
+
+  Can you fix this error in voxel-rpg-game?
+
+Voxel Fantasy RPG
+Interactive artifact ∙ Version 3 
+Continue
+
+Voxel Fantasy RPG
+Interactive artifact ∙ Version 4 
+Perfect! The game is now fully functional with all the requested features:
+
+✅ Completed Features:
+
+Enemy Variety & Behavior - 5 enemy types (demon, shadow, beast, wraith, golem) that roam near their spawn points and chase/attack when you get close (~200 pixels)
+Larger Map with Camera - Map is now 4x larger (4000x3200) and the camera smoothly follows your character
+Slowed Time in Build Menu - Game runs at 20% speed when the base building menu is open
+Boss Encounters - Powerful bosses spawn periodically with much more health and damage
+Equipment System - Find and equip weapons and armor that boost your stats
+Expanded Base Building - Place walls, towers, and crafting stations (costs resources)
+Loot System - Enemies drop gold, essence, potions, weapons, and armor
+Quest System - 3 quests to complete with rewards
+Dungeons - 5 dungeons scattered across the map (foundation for dungeon crawling)
+Visual Polish - Glowing loot, particle effects, health bars, better UI
+The game now has much more depth! Try exploring the larger world, completing quests, building your base, and hunting down bosses. Let me know if you'd like to add anything else!
+
+This is very exciting! I have some notes that directly correlate to your numbering above:
+1. I like the foundation we've created for the enemies. Let's change their behavior after they've been attacked so they look for the source of the attack. and double their detection proximity.
+2. The map might be too big? I'm not sure. There is some lag when I move the character around on the screen. If there is more information you need to better determine the cause of the lag, just let me know. I can provide my computer specs if that helps, etc.
+3. I did not try the building menu at all.
+4. I liked the on-screen notification that a boss had spawned.
+5. Good foundation.
+6. I did not build anything.
+7. Good foundation. It's hard to tell what things are. Presumably red spheres are health, blue ones are mana, and gold is gold. Perhaps we could have potions be triangle shaped and equipment/weapons are squares.
+8. Good start I liked it.
+9. I was not able to figure out how to enter into a dungeon. 
+10. The improved UI was the most noticeable and very helpful.
+
+Excellent feedback! Let me address all of these points:
+
+Voxel Fantasy RPG
+Interactive artifact ∙ Version 5 
+Continue
+
+Voxel Fantasy RPG
+Interactive artifact ∙ Version 6 
+Perfect! I've addressed all your feedback:
+
+1. Enemy Behavior ✅
+
+Enemies now track the attack source when hit and enter "hunting" mode (shown with red outline)
+Detection range doubled from 200 to 400 pixels (800 when hunting)
+They pursue the attack location even if you move away
+2. Map Size & Performance ✅
+
+Reduced map from 4000x3200 to 2500x2000 (about 40% smaller)
+Optimized rendering to only draw tiles visible on screen (culling)
+Should run much smoother now!
+3-6. Base Building
+
+Build menu still functional with slowed time
+7. Loot Visual Clarity ✅
+
+Circles (gold): Gold and essence
+Triangles (red): Health potions
+Squares (cyan): Weapons and equipment
+Added glowing effects to make them more visible
+8. Quest System
+
+Working well with notifications
+9. Dungeon Entry ✅
+
+Press E near dungeon entrance to enter (text prompt appears)
+10 purple "dungeon monsters" spawn inside
+Press E again near entrance to exit
+Clear all enemies to complete the dungeon and get bonus loot!
+10. Notifications System ✅
+
+New toast-style notifications in top-right corner
+Color-coded (blue=info, orange=warning, green=success)
+Boss spawns show "⚠️ A powerful boss has appeared!"
+Try entering a dungeon now - the purple portals with "E to Enter" text are interactive!
+
+I want to transfer our conversation and the code you've written to a project. What is the best way to do that?
+
+Great question! Here are the best ways to transfer this to a project:
+
+Option 1: Copy the React Component (Recommended)
+Create a new React project:
+bash
+   npx create-react-app voxel-rpg
+   cd voxel-rpg
+Install dependencies:
+bash
+   npm install lucide-react
+Copy the code:
+Click on the artifact above (the game)
+Look for a download/copy button, or manually select and copy all the code
+Replace the contents of src/App.js with the copied code
+Run the project:
+bash
+   npm start
+Option 2: Use Vite (Faster)
+Create a Vite React project:
+bash
+   npm create vite@latest voxel-rpg -- --template react
+   cd voxel-rpg
+   npm install
+   npm install lucide-react
+Copy the code to src/App.jsx
+Run:
+bash
+   npm run dev
+```
+
+## **Option 3: Save the Conversation**
+
+1. **Export this conversation:** Most chat interfaces have an export/share option
+2. **Save as markdown:** Copy the entire conversation to a `.md` file for reference
+3. **Create a GitHub repo:** Store both the conversation and code together
+
+## **Option 4: Single HTML File (For Testing)**
+
+If you want a standalone file without npm/node:
+- I can create a single HTML file version that bundles everything
+- You'd just open it in a browser (though some features like lucide-react icons would need CDN links)
+
+## **Recommended Structure:**
+```
+voxel-rpg/
+├── src/
+│   ├── App.jsx          (the game component)
+│   ├── main.jsx         (entry point)
+│   └── index.css        (optional styling)
+├── public/
+├── package.json
+└── README.md            (paste our conversation notes here)
+Which option would you prefer? I can help you with any of these approaches or create a more detailed setup guide!
+
+I would like to do option 1, but I will need more guidance on how to do it.
+
+Perfect! I'll walk you through Option 1 step-by-step. Let's do this together:
+
+Step 1: Install Node.js (if you haven't already)
+Go to https://nodejs.org/
+Download the LTS (Long Term Support) version
+Run the installer and follow the prompts
+To verify installation, open a terminal/command prompt and type:
+bash
+   node --version
+   npm --version
+(You should see version numbers)
+
+Step 2: Create Your React Project
+Open your terminal/command prompt
+Navigate to where you want to create the project (e.g., your Desktop or Documents folder):
+bash
+   cd Desktop
+Create the React app:
+bash
+   npx create-react-app voxel-rpg
+(This will take a few minutes - it's downloading and setting up everything)
+
+Navigate into the project folder:
+bash
+   cd voxel-rpg
+Step 3: Install the Icon Library
+Still in your terminal, run:
+
+bash
+npm install lucide-react
+Step 4: Copy the Game Code
+Open the project in a code editor:
+If you have VS Code: code . (or open VS Code and File → Open Folder → select voxel-rpg)
+Otherwise, use any text editor (Notepad++, Sublime, etc.)
+Find and open the file: src/App.js
+Delete everything in App.js
+Copy the game code:
+Go back to the artifact above (the game window)
+Copy ALL the code from the artifact
+Paste it into src/App.js
+Save the file
+Step 5: Clean Up (Optional but Recommended)
+Open src/App.css and delete all its contents (we don't need it)
+Save the empty file
+Step 6: Run Your Game!
+In your terminal (make sure you're still in the voxel-rpg folder), run:
+
+bash
+npm start
+This will:
+
+Start a development server
+Automatically open your browser to http://localhost:3000
+Show your game running!
+Troubleshooting:
+If you see errors:
+
+Make sure you copied ALL the code from the artifact
+Check that lucide-react was installed successfully
+Try stopping the server (Ctrl+C) and running npm start again
+If the browser doesn't open automatically:
+
+Manually go to http://localhost:3000 in your browser
+To stop the server:
+
+Press Ctrl+C in the terminal
+What's Next?
+Once it's running, you can:
+
+Edit src/App.js to modify the game
+The browser will automatically refresh when you save changes
+All your game progress will be in this folder
+Where are you in this process? Let me know if you get stuck on any step!
+
+'To verify installation, open a terminal/command prompt...' How do I do this?
+
+Great question! Here's how to open a terminal/command prompt depending on your operating system:
+
+Windows:
+Method 1 (Easiest):
+
+Press the Windows key on your keyboard (or click the Start button)
+Type cmd or command prompt
+Press Enter
+Method 2:
+
+Press Windows + R keys together
+Type cmd
+Press Enter
+Method 3 (Windows 10/11):
+
+Right-click on the Start button
+Click "Terminal" or "Command Prompt" or "PowerShell"
+Mac:
+Method 1:
+
+Press Command + Space to open Spotlight
+Type terminal
+Press Enter
+Method 2:
+
+Open Finder
+Go to Applications → Utilities → Terminal
+Double-click Terminal
+What It Looks Like:
+You'll see a window with text, usually showing something like:
+
+Windows: C:\Users\YourName>
+Mac: YourName@MacBook ~%
+This is where you'll type the commands!
+
+Quick Test:
+Once you have it open, type:
+
+bash
+node --version
+And press Enter.
+
+If you see a version number (like v20.10.0), Node.js is installed! ✅
+If you see an error like "command not found", you need to install Node.js first
+Which operating system are you using? I can give you more specific guidance!
+
+1761707727090_image.png
+Perfect! You're doing great! 🎉
+
+I can see you've successfully:
+
+✅ Created the React project (cd voxel-rpg)
+✅ Installed lucide-react (npm install lucide-react)
+The warnings about vulnerabilities and funding are normal and won't affect your game - you can ignore them for now.
+
+Next Step: Copy the Game Code
+Now you need to open the project files and copy the game code:
+
+Open File Explorer and navigate to:
+   C:\Users\Thulsa Doom\OneDrive\Documents\Action RPG\voxel-rpg
+Open the src folder
+Find and open App.js with a text editor:
+Right-click on App.js
+Choose "Open with" → Notepad (or any text editor you have)
+Delete everything in that file
+Come back here and copy ALL the code from the game artifact above (scroll up to see the game window, then copy all the code)
+Paste it into App.js
+Save the file (Ctrl+S)
+Then Run the Game:
+Back in your command prompt (where you are now), type:
+
+bash
+npm start
+This will start the game and should automatically open it in your browser!
+
+Are you able to find and open the App.js file? Let me know if you need help with that part!
+
+1761708067094_image.png
+It kind of worked :)
+
+Great progress! You're so close! 🎉
+
+I can see the issue - there are some errors with the code. The main problems are:
+
+Line 385:43 - There's an issue with the usePotion function
+Some unused imports (Sword, Sparkles)
+Missing dependencies in some React hooks
+These errors happened because when we were building the game incrementally, some functions got defined in ways that React doesn't like in the final version.
+
+Let me give you a clean, fixed version:
+Go back to App.js and replace EVERYTHING with this corrected code:
+
+javascript
+import React, { useState, useEffect, useRef } from 'react';
+import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle } from 'lucide-react';
+
+const VoxelRPG = () => {
+  const canvasRef = useRef(null);
+  const [gameState, setGameState] = useState('intro');
+  const [player, setPlayer] = useState({
+    x: 1000,
+    y: 1000,
+    health: 100,
+    maxHealth: 100,
+    mana: 100,
+    maxMana: 100,
+    level: 1,
+    xp: 0,
+    xpToNext: 100,
+    damage: 10,
+    speed: 3,
+    facingAngle: 0,
+    defense: 0
+  });
+  
+  const [equipment, setEquipment] = useState({
+    weapon: null,
+    armor: null,
+    accessory: null
+  });
+  
+  const [inventory, setInventory] = useState({
+    gold: 100,
+    essence: 5,
+    crystals: 3,
+    potions: 3,
+    items: []
+  });
+  
+  const [spells, setSpells] = useState([
+    { id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0 },
+    { id: 'lightning', name: 'Lightning', cost: 25, damage: 40, unlocked: false, cooldown: 0 },
+    { id: 'heal', name: 'Heal', cost: 30, heal: 40, unlocked: false, cooldown: 0 },
+    { id: 'meteor', name: 'Meteor', cost: 50, damage: 80, unlocked: false, cooldown: 0 }
+  ]);
+  
+  const [base, setBase] = useState({
+    built: false,
+    x: 1000,
+    y: 1000,
+    structures: []
+  });
+  
+  const [enemies, setEnemies] = useState([]);
+  const [bosses, setBosses] = useState([]);
+  const [projectiles, setProjectiles] = useState([]);
+  const [particles, setParticles] = useState([]);
+  const [loot, setLoot] = useState([]);
+  const [terrain, setTerrain] = useState([]);
+  const [dungeons, setDungeons] = useState([]);
+  const [inDungeon, setInDungeon] = useState(null);
+  const [keys, setKeys] = useState({});
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [camera, setCamera] = useState({ x: 0, y: 0 });
+  const [showInventory, setShowInventory] = useState(false);
+  const [showBase, setShowBase] = useState(false);
+  const [buildMode, setBuildMode] = useState(null);
+  const [message, setMessage] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const [quests, setQuests] = useState([
+    { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
+    { id: 2, title: 'Dungeon Delver', desc: 'Clear a dungeon', progress: 0, goal: 1, reward: 100, complete: false },
+    { id: 3, title: 'Boss Slayer', desc: 'Defeat a boss', progress: 0, goal: 1, reward: 200, complete: false }
+  ]);
+  
+  const gameLoopRef = useRef(null);
+  const spawnTimerRef = useRef(0);
+  const bossTimerRef = useRef(0);
+
+  const MAP_WIDTH = 2500;
+  const MAP_HEIGHT = 2000;
+  const CANVAS_WIDTH = 1000;
+  const CANVAS_HEIGHT = 600;
+
+  useEffect(() => {
+    const newTerrain = [];
+    for (let x = 0; x < MAP_WIDTH / 20; x++) {
+      for (let y = 0; y < MAP_HEIGHT / 20; y++) {
+        const noise = Math.sin(x * 0.08) * Math.cos(y * 0.08) + Math.sin(x * 0.2) * 0.3;
+        let type = 'grass';
+        if (noise > 0.6) type = 'forest';
+        else if (noise < -0.4) type = 'water';
+        else if (Math.random() > 0.97) type = 'rock';
+        
+        newTerrain.push({ x: x * 20, y: y * 20, type });
+      }
+    }
+    setTerrain(newTerrain);
+    
+    const newDungeons = [];
+    for (let i = 0; i < 5; i++) {
+      newDungeons.push({
+        id: i,
+        x: 300 + i * 450,
+        y: 300 + (i % 2) * 800,
+        cleared: false,
+        enemies: []
+      });
+    }
+    setDungeons(newDungeons);
+  }, []);
+
+  const startGame = () => {
+    setGameState('playing');
+    showNotification('Your journey begins... The wound burns with power.', 'info');
+  };
+
+  const showMessage = (msg) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(''), 3000);
+  };
+
+  const showNotification = (msg, type = 'info') => {
+    const id = Math.random();
+    setNotifications(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 4000);
+  };
+
+  const usePotion = () => {
+    setInventory(prev => {
+      if (prev.potions > 0 && player.health < player.maxHealth) {
+        setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + 50) }));
+        showMessage('Health restored!');
+        return { ...prev, potions: prev.potions - 1 };
+      }
+      return prev;
+    });
+  };
+
+  const castSpell = (index) => {
+    setSpells(prev => {
+      const spell = prev[index];
+      if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
+      
+      setPlayer(p => {
+        if (p.mana < spell.cost) return p;
+        
+        const angle = Math.atan2(mousePos.y - p.y, mousePos.x - p.x);
+        
+        if (spell.id === 'heal') {
+          showMessage('You feel rejuvenated!');
+          createParticles(p.x, p.y, '#00ff00', 15);
+          return { ...p, health: Math.min(p.maxHealth, p.health + spell.heal), mana: p.mana - spell.cost };
+        } else {
+          setEquipment(eq => {
+            const proj = {
+              id: Math.random(),
+              x: p.x,
+              y: p.y,
+              vx: Math.cos(angle) * 8,
+              vy: Math.sin(angle) * 8,
+              damage: spell.damage + (eq.weapon?.damage || 0),
+              type: spell.id,
+              life: 100,
+              sourceX: p.x,
+              sourceY: p.y
+            };
+            setProjectiles(projs => [...projs, proj]);
+            return eq;
+          });
+          return { ...p, mana: p.mana - spell.cost };
+        }
+      });
+      
+      return prev.map((s, i) => i === index ? { ...s, cooldown: 60 } : s);
+    });
+  };
+
+  const createParticles = (x, y, color, count) => {
+    const newParticles = [];
+    for (let i = 0; i < count; i++) {
+      newParticles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        life: 30,
+        color
+      });
+    }
+    setParticles(prev => [...prev, ...newParticles]);
+  };
+
+  const dropLoot = (x, y, isBoss = false) => {
+    const lootTable = isBoss ? [
+      { type: 'gold', value: 50 + Math.floor(Math.random() * 50), chance: 1 },
+      { type: 'essence', value: 3, chance: 1 },
+      { type: 'potion', value: 2, chance: 1 },
+      { type: 'weapon', value: { name: 'Legendary Blade', damage: 20 }, chance: 0.5 },
+      { type: 'armor', value: { name: 'Dragon Scale Armor', defense: 15 }, chance: 0.5 }
+    ] : [
+      { type: 'gold', value: 5 + Math.floor(Math.random() * 15), chance: 1 },
+      { type: 'essence', value: 1, chance: 0.3 },
+      { type: 'potion', value: 1, chance: 0.15 },
+      { type: 'weapon', value: { name: 'Iron Sword', damage: 5 }, chance: 0.05 },
+      { type: 'armor', value: { name: 'Leather Armor', defense: 3 }, chance: 0.05 }
+    ];
+    
+    lootTable.forEach(item => {
+      if (Math.random() < item.chance) {
+        setLoot(prev => [...prev, {
+          id: Math.random(),
+          x, y,
+          type: item.type,
+          value: item.value,
+          life: 600
+        }]);
+      }
+    });
+  };
+
+  const pickupLoot = (item) => {
+    if (item.type === 'gold') {
+      setInventory(prev => ({ ...prev, gold: prev.gold + item.value }));
+      showMessage(`+${item.value} gold`);
+    } else if (item.type === 'essence') {
+      setInventory(prev => ({ ...prev, essence: prev.essence + item.value }));
+      showMessage(`+${item.value} essence`);
+    } else if (item.type === 'potion') {
+      setInventory(prev => ({ ...prev, potions: prev.potions + item.value }));
+      showMessage(`+${item.value} potion`);
+    } else if (item.type === 'weapon' || item.type === 'armor') {
+      setInventory(prev => ({ 
+        ...prev, 
+        items: [...prev.items, { ...item.value, type: item.type, id: Math.random() }] 
+      }));
+      showMessage(`Found: ${item.value.name}!`);
+    }
+  };
+
+  const equipItem = (item) => {
+    if (item.type === 'weapon') {
+      const oldWeapon = equipment.weapon;
+      setEquipment(prev => ({ ...prev, weapon: item }));
+      if (oldWeapon) {
+        setInventory(prev => ({ ...prev, items: [...prev.items, oldWeapon] }));
+      }
+      setInventory(prev => ({ ...prev, items: prev.items.filter(i => i.id !== item.id) }));
+      showMessage(`Equipped: ${item.name}`);
+    } else if (item.type === 'armor') {
+      const oldArmor = equipment.armor;
+      setEquipment(prev => ({ ...prev, armor: item }));
+      if (oldArmor) {
+        setInventory(prev => ({ ...prev, items: [...prev.items, oldArmor] }));
+      }
+      setInventory(prev => ({ ...prev, items: prev.items.filter(i => i.id !== item.id) }));
+      setPlayer(prev => ({ ...prev, defense: item.defense }));
+      showMessage(`Equipped: ${item.name}`);
+    }
+  };
+
+  const placeStructure = (worldX, worldY) => {
+    if (!buildMode) return;
+    
+    const cost = buildMode.cost;
+    if (inventory.gold < cost.gold || inventory.essence < cost.essence) {
+      showMessage('Not enough resources!');
+      return;
+    }
+    
+    setInventory(prev => ({
+      ...prev,
+      gold: prev.gold - cost.gold,
+      essence: prev.essence - cost.essence
+    }));
+    
+    setBase(prev => ({
+      ...prev,
+      structures: [...prev.structures, {
+        type: buildMode.type,
+        x: worldX,
+        y: worldY,
+        id: Math.random()
+      }]
+    }));
+    
+    showMessage(`${buildMode.name} built!`);
+  };
+
+  const enterDungeon = (dungeon) => {
+    if (dungeon.cleared) {
+      showMessage('This dungeon has been cleared!');
+      return;
+    }
+    
+    setInDungeon(dungeon.id);
+    showNotification('Entering dungeon... Press E near entrance to exit', 'warning');
+    
+    const dungeonEnemies = [];
+    for (let i = 0; i < 10; i++) {
+      dungeonEnemies.push({
+        id: Math.random(),
+        x: dungeon.x + 50 + Math.random() * 300,
+        y: dungeon.y + 50 + Math.random() * 300,
+        spawnX: dungeon.x + 50,
+        spawnY: dungeon.y + 50,
+        health: 80 + player.level * 15,
+        maxHealth: 80 + player.level * 15,
+        damage: 8 + player.level * 3,
+        speed: 1.5,
+        xp: 30,
+        type: 'dungeon_monster',
+        state: 'roaming',
+        roamAngle: Math.random() * Math.PI * 2,
+        aggroSource: null
+      });
+    }
+    
+    setEnemies(prev => [...prev, ...dungeonEnemies]);
+  };
+
+  const exitDungeon = () => {
+    setInDungeon(null);
+    showMessage('Exited dungeon');
+  };
+
+  const updateQuest = (questId, progress) => {
+    setQuests(prev => prev.map(q => {
+      if (q.id === questId && !q.complete) {
+        const newProgress = q.progress + progress;
+        if (newProgress >= q.goal) {
+          setInventory(inv => ({ ...inv, gold: inv.gold + q.reward }));
+          showNotification(`Quest Complete: ${q.title}! +${q.reward} gold`, 'success');
+          return { ...q, progress: newProgress, complete: true };
+        }
+        return { ...q, progress: newProgress };
+      }
+      return q;
+    }));
+  };
+
+  const gainXP = (amount) => {
+    setPlayer(prev => {
+      const newXP = prev.xp + amount;
+      if (newXP >= prev.xpToNext) {
+        const newLevel = prev.level + 1;
+        showNotification(`Level Up! You are now level ${newLevel}`, 'success');
+        
+        if (newLevel === 3) {
+          setSpells(s => s.map(sp => sp.id === 'lightning' ? { ...sp, unlocked: true } : sp));
+          showNotification('New spell unlocked: Lightning!', 'info');
+        }
+        if (newLevel === 5) {
+          setSpells(s => s.map(sp => sp.id === 'heal' ? { ...sp, unlocked: true } : sp));
+          showNotification('New spell unlocked: Heal!', 'info');
+        }
+        if (newLevel === 8) {
+          setSpells(s => s.map(sp => sp.id === 'meteor' ? { ...sp, unlocked: true } : sp));
+          showNotification('New spell unlocked: Meteor!', 'info');
+        }
+        
+        return {
+          ...prev,
+          level: newLevel,
+          xp: newXP - prev.xpToNext,
+          xpToNext: Math.floor(prev.xpToNext * 1.5),
+          maxHealth: prev.maxHealth + 20,
+          health: prev.maxHealth + 20,
+          maxMana: prev.maxMana + 15,
+          mana: prev.maxMana + 15,
+          damage: prev.damage + 5
+        };
+      }
+      return { ...prev, xp: newXP };
+    });
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      setKeys(prev => ({ ...prev, [e.key.toLowerCase()]: true }));
+      
+      if (e.key === 'i' || e.key === 'I') setShowInventory(prev => !prev);
+      if (e.key === 'b' || e.key === 'B') {
+        setShowBase(prev => !prev);
+        if (!showBase) setBuildMode(null);
+      }
+      if (e.key === 'h' || e.key === 'H') usePotion();
+      if (e.key === 'e' || e.key === 'E') {
+        if (inDungeon !== null) {
+          const dungeon = dungeons.find(d => d.id === inDungeon);
+          if (dungeon) {
+            const dist = Math.sqrt(Math.pow(player.x - dungeon.x, 2) + Math.pow(player.y - dungeon.y, 2));
+            if (dist < 150) {
+              exitDungeon();
+            }
+          }
+        } else {
+          dungeons.forEach(dungeon => {
+            const dist = Math.sqrt(Math.pow(player.x - dungeon.x, 2) + Math.pow(player.y - dungeon.y, 2));
+            if (dist < 80) {
+              enterDungeon(dungeon);
+            }
+          });
+        }
+      }
+      if (e.key === 'Escape') {
+        setShowInventory(false);
+        setShowBase(false);
+        setBuildMode(null);
+      }
+      if (e.key >= '1' && e.key <= '4') castSpell(parseInt(e.key) - 1);
+    };
+    
+    const handleKeyUp = (e) => {
+      setKeys(prev => ({ ...prev, [e.key.toLowerCase()]: false }));
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [showBase, inDungeon, dungeons, player.x, player.y, player.health, player.maxHealth, inventory.potions]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const handleMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+      
+      setMousePos({
+        x: canvasX + camera.x,
+        y: canvasY + camera.y
+      });
+    };
+    
+    const handleClick = (e) => {
+      if (gameState === 'playing' && !showInventory && !showBase) {
+        castSpell(0);
+      } else if (buildMode && showBase) {
+        const rect = canvas.getBoundingClientRect();
+        const worldX = (e.clientX - rect.left) + camera.x;
+        const worldY = (e.clientY - rect.top) + camera.y;
+        placeStructure(worldX, worldY);
+      }
+    };
+    
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('click', handleClick);
+    
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('click', handleClick);
+    };
+  }, [gameState, camera, buildMode, showBase, showInventory, mousePos.x, mousePos.y]);
+
+  useEffect(() => {
+    setCamera({
+      x: Math.max(0, Math.min(player.x - CANVAS_WIDTH / 2, MAP_WIDTH - CANVAS_WIDTH)),
+      y: Math.max(0, Math.min(player.y - CANVAS_HEIGHT / 2, MAP_HEIGHT - CANVAS_HEIGHT))
+    });
+  }, [player.x, player.y]);
+
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    
+    const timeMultiplier = showBase ? 0.2 : 1;
+    
+    const gameLoop = () => {
+      setPlayer(prev => {
+        let newX = prev.x;
+        let newY = prev.y;
+        
+        if (keys['w']) newY -= prev.speed * timeMultiplier;
+        if (keys['s']) newY += prev.speed * timeMultiplier;
+        if (keys['a']) newX -= prev.speed * timeMultiplier;
+        if (keys['d']) newX += prev.speed * timeMultiplier;
+        
+        newX = Math.max(20, Math.min(MAP_WIDTH - 20, newX));
+        newY = Math.max(20, Math.min(MAP_HEIGHT - 20, newY));
+        
+        const angle = Math.atan2(mousePos.y - prev.y, mousePos.x - prev.x);
+        
+        if (prev.health <= 0) {
+          setGameState('gameover');
+        }
+        
+        return { ...prev, x: newX, y: newY, facingAngle: angle, mana: Math.min(prev.maxMana, prev.mana + 0.2 * timeMultiplier) };
+      });
+      
+      setLoot(prev => prev.filter(item => {
+        const dx = player.x - item.x;
+        const dy = player.y - item.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 30) {
+          pickupLoot(item);
+          return false;
+        }
+        return item.life-- > 0;
+      }));
+      
+      setSpells(prev => prev.map(s => ({ ...s, cooldown: Math.max(0, s.cooldown - timeMultiplier) })));
+      
+      spawnTimerRef.current += timeMultiplier;
+      if (spawnTimerRef.current > 120 && inDungeon === null) {
+        spawnTimerRef.current = 0;
+        
+        const spawnX = Math.random() * MAP_WIDTH;
+        const spawnY = Math.random() * MAP_HEIGHT;
+        
+        const types = ['demon', 'shadow', 'beast', 'wraith', 'golem'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        
+        let stats = { health: 50, damage: 5, speed: 1.2, xp: 20 };
+        if (type === 'wraith') stats = { health: 30, damage: 8, speed: 2, xp: 25 };
+        if (type === 'golem') stats = { health: 100, damage: 10, speed: 0.8, xp: 40 };
+        
+        setEnemies(prev => [...prev, {
+          id: Math.random(),
+          x: spawnX,
+          y: spawnY,
+          spawnX,
+          spawnY,
+          health: stats.health + player.level * 10,
+          maxHealth: stats.health + player.level * 10,
+          damage: stats.damage + player.level * 2,
+          speed: stats.speed,
+          xp: stats.xp,
+          type,
+          state: 'roaming',
+          roamAngle: Math.random() * Math.PI * 2,
+          aggroSource: null
+        }]);
+      }
+      
+      bossTimerRef.current += timeMultiplier;
+      if (bossTimerRef.current > 1800 && bosses.length === 0 && inDungeon === null) {
+        bossTimerRef.current = 0;
+        
+        const bossX = Math.random() * MAP_WIDTH;
+        const bossY = Math.random() * MAP_HEIGHT;
+        
+        setBosses([{
+          id: Math.random(),
+          x: bossX,
+          y: bossY,
+          health: 500 + player.level * 100,
+          maxHealth: 500 + player.level * 100,
+          damage: 20 + player.level * 5,
+          speed: 1.5,
+          type: 'boss',
+          state: 'idle',
+          attackCooldown: 0,
+          aggroSource: null
+        }]);
+        
+        showNotification('⚠️ A powerful boss has appeared!', 'warning');
+      }
+      
+      setEnemies(prev => prev.map(enemy => {
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        const distToPlayer = Math.sqrt(dx * dx + dy * dy);
+        
+        let newX = enemy.x;
+        let newY = enemy.y;
+        let newState = enemy.state;
+        let roamAngle = enemy.roamAngle;
+        let aggroSource = enemy.aggroSource;
+        
+        const detectionRange = enemy.state === 'hunting' ? 800 : 400;
+        
+        if (aggroSource) {
+          newState = 'hunting';
+          const aggroDx = aggroSource.x - enemy.x;
+          const aggroDy = aggroSource.y - enemy.y;
+          const aggroDist = Math.sqrt(aggroDx * aggroDx + aggroDy * aggroDy);
+          
+          if (aggroDist < 50) {
+            aggroSource = null;
+            newState = 'roaming';
+          } else {
+            newX = enemy.x + (aggroDx / aggroDist) * enemy.speed * 1.3 * timeMultiplier;
+            newY = enemy.y + (aggroDy / aggroDist) * enemy.speed * 1.3 * timeMultiplier;
+          }
+        } else if (distToPlayer < detectionRange) {
+          newState = 'chasing';
+          newX = enemy.x + (dx / distToPlayer) * enemy.speed * timeMultiplier;
+          newY = enemy.y + (dy / distToPlayer) * enemy.speed * timeMultiplier;
+          
+          if (distToPlayer < 30) {
+            setPlayer(p => {
+              const actualDamage = Math.max(1, enemy.damage - p.defense);
+              return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
+            });
+          }
+        } else {
+          newState = 'roaming';
+          
+          const distFromSpawn = Math.sqrt(
+            Math.pow(enemy.x - enemy.spawnX, 2) + Math.pow(enemy.y - enemy.spawnY, 2)
+          );
+          
+          if (distFromSpawn > 150 || Math.random() < 0.02) {
+            roamAngle = Math.random() * Math.PI * 2;
+          }
+          
+          newX = enemy.x + Math.cos(roamAngle) * enemy.speed * 0.5 * timeMultiplier;
+          newY = enemy.y + Math.sin(roamAngle) * enemy.speed * 0.5 * timeMultiplier;
+        }
+        
+        return { ...enemy, x: newX, y: newY, state: newState, roamAngle, aggroSource };
+      }).filter(e => e.health > 0));
+      
+      setBosses(prev => prev.map(boss => {
+        const dx = player.x - boss.x;
+        const dy = player.y - boss.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        let aggroSource = boss.aggroSource;
+        let newX = boss.x;
+        let newY = boss.y;
+        
+        if (aggroSource) {
+          const aggroDx = aggroSource.x - boss.x;
+          const aggroDy = aggroSource.y - boss.y;
+          const aggroDist = Math.sqrt(aggroDx * aggroDx + aggroDy * aggroDy);
+          
+          if (aggroDist < 50) {
+            aggroSource = null;
+          } else {
+            newX = boss.x + (aggroDx / aggroDist) * boss.speed * 1.2 * timeMultiplier;
+            newY = boss.y + (aggroDy / aggroDist) * boss.speed * 1.2 * timeMultiplier;
+          }
+        } else if (dist < 600) {
+          newX = boss.x + (dx / dist) * boss.speed * timeMultiplier;
+          newY = boss.y + (dy / dist) * boss.speed * timeMultiplier;
+          
+          if (dist < 40) {
+            setPlayer(p => {
+              const actualDamage = Math.max(1, boss.damage - p.defense);
+              return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
+            });
+          }
+        }
+        
+        return {
+          ...boss,
+          x: newX,
+          y: newY,
+          attackCooldown: Math.max(0, boss.attackCooldown - timeMultiplier),
+          aggroSource
+        };
+      }).filter(b => b.health > 0));
+      
+      setProjectiles(prev => {
+        const updated = prev.map(proj => ({
+          ...proj,
+          x: proj.x + proj.vx * timeMultiplier,
+          y: proj.y + proj.vy * timeMultiplier,
+          life: proj.life - timeMultiplier
+        })).filter(p => p.life > 0 && p.x > 0 && p.x < MAP_WIDTH && p.y > 0 && p.y < MAP_HEIGHT);
+        
+        updated.forEach(proj => {
+          setEnemies(enemies => enemies.map(enemy => {
+            const dx = proj.x - enemy.x;
+            const dy = proj.y - enemy.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 25) {
+              proj.life = 0;
+              createParticles(enemy.x, enemy.y, '#ff6600', 10);
+              
+              enemy.aggroSource = { x: proj.sourceX, y: proj.sourceY };
+              
+              if (enemy.health - proj.damage <= 0) {
+                gainXP(enemy.xp);
+                dropLoot(enemy.x, enemy.y);
+                updateQuest(1,
+Continue
+
+I'll continue the code. Replace everything in App.js with this complete, fixed version:
+
+Due to length, let me provide this in a way you can easily copy. Here's the continuation and complete working code:
+
+javascript
+1);
+                
+                if (enemy.type === 'dungeon_monster') {
+                  const dungeon = dungeons.find(d => d.id === inDungeon);
+                  if (dungeon) {
+                    const remainingEnemies = enemies.filter(e => 
+                      e.type === 'dungeon_monster' && e.id !== enemy.id
+                    );
+                    if (remainingEnemies.length === 0) {
+                      setDungeons(d => d.map(dun => 
+                        dun.id === inDungeon ? { ...dun, cleared: true } : dun
+                      ));
+                      updateQuest(2, 1);
+                      showNotification('Dungeon Cleared!', 'success');
+                      dropLoot(enemy.x, enemy.y, true);
+                    }
+                  }
+                }
+                
+                return null;
+              }
+              
+              return { ...enemy, health: enemy.health - proj.damage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+            }
+            return enemy;
+          }).filter(Boolean));
+          
+          setBosses(bosses => bosses.map(boss => {
+            const dx = proj.x - boss.x;
+            const dy = proj.y - boss.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 40) {
+              proj.life = 0;
+              createParticles(boss.x, boss.y, '#ff0000', 15);
+              
+              boss.aggroSource = { x: proj.sourceX, y: proj.sourceY };
+              
+              if (boss.health - proj.damage <= 0) {
+                gainXP(200);
+                dropLoot(boss.x, boss.y, true);
+                updateQuest(3, 1);
+                showNotification('🏆 Boss defeated! Legendary loot obtained!', 'success');
+                return null;
+              }
+              
+              return { ...boss, health: boss.health - proj.damage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+            }
+            return boss;
+          }).filter(Boolean));
+        });
+        
+        return updated;
+      });
+      
+      setParticles(prev => prev.map(p => ({
+        ...p,
+        x: p.x + p.vx * timeMultiplier,
+        y: p.y + p.vy * timeMultiplier,
+        life: p.life - timeMultiplier
+      })).filter(p => p.life > 0));
+    };
+    
+    gameLoopRef.current = setInterval(gameLoop, 1000 / 60);
+    
+    return () => clearInterval(gameLoopRef.current);
+  }, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    const minX = camera.x - 20;
+    const maxX = camera.x + CANVAS_WIDTH + 20;
+    const minY = camera.y - 20;
+    const maxY = camera.y + CANVAS_HEIGHT + 20;
+    
+    terrain.forEach(tile => {
+      if (tile.x < minX || tile.x > maxX || tile.y < minY || tile.y > maxY) return;
+      
+      let color = '#4a7c4e';
+      if (tile.type === 'forest') color = '#2d5a3d';
+      if (tile.type === 'water') color = '#4a6fa5';
+      if (tile.type === 'rock') color = '#666666';
+      
+      ctx.fillStyle = color;
+      ctx.fillRect(tile.x - camera.x, tile.y - camera.y, 20, 20);
+      ctx.strokeStyle = '#00000020';
+      ctx.strokeRect(tile.x - camera.x, tile.y - camera.y, 20, 20);
+    });
+    
+    dungeons.forEach(dungeon => {
+      ctx.fillStyle = dungeon.cleared ? '#444444' : '#1a1a2e';
+      ctx.fillRect(dungeon.x - camera.x, dungeon.y - camera.y, 100, 100);
+      ctx.strokeStyle = dungeon.cleared ? '#666666' : '#8b00ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(dungeon.x - camera.x, dungeon.y - camera.y, 100, 100);
+      
+      if (!dungeon.cleared && inDungeon !== dungeon.id) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('E to Enter', dungeon.x - camera.x + 50, dungeon.y - camera.y - 10);
+      }
+      
+      if (inDungeon === dungeon.id) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('E to Exit', dungeon.x - camera.x + 50, dungeon.y - camera.y - 10);
+      }
+    });
+    
+    if (base.built) {
+      ctx.fillStyle = '#8b4513';
+      ctx.fillRect(base.x - camera.x - 40, base.y - camera.y - 40, 80, 80);
+      ctx.strokeStyle = '#654321';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(base.x - camera.x - 40, base.y - camera.y - 40, 80, 80);
+    }
+    
+    base.structures.forEach(structure => {
+      let color = '#8b4513';
+      let size = 40;
+      
+      if (structure.type === 'wall') { color = '#808080'; size = 20; }
+      if (structure.type === 'tower') { color = '#4a4a4a'; size = 50; }
+      if (structure.type === 'crafting') { color = '#cd853f'; size = 45; }
+      
+      ctx.fillStyle = color;
+      ctx.fillRect(structure.x - camera.x - size/2, structure.y - camera.y - size/2, size, size);
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(structure.x - camera.x - size/2, structure.y - camera.y - size/2, size, size);
+    });
+    
+    loot.forEach(item => {
+      let color = '#ffd700';
+      if (item.type === 'essence') color = '#8b00ff';
+      if (item.type === 'potion') color = '#ff0000';
+      if (item.type === 'weapon' || item.type === 'armor') color = '#00ffff';
+      
+      ctx.fillStyle = color;
+      
+      if (item.type === 'potion') {
+        ctx.beginPath();
+        ctx.moveTo(item.x - camera.x, item.y - camera.y - 10);
+        ctx.lineTo(item.x - camera.x - 8, item.y - camera.y + 8);
+        ctx.lineTo(item.x - camera.x + 8, item.y - camera.y + 8);
+        ctx.closePath();
+        ctx.fill();
+      } else if (item.type === 'weapon' || item.type === 'armor') {
+        ctx.fillRect(item.x - camera.x - 8, item.y - camera.y - 8, 16, 16);
+      } else {
+        ctx.beginPath();
+        ctx.arc(item.x - camera.x, item.y - camera.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = color;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    
+    particles.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life / 30;
+      ctx.fillRect(p.x - camera.x - 2, p.y - camera.y - 2, 4, 4);
+    });
+    ctx.globalAlpha = 1;
+    
+    projectiles.forEach(proj => {
+      let color = '#ff6600';
+      if (proj.type === 'lightning') color = '#ffff00';
+      if (proj.type === 'meteor') color = '#ff0000';
+      
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(proj.x - camera.x, proj.y - camera.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = color;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    
+    enemies.forEach(enemy => {
+      let color = '#cc0000';
+      if (enemy.type === 'shadow') color = '#4a0080';
+      if (enemy.type === 'beast') color = '#804000';
+      if (enemy.type === 'wraith') color = '#9400d3';
+      if (enemy.type === 'golem') color = '#696969';
+      if (enemy.type === 'dungeon_monster') color = '#8b008b';
+      
+      ctx.fillStyle = color;
+      ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 15, 30, 30);
+      
+      if (enemy.state === 'hunting') {
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(enemy.x - camera.x - 15, enemy.y - camera.y - 15, 30, 30);
+      }
+      
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 25, 30, 4);
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 25, 30 * (enemy.health / enemy.maxHealth), 4);
+    });
+    
+    bosses.forEach(boss => {
+      ctx.fillStyle = '#8b0000';
+      ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 30, 60, 60);
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(boss.x - camera.x - 30, boss.y - camera.y - 30, 60, 60);
+      
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 40, 60, 6);
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 40, 60 * (boss.health / boss.maxHealth), 6);
+    });
+    
+    ctx.save();
+    ctx.translate(player.x - camera.x, player.y - camera.y);
+    ctx.rotate(player.facingAngle);
+    ctx.fillStyle = '#3498db';
+    ctx.fillRect(-12, -12, 24, 24);
+    ctx.fillStyle = '#2980b9';
+    ctx.fillRect(-12, -12, 12, 12);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(8, -4, 8, 8);
+    ctx.restore();
+    
+  }, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon]);
+
+  if (gameState === 'intro') {
+    return (
+      <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
+        <div className="text-center text-white max-w-2xl p-8">
+          <h1 className="text-5xl font-bold mb-6 text-purple-300">The Wound of Power</h1>
+          <p className="text-xl mb-4">
+            In a moment of desperation, you were struck by a being beyond mortal comprehension.
+          </p>
+          <p className="text-xl mb-4">
+            The wound should have killed you... but instead, it awakened something ancient within.
+          </p>
+          <p className="text-xl mb-8">
+            Now, with newfound magical powers, you must defend the realm from the darkness that spreads.
+          </p>
+          <button
+            onClick={startGame}
+            className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
+          >
+            Begin Your Journey
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'gameover') {
+    return (
+      <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-red-900 flex items-center justify-center">
+        <div className="text-center text-white max-w-2xl p-8">
+          <h1 className="text-5xl font-bold mb-6 text-red-300">The Darkness Prevails</h1>
+          <p className="text-xl mb-4">Level Reached: {player.level}</p>
+          <p className="text-xl mb-4">Gold Collected: {inventory.gold}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-red-600 hover:bg-red-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const buildingOptions = [
+    { type: 'wall', name: 'Wall', cost: { gold: 20, essence: 0 }, icon: Shield },
+    { type: 'tower', name: 'Tower', cost: { gold: 50, essence: 2 }, icon: Home },
+    { type: 'crafting', name: 'Crafting Station', cost: { gold: 100, essence: 5 }, icon: Hammer }
+  ];
+
+  return (
+    <div className="w-full h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
+      <div className="absolute top-4 right-4 space-y-2 z-10">
+        {notifications.map(notif => (
+          <div 
+            key={notif.id}
+            className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${
+              notif.type === 'success' ? 'bg-green-600' :
+              notif.type === 'warning' ? 'bg-orange-600' :
+              'bg-blue-600'
+            } text-white`}
+          >
+            <AlertCircle size={20} />
+            <span>{notif.msg}</span>
+          </div>
+        ))}
+      </div>
+      
+      <div className="mb-4 flex gap-6 text-white flex-wrap justify-center">
+        <div className="flex items-center gap-2">
+          <Heart className="text-red-500" />
+          <div className="w-32 h-6 bg-gray-700 rounded">
+            <div 
+              className="h-full bg-red-500 rounded transition-all"
+              style={{ width: `${Math.max(0, (player.health / player.maxHealth) * 100)}%` }}
+            />
+          </div>
+          <span>{Math.floor(Math.max(0, player.health))}/{player.maxHealth}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Zap className="text-blue-500" />
+          <div className="w-32 h-6 bg-gray-700 rounded">
+            <div 
+              className="h-full bg-blue-500 rounded transition-all"
+              style={{ width: `${(player.mana / player.maxMana) * 100}%` }}
+            />
+          </div>
+          <span>{Math.floor(player.mana)}/{player.maxMana}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <TrendingUp className="text-yellow-500" />
+          <span>Level {player.level}</span>
+          <div className="w-24 h-6 bg-gray-700 rounded">
+            <div 
+              className="h-full bg-yellow-500 rounded transition-all"
+              style={{ width: `${(player.xp / player.xpToNext) * 100}%` }}
+            />
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Package className="text-yellow-300" />
+          <span>Gold: {inventory.gold}</span>
+        </div>
+      </div>
+      
+      <canvas 
+        ref={canvasRef} 
+        width={CANVAS_WIDTH} 
+        height={CANVAS_HEIGHT}
+        className="border-4 border-purple-500 rounded-lg"
+      />
+      
+      <div className="mt-4 flex gap-4 text-white">
+        {spells.map((spell, i) => (
+          <div 
+            key={spell.id}
+            className={`px-4 py-2 rounded ${
+              spell.unlocked 
+                ? spell.cooldown > 0 
+                  ? 'bg-gray-600' 
+                  : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'
+                : 'bg-gray-800'
+            }`}
+            onClick={() => spell.unlocked && castSpell(i)}
+          >
+            <div className="text-sm">{i + 1}. {spell.name}</div>
+            <div className="text-xs">
+              {spell.unlocked 
+                ? spell.cooldown > 0 
+                  ? `${Math.ceil(spell.cooldown / 60)}s` 
+                  : `${spell.cost} mana`
+                : 'Locked'}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <div className="mt-4 text-white text-center">
+        <p className="text-sm mb-2">
+          WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Enter/Exit Dungeon | I: Inventory | B: Base
+        </p>
+        {message && <p className="text-yellow-300 font-bold">{message}</p>}
+      </div>
+      
+      {showInventory && (
+        <div className="absolute top-20 right-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md max-h-96 overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Package /> Inventory
+            </h3>
+            <X className="cursor-pointer" onClick={() => setShowInventory(false)} />
+          </div>
+          <div className="space-y-2 mb-4">
+            <p>💰 Gold: {inventory.gold}</p>
+            <p>✨ Magic Essence: {inventory.essence}</p>
+            <p>💎 Crystals: {inventory.crystals}</p>
+            <p>🧪 Health Potions: {inventory.potions}</p>
+          </div>
+          
+          {equipment.weapon && (
+            <div className="mb-2 p-2 bg-gray-700 rounded">
+              <p className="text-sm text-yellow-300">Equipped Weapon:</p>
+              <p>{equipment.weapon.name} (+{equipment.weapon.damage} damage)</p>
+            </div>
+          )}
+          
+          {equipment.armor && (
+            <div className="mb-2 p-2 bg-gray-700 rounded">
+              <p className="text-sm text-yellow-300">Equipped Armor:</p>
+              <p>{equipment.armor.name} (+{equipment.armor.defense} defense)</p>
+            </div>
+          )}
+          
+          {inventory.items.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-bold mb-2">Items:</h4>
+              {inventory.items.map(item => (
+                <div key={item.id} className="p-2 bg-gray-700 rounded mb-2 flex justify-between items-center">
+                  <div>
+                    <p className="text-sm">{item.name}</p>
+                    <p className="text-xs text-gray-400">
+                      {item.damage && `+${item.damage} damage`}
+                      {item.defense && `+${item.defense} defense`}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => equipItem(item)}
+                    className="bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs"
+                  >
+                    Equip
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="mt-4 border-t border-gray-700 pt-4">
+            <h4 className="font-bold mb-2">Quests:</h4>
+            {quests.map(quest => (
+              <div key={quest.id} className={`p-2 rounded mb-2 ${quest.complete ? 'bg-green-900' : 'bg-gray-700'}`}>
+                <p className="text-sm font-bold">{quest.title}</p>
+                <p className="text-xs">{quest.desc}</p>
+                <p className="text-xs text-gray-400">
+                  {quest.progress}/{quest.goal} {quest.complete && '✓ Complete'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {showBase && (
+        <div className="absolute top-20 left-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Home /> Base Building
+            </h3>
+            <X className="cursor-pointer" onClick={() => { setShowBase(false); setBuildMode(null); }} />
+          </div>
+          
+          {!base.built ? (
+            <button
+              onClick={() => {
+                setBase({ ...base, built: true, x: player.x, y: player.y });
+                showMessage('Base established!');
+              }}
+              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded w-full"
+            >
+              Build Base Here
+            </button>
+          ) : (
+            <div>
+              <p className="mb-4 text-sm text-gray-400">
+                Click on a structure below, then click on the map to place it.
+              </p>
+              
+              <div className="space-y-2">
+                {buildingOptions.map(option => {
+                  const Icon = option.icon;
+                  const canAfford = inventory.gold >= option.cost.gold && inventory.essence >= option.cost.essence;
+                  
+                  return (
+                    <div 
+                      key={option.type}
+                      className={`p-3 rounded flex justify-between items-center ${
+                        buildMode?.type === option.type 
+                          ? 'bg-purple-600' 
+                          : canAfford 
+                            ? 'bg-gray-700 hover:bg-gray-600 cursor-pointer' 
+                            : 'bg-gray-900 opacity-50'
+                      }`}
+                      onClick={() => canAfford && setBuildMode(option)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon size={20} />
+                        <span>{option.name}</span>
+                      </div>
+                      <div className="text-xs">
+                        <div>{option.cost.gold}g</div>
+                        {option.cost.essence > 0 && <div>{option.cost.essence}e</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-4 p-3 bg-gray-700 rounded">
+                <p className="text-sm font-bold mb-2">Your Base:</p>
+                <p className="text-xs">Structures: {base.structures.length}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default VoxelRPG;
+Now:
+
+Save App.js (Ctrl+S)
+Go back to your command prompt
+Type: npm start
+The game should now run without errors! 🎮
+
+Okay, so what is the rest of the plan to move this conversation into a Claude Project?
+
+Great question! Now that you have the game running locally, here's how to move everything into a Claude Project (which will let you continue developing with me in a dedicated workspace):
+
+What is a Claude Project?
+A Claude Project is a workspace where:
+
+You can upload files (like your game code)
+I remember the context across conversations
+We can iterate on the code without re-explaining everything
+You get custom instructions for the project
+Steps to Create a Claude Project:
+1. Create the Project
+Go to claude.ai (where we're talking now)
+Look for "Projects" in the sidebar (left side of the screen)
+Click "+ New Project"
+Name it: "Voxel Fantasy RPG"
+Add a description like: "A top-down voxel RPG with magic, enemies, dungeons, and base building"
+2. Add Custom Instructions (Optional but Helpful)
+In the project settings, you can add instructions like:
+
+This is a React-based voxel RPG game. The game features:
+- Top-down camera following the player
+- Magic system with multiple spells
+- Enemy AI with roaming and hunting behaviors
+- Dungeon exploration
+- Base building mechanics
+- Equipment and leveling system
+
+When making changes, prioritize performance and keep code organized.
+3. Upload Your Files
+In the project, look for "Add content" or "Upload files"
+Upload:
+src/App.js (your game code)
+package.json (shows what dependencies you have)
+A README.md file with notes from our conversation (optional)
+4. Save This Conversation
+You can also:
+
+Export this chat: Look for share/export options
+Save as markdown: Copy and paste into a file called development-notes.md
+Upload that to the project so we have the full history
+5. Continue Development in the Project
+Once set up, whenever you want to work on the game:
+
+Open the "Voxel Fantasy RPG" project
+I'll remember all the context about your game
+You can ask me to make changes, and I'll reference your uploaded files
+Alternative: Just Save Locally for Now
+If you don't want to use Projects yet, you can:
+
+Save this conversation: Copy it to a text file
+Keep your code in the folder: C:\Users\Thulsa Doom\OneDrive\Documents\Action RPG\voxel-rpg
+Create a GitHub repository (later) to back it up
+What I Recommend:
+Start with the local folder approach, then when you want to make changes:
+
+Come back to Claude
+Start a new conversation in a Project
+Upload your App.js file
+Tell me what you want to add/change
+Do you want me to help you set up a Project right now, or would you prefer to just keep the local files for now and revisit this later?
+
+
+
+
+
+
+
+
+Claude

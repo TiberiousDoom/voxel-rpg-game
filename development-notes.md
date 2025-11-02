@@ -1,3 +1,4 @@
+{% raw %}
 New chat
 Hello, I would like us to create a video game!
 
@@ -1670,3 +1671,4 @@ Do you want me to help you set up a Project right now, or would you prefer to ju
 
 
 Claude
+{% endraw %}

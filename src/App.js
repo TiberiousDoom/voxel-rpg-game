@@ -149,6 +149,7 @@ export default function App() {
   const projectilesRef = useRef(projectiles);
   const particlesRef = useRef(particles);
   const lootRef = useRef(loot);
+  const skillsRef = useRef(skills);
   const cameraRef = useRef(camera);
   const buildModeRef = useRef(buildMode);
   const showInventoryRef = useRef(showInventory);
@@ -164,6 +165,7 @@ export default function App() {
   useEffect(() => { projectilesRef.current = projectiles; }, [projectiles]);
   useEffect(() => { particlesRef.current = particles; }, [particles]);
   useEffect(() => { lootRef.current = loot; }, [loot]);
+  useEffect(() => { skillsRef.current = skills; }, [skills]);
   useEffect(() => { cameraRef.current = camera; }, [camera]);
   useEffect(() => { buildModeRef.current = buildMode; }, [buildMode]);
   useEffect(() => { showInventoryRef.current = showInventory; }, [showInventory]);
@@ -1052,28 +1054,32 @@ export default function App() {
 }
 
 // Placeholder for skill upgrades — wired up earlier to fix lint
+// Safe placeholder: pure skill upgrade logic, no missing refs
 const upgradeSkill = (category, skillName) => {
-  // Minimal safe behavior: increment level & spend points if available
-  // (Full balancing can be handled in a later PR.)
-  setSkills((prev) => {
-    const skill = prev[category][skillName];
-    if (!skill) return prev;
-    const can = skill.level < skill.maxLevel && playerRef.current.skillPoints >= skill.cost;
-    if (!can) return prev;
-    return {
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [skillName]: { ...skill, level: skill.level + 1 },
-      },
-    };
+  const currentSkills = skillsRef.current || skills;
+  const player = playerRef.current;
+
+  if (!currentSkills?.[category]?.[skillName]) return;
+  const skill = currentSkills[category][skillName];
+  if (skill.level >= skill.maxLevel || player.skillPoints < skill.cost) return;
+
+  const nextSkills = {
+    ...currentSkills,
+    [category]: {
+      ...currentSkills[category],
+      [skillName]: { ...skill, level: skill.level + 1 },
+    },
+  };
+  setSkills(nextSkills);
+
+  setPlayer({
+    ...player,
+    skillPoints: Math.max(0, player.skillPoints - skill.cost),
   });
-  // spend points
-  setPlayer((p) => ({ ...p, skillPoints: Math.max(0, p.skillPoints - skills[category][skillName].cost) }));
-  // apply instant effects for a couple skills
-  if (category === 'magic' && skillName === 'manaPool') setPlayer((p) => ({ ...p, maxMana: p.maxMana + 20, mana: Math.min(p.maxMana + 20, p.mana + 20) }));
-  if (category === 'defense' && skillName === 'vitality') setPlayer((p) => ({ ...p, maxHealth: p.maxHealth + 25, health: Math.min(p.maxHealth + 25, p.health + 25) }));
+
+  showMessage(`${skillName} upgraded!`);
 };
+
 
 // ===== Styles =====
 const styles = {

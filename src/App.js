@@ -1,12 +1,3 @@
-import React, { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react';
-
-// Lightweight polyfill for React's proposed useEvent API
-// Creates a stable function whose current implementation is always fresh.
-function useEvent(fn) {
-  const ref = useRef(fn);
-  useLayoutEffect(() => { ref.current = fn; });
-  return useCallback((...args) => ref.current?.(...args), []);
-}
 import {
   Heart,
   Zap,
@@ -21,6 +12,16 @@ import {
   /* Swords, */
   Sparkles,
 } from 'lucide-react';
+
+import React, { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react';
+
+// Lightweight polyfill for React's proposed useEvent API
+// Creates a stable function whose current implementation is always fresh.
+function useEvent(fn) {
+  const ref = useRef(fn);
+  useLayoutEffect(() => { ref.current = fn; });
+  return useCallback((...args) => ref.current?.(...args), []);
+}
 
 // ===== Constants =====
 const MAP_WIDTH = 2500;

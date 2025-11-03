@@ -248,6 +248,22 @@ export default function App() {
     });
     showMessage(`Crafted ${recipe.name}!`);
   };
+  // Placeholder for skill upgrades — wired up in a later PR
+  const upgradeSkill = (category, skillName) => {
+    setSkills((prev) => {
+      const skill = prev[category][skillName];
+      if (!skill || skill.level >= skill.maxLevel || playerRef.current.skillPoints < skill.cost) return prev;
+      return {
+        ...prev,
+        [category]: {
+          ...prev[category],
+          [skillName]: { ...skill, level: skill.level + 1 },
+        },
+      };
+    });
+    setPlayer((p) => ({ ...p, skillPoints: Math.max(0, p.skillPoints - skills[category][skillName].cost) }));
+    showMessage(`${skillName} upgraded!`);
+  };
 
   const createParticles = (x, y, color, count) => {
     const arr = [];

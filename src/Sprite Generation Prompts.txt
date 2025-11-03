@@ -1,0 +1,61 @@
+Silhouette First: Readable shapes at 1× zoom. Avoid stray pixels; keep contours clean.
+Outline: 1–2 px dark outline (#1A120F) with selective breaks on the light side to avoid banding.
+Light Source: Top‑left, ~45°. Rim‑light on lower‑right for volume when needed.
+Shading: 3–5 tone ramps with hue‑shift (shadows slightly cooler, highlights slightly warmer). Avoid pillow shading.
+Palette: 12–20 colors per character max (shared ramps where possible).
+Pivot/Feet: (64, 120) for stable ground contact across all animations.
+Fully transparent backgrounds.
+Animation Sets: Idle (4), Walk (6), Attack (6), Death (6)
+Special Attack 1 (8), Special Attack 2 (10)
+Skin/Flesh: Warm mid‑tones, cool shadow ramps; minimal face detail for readability.
+Leather/Cloth: Textured clusters; alternating 1‑px highlight breaks along folds.
+Metal: Two‑step specular (hard white tick + mid highlight) with tight clusters on edges.
+Hero: Shoulder-length brown hair, Green tunic, brown jerkin/boots, red cloak; shovel with square blade (bright edge tick).
+
+Animation Sets (per entity)
+Core: Idle (4), Walk (6), Attack (6), Death (6)
+Timing: Seconds per frame — Idle 0.14, Walk 0.10, Attack 0.10, Death 0.20, Specials 0.09.
+Stone (Golem): Broken edge clusters, moss accents with cool greens.
+Golem: Bulky, slow; broken stone seams; moss patches along shoulders.
+
+Animation Sets (per entity)
+Core: Idle (4), Walk (6), Attack (6), Death (6)
+Timing: Seconds per frame — Idle 0.14, Walk 0.10, Attack 0.10, Death 0.20, Specials 0.09.
+Shade Beast: Dark purples with cyan emissive eyes; subtle inner glow frames during attacks.
+Shade Beast: Low, prowling posture; tail/shoulder tufts read as darker clusters.
+
+Animation Sets (per entity)
+Core: Idle (4), Walk (6), Attack (6), Death (6)
+Boss Only: Special Attack 1 (8), Special Attack 2 (10)
+Timing: Seconds per frame — Idle 0.14, Walk 0.10, Attack 0.10, Death 0.20, Specia
+Fire (Infernal Overlord): Orange → yellow specular; optional plume sprites.
+Infernal Overlord: Ornate silhouette; flames during specials.
+
+Animation Sets (per entity)
+Core: Idle (4), Walk (6), Attack (6), Death (6)
+Boss Only: Special Attack 1 (8), Special Attack 2 (10)
+Timing: Seconds per frame — Idle 0.14, Walk 0.10, Attack 0.10, Death 0.20, Specia
+Vines (Jungle Titan): Twisted green ribbons, occasional teal highlights for moisture.
+Jungle Titan: Massive shoulders; vine lash during specials; earthy palette.
+
+Animation Sets (per entity)
+Core: Idle (4), Walk (6), Attack (6), Death (6)
+Timing: Seconds per frame — Idle 0.14, Walk 0.10, Attack 0.10, Death 0.20, Specia
+Demon: Red body, horned silhouette, trident; compact torso, wide stance.
+
+Animation Sets (per entity)
+Core: Idle (4), Walk (6), Attack (6), Death (6)
+Timing: Seconds per frame — Idle 0.14, Walk 0.10, Attack 0.10, Death 0.20, Specials 0.09.
+Skin/Flesh: Warm mid‑tones, cool shadow ramps; minimal face detail for readability.
+Leather/Cloth: Textured clusters; alternating 1‑px highlight breaks along folds.
+Metal: Two‑step specular (hard white tick + mid highlight) with tight clusters on edges.
+Race (Rival): Human‑like proportions; helmet/cape variants; weapon swap ready.
+
+Animation Sets (per entity)
+Core: Idle (4), Walk (6), Attack (6), Death (6)
+Timing: Seconds per frame — Idle 0.14, Walk 0.10, Attack 0.10, Death 0.20, Specia
+Dungeon Monster: Asymmetry for creepiness (offset eyes, uneven limbs).
+
+
+
+

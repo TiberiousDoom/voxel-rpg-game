@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Star, Swords, Sparkles } from 'lucide-react';
+import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Star, Sparkles } from 'lucide-react';
 
 const VoxelRPG = () => {
   const canvasRef = useRef(null);
@@ -67,7 +67,7 @@ const VoxelRPG = () => {
     }
   });
   
-  const [recipes, setRecipes] = useState([
+  const recipes = [
     { 
       id: 'iron_sword', 
       name: 'Iron Sword', 
@@ -103,7 +103,7 @@ const VoxelRPG = () => {
       result: { type: 'potion', amount: 3 },
       materials: { essence: 2, crystal: 1 }
     }
-  ]);
+  ];
   
   const [spells, setSpells] = useState([
     { id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0, maxCooldown: 60 },
@@ -143,10 +143,9 @@ const VoxelRPG = () => {
     { id: 3, title: 'Boss Slayer', desc: 'Defeat a boss', progress: 0, goal: 1, reward: 200, complete: false }
   ]);
   
-  const gameLoopRef = useRef(null);
   const spawnTimerRef = useRef(0);
   const bossTimerRef = useRef(0);
-  const regenTimerRef = useRef(0);
+
 
   const MAP_WIDTH = 2500;
   const MAP_HEIGHT = 2000;
@@ -640,6 +639,7 @@ const VoxelRPG = () => {
     };
   }, [showBase, inDungeon, dungeons, player, inventory, mousePos]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -682,78 +682,125 @@ const VoxelRPG = () => {
     });
   }, [player.x, player.y]);
 
+  // Game loop refs - these hold mutable state without triggering re-renders
+  const keysRef = useRef({});
+  const mousePosRef = useRef(mousePos);
+  const playerRef = useRef(player);
+  const enemiesRef = useRef(enemies);
+  const projectilesRef = useRef(projectiles);
+  
+  // Keep refs in sync
+  useEffect(() => {
+    keysRef.current = keys;
+  }, [keys]);
+  
+  useEffect(() => {
+    mousePosRef.current = mousePos;
+  }, [mousePos]);
+  
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
+  
+  useEffect(() => {
+    enemiesRef.current = enemies;
+  }, [enemies]);
+  
+  useEffect(() => {
+    projectilesRef.current = projectiles;
+  }, [projectiles]);
+
+  // Main game loop - only depends on gameState
   useEffect(() => {
     if (gameState !== 'playing') return;
     
-    const timeMultiplier = showBase ? 0.1 : 0.25;  // Quarter speed everywhere
+    const timeMultiplier = showBase ? 0.1 : 0.25;
     
-    const gameLoop = () => {
-      const totalSpeed = getTotalSpeed();
-      
-      setPlayer(prev => {
- 	 let newX = prev.x;
- 	 let newY = prev.y;
-	  let moveX = 0;
-	  let moveY = 0;
+    let frameId;
+    let lastTime = 0;
+    const targetFPS = 60;
+    const frameDelay = 1000 / targetFPS;
+
+    const animate = (currentTime) => {
+      const deltaTime = currentTime - lastTime;
   
- 	 if (keys['w']) moveY -= 1;
- 	 if (keys['s']) moveY += 1;
- 	 if (keys['a']) moveX -= 1;
- 	 if (keys['d']) moveX += 1;
-  
-	  // Normalize diagonal movement
- 	 if (moveX !== 0 && moveY !== 0) {
-	    const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
- 	   moveX = (moveX / magnitude) * totalSpeed;
-  	  moveY = (moveY / magnitude) * totalSpeed;
-  	} else {
-  	  moveX *= totalSpeed;
-  	  moveY *= totalSpeed;
-  	}
-  
- 	 newX += moveX;
- 	 newY += moveY;
-  
- 	 newX = Math.max(20, Math.min(MAP_WIDTH - 20, newX));
- 	 newY = Math.max(20, Math.min(MAP_HEIGHT - 20, newY));
+      if (deltaTime >= frameDelay) {
+        lastTime = currentTime - (deltaTime % frameDelay);
         
-        const angle = Math.atan2(mousePos.y - prev.y, mousePos.x - prev.x);
+        // Access current state from refs instead of closures
+        const currentPlayer = playerRef.current;
+        const currentKeys = keysRef.current;
+        const currentMousePos = mousePosRef.current;
+        const currentEnemies = enemiesRef.current;
+        const currentProjectiles = projectilesRef.current;
         
-        if (prev.health <= 0) {
-          setGameState('gameover');
+        // Update player position
+        const totalSpeed = getTotalSpeed();
+        let moveX = 0;
+        let moveY = 0;
+
+        if (currentKeys['w']) moveY -= 1;
+        if (currentKeys['s']) moveY += 1;
+        if (currentKeys['a']) moveX -= 1;
+        if (currentKeys['d']) moveX += 1;
+
+        // Normalize diagonal movement
+        if (moveX !== 0 && moveY !== 0) {
+          const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+          moveX = (moveX / magnitude) * totalSpeed;
+          moveY = (moveY / magnitude) * totalSpeed;
+        } else {
+          moveX *= totalSpeed;
+          moveY *= totalSpeed;
         }
+
+        let newX = currentPlayer.x + moveX;
+        let newY = currentPlayer.y + moveY;
+
+        newX = Math.max(20, Math.min(MAP_WIDTH - 20, newX));
+        newY = Math.max(20, Math.min(MAP_HEIGHT - 20, newY));
         
-        // Regeneration
-        const regenAmount = getSkillBonus('utility', 'regeneration', 0) * timeMultiplier * 0.016; // 60 FPS
+        const angle = Math.atan2(currentMousePos.y - currentPlayer.y, currentMousePos.x - currentPlayer.x);
+        const regenAmount = getSkillBonus('utility', 'regeneration', 0) * timeMultiplier * 0.016;
         
-        return { 
+        setPlayer(prev => ({ 
           ...prev, 
           x: newX, 
           y: newY, 
           facingAngle: angle, 
           mana: Math.min(prev.maxMana, prev.mana + 0.2 * timeMultiplier),
-          health: Math.min(prev.maxHealth, prev.health + regenAmount)
-        };
-      });
-      
-      setLoot(prev => {
-	const filtered = prev.filter(item => {
-	  const dx = player.x - item.x;
-	  const dy = player.y - item.y;
-	  const dist = Math.sqrt(dx * dx + dy * dy);
-    
-	  if (dist < 30) {
-	    pickupLoot(item);
+          health: prev.health <= 0 ? prev.health : Math.min(prev.maxHealth, prev.health + regenAmount)
+        }));
+        
+        // Handle loot pickup
+        setLoot(prev => prev.filter(item => {
+          const dx = newX - item.x;
+          const dy = newY - item.y;
+          const distSq = dx * dx + dy * dy;
+          
+          if (distSq < 900) { // 30*30
+            pickupLoot(item);
             return false;
           }
-          return item.life-- > 0;
-        });
+          return --item.life > 0;
+        }));
+      }
+      
+      frameId = requestAnimationFrame(animate);
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => {
+      if (frameId) cancelAnimationFrame(frameId);
+    };
+  }, [gameState, showBase]);
   
-        // Keep only the newest 50 loot items
-        return filtered.slice(-50);
-      });
-       
-      setSpells(prev => prev.map(s => ({ ...s, cooldown: Math.max(0, s.cooldown - timeMultiplier) })));
+  // Separate effect for spell cooldowns and enemy/boss spawning/AI
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    
+    const timeMultiplier = showBase ? 0.1 : 0.25;
       
       spawnTimerRef.current += timeMultiplier;
       if (spawnTimerRef.current > 240 && inDungeon === null && enemies.length < 10) {
@@ -1099,6 +1146,7 @@ const VoxelRPG = () => {
     };
   }, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, skills]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

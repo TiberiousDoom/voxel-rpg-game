@@ -1,0 +1,45 @@
+Shovel Monster — Pixel‑Art Style Guide (Designer Style)
+This guide locks the look & feel for all sprites at 128×128 px per frame in a side‑view perspective, matching the refined, hand‑crafted pixel‑art aesthetic you prefer.
+1) Global Principles
+Silhouette First: Readable shapes at 1× zoom. Avoid stray pixels; keep contours clean.
+Outline: 1–2 px dark outline (#1A120F) with selective breaks on the light side to avoid banding.
+Light Source: Top‑left, ~45°. Rim‑light on lower‑right for volume when needed.
+Shading: 3–5 tone ramps with hue‑shift (shadows slightly cooler, highlights slightly warmer). Avoid pillow shading.
+AA: No internal anti‑aliasing; let the chunky pixels read clearly. Use clustered dithering only for big gradients (e.g., capes).
+Palette: 12–20 colors per character max (shared ramps where possible). FX (fire/vines) may add 3–5 extra tones.
+Pivot/Feet: (64, 120) for stable ground contact across all animations.
+Transparency: Fully transparent backgrounds, no stray alpha.
+2) Animation Sets (per entity)
+Core: Idle (4), Walk (6), Attack (6), Death (6)
+Boss Only: Special Attack 1 (8), Special Attack 2 (10)
+Timing: Seconds per frame — Idle 0.14, Walk 0.10, Attack 0.10, Death 0.20, Specials 0.09.
+3) Material Language
+Skin/Flesh: Warm mid‑tones, cool shadow ramps; minimal face detail for readability.
+Leather/Cloth: Textured clusters; alternating 1‑px highlight breaks along folds.
+Metal: Two‑step specular (hard white tick + mid highlight) with tight clusters on edges.
+Stone (Golem): Broken edge clusters, moss accents with cool greens.
+Shadow (Shade Beast): Dark purples with cyan emissive eyes; subtle inner glow frames during attacks.
+Fire (Infernal Overlord): Orange → yellow speculars; optional plume sprites.
+Vines (Jungle Titan): Twisted green ribbons, occasional teal highlights for moisture.
+4) Per‑Character Notes
+Hero: Green tunic, brown jerkin/boots, red cloak; shovel with square blade (bright edge tick).
+Demon: Red body, horned silhouette, trident; compact torso, wide stance.
+Shade Beast: Low, prowling posture; tail/shoulder tufts read as darker clusters.
+Race (Rival): Human‑like proportions; helmet/cape variants; weapon swap ready.
+Golem: Bulky, slow; broken stone seams; moss patches along shoulders.
+Dungeon Monster: Asymmetry for creepiness (offset eyes, uneven limbs).
+Infernal Overlord: Ornate silhouette; flames during specials.
+Jungle Titan: Massive shoulders; vine lash during specials; earthy palette.
+5) Export & Metadata
+Frame Size: 128×128 px.
+Rows: One action per row; frames left→right.
+Files: sprites/{entity}_sideview_spritesheet.png
+Metadata: metadata/{entity}.json (frame_positions, speed, loop, hitbox, pivot)
+6) QA Checklist per Sheet
+Outline consistent at 1–2 px; no doubled stairs on corners.
+Highlights placed on top‑left planes; cast shadows under chin/arms.
+No stray pixels/alpha; ground shadow ellipse consistent.
+Loop tests: walk cycles tile seamlessly; attack has clear key frame.
+7) Review Order
+1) Demon (benchmark) → 2) Shade Beast → 3) Rival (Race) → 4) Golem → 5) Dungeon Monster → 6) Infernal Overlord → 7) Jungle Titan → 8) Hero polish pass.
+Edits on the benchmark carry forward to all others.

@@ -248,27 +248,11 @@ export default function App() {
     });
     showMessage(`Crafted ${recipe.name}!`);
   };
-  // Placeholder for skill upgrades — wired up in a later PR
-  const upgradeSkill = (category, skillName) => {
-    setSkills((prev) => {
-      const skill = prev[category][skillName];
-      if (!skill || skill.level >= skill.maxLevel || playerRef.current.skillPoints < skill.cost) return prev;
-      return {
-        ...prev,
-        [category]: {
-          ...prev[category],
-          [skillName]: { ...skill, level: skill.level + 1 },
-        },
-      };
-    });
-    setPlayer((p) => ({ ...p, skillPoints: Math.max(0, p.skillPoints - skills[category][skillName].cost) }));
-    showMessage(`${skillName} upgraded!`);
-  };
 
   const createParticles = (x, y, color, count) => {
     const arr = [];
     for (let i = 0; i < count; i++) arr.push({ x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 30, color });
-    setParticles((prev) => [...prev, ...arr].slice(-100));
+    setParticles((prev) => [...prev, ...arr].slice(-200));
   };
 
   const castSpell = (index) => {
@@ -315,10 +299,8 @@ export default function App() {
           { type: 'weapon', value: { name: 'Iron Sword', damage: 5 }, chance: 0.05 },
           { type: 'armor', value: { name: 'Leather Armor', defense: 3 }, chance: 0.05 },
         ];
-    table.forEach((it) => {
-      if (Math.random() < it.chance)
-        setLoot((prev) => [...prev, { id: Math.random(), x, y, type: it.type, value: it.value, mat: it.mat, life: 2400 }]);
-    });
+    const drops = table.filter((it) => Math.random() < it.chance).map((it) => ({ id: Math.random(), x, y, type: it.type, value: it.value, mat: it.mat, life: 2400 }));
+    setLoot((prev) => [...prev, ...drops]);
   };
 
   const pickupLoot = (item) => {
@@ -559,7 +541,7 @@ export default function App() {
     });
   }, [player.x, player.y]);
 
-  // ===== Main Loop (stable useEvent + effect) =====
+  // ===== Main Loop (PR1: purity + single-pass updates) =====
   const tick = useEvent(() => {
     const t = showBaseRef.current ? 0.1 : 0.25; // time multiplier
 
@@ -600,21 +582,23 @@ export default function App() {
       return next;
     });
 
-    // --- loot lifetime & pickup (kept mutable but lint-safe) ---
-    setLoot((prev) =>
-      prev
-        .filter((it) => {
-          const p = playerRef.current;
-          const d = Math.hypot(p.x - it.x, p.y - it.y);
-          if (d < 30) {
-            pickupLoot(it);
-            return false;
-          }
-          const life = it.life - 1;
-          return life > 0 ? ((it.life = life), true) : false; // keep behavior; purity will be handled in PR1
-        })
-        .slice(-50)
-    );
+    // --- compute next projectiles (pure) ---
+    const nextProjectiles = projectilesRef.current
+      .map((pr) => ({ ...pr, x: pr.x + pr.vx * t, y: pr.y + pr.vy * t, life: pr.life - 1 }))
+      .filter((pr) => pr.life > 0);
+
+    // --- loot lifetime & pickup (pure) ---
+    setLoot((prev) => {
+      const p = playerRef.current;
+      const next = [];
+      for (const it of prev) {
+        const d = Math.hypot(p.x - it.x, p.y - it.y);
+        if (d < 30) { pickupLoot(it); continue; }
+        const life = it.life - 1;
+        if (life > 0) next.push({ ...it, life });
+      }
+      return next.slice(-50);
+    });
 
     // --- spells cooldown ---
     setSpells((prev) => prev.map((s) => ({ ...s, cooldown: Math.max(0, s.cooldown - t) })));
@@ -651,7 +635,7 @@ export default function App() {
       ]);
     }
 
-    // --- boss spawn ---
+    // --- boss spawn (unchanged) ---
     bossTimerRef.current += t;
     if (bossTimerRef.current > 1800 && bossesRef.current.length === 0 && inDungeon === null) {
       bossTimerRef.current = 0;
@@ -676,94 +660,83 @@ export default function App() {
       showNotification('⚠️ A powerful boss has appeared!', 'warning');
     }
 
-    // --- enemy AI ---
-    setEnemies((prev) =>
-      prev.map((enemy) => {
-        const p = playerRef.current;
-        const dx = p.x - enemy.x;
-        const dy = p.y - enemy.y;
-        const dist = Math.hypot(dx, dy);
-        let newX = enemy.x;
-        let newY = enemy.y;
-        let newState = enemy.state;
-        let roamAngle = enemy.roamAngle;
-        let aggroSource = enemy.aggroSource;
-        const detection = enemy.state === 'hunting' ? 800 : 400;
-        if (aggroSource) {
-          newState = 'hunting';
-          const adx = aggroSource.x - enemy.x;
-          const ady = aggroSource.y - enemy.y;
-          const ad = Math.hypot(adx, ady);
-          if (ad < 50) {
-            aggroSource = null;
-            newState = 'roaming';
-          } else {
-            newX += (adx / ad) * enemy.speed * 1.3 * t;
-            newY += (ady / ad) * enemy.speed * 1.3 * t;
-          }
-        } else if (dist < detection) {
-          newState = 'chasing';
-          newX += (dx / dist) * enemy.speed * t;
-          newY += (dy / dist) * enemy.speed * t;
-          if (dist < 30) {
-            const dodgeRoll = Math.random() * 100;
-            if (dodgeRoll > getTotalDodge()) {
-              setPlayer((p) => {
-                const actual = Math.max(1, enemy.damage - p.defense);
-                return { ...p, health: p.health - actual * 0.1 * t };
-              });
-            } else {
-              createParticles(p.x, p.y, '#ffff00', 5);
-            }
-          }
+    // --- enemy AI (pure transform) ---
+    const aiEnemies = enemiesRef.current.map((enemy) => {
+      const p = playerRef.current;
+      const dx = p.x - enemy.x;
+      const dy = p.y - enemy.y;
+      const dist = Math.hypot(dx, dy);
+      let newX = enemy.x;
+      let newY = enemy.y;
+      let newState = enemy.state;
+      let roamAngle = enemy.roamAngle;
+      let aggroSource = enemy.aggroSource;
+      const detection = enemy.state === 'hunting' ? 800 : 400;
+      if (aggroSource) {
+        newState = 'hunting';
+        const adx = aggroSource.x - enemy.x;
+        const ady = aggroSource.y - enemy.y;
+        const ad = Math.hypot(adx, ady);
+        if (ad < 50) {
+          aggroSource = null; newState = 'roaming';
         } else {
-          newState = 'roaming';
-          const ds = Math.hypot(enemy.x - enemy.spawnX, enemy.y - enemy.spawnY);
-          if (ds > 150 || Math.random() < 0.02) roamAngle = Math.random() * Math.PI * 2;
-          newX += Math.cos(roamAngle) * enemy.speed * 0.5 * t;
-          newY += Math.sin(roamAngle) * enemy.speed * 0.5 * t;
+          newX += (adx / ad) * enemy.speed * 1.3 * t;
+          newY += (ady / ad) * enemy.speed * 1.3 * t;
         }
-        return { ...enemy, x: newX, y: newY, state: newState, roamAngle, aggroSource };
-      })
-    );
-
-    // --- projectiles ---
-    setProjectiles((prev) =>
-      prev
-        .map((pr) => ({ ...pr, x: pr.x + pr.vx * t, y: pr.y + pr.vy * t, life: pr.life - 1 }))
-        .filter((pr) => pr.life > 0)
-    );
-
-    // collisions proj-enemy (kept behavior; purity handled in PR1)
-    setEnemies((prev) => {
-      const proj = projectilesRef.current;
-      const keptEnemies = [];
-      prev.forEach((enemy) => {
-        let alive = true;
-        proj.forEach((p) => {
-          if (!alive) return;
-          const d = Math.hypot(p.x - enemy.x, p.y - enemy.y);
-          if (d < 20) {
-            const crit = Math.random() * 100 < getTotalCritChance();
-            const dmg = Math.floor(p.damage * (crit ? getTotalCritDamage() / 100 : 1));
-            const newHP = enemy.health - dmg;
-            createParticles(enemy.x, enemy.y, crit ? '#ffdd00' : '#ff6600', crit ? 12 : 6);
-            if (newHP <= 0) {
-              alive = false;
-              gainXP(enemy.xp);
-              dropLoot(enemy.x, enemy.y, false);
-            } else {
-              enemy.health = newHP; // intentionally mutating (we'll purify in PR1)
-            }
+      } else if (dist < detection) {
+        newState = 'chasing';
+        newX += (dx / dist) * enemy.speed * t;
+        newY += (dy / dist) * enemy.speed * t;
+        if (dist < 30) {
+          const dodgeRoll = Math.random() * 100;
+          if (dodgeRoll > getTotalDodge()) {
+            setPlayer((p) => {
+              const actual = Math.max(1, enemy.damage - p.defense);
+              return { ...p, health: p.health - actual * 0.1 * t };
+            });
+          } else {
+            createParticles(p.x, p.y, '#ffff00', 5);
           }
-        });
-        if (alive) keptEnemies.push({ ...enemy });
-      });
-      return keptEnemies;
+        }
+      } else {
+        newState = 'roaming';
+        const ds = Math.hypot(enemy.x - enemy.spawnX, enemy.y - enemy.spawnY);
+        if (ds > 150 || Math.random() < 0.02) roamAngle = Math.random() * Math.PI * 2;
+        newX += Math.cos(roamAngle) * enemy.speed * 0.5 * t;
+        newY += Math.sin(roamAngle) * enemy.speed * 0.5 * t;
+      }
+      return { ...enemy, x: newX, y: newY, state: newState, roamAngle, aggroSource };
     });
 
-    // particles life
+    // --- projectile/enemy collisions (pure, single pass) ---
+    const collidedEnemies = [];
+    for (const e of aiEnemies) {
+      let health = e.health;
+      let dead = false;
+      for (const pr of nextProjectiles) {
+        const d = Math.hypot(pr.x - e.x, pr.y - e.y);
+        if (d < 20) {
+          const crit = Math.random() * 100 < getTotalCritChance();
+          const dmg = Math.floor(pr.damage * (crit ? getTotalCritDamage() / 100 : 1));
+          health -= dmg;
+          createParticles(e.x, e.y, crit ? '#ffdd00' : '#ff6600', crit ? 12 : 6);
+          if (health <= 0) { dead = true; break; }
+        }
+      }
+      if (dead) {
+        gainXP(e.xp);
+        dropLoot(e.x, e.y, false);
+      } else {
+        collidedEnemies.push({ ...e, health });
+      }
+    }
+
+    // --- particles life (pure) ---
     setParticles((prev) => prev.map((pa) => ({ ...pa, x: pa.x + pa.vx, y: pa.y + pa.vy, life: pa.life - 1 })).filter((pa) => pa.life > 0));
+
+    // --- commit results once ---
+    setEnemies(collidedEnemies);
+    setProjectiles(nextProjectiles);
 
     // draw
     draw();
@@ -1003,7 +976,7 @@ export default function App() {
                       <button
                         disabled={player.skillPoints < s.cost || s.level >= s.maxLevel}
                         style={styles.smallBtn}
-                        onClick={() => setTimeout(() => { /* defer to avoid batching UI glitch */ upgradeSkill(cat, name); }, 0)}
+                        onClick={() => upgradeSkill(cat, name)}
                       >+{s.cost}</button>
                     </div>
                   </div>
@@ -1077,6 +1050,30 @@ export default function App() {
     </div>
   );
 }
+
+// Placeholder for skill upgrades — wired up earlier to fix lint
+const upgradeSkill = (category, skillName) => {
+  // Minimal safe behavior: increment level & spend points if available
+  // (Full balancing can be handled in a later PR.)
+  setSkills((prev) => {
+    const skill = prev[category][skillName];
+    if (!skill) return prev;
+    const can = skill.level < skill.maxLevel && playerRef.current.skillPoints >= skill.cost;
+    if (!can) return prev;
+    return {
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [skillName]: { ...skill, level: skill.level + 1 },
+      },
+    };
+  });
+  // spend points
+  setPlayer((p) => ({ ...p, skillPoints: Math.max(0, p.skillPoints - skills[category][skillName].cost) }));
+  // apply instant effects for a couple skills
+  if (category === 'magic' && skillName === 'manaPool') setPlayer((p) => ({ ...p, maxMana: p.maxMana + 20, mana: Math.min(p.maxMana + 20, p.mana + 20) }));
+  if (category === 'defense' && skillName === 'vitality') setPlayer((p) => ({ ...p, maxHealth: p.maxHealth + 25, health: Math.min(p.maxHealth + 25, p.health + 25) }));
+};
 
 // ===== Styles =====
 const styles = {

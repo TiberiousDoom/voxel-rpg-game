@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./voxel-rpg
+        working-directory: voxel-rpg
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

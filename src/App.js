@@ -149,6 +149,10 @@ export default function App() {
   const projectilesRef = useRef(projectiles);
   const particlesRef = useRef(particles);
   const lootRef = useRef(loot);
+  const dungeonsRef = useRef(dungeons);
+  const exitInProgressRef = useRef(false);
+  const reentryLockRef = useRef(0);
+  const spawnPauseRef = useRef(0);
   const skillsRef = useRef(skills);
   const cameraRef = useRef(camera);
   const buildModeRef = useRef(buildMode);
@@ -165,6 +169,7 @@ export default function App() {
   useEffect(() => { projectilesRef.current = projectiles; }, [projectiles]);
   useEffect(() => { particlesRef.current = particles; }, [particles]);
   useEffect(() => { lootRef.current = loot; }, [loot]);
+  useEffect(() => { dungeonsRef.current = dungeons; }, [dungeons]);
   useEffect(() => { skillsRef.current = skills; }, [skills]);
   useEffect(() => { cameraRef.current = camera; }, [camera]);
   useEffect(() => { buildModeRef.current = buildMode; }, [buildMode]);
@@ -499,6 +504,7 @@ export default function App() {
     if (k === 'h' || k === 'H') drinkPotion();
 
     if (k === 'e' || k === 'E') {
+      if (reentryLockRef.current > 0) return;
       const id = inDungeon;
       const p = playerRef.current;
       if (id !== null) {
@@ -588,9 +594,13 @@ export default function App() {
   const tick = useEvent(() => {
     const t = showBaseRef.current ? 0.1 : 0.25; // time multiplier
 
+    // decay the small locks every frame
+    if (reentryLockRef.current > 0) reentryLockRef.current -= 1;
+    if (spawnPauseRef.current > 0) spawnPauseRef.current = Math.max(0, spawnPauseRef.current - t);
+
     // --- player movement ---
     const totalSpeed = getTotalSpeed();
-    const k = keysRef.current;
+     const k = keysRef.current;
     setPlayer((prev) => {
       let newX = prev.x;
       let newY = prev.y;
@@ -779,6 +789,40 @@ export default function App() {
 
     // --- commit results once ---
     setEnemies(collidedEnemies);
+    // --- detect dungeon clear, reward, and auto-exit (one-shot guarded) ---
+    if (inDungeon !== null && !exitInProgressRef.current) {
+        const anyDungeonEnemy = collidedEnemies.some(e => e.type === 'dungeon_monster');
+        if (!anyDungeonEnemy) {
+            exitInProgressRef.current = true;
+
+            // 1) mark cleared
+            setDungeons(ds => ds.map(d => d.id === inDungeon ? { ...d, cleared: true } : d));
+
+            // 2) reward
+            setInventory(inv => ({ ...inv, gold: inv.gold + 100 }));
+
+            // 3) teleport to the portal and exit
+            const d = dungeonsRef.current?.find(dd => dd.id === inDungeon);
+            if (d) {
+                // (optional) auto-collect nearby dungeon loot (radius ~400 around the portal)
+                const near = (L) => Math.hypot(L.x - d.x, L.y - d.y) < 400;
+                lootRef.current.filter(near).forEach(pickupLoot);
+                setLoot(prev => prev.filter(L => !near(L)));
+
+                // nudge off the ring center so the player isn't stuck on the portal stroke
+                setPlayer(p => ({ ...p, x: d.x + 24, y: d.y + 24 }));
+            }
+
+            setInDungeon(null);
+            reentryLockRef.current = 30;     // ~0.5s @60fps
+            spawnPauseRef.current = 240;     // ~4s @60fps
+            showNotification('Dungeon cleared! +100 gold — exiting...', 'success');
+
+            setTimeout(() => { exitInProgressRef.current = false; }, 500);
+            // TODO: updateQuest(2, 1); // Dungeon Delver (when quests are re-enabled)
+        }
+    }
+
     setProjectiles(nextProjectiles);
 
     // draw
@@ -829,14 +873,17 @@ export default function App() {
       ctx.fillRect(s.x - cam.x - 10, s.y - cam.y - 10, 20, 20);
     });
 
-    // dungeons portals
+    // draw dungeon portals
     dungeons.forEach((d) => {
-      ctx.strokeStyle = d.cleared ? '#888' : '#9933ff';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(d.x - cam.x, d.y - cam.y, 16, 0, Math.PI * 2);
-      ctx.stroke();
+        if (inDungeon !== null && d.id !== inDungeon) return; // hide other portals while inside
+
+        ctx.strokeStyle = d.cleared ? '#888' : '#9933ff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(d.x - cam.x, d.y - cam.y, 16, 0, Math.PI * 2);
+        ctx.stroke();
     });
+
 
     // enemies
     enemies.forEach((e) => {

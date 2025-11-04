@@ -406,7 +406,48 @@ export default function App() {
       return { ...prev, xp: newXP };
     });
   };
-
+  const upgradeSkill = (category, skillName) => {
+    const skill = skills[category]?.[skillName];
+  
+    if (!skill || player.skillPoints < skill.cost || skill.level >= skill.maxLevel) {
+      showMessage('Cannot upgrade skill!');
+      return;
+    }
+  
+    setPlayer(prev => ({ ...prev, skillPoints: prev.skillPoints - skill.cost }));
+  
+    setSkills(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [skillName]: {
+          ...prev[category][skillName],
+          level: prev[category][skillName].level + 1
+        }
+      }
+    }));
+  
+    // Apply immediate stat changes
+    if (category === 'magic' && skillName === 'manaPool') {
+      setPlayer(prev => ({
+        ...prev,
+        maxMana: prev.maxMana + skill.bonus,
+        mana: prev.mana + skill.bonus
+      }));
+    }
+    if (category === 'defense' && skillName === 'vitality') {
+      setPlayer(prev => ({
+        ...prev,
+        maxHealth: prev.maxHealth + skill.bonus,
+        health: prev.health + skill.bonus
+      }));
+    }
+    if (category === 'defense' && skillName === 'ironSkin') {
+      setPlayer(prev => ({ ...prev, defense: prev.defense + skill.bonus }));
+    }
+  
+    showMessage(`${skillName} upgraded!`);
+  };
   // ===== Input Handlers (stable via useEvent) =====
   const onKeyDown = useEvent((e) => {
     const k = e.key;
@@ -1052,33 +1093,6 @@ export default function App() {
     </div>
   );
 }
-
-// Placeholder for skill upgrades — wired up earlier to fix lint
-// Safe placeholder: pure skill upgrade logic, no missing refs
-const upgradeSkill = (category, skillName) => {
-  const currentSkills = skillsRef.current || skills;
-  const player = playerRef.current;
-
-  if (!currentSkills?.[category]?.[skillName]) return;
-  const skill = currentSkills[category][skillName];
-  if (skill.level >= skill.maxLevel || player.skillPoints < skill.cost) return;
-
-  const nextSkills = {
-    ...currentSkills,
-    [category]: {
-      ...currentSkills[category],
-      [skillName]: { ...skill, level: skill.level + 1 },
-    },
-  };
-  setSkills(nextSkills);
-
-  setPlayer({
-    ...player,
-    skillPoints: Math.max(0, player.skillPoints - skill.cost),
-  });
-
-  showMessage(`${skillName} upgraded!`);
-};
 
 
 // ===== Styles =====

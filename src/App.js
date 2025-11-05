@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Star, Swords, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Upload } from 'lucide-react';
 
 const VoxelRPG = () => {
   const canvasRef = useRef(null);
@@ -15,13 +15,9 @@ const VoxelRPG = () => {
     xp: 0,
     xpToNext: 100,
     damage: 10,
-    speed: 1.5,
+    speed: 3,
     facingAngle: 0,
-    defense: 0,
-    critChance: 5,
-    critDamage: 150,
-    dodgeChance: 5,
-    skillPoints: 0
+    defense: 0
   });
   
   const [equipment, setEquipment] = useState({
@@ -35,81 +31,14 @@ const VoxelRPG = () => {
     essence: 5,
     crystals: 3,
     potions: 3,
-    items: [],
-    materials: {
-      wood: 10,
-      iron: 5,
-      leather: 8,
-      crystal: 2
-    }
+    items: []
   });
-  
-  const [skills, setSkills] = useState({
-    combat: {
-      powerStrike: { level: 0, maxLevel: 5, cost: 1, bonus: 5, desc: 'Increases damage by 5% per level' },
-      criticalHit: { level: 0, maxLevel: 5, cost: 1, bonus: 3, desc: 'Increases crit chance by 3% per level' },
-      deadlyBlow: { level: 0, maxLevel: 3, cost: 2, bonus: 10, desc: 'Increases crit damage by 10% per level' }
-    },
-    magic: {
-      manaPool: { level: 0, maxLevel: 5, cost: 1, bonus: 20, desc: 'Increases max mana by 20 per level' },
-      spellPower: { level: 0, maxLevel: 5, cost: 1, bonus: 10, desc: 'Increases spell damage by 10% per level' },
-      fastCasting: { level: 0, maxLevel: 3, cost: 2, bonus: 15, desc: 'Reduces spell cooldowns by 15% per level' }
-    },
-    defense: {
-      ironSkin: { level: 0, maxLevel: 5, cost: 1, bonus: 2, desc: 'Increases defense by 2 per level' },
-      vitality: { level: 0, maxLevel: 5, cost: 1, bonus: 25, desc: 'Increases max health by 25 per level' },
-      evasion: { level: 0, maxLevel: 5, cost: 1, bonus: 2, desc: 'Increases dodge chance by 2% per level' }
-    },
-    utility: {
-      swiftness: { level: 0, maxLevel: 3, cost: 2, bonus: 0.2, desc: 'Increases movement speed by 0.2 per level' },
-      fortune: { level: 0, maxLevel: 5, cost: 1, bonus: 15, desc: 'Increases gold/loot drops by 15% per level' },
-      regeneration: { level: 0, maxLevel: 3, cost: 2, bonus: 0.5, desc: 'Regenerate 0.5 HP/sec per level' }
-    }
-  });
-  
-  const [recipes, setRecipes] = useState([
-    { 
-      id: 'iron_sword', 
-      name: 'Iron Sword', 
-      type: 'weapon',
-      result: { name: 'Iron Sword', damage: 8, type: 'weapon' },
-      materials: { iron: 5, wood: 2 }
-    },
-    { 
-      id: 'steel_sword', 
-      name: 'Steel Sword', 
-      type: 'weapon',
-      result: { name: 'Steel Sword', damage: 15, type: 'weapon' },
-      materials: { iron: 10, crystal: 1 }
-    },
-    { 
-      id: 'leather_armor', 
-      name: 'Leather Armor', 
-      type: 'armor',
-      result: { name: 'Leather Armor', defense: 5, type: 'armor' },
-      materials: { leather: 8 }
-    },
-    { 
-      id: 'iron_armor', 
-      name: 'Iron Armor', 
-      type: 'armor',
-      result: { name: 'Iron Armor', defense: 10, type: 'armor' },
-      materials: { iron: 15, leather: 5 }
-    },
-    { 
-      id: 'health_potion', 
-      name: 'Health Potion', 
-      type: 'consumable',
-      result: { type: 'potion', amount: 3 },
-      materials: { essence: 2, crystal: 1 }
-    }
-  ]);
   
   const [spells, setSpells] = useState([
-    { id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0, maxCooldown: 60 },
-    { id: 'lightning', name: 'Lightning', cost: 25, damage: 40, unlocked: false, cooldown: 0, maxCooldown: 90 },
-    { id: 'heal', name: 'Heal', cost: 30, heal: 40, unlocked: false, cooldown: 0, maxCooldown: 120 },
-    { id: 'meteor', name: 'Meteor', cost: 50, damage: 80, unlocked: false, cooldown: 0, maxCooldown: 180 }
+    { id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0 },
+    { id: 'lightning', name: 'Lightning', cost: 25, damage: 40, unlocked: false, cooldown: 0 },
+    { id: 'heal', name: 'Heal', cost: 30, heal: 40, unlocked: false, cooldown: 0 },
+    { id: 'meteor', name: 'Meteor', cost: 50, damage: 80, unlocked: false, cooldown: 0 }
   ]);
   
   const [base, setBase] = useState({
@@ -132,8 +61,6 @@ const VoxelRPG = () => {
   const [camera, setCamera] = useState({ x: 0, y: 0 });
   const [showInventory, setShowInventory] = useState(false);
   const [showBase, setShowBase] = useState(false);
-  const [showSkills, setShowSkills] = useState(false);
-  const [showCrafting, setShowCrafting] = useState(false);
   const [buildMode, setBuildMode] = useState(null);
   const [message, setMessage] = useState('');
   const [notifications, setNotifications] = useState([]);
@@ -146,42 +73,104 @@ const VoxelRPG = () => {
   const gameLoopRef = useRef(null);
   const spawnTimerRef = useRef(0);
   const bossTimerRef = useRef(0);
-  const regenTimerRef = useRef(0);
+  const autoSaveTimerRef = useRef(0);
 
   const MAP_WIDTH = 2500;
   const MAP_HEIGHT = 2000;
   const CANVAS_WIDTH = 1000;
   const CANVAS_HEIGHT = 600;
 
-  // Calculate total skill bonuses
-  const getSkillBonus = (category, skillName, baseValue = 0) => {
-    const skill = skills[category]?.[skillName];
-    if (!skill) return baseValue;
-    return baseValue + (skill.level * skill.bonus);
-  };
+  // Save game function
+  const saveGame = useCallback(() => {
+    const saveData = {
+      player,
+      equipment,
+      inventory,
+      spells,
+      base,
+      dungeons,
+      quests,
+      inDungeon,
+      spawnTimer: spawnTimerRef.current,
+      bossTimer: bossTimerRef.current,
+      timestamp: Date.now(),
+      version: '1.0'
+    };
+    
+    try {
+      localStorage.setItem('voxelRPG_save', JSON.stringify(saveData));
+      showNotification('Game saved successfully!', 'success');
+      return true;
+    } catch (error) {
+      showNotification('Failed to save game!', 'warning');
+      console.error('Save error:', error);
+      return false;
+    }
+  }, [player, equipment, inventory, spells, base, dungeons, quests, inDungeon]);
 
-  const getTotalDamage = () => {
-    let damage = player.damage + (equipment.weapon?.damage || 0);
-    const powerStrikeBonus = getSkillBonus('combat', 'powerStrike', 0);
-    damage *= (1 + powerStrikeBonus / 100);
-    return Math.floor(damage);
-  };
+  // Load game function
+  const loadGame = useCallback(() => {
+    try {
+      const saved = localStorage.getItem('voxelRPG_save');
+      if (!saved) {
+        showNotification('No save file found!', 'warning');
+        return false;
+      }
+      
+      const data = JSON.parse(saved);
+      
+      // Validate save data
+      if (!data.version || !data.player) {
+        showNotification('Invalid save file!', 'warning');
+        return false;
+      }
+      
+      // Restore all state
+      setPlayer(data.player);
+      setEquipment(data.equipment);
+      setInventory(data.inventory);
+      setSpells(data.spells);
+      setBase(data.base);
+      setDungeons(data.dungeons);
+      setQuests(data.quests);
+      setInDungeon(data.inDungeon || null);
+      spawnTimerRef.current = data.spawnTimer || 0;
+      bossTimerRef.current = data.bossTimer || 0;
+      
+      // Clear transient state
+      setEnemies([]);
+      setBosses([]);
+      setProjectiles([]);
+      setParticles([]);
+      setLoot([]);
+      
+      setGameState('playing');
+      showNotification('Game loaded successfully!', 'success');
+      
+      const saveDate = new Date(data.timestamp);
+      showMessage(`Loaded save from ${saveDate.toLocaleString()}`);
+      
+      return true;
+    } catch (error) {
+      showNotification('Failed to load game!', 'warning');
+      console.error('Load error:', error);
+      return false;
+    }
+  }, []);
 
-  const getTotalCritChance = () => {
-    return player.critChance + getSkillBonus('combat', 'criticalHit', 0);
-  };
-
-  const getTotalCritDamage = () => {
-    return player.critDamage + getSkillBonus('combat', 'deadlyBlow', 0);
-  };
-
-  const getTotalDodge = () => {
-    return player.dodgeChance + getSkillBonus('defense', 'evasion', 0);
-  };
-
-  const getTotalSpeed = () => {
-    return player.speed + getSkillBonus('utility', 'swiftness', 0);
-  };
+  // Check for existing save on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('voxelRPG_save');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        const saveDate = new Date(data.timestamp);
+        console.log(`Found save from ${saveDate.toLocaleString()}`);
+      } catch (error) {
+        console.error('Error reading save:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const newTerrain = [];
@@ -229,168 +218,81 @@ const VoxelRPG = () => {
     }, 4000);
   };
 
-  const drinkPotion = () => {
-    if (inventory.potions > 0 && player.health < player.maxHealth) {
-      setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + 50) }));
-      setInventory(prev => ({ ...prev, potions: prev.potions - 1 }));
-      showMessage('Health restored!');
-    }
-  };
-
-  const upgradeSkill = (category, skillName) => {
-    const skill = skills[category][skillName];
-    
-    if (player.skillPoints < skill.cost || skill.level >= skill.maxLevel) {
-      showMessage('Cannot upgrade skill!');
-      return;
-    }
-    
-    setPlayer(prev => ({ ...prev, skillPoints: prev.skillPoints - skill.cost }));
-    setSkills(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [skillName]: {
-          ...prev[category][skillName],
-          level: prev[category][skillName].level + 1
-        }
-      }
-    }));
-    
-    // Apply immediate stat changes
-    if (category === 'magic' && skillName === 'manaPool') {
-      setPlayer(prev => ({
-        ...prev,
-        maxMana: prev.maxMana + skill.bonus,
-        mana: prev.mana + skill.bonus
-      }));
-    }
-    if (category === 'defense' && skillName === 'vitality') {
-      setPlayer(prev => ({
-        ...prev,
-        maxHealth: prev.maxHealth + skill.bonus,
-        health: prev.health + skill.bonus
-      }));
-    }
-    if (category === 'defense' && skillName === 'ironSkin') {
-      setPlayer(prev => ({ ...prev, defense: prev.defense + skill.bonus }));
-    }
-    
-    showMessage(`${skillName} upgraded!`);
-  };
-
-  const craftItem = (recipe) => {
-    // Check if player has materials
-    const hasMaterials = Object.entries(recipe.materials).every(([mat, amount]) => {
-      return inventory.materials[mat] >= amount;
-    });
-    
-    if (!hasMaterials) {
-      showMessage('Not enough materials!');
-      return;
-    }
-    
-    // Deduct materials
+  const usePotion = () => {
     setInventory(prev => {
-      const newMaterials = { ...prev.materials };
-      Object.entries(recipe.materials).forEach(([mat, amount]) => {
-        newMaterials[mat] -= amount;
+      if (prev.potions > 0 && player.health < player.maxHealth) {
+        setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + 50) }));
+        showMessage('Health restored!');
+        return { ...prev, potions: prev.potions - 1 };
+      }
+      return prev;
+    });
+  };
+
+  const castSpell = useCallback((index) => {
+    setSpells(prev => {
+      const spell = prev[index];
+      if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
+      
+      setPlayer(p => {
+        if (p.mana < spell.cost) return p;
+        
+        const angle = Math.atan2(mousePos.y - p.y, mousePos.x - p.x);
+        
+        if (spell.id === 'heal') {
+          showMessage('You feel rejuvenated!');
+          createParticles(p.x, p.y, '#00ff00', 15);
+          return { ...p, health: Math.min(p.maxHealth, p.health + spell.heal), mana: p.mana - spell.cost };
+        } else {
+          setEquipment(eq => {
+            const proj = {
+              id: Math.random(),
+              x: p.x,
+              y: p.y,
+              vx: Math.cos(angle) * 8,
+              vy: Math.sin(angle) * 8,
+              damage: spell.damage + (eq.weapon?.damage || 0),
+              type: spell.id,
+              life: 100,
+              sourceX: p.x,
+              sourceY: p.y
+            };
+            setProjectiles(projs => [...projs, proj]);
+            return eq;
+          });
+          return { ...p, mana: p.mana - spell.cost };
+        }
       });
       
-      let newInventory = { ...prev, materials: newMaterials };
-      
-      // Add crafted item
-      if (recipe.type === 'consumable') {
-        newInventory.potions += recipe.result.amount;
-      } else {
-        newInventory.items = [...prev.items, { ...recipe.result, id: Math.random() }];
-      }
-      
-      return newInventory;
+      return prev.map((s, i) => i === index ? { ...s, cooldown: 60 } : s);
     });
-    
-    showMessage(`Crafted ${recipe.name}!`);
-  };
-
-  const castSpell = (index) => {
-    const spell = spells[index];
-    if (!spell || !spell.unlocked || spell.cooldown > 0 || player.mana < spell.cost) return;
-    
-    const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
-    
-    if (spell.id === 'heal') {
-      showMessage('You feel rejuvenated!');
-      createParticles(player.x, player.y, '#00ff00', 15);
-      setPlayer(p => ({ 
-        ...p, 
-        health: Math.min(p.maxHealth, p.health + spell.heal), 
-        mana: p.mana - spell.cost 
-      }));
-    } else {
-      const spellPowerBonus = getSkillBonus('magic', 'spellPower', 0);
-      const totalSpellDamage = Math.floor(spell.damage * (1 + spellPowerBonus / 100));
-      
-      const proj = {
-        id: Math.random(),
-        x: player.x,
-        y: player.y,
-        vx: Math.cos(angle) * 8,
-        vy: Math.sin(angle) * 8,
-        damage: totalSpellDamage + (equipment.weapon?.damage || 0),
-        type: spell.id,
-        life: 100,
-        sourceX: player.x,
-        sourceY: player.y
-      };
-      setProjectiles(prev => [...prev, proj]);
-      setPlayer(p => ({ ...p, mana: p.mana - spell.cost }));
-    }
-    
-    const cooldownReduction = getSkillBonus('magic', 'fastCasting', 0);
-    const adjustedCooldown = Math.floor(spell.maxCooldown * (1 - cooldownReduction / 100));
-    
-    setSpells(prev => prev.map((s, i) => 
-      i === index ? { ...s, cooldown: adjustedCooldown } : s
-    ));
-  };
+  }, [mousePos.y, mousePos.x]);
 
   const createParticles = (x, y, color, count) => {
-  const newParticles = [];
-  for (let i = 0; i < count; i++) {
-    newParticles.push({
-      x, y,
-      vx: (Math.random() - 0.5) * 4,
-      vy: (Math.random() - 0.5) * 4,
-      life: 30,
-      color
-    });
-  }
-  setParticles(prev => {
-    const combined = [...prev, ...newParticles];
-    // Keep only the most recent 100 particles
-    return combined.slice(-100);
-  });
-};
+    const newParticles = [];
+    for (let i = 0; i < count; i++) {
+      newParticles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        life: 30,
+        color
+      });
+    }
+    setParticles(prev => [...prev, ...newParticles]);
+  };
 
   const dropLoot = (x, y, isBoss = false) => {
-    const fortuneBonus = getSkillBonus('utility', 'fortune', 0);
-    const luckMultiplier = 1 + (fortuneBonus / 100);
-    
     const lootTable = isBoss ? [
-      { type: 'gold', value: Math.floor((50 + Math.random() * 50) * luckMultiplier), chance: 1 },
+      { type: 'gold', value: 50 + Math.floor(Math.random() * 50), chance: 1 },
       { type: 'essence', value: 3, chance: 1 },
       { type: 'potion', value: 2, chance: 1 },
-      { type: 'material', mat: 'iron', value: 5, chance: 1 },
-      { type: 'material', mat: 'crystal', value: 2, chance: 1 },
       { type: 'weapon', value: { name: 'Legendary Blade', damage: 20 }, chance: 0.5 },
       { type: 'armor', value: { name: 'Dragon Scale Armor', defense: 15 }, chance: 0.5 }
     ] : [
-      { type: 'gold', value: Math.floor((5 + Math.random() * 15) * luckMultiplier), chance: 1 },
+      { type: 'gold', value: 5 + Math.floor(Math.random() * 15), chance: 1 },
       { type: 'essence', value: 1, chance: 0.3 },
       { type: 'potion', value: 1, chance: 0.15 },
-      { type: 'material', mat: 'wood', value: 2, chance: 0.4 },
-      { type: 'material', mat: 'leather', value: 1, chance: 0.3 },
-      { type: 'material', mat: 'iron', value: 1, chance: 0.2 },
       { type: 'weapon', value: { name: 'Iron Sword', damage: 5 }, chance: 0.05 },
       { type: 'armor', value: { name: 'Leather Armor', defense: 3 }, chance: 0.05 }
     ];
@@ -402,14 +304,13 @@ const VoxelRPG = () => {
           x, y,
           type: item.type,
           value: item.value,
-          mat: item.mat,
-          life: 2400
+          life: 600
         }]);
       }
     });
   };
 
-  const pickupLoot = (item) => {
+  const pickupLoot = useCallback((item) => {
     if (item.type === 'gold') {
       setInventory(prev => ({ ...prev, gold: prev.gold + item.value }));
       showMessage(`+${item.value} gold`);
@@ -419,15 +320,6 @@ const VoxelRPG = () => {
     } else if (item.type === 'potion') {
       setInventory(prev => ({ ...prev, potions: prev.potions + item.value }));
       showMessage(`+${item.value} potion`);
-    } else if (item.type === 'material') {
-      setInventory(prev => ({
-        ...prev,
-        materials: {
-          ...prev.materials,
-          [item.mat]: (prev.materials[item.mat] || 0) + item.value
-        }
-      }));
-      showMessage(`+${item.value} ${item.mat}`);
     } else if (item.type === 'weapon' || item.type === 'armor') {
       setInventory(prev => ({ 
         ...prev, 
@@ -435,7 +327,7 @@ const VoxelRPG = () => {
       }));
       showMessage(`Found: ${item.value.name}!`);
     }
-  };
+  }, []);
 
   const equipItem = (item) => {
     if (item.type === 'weapon') {
@@ -486,7 +378,7 @@ const VoxelRPG = () => {
     showMessage(`${buildMode.name} built!`);
   };
 
-  const enterDungeon = (dungeon) => {
+  const enterDungeon = useCallback((dungeon) => {
     if (dungeon.cleared) {
       showMessage('This dungeon has been cleared!');
       return;
@@ -506,7 +398,7 @@ const VoxelRPG = () => {
         health: 80 + player.level * 15,
         maxHealth: 80 + player.level * 15,
         damage: 8 + player.level * 3,
-        speed: 0.75,
+        speed: 1.5,
         xp: 30,
         type: 'dungeon_monster',
         state: 'roaming',
@@ -516,14 +408,14 @@ const VoxelRPG = () => {
     }
     
     setEnemies(prev => [...prev, ...dungeonEnemies]);
-  };
+  }, [player.level]);
 
-  const exitDungeon = () => {
+  const exitDungeon = useCallback(() => {
     setInDungeon(null);
     showMessage('Exited dungeon');
-  };
+  }, []);
 
-  const updateQuest = (questId, progress) => {
+  const updateQuest = useCallback((questId, progress) => {
     setQuests(prev => prev.map(q => {
       if (q.id === questId && !q.complete) {
         const newProgress = q.progress + progress;
@@ -536,9 +428,9 @@ const VoxelRPG = () => {
       }
       return q;
     }));
-  };
+  }, []);
 
-  const gainXP = (amount) => {
+  const gainXP = useCallback((amount) => {
     setPlayer(prev => {
       const newXP = prev.xp + amount;
       if (newXP >= prev.xpToNext) {
@@ -567,38 +459,32 @@ const VoxelRPG = () => {
           health: prev.maxHealth + 20,
           maxMana: prev.maxMana + 15,
           mana: prev.maxMana + 15,
-          damage: prev.damage + 5,
-          skillPoints: prev.skillPoints + 2
+          damage: prev.damage + 5
         };
       }
       return { ...prev, xp: newXP };
     });
-  };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       setKeys(prev => ({ ...prev, [e.key.toLowerCase()]: true }));
       
-      if (e.key === 'i' || e.key === 'I') {
-        setShowInventory(prev => !prev);
-        setShowSkills(false);
-        setShowCrafting(false);
-      }
-      if (e.key === 'k' || e.key === 'K') {
-        setShowSkills(prev => !prev);
-        setShowInventory(false);
-        setShowCrafting(false);
-      }
-      if (e.key === 'c' || e.key === 'C') {
-        setShowCrafting(prev => !prev);
-        setShowInventory(false);
-        setShowSkills(false);
-      }
+      if (e.key === 'i' || e.key === 'I') setShowInventory(prev => !prev);
       if (e.key === 'b' || e.key === 'B') {
         setShowBase(prev => !prev);
         if (!showBase) setBuildMode(null);
       }
-      if (e.key === 'h' || e.key === 'H') drinkPotion();
+      if (e.key === 'h' || e.key === 'H') {
+        setInventory(prev => {
+          if (prev.potions > 0 && player.health < player.maxHealth) {
+            setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + 50) }));
+            showMessage('Health restored!');
+            return { ...prev, potions: prev.potions - 1 };
+          }
+          return prev;
+        });
+      }
       if (e.key === 'e' || e.key === 'E') {
         if (inDungeon !== null) {
           const dungeon = dungeons.find(d => d.id === inDungeon);
@@ -620,8 +506,6 @@ const VoxelRPG = () => {
       if (e.key === 'Escape') {
         setShowInventory(false);
         setShowBase(false);
-        setShowSkills(false);
-        setShowCrafting(false);
         setBuildMode(null);
       }
       if (e.key >= '1' && e.key <= '4') castSpell(parseInt(e.key) - 1);
@@ -638,7 +522,7 @@ const VoxelRPG = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [showBase, inDungeon, dungeons, player, inventory, mousePos]);
+  }, [showBase, inDungeon, dungeons, player.x, player.y, player.health, player.maxHealth, inventory.potions, castSpell, enterDungeon, exitDungeon, showMessage]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -656,7 +540,7 @@ const VoxelRPG = () => {
     };
     
     const handleClick = (e) => {
-      if (gameState === 'playing' && !showInventory && !showBase && !showSkills && !showCrafting) {
+      if (gameState === 'playing' && !showInventory && !showBase) {
         castSpell(0);
       } else if (buildMode && showBase) {
         const rect = canvas.getBoundingClientRect();
@@ -673,7 +557,7 @@ const VoxelRPG = () => {
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('click', handleClick);
     };
-  }, [gameState, camera, buildMode, showBase, showInventory, showSkills, showCrafting, mousePos, player, spells]);
+  }, [gameState, camera, buildMode, showBase, showInventory, mousePos.x, mousePos.y, castSpell, placeStructure]);
 
   useEffect(() => {
     setCamera({
@@ -685,37 +569,27 @@ const VoxelRPG = () => {
   useEffect(() => {
     if (gameState !== 'playing') return;
     
-    const timeMultiplier = showBase ? 0.1 : 0.25;  // Quarter speed everywhere
+    const timeMultiplier = showBase ? 0.2 : 1;
     
     const gameLoop = () => {
-      const totalSpeed = getTotalSpeed();
+      // Auto-save every 30 seconds
+      autoSaveTimerRef.current += 1;
+      if (autoSaveTimerRef.current > 1800) { // 30 seconds at 60fps
+        autoSaveTimerRef.current = 0;
+        saveGame();
+      }
       
       setPlayer(prev => {
- 	 let newX = prev.x;
- 	 let newY = prev.y;
-	  let moveX = 0;
-	  let moveY = 0;
-  
- 	 if (keys['w']) moveY -= 1;
- 	 if (keys['s']) moveY += 1;
- 	 if (keys['a']) moveX -= 1;
- 	 if (keys['d']) moveX += 1;
-  
-	  // Normalize diagonal movement
- 	 if (moveX !== 0 && moveY !== 0) {
-	    const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
- 	   moveX = (moveX / magnitude) * totalSpeed;
-  	  moveY = (moveY / magnitude) * totalSpeed;
-  	} else {
-  	  moveX *= totalSpeed;
-  	  moveY *= totalSpeed;
-  	}
-  
- 	 newX += moveX;
- 	 newY += moveY;
-  
- 	 newX = Math.max(20, Math.min(MAP_WIDTH - 20, newX));
- 	 newY = Math.max(20, Math.min(MAP_HEIGHT - 20, newY));
+        let newX = prev.x;
+        let newY = prev.y;
+        
+        if (keys['w']) newY -= prev.speed * timeMultiplier;
+        if (keys['s']) newY += prev.speed * timeMultiplier;
+        if (keys['a']) newX -= prev.speed * timeMultiplier;
+        if (keys['d']) newX += prev.speed * timeMultiplier;
+        
+        newX = Math.max(20, Math.min(MAP_WIDTH - 20, newX));
+        newY = Math.max(20, Math.min(MAP_HEIGHT - 20, newY));
         
         const angle = Math.atan2(mousePos.y - prev.y, mousePos.x - prev.x);
         
@@ -723,40 +597,25 @@ const VoxelRPG = () => {
           setGameState('gameover');
         }
         
-        // Regeneration
-        const regenAmount = getSkillBonus('utility', 'regeneration', 0) * timeMultiplier * 0.016; // 60 FPS
-        
-        return { 
-          ...prev, 
-          x: newX, 
-          y: newY, 
-          facingAngle: angle, 
-          mana: Math.min(prev.maxMana, prev.mana + 0.2 * timeMultiplier),
-          health: Math.min(prev.maxHealth, prev.health + regenAmount)
-        };
+        return { ...prev, x: newX, y: newY, facingAngle: angle, mana: Math.min(prev.maxMana, prev.mana + 0.2 * timeMultiplier) };
       });
       
-      setLoot(prev => {
-	const filtered = prev.filter(item => {
-	  const dx = player.x - item.x;
-	  const dy = player.y - item.y;
-	  const dist = Math.sqrt(dx * dx + dy * dy);
-    
-	  if (dist < 30) {
-	    pickupLoot(item);
-            return false;
-          }
-          return item.life-- > 0;
-        });
-  
-        // Keep only the newest 50 loot items
-        return filtered.slice(-50);
-      });
-       
+      setLoot(prev => prev.filter(item => {
+        const dx = player.x - item.x;
+        const dy = player.y - item.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 30) {
+          pickupLoot(item);
+          return false;
+        }
+        return item.life-- > 0;
+      }));
+      
       setSpells(prev => prev.map(s => ({ ...s, cooldown: Math.max(0, s.cooldown - timeMultiplier) })));
       
       spawnTimerRef.current += timeMultiplier;
-      if (spawnTimerRef.current > 240 && inDungeon === null && enemies.length < 10) {
+      if (spawnTimerRef.current > 120 && inDungeon === null) {
         spawnTimerRef.current = 0;
         
         const spawnX = Math.random() * MAP_WIDTH;
@@ -765,9 +624,9 @@ const VoxelRPG = () => {
         const types = ['demon', 'shadow', 'beast', 'wraith', 'golem'];
         const type = types[Math.floor(Math.random() * types.length)];
         
-        let stats = { health: 50, damage: 5, speed: 0.8, xp: 20 };
-        if (type === 'wraith') stats = { health: 30, damage: 8, speed: 1.2, xp: 25 };
-        if (type === 'golem') stats = { health: 100, damage: 10, speed: 0.6, xp: 40 };
+        let stats = { health: 50, damage: 5, speed: 1.2, xp: 20 };
+        if (type === 'wraith') stats = { health: 30, damage: 8, speed: 2, xp: 25 };
+        if (type === 'golem') stats = { health: 100, damage: 10, speed: 0.8, xp: 40 };
         
         setEnemies(prev => [...prev, {
           id: Math.random(),
@@ -805,7 +664,6 @@ const VoxelRPG = () => {
           type: 'boss',
           state: 'idle',
           attackCooldown: 0,
-          specialCooldown: 0,
           aggroSource: null
         }]);
         
@@ -844,15 +702,10 @@ const VoxelRPG = () => {
           newY = enemy.y + (dy / distToPlayer) * enemy.speed * timeMultiplier;
           
           if (distToPlayer < 30) {
-            const dodgeRoll = Math.random() * 100;
-            if (dodgeRoll > getTotalDodge()) {
-              setPlayer(p => {
-                const actualDamage = Math.max(1, enemy.damage - p.defense);
-                return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
-              });
-            } else {
-              createParticles(player.x, player.y, '#ffff00', 5);
-            }
+            setPlayer(p => {
+              const actualDamage = Math.max(1, enemy.damage - p.defense);
+              return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
+            });
           }
         } else {
           newState = 'roaming';
@@ -880,32 +733,6 @@ const VoxelRPG = () => {
         let aggroSource = boss.aggroSource;
         let newX = boss.x;
         let newY = boss.y;
-        let specialCooldown = Math.max(0, boss.specialCooldown - timeMultiplier);
-        
-        // Boss special ability
-        if (dist < 600 && specialCooldown === 0 && Math.random() < 0.01) {
-          specialCooldown = 300; // 5 second cooldown
-          const angle = Math.atan2(dy, dx);
-          
-          // Shoot 3 projectiles in a spread
-          for (let i = -1; i <= 1; i++) {
-            const spreadAngle = angle + (i * 0.3);
-            setProjectiles(projs => [...projs, {
-              id: Math.random(),
-              x: boss.x,
-              y: boss.y,
-              vx: Math.cos(spreadAngle) * 5,
-              vy: Math.sin(spreadAngle) * 5,
-              damage: boss.damage,
-              type: 'boss_attack',
-              life: 150,
-              sourceX: boss.x,
-              sourceY: boss.y,
-              fromEnemy: true
-            }]);
-          }
-          createParticles(boss.x, boss.y, '#ff0000', 20);
-        }
         
         if (aggroSource) {
           const aggroDx = aggroSource.x - boss.x;
@@ -923,15 +750,10 @@ const VoxelRPG = () => {
           newY = boss.y + (dy / dist) * boss.speed * timeMultiplier;
           
           if (dist < 40) {
-            const dodgeRoll = Math.random() * 100;
-            if (dodgeRoll > getTotalDodge()) {
-              setPlayer(p => {
-                const actualDamage = Math.max(1, boss.damage - p.defense);
-                return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
-              });
-            } else {
-              createParticles(player.x, player.y, '#ffff00', 8);
-            }
+            setPlayer(p => {
+              const actualDamage = Math.max(1, boss.damage - p.defense);
+              return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
+            });
           }
         }
         
@@ -940,7 +762,6 @@ const VoxelRPG = () => {
           x: newX,
           y: newY,
           attackCooldown: Math.max(0, boss.attackCooldown - timeMultiplier),
-          specialCooldown,
           aggroSource
         };
       }).filter(b => b.health > 0));
@@ -954,26 +775,6 @@ const VoxelRPG = () => {
         })).filter(p => p.life > 0 && p.x > 0 && p.x < MAP_WIDTH && p.y > 0 && p.y < MAP_HEIGHT);
         
         updated.forEach(proj => {
-          // Check player hits from enemy projectiles
-          if (proj.fromEnemy) {
-            const dx = proj.x - player.x;
-            const dy = proj.y - player.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            if (dist < 20) {
-              proj.life = 0;
-              const dodgeRoll = Math.random() * 100;
-              if (dodgeRoll > getTotalDodge()) {
-                setPlayer(p => ({ ...p, health: p.health - proj.damage }));
-                createParticles(player.x, player.y, '#ff0000', 15);
-              } else {
-                createParticles(player.x, player.y, '#ffff00', 10);
-                showMessage('Dodged!');
-              }
-            }
-            return;
-          }
-          
           setEnemies(enemies => enemies.map(enemy => {
             const dx = proj.x - enemy.x;
             const dy = proj.y - enemy.y;
@@ -981,27 +782,14 @@ const VoxelRPG = () => {
             
             if (dist < 25) {
               proj.life = 0;
-              
-              // Critical hit calculation
-              const critRoll = Math.random() * 100;
-              const isCrit = critRoll < getTotalCritChance();
-              const finalDamage = isCrit ? 
-                Math.floor(proj.damage * (getTotalCritDamage() / 100)) : 
-                proj.damage;
-              
-              if (isCrit) {
-                createParticles(enemy.x, enemy.y, '#ffff00', 15);
-                showMessage('CRITICAL!');
-              } else {
-                createParticles(enemy.x, enemy.y, '#ff6600', 10);
-              }
+              createParticles(enemy.x, enemy.y, '#ff6600', 10);
               
               enemy.aggroSource = { x: proj.sourceX, y: proj.sourceY };
               
-              if (enemy.health - finalDamage <= 0) {
+              if (enemy.health - proj.damage <= 0) {
                 gainXP(enemy.xp);
                 dropLoot(enemy.x, enemy.y);
-                updateQuest(1, 1);
+                updateQuest(1,1);
                 
                 if (enemy.type === 'dungeon_monster') {
                   const dungeon = dungeons.find(d => d.id === inDungeon);
@@ -1023,7 +811,7 @@ const VoxelRPG = () => {
                 return null;
               }
               
-              return { ...enemy, health: enemy.health - finalDamage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+              return { ...enemy, health: enemy.health - proj.damage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
             }
             return enemy;
           }).filter(Boolean));
@@ -1035,23 +823,11 @@ const VoxelRPG = () => {
             
             if (dist < 40) {
               proj.life = 0;
-              
-              const critRoll = Math.random() * 100;
-              const isCrit = critRoll < getTotalCritChance();
-              const finalDamage = isCrit ? 
-                Math.floor(proj.damage * (getTotalCritDamage() / 100)) : 
-                proj.damage;
-              
-              if (isCrit) {
-                createParticles(boss.x, boss.y, '#ffff00', 20);
-                showMessage('CRITICAL HIT!');
-              } else {
-                createParticles(boss.x, boss.y, '#ff0000', 15);
-              }
+              createParticles(boss.x, boss.y, '#ff0000', 15);
               
               boss.aggroSource = { x: proj.sourceX, y: proj.sourceY };
               
-              if (boss.health - finalDamage <= 0) {
+              if (boss.health - proj.damage <= 0) {
                 gainXP(200);
                 dropLoot(boss.x, boss.y, true);
                 updateQuest(3, 1);
@@ -1059,7 +835,7 @@ const VoxelRPG = () => {
                 return null;
               }
               
-              return { ...boss, health: boss.health - finalDamage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+              return { ...boss, health: boss.health - proj.damage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
             }
             return boss;
           }).filter(Boolean));
@@ -1076,28 +852,27 @@ const VoxelRPG = () => {
       })).filter(p => p.life > 0));
     };
     
-    let frameId;
-    let lastTime = 0;
-    const targetFPS = 60;
-    const frameDelay = 1000 / targetFPS;
-
-    const animate = (currentTime) => {
-      frameId = requestAnimationFrame(animate);
-  
-      const deltaTime = currentTime - lastTime;
-  
-      if (deltaTime >= frameDelay) {
-        lastTime = currentTime - (deltaTime % frameDelay);
+    let lastTime = Date.now();
+    const animate = () => {
+      const currentTime = Date.now();
+      const deltaTime = (currentTime - lastTime) / 16.67;
+      lastTime = currentTime;
+      
+      if (deltaTime < 3) {
         gameLoop();
       }
+      
+      gameLoopRef.current = requestAnimationFrame(animate);
     };
-
-    frameId = requestAnimationFrame(animate);
-
+    
+    gameLoopRef.current = requestAnimationFrame(animate);
+    
     return () => {
-      if (frameId) cancelAnimationFrame(frameId);
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
     };
-  }, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, skills]);
+  }, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1111,20 +886,24 @@ const VoxelRPG = () => {
     const minY = camera.y - 20;
     const maxY = camera.y + CANVAS_HEIGHT + 20;
     
-    // Pre-filter visible terrain to avoid checking all tiles
-    const visibleTiles = terrain.filter(tile => 
-      tile.x >= minX && tile.x <= maxX && tile.y >= minY && tile.y <= maxY
-    );
-
-    visibleTiles.forEach(tile => {
-      let color = '#4a7c4e';
-      if (tile.type === 'forest') color = '#2d5a3d';
-      if (tile.type === 'water') color = '#4a6fa5';
-      if (tile.type === 'rock') color = '#666666';
-  
-      ctx.fillStyle = color;
-      ctx.fillRect(tile.x - camera.x, tile.y - camera.y, 20, 20);
+    const terrainByType = { grass: [], forest: [], water: [], rock: [] };
+    terrain.forEach(tile => {
+      if (tile.x < minX || tile.x > maxX || tile.y < minY || tile.y > maxY) return;
+      terrainByType[tile.type].push(tile);
     });
+    
+    const drawTerrainType = (tiles, color) => {
+      if (tiles.length === 0) return;
+      ctx.fillStyle = color;
+      tiles.forEach(tile => {
+        ctx.fillRect(tile.x - camera.x, tile.y - camera.y, 20, 20);
+      });
+    };
+    
+    drawTerrainType(terrainByType.grass, '#4a7c4e');
+    drawTerrainType(terrainByType.forest, '#2d5a3d');
+    drawTerrainType(terrainByType.water, '#4a6fa5');
+    drawTerrainType(terrainByType.rock, '#666666');
     
     dungeons.forEach(dungeon => {
       ctx.fillStyle = dungeon.cleared ? '#444444' : '#1a1a2e';
@@ -1172,10 +951,11 @@ const VoxelRPG = () => {
     });
     
     loot.forEach(item => {
+      if (item.x < minX || item.x > maxX || item.y < minY || item.y > maxY) return;
+      
       let color = '#ffd700';
       if (item.type === 'essence') color = '#8b00ff';
       if (item.type === 'potion') color = '#ff0000';
-      if (item.type === 'material') color = '#cd853f';
       if (item.type === 'weapon' || item.type === 'armor') color = '#00ffff';
       
       ctx.fillStyle = color;
@@ -1194,14 +974,10 @@ const VoxelRPG = () => {
         ctx.arc(item.x - camera.x, item.y - camera.y, 8, 0, Math.PI * 2);
         ctx.fill();
       }
-      
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = color;
-      ctx.fill();
-      ctx.shadowBlur = 0;
     });
     
     particles.forEach(p => {
+      if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) return;
       ctx.fillStyle = p.color;
       ctx.globalAlpha = p.life / 30;
       ctx.fillRect(p.x - camera.x - 2, p.y - camera.y - 2, 4, 4);
@@ -1209,23 +985,21 @@ const VoxelRPG = () => {
     ctx.globalAlpha = 1;
     
     projectiles.forEach(proj => {
+      if (proj.x < minX || proj.x > maxX || proj.y < minY || proj.y > maxY) return;
+      
       let color = '#ff6600';
       if (proj.type === 'lightning') color = '#ffff00';
       if (proj.type === 'meteor') color = '#ff0000';
-      if (proj.type === 'boss_attack') color = '#8b0000';
       
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(proj.x - camera.x, proj.y - camera.y, proj.fromEnemy ? 8 : 6, 0, Math.PI * 2);
+      ctx.arc(proj.x - camera.x, proj.y - camera.y, 6, 0, Math.PI * 2);
       ctx.fill();
-      
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = color;
-      ctx.fill();
-      ctx.shadowBlur = 0;
     });
     
     enemies.forEach(enemy => {
+      if (enemy.x < minX - 50 || enemy.x > maxX + 50 || enemy.y < minY - 50 || enemy.y > maxY + 50) return;
+      
       let color = '#cc0000';
       if (enemy.type === 'shadow') color = '#4a0080';
       if (enemy.type === 'beast') color = '#804000';
@@ -1249,6 +1023,8 @@ const VoxelRPG = () => {
     });
     
     bosses.forEach(boss => {
+      if (boss.x < minX - 60 || boss.x > maxX + 60 || boss.y < minY - 60 || boss.y > maxY + 60) return;
+      
       ctx.fillStyle = '#8b0000';
       ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 30, 60, 60);
       ctx.strokeStyle = '#ff0000';
@@ -1288,12 +1064,25 @@ const VoxelRPG = () => {
           <p className="text-xl mb-8">
             Now, with newfound magical powers, you must defend the realm from the darkness that spreads.
           </p>
-          <button
-            onClick={startGame}
-            className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
-          >
-            Begin Your Journey
-          </button>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={startGame}
+              className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
+            >
+              Begin Your Journey
+            </button>
+            <button
+              onClick={() => {
+                if (loadGame()) {
+                  // Game state set to 'playing' in loadGame
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Upload size={24} />
+              Load Game
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1341,6 +1130,16 @@ const VoxelRPG = () => {
         ))}
       </div>
       
+      <div className="absolute top-4 left-4 z-10">
+        <button
+          onClick={saveGame}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+        >
+          <Save size={20} />
+          Save Game
+        </button>
+      </div>
+      
       <div className="mb-4 flex gap-6 text-white flex-wrap justify-center">
         <div className="flex items-center gap-2">
           <Heart className="text-red-500" />
@@ -1379,13 +1178,6 @@ const VoxelRPG = () => {
           <Package className="text-yellow-300" />
           <span>Gold: {inventory.gold}</span>
         </div>
-        
-        {player.skillPoints > 0 && (
-          <div className="flex items-center gap-2 bg-purple-600 px-3 py-1 rounded">
-            <Star className="text-yellow-300" />
-            <span>Skill Points: {player.skillPoints}</span>
-          </div>
-        )}
       </div>
       
       <canvas 
@@ -1422,148 +1214,11 @@ const VoxelRPG = () => {
       
       <div className="mt-4 text-white text-center">
         <p className="text-sm mb-2">
-          WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Enter/Exit Dungeon
-        </p>
-        <p className="text-xs">
-          I: Inventory | K: Skills | C: Crafting | B: Base
+          WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Enter/Exit Dungeon | I: Inventory | B: Base
         </p>
         {message && <p className="text-yellow-300 font-bold">{message}</p>}
       </div>
       
-      {/* Skill Tree UI */}
-      {showSkills && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-4xl max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <Star /> Skill Tree - {player.skillPoints} Points Available
-            </h3>
-            <X className="cursor-pointer" onClick={() => setShowSkills(false)} />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-6">
-            {Object.entries(skills).map(([category, categorySkills]) => (
-              <div key={category} className="bg-gray-700 p-4 rounded-lg">
-                <h4 className="text-lg font-bold mb-3 capitalize text-purple-300">{category}</h4>
-                <div className="space-y-3">
-                  {Object.entries(categorySkills).map(([skillName, skill]) => (
-                    <div key={skillName} className="bg-gray-800 p-3 rounded">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-bold capitalize text-sm">
-                            {skillName.replace(/([A-Z])/g, ' $1').trim()}
-                          </p>
-                          <p className="text-xs text-gray-400">{skill.desc}</p>
-                        </div>
-                        <span className="text-xs bg-purple-600 px-2 py-1 rounded">
-                          {skill.level}/{skill.maxLevel}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => upgradeSkill(category, skillName)}
-                        disabled={player.skillPoints < skill.cost || skill.level >= skill.maxLevel}
-                        className={`w-full py-2 rounded text-sm ${
-                          player.skillPoints >= skill.cost && skill.level < skill.maxLevel
-                            ? 'bg-green-600 hover:bg-green-700'
-                            : 'bg-gray-600 cursor-not-allowed'
-                        }`}
-                      >
-                        {skill.level >= skill.maxLevel ? 'Max Level' : `Upgrade (${skill.cost} SP)`}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-6 p-4 bg-gray-700 rounded-lg">
-            <h4 className="font-bold mb-2">Current Stats:</h4>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p>Damage: {getTotalDamage()}</p>
-                <p>Crit Chance: {getTotalCritChance()}%</p>
-                <p>Crit Damage: {getTotalCritDamage()}%</p>
-              </div>
-              <div>
-                <p>Defense: {player.defense}</p>
-                <p>Dodge: {getTotalDodge()}%</p>
-                <p>Speed: {getTotalSpeed().toFixed(1)}</p>
-              </div>
-              <div>
-                <p>HP: {player.maxHealth}</p>
-                <p>Mana: {player.maxMana}</p>
-                <p>Regen: {getSkillBonus('utility', 'regeneration', 0)}/s</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Crafting UI */}
-      {showCrafting && (
-        <div className="absolute top-20 right-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <Hammer /> Crafting
-            </h3>
-            <X className="cursor-pointer" onClick={() => setShowCrafting(false)} />
-          </div>
-          
-          <div className="mb-4 p-3 bg-gray-700 rounded">
-            <h4 className="text-sm font-bold mb-2">Materials:</h4>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {Object.entries(inventory.materials).map(([mat, amount]) => (
-                <p key={mat} className="capitalize">{mat}: {amount}</p>
-              ))}
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            {recipes.map(recipe => {
-              const canCraft = Object.entries(recipe.materials).every(([mat, amount]) => 
-                inventory.materials[mat] >= amount
-              );
-              
-              return (
-                <div key={recipe.id} className="bg-gray-700 p-3 rounded">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-bold text-sm">{recipe.name}</p>
-                      <p className="text-xs text-gray-400 capitalize">{recipe.type}</p>
-                    </div>
-                    <Sparkles className={canCraft ? 'text-green-400' : 'text-gray-500'} size={16} />
-                  </div>
-                  
-                  <div className="mb-2 text-xs">
-                    <p className="text-gray-400 mb-1">Required:</p>
-                    {Object.entries(recipe.materials).map(([mat, amount]) => (
-                      <p key={mat} className={`capitalize ${
-                        inventory.materials[mat] >= amount ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {mat}: {inventory.materials[mat]}/{amount}
-                      </p>
-                    ))}
-                  </div>
-                  
-                  <button
-                    onClick={() => craftItem(recipe)}
-                    disabled={!canCraft}
-                    className={`w-full py-2 rounded text-sm ${
-                      canCraft
-                        ? 'bg-purple-600 hover:bg-purple-700'
-                        : 'bg-gray-600 cursor-not-allowed'
-                    }`}
-                  >
-                    {canCraft ? 'Craft' : 'Insufficient Materials'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      
-      {/* Inventory UI */}
       {showInventory && (
         <div className="absolute top-20 right-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md max-h-96 overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
@@ -1631,7 +1286,6 @@ const VoxelRPG = () => {
         </div>
       )}
       
-      {/* Base Building UI */}
       {showBase && (
         <div className="absolute top-20 left-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md">
           <div className="flex justify-between items-center mb-4">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Upload } from 'lucide-react';
+import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Upload, Star } from 'lucide-react';
 
 const VoxelRPG = () => {
 const canvasRef = useRef(null);
@@ -17,7 +17,11 @@ xpToNext: 100,
 damage: 10,
 speed: 3,
 facingAngle: 0,
-defense: 0
+defense: 0,
+critChance: 5,
+critDamage: 150,
+dodgeChance: 5,
+skillPoints: 0
 });
 
 const [equipment, setEquipment] = useState({
@@ -72,6 +76,29 @@ const [recipes] = useState([
   materials: { essence: 2, crystal: 1 }
 }
 ]);
+
+const [skills, setSkills] = useState({
+combat: {
+  powerStrike: { level: 0, maxLevel: 5, cost: 1, bonus: 5, desc: 'Increases damage by 5% per level' },
+  criticalHit: { level: 0, maxLevel: 5, cost: 1, bonus: 3, desc: 'Increases crit chance by 3% per level' },
+  deadlyBlow: { level: 0, maxLevel: 3, cost: 2, bonus: 10, desc: 'Increases crit damage by 10% per level' }
+},
+magic: {
+  manaPool: { level: 0, maxLevel: 5, cost: 1, bonus: 20, desc: 'Increases max mana by 20 per level' },
+  spellPower: { level: 0, maxLevel: 5, cost: 1, bonus: 10, desc: 'Increases spell damage by 10% per level' },
+  fastCasting: { level: 0, maxLevel: 3, cost: 2, bonus: 15, desc: 'Reduces spell cooldowns by 15% per level' }
+},
+defense: {
+  ironSkin: { level: 0, maxLevel: 5, cost: 1, bonus: 2, desc: 'Increases defense by 2 per level' },
+  vitality: { level: 0, maxLevel: 5, cost: 1, bonus: 25, desc: 'Increases max health by 25 per level' },
+  evasion: { level: 0, maxLevel: 5, cost: 1, bonus: 2, desc: 'Increases dodge chance by 2% per level' }
+},
+utility: {
+  swiftness: { level: 0, maxLevel: 3, cost: 2, bonus: 0.2, desc: 'Increases movement speed by 0.2 per level' },
+  fortune: { level: 0, maxLevel: 5, cost: 1, bonus: 15, desc: 'Increases gold/loot drops by 15% per level' },
+  regeneration: { level: 0, maxLevel: 3, cost: 2, bonus: 0.5, desc: 'Regenerate 0.5 HP/sec per level' }
+}
+});
 
 const [spells, setSpells] = useState([
 { id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0 },
@@ -134,6 +161,67 @@ setTimeout(() => {
 setNotifications(prev => prev.filter(n => n.id !== id));
 }, 4000);
 }, []);
+
+// Skill helper functions
+const getSkillBonus = (category, skillName, baseValue = 0) => {
+const skill = skills[category]?.[skillName];
+if (!skill) return baseValue;
+return baseValue + skill.level * skill.bonus;
+};
+
+const getTotalDamage = () => {
+let dmg = player.damage + (equipment.weapon?.damage || 0);
+const ps = getSkillBonus('combat', 'powerStrike', 0);
+return Math.floor(dmg * (1 + ps / 100));
+};
+
+const getTotalCritChance = () => player.critChance + getSkillBonus('combat', 'criticalHit', 0);
+const getTotalCritDamage = () => player.critDamage + getSkillBonus('combat', 'deadlyBlow', 0);
+const getTotalDodge = () => player.dodgeChance + getSkillBonus('defense', 'evasion', 0);
+const getTotalSpeed = () => player.speed + getSkillBonus('utility', 'swiftness', 0);
+
+const upgradeSkill = useCallback((category, skillName) => {
+const skill = skills[category]?.[skillName];
+
+if (!skill || player.skillPoints < skill.cost || skill.level >= skill.maxLevel) {
+  showMessage('Cannot upgrade skill!');
+  return;
+}
+
+setPlayer(prev => ({ ...prev, skillPoints: prev.skillPoints - skill.cost }));
+
+setSkills(prev => ({
+  ...prev,
+  [category]: {
+    ...prev[category],
+    [skillName]: {
+      ...prev[category][skillName],
+      level: prev[category][skillName].level + 1
+    }
+  }
+}));
+
+// Apply immediate stat changes
+if (category === 'magic' && skillName === 'manaPool') {
+  setPlayer(prev => ({
+    ...prev,
+    maxMana: prev.maxMana + skill.bonus,
+    mana: prev.mana + skill.bonus
+  }));
+}
+if (category === 'defense' && skillName === 'vitality') {
+  setPlayer(prev => ({
+    ...prev,
+    maxHealth: prev.maxHealth + skill.bonus,
+    health: prev.health + skill.bonus
+  }));
+}
+if (category === 'defense' && skillName === 'ironSkin') {
+  setPlayer(prev => ({ ...prev, defense: prev.defense + skill.bonus }));
+}
+
+showMessage(`${skillName} upgraded!`);
+}, [skills, player.skillPoints, showMessage]);
 
 // Save game function
 const saveGame = useCallback(() => {
@@ -532,7 +620,8 @@ showNotification(`Level Up! You are now level ${newLevel}`, 'success');
       health: prev.maxHealth + 20,
       maxMana: prev.maxMana + 15,
       mana: prev.maxMana + 15,
-      damage: prev.damage + 5
+      damage: prev.damage + 5,
+      skillPoints: prev.skillPoints + 2
     };
   }
   return { ...prev, xp: newXP };
@@ -1485,6 +1574,73 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
               </div>
             );
           })}
+        </div>
+      </div>
+    </div>
+  )}
+
+  {showSkills && (
+    <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-4xl max-h-[80vh] overflow-y-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold flex items-center gap-2">
+          <Star /> Skill Tree - {player.skillPoints} Points Available
+        </h3>
+        <X className="cursor-pointer" onClick={() => setShowSkills(false)} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        {Object.entries(skills).map(([category, categorySkills]) => (
+          <div key={category} className="bg-gray-700 p-4 rounded-lg">
+            <h4 className="text-lg font-bold mb-3 capitalize text-purple-300">{category}</h4>
+            <div className="space-y-3">
+              {Object.entries(categorySkills).map(([skillName, skill]) => (
+                <div key={skillName} className="bg-gray-800 p-3 rounded">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold capitalize text-sm">
+                        {skillName.replace(/([A-Z])/g, ' $1').trim()}
+                      </p>
+                      <p className="text-xs text-gray-400">{skill.desc}</p>
+                    </div>
+                    <span className="text-xs bg-purple-600 px-2 py-1 rounded">
+                      {skill.level}/{skill.maxLevel}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => upgradeSkill(category, skillName)}
+                    disabled={player.skillPoints < skill.cost || skill.level >= skill.maxLevel}
+                    className={`w-full py-2 rounded text-sm ${
+                      player.skillPoints >= skill.cost && skill.level < skill.maxLevel
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-gray-600 cursor-not-allowed'
+                    }`}
+                  >
+                    {skill.level >= skill.maxLevel ? 'Max Level' : `Upgrade (${skill.cost} SP)`}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 p-4 bg-gray-700 rounded-lg">
+        <h4 className="font-bold mb-2">Current Stats:</h4>
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <p>Damage: {getTotalDamage()}</p>
+            <p>Crit Chance: {getTotalCritChance()}%</p>
+            <p>Crit Damage: {getTotalCritDamage()}%</p>
+          </div>
+          <div>
+            <p>Defense: {player.defense}</p>
+            <p>Dodge: {getTotalDodge()}%</p>
+            <p>Speed: {getTotalSpeed().toFixed(1)}</p>
+          </div>
+          <div>
+            <p>HP: {player.maxHealth}</p>
+            <p>Mana: {player.maxMana}</p>
+          </div>
         </div>
       </div>
     </div>

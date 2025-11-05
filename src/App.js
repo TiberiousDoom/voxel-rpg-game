@@ -31,8 +31,47 @@ gold: 100,
 essence: 5,
 crystals: 3,
 potions: 3,
-items: []
+items: [],
+materials: { wood: 10, iron: 5, leather: 8, crystal: 2 }
 });
+
+const [recipes] = useState([
+{
+  id: 'iron_sword',
+  name: 'Iron Sword',
+  type: 'weapon',
+  result: { name: 'Iron Sword', damage: 8, type: 'weapon' },
+  materials: { iron: 5, wood: 2 }
+},
+{
+  id: 'steel_sword',
+  name: 'Steel Sword',
+  type: 'weapon',
+  result: { name: 'Steel Sword', damage: 15, type: 'weapon' },
+  materials: { iron: 10, crystal: 1 }
+},
+{
+  id: 'leather_armor',
+  name: 'Leather Armor',
+  type: 'armor',
+  result: { name: 'Leather Armor', defense: 5, type: 'armor' },
+  materials: { leather: 8 }
+},
+{
+  id: 'iron_armor',
+  name: 'Iron Armor',
+  type: 'armor',
+  result: { name: 'Iron Armor', defense: 10, type: 'armor' },
+  materials: { iron: 15, leather: 5 }
+},
+{
+  id: 'health_potion',
+  name: 'Health Potion',
+  type: 'consumable',
+  result: { type: 'potion', amount: 3 },
+  materials: { essence: 2, crystal: 1 }
+}
+]);
 
 const [spells, setSpells] = useState([
 { id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0 },
@@ -61,6 +100,8 @@ const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 const [camera, setCamera] = useState({ x: 0, y: 0 });
 const [showInventory, setShowInventory] = useState(false);
 const [showBase, setShowBase] = useState(false);
+const [showSkills, setShowSkills] = useState(false);
+const [showCrafting, setShowCrafting] = useState(false);
 const [buildMode, setBuildMode] = useState(null);
 const [message, setMessage] = useState('');
 const [notifications, setNotifications] = useState([]);
@@ -347,6 +388,39 @@ showMessage(`Equipped: ${item.name}`);
 }
 };
 
+const craftItem = useCallback((recipe) => {
+// Check if player has materials
+const hasMaterials = Object.entries(recipe.materials).every(([mat, amount]) => {
+  return (inventory.materials[mat] || 0) >= amount;
+});
+
+if (!hasMaterials) {
+  showMessage('Not enough materials!');
+  return;
+}
+
+// Deduct materials
+setInventory(prev => {
+  const newMaterials = { ...prev.materials };
+  Object.entries(recipe.materials).forEach(([mat, amount]) => {
+    newMaterials[mat] -= amount;
+  });
+
+  let newInventory = { ...prev, materials: newMaterials };
+
+  // Add crafted item
+  if (recipe.type === 'consumable') {
+    newInventory.potions += recipe.result.amount;
+  } else {
+    newInventory.items = [...prev.items, { ...recipe.result, id: Math.random() }];
+  }
+
+  return newInventory;
+});
+
+showMessage(`Crafted ${recipe.name}!`);
+}, [inventory.materials, showMessage]);
+
 const placeStructure = useCallback((worldX, worldY) => {
 if (!buildMode) return;
 
@@ -471,6 +545,8 @@ const handleKeyDown = (e) => {
 setKeys(prev => ({ ...prev, [e.key.toLowerCase()]: true }));
 
   if (e.key === 'i' || e.key === 'I') setShowInventory(prev => !prev);
+  if (e.key === 'k' || e.key === 'K') setShowSkills(prev => !prev);
+  if (e.key === 'c' || e.key === 'C') setShowCrafting(prev => !prev);
   if (e.key === 'b' || e.key === 'B') {
     setShowBase(prev => !prev);
     if (!showBase) setBuildMode(null);
@@ -541,7 +617,7 @@ const handleMouseMove = (e) => {
 };
 
 const handleClick = (e) => {
-  if (gameState === 'playing' && !showInventory && !showBase) {
+  if (gameState === 'playing' && !showInventory && !showBase && !showSkills && !showCrafting) {
     castSpell(0);
   } else if (buildMode && showBase) {
     const rect = canvas.getBoundingClientRect();
@@ -1346,6 +1422,71 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
           </div>
         </div>
       )}
+    </div>
+  )}
+
+  {showCrafting && (
+    <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-2xl max-h-96 overflow-y-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold flex items-center gap-2">
+          <Hammer /> Crafting
+        </h3>
+        <X className="cursor-pointer" onClick={() => setShowCrafting(false)} />
+      </div>
+
+      <div className="mb-4">
+        <h4 className="font-bold mb-2">Materials:</h4>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(inventory.materials).map(([mat, amount]) => (
+            <div key={mat} className="p-2 bg-gray-700 rounded text-sm">
+              {mat.charAt(0).toUpperCase() + mat.slice(1)}: {amount}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-bold mb-2">Recipes:</h4>
+        <div className="space-y-2">
+          {recipes.map(recipe => {
+            const canCraft = Object.entries(recipe.materials).every(([mat, amount]) =>
+              (inventory.materials[mat] || 0) >= amount
+            );
+
+            return (
+              <div key={recipe.id} className="bg-gray-700 p-3 rounded">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="font-bold text-sm">{recipe.name}</p>
+                    <p className="text-xs text-gray-400 capitalize">{recipe.type}</p>
+                    <div className="text-xs mt-1">
+                      <p className="text-gray-300">Required:</p>
+                      {Object.entries(recipe.materials).map(([mat, amount]) => (
+                        <span key={mat} className={`inline-block mr-2 ${
+                          (inventory.materials[mat] || 0) >= amount ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {mat}: {amount}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    disabled={!canCraft}
+                    onClick={() => craftItem(recipe)}
+                    className={`px-3 py-1 rounded text-sm ${
+                      canCraft
+                        ? 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                        : 'bg-gray-600 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    Craft
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   )}
 </div>

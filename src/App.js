@@ -1,45 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react';
-import {
-  Heart,
-  Zap,
-  Package,
-  Home,
-  TrendingUp,
-  X,
-  Shield,
-  Hammer,
-  AlertCircle,
-  Star,
-  /* Swords, */
-  Sparkles,
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Star, Swords, Sparkles } from 'lucide-react';
 
-// Lightweight polyfill for React's proposed useEvent API
-// Creates a stable function whose current implementation is always fresh.
-function useEvent(fn) {
-  const ref = useRef(fn);
-  useLayoutEffect(() => { ref.current = fn; });
-  return useCallback((...args) => ref.current?.(...args), []);
-}
-
-// ===== Constants =====
-const MAP_WIDTH = 2500;
-const MAP_HEIGHT = 2000;
-const CANVAS_WIDTH = 1000;
-const CANVAS_HEIGHT = 600;
-
-export default function App() {
-  // ===== Refs =====
+const VoxelRPG = () => {
   const canvasRef = useRef(null);
-  // Placeholders kept for future work (commented to satisfy CI lint):
-  // const gameLoopRef = useRef(null);
-  const spawnTimerRef = useRef(0);
-  const bossTimerRef = useRef(0);
-  // const regenTimerRef = useRef(0);
-
-  // ===== Core State =====
-  const [gameState, setGameState] = useState('intro'); // 'intro' | 'playing' | 'gameover'
-
+  const [gameState, setGameState] = useState('intro');
   const [player, setPlayer] = useState({
     x: 1000,
     y: 1000,
@@ -57,61 +21,104 @@ export default function App() {
     critChance: 5,
     critDamage: 150,
     dodgeChance: 5,
-    skillPoints: 0,
+    skillPoints: 0
   });
-
-  const [equipment, setEquipment] = useState({ weapon: null, armor: null, accessory: null });
-
+  
+  const [equipment, setEquipment] = useState({
+    weapon: null,
+    armor: null,
+    accessory: null
+  });
+  
   const [inventory, setInventory] = useState({
     gold: 100,
     essence: 5,
     crystals: 3,
     potions: 3,
     items: [],
-    materials: { wood: 10, iron: 5, leather: 8, crystal: 2 },
+    materials: {
+      wood: 10,
+      iron: 5,
+      leather: 8,
+      crystal: 2
+    }
   });
-
+  
   const [skills, setSkills] = useState({
     combat: {
       powerStrike: { level: 0, maxLevel: 5, cost: 1, bonus: 5, desc: 'Increases damage by 5% per level' },
       criticalHit: { level: 0, maxLevel: 5, cost: 1, bonus: 3, desc: 'Increases crit chance by 3% per level' },
-      deadlyBlow: { level: 0, maxLevel: 3, cost: 2, bonus: 10, desc: 'Increases crit damage by 10% per level' },
+      deadlyBlow: { level: 0, maxLevel: 3, cost: 2, bonus: 10, desc: 'Increases crit damage by 10% per level' }
     },
     magic: {
       manaPool: { level: 0, maxLevel: 5, cost: 1, bonus: 20, desc: 'Increases max mana by 20 per level' },
       spellPower: { level: 0, maxLevel: 5, cost: 1, bonus: 10, desc: 'Increases spell damage by 10% per level' },
-      fastCasting: { level: 0, maxLevel: 3, cost: 2, bonus: 15, desc: 'Reduces spell cooldowns by 15% per level' },
+      fastCasting: { level: 0, maxLevel: 3, cost: 2, bonus: 15, desc: 'Reduces spell cooldowns by 15% per level' }
     },
     defense: {
       ironSkin: { level: 0, maxLevel: 5, cost: 1, bonus: 2, desc: 'Increases defense by 2 per level' },
       vitality: { level: 0, maxLevel: 5, cost: 1, bonus: 25, desc: 'Increases max health by 25 per level' },
-      evasion: { level: 0, maxLevel: 5, cost: 1, bonus: 2, desc: 'Increases dodge chance by 2% per level' },
+      evasion: { level: 0, maxLevel: 5, cost: 1, bonus: 2, desc: 'Increases dodge chance by 2% per level' }
     },
     utility: {
       swiftness: { level: 0, maxLevel: 3, cost: 2, bonus: 0.2, desc: 'Increases movement speed by 0.2 per level' },
       fortune: { level: 0, maxLevel: 5, cost: 1, bonus: 15, desc: 'Increases gold/loot drops by 15% per level' },
-      regeneration: { level: 0, maxLevel: 3, cost: 2, bonus: 0.5, desc: 'Regenerate 0.5 HP/sec per level' },
-    },
+      regeneration: { level: 0, maxLevel: 3, cost: 2, bonus: 0.5, desc: 'Regenerate 0.5 HP/sec per level' }
+    }
   });
-
-  // Placeholder: setter not used yet; keep data but silence lint.
-  const [recipes /* , setRecipes */] = useState([
-    { id: 'iron_sword', name: 'Iron Sword', type: 'weapon', result: { name: 'Iron Sword', damage: 8, type: 'weapon' }, materials: { iron: 5, wood: 2 } },
-    { id: 'steel_sword', name: 'Steel Sword', type: 'weapon', result: { name: 'Steel Sword', damage: 15, type: 'weapon' }, materials: { iron: 10, crystal: 1 } },
-    { id: 'leather_armor', name: 'Leather Armor', type: 'armor', result: { name: 'Leather Armor', defense: 5, type: 'armor' }, materials: { leather: 8 } },
-    { id: 'iron_armor', name: 'Iron Armor', type: 'armor', result: { name: 'Iron Armor', defense: 10, type: 'armor' }, materials: { iron: 15, leather: 5 } },
-    { id: 'health_potion', name: 'Health Potion', type: 'consumable', result: { type: 'potion', amount: 3 }, materials: { essence: 2, crystal: 1 } },
+  
+  const [recipes, setRecipes] = useState([
+    { 
+      id: 'iron_sword', 
+      name: 'Iron Sword', 
+      type: 'weapon',
+      result: { name: 'Iron Sword', damage: 8, type: 'weapon' },
+      materials: { iron: 5, wood: 2 }
+    },
+    { 
+      id: 'steel_sword', 
+      name: 'Steel Sword', 
+      type: 'weapon',
+      result: { name: 'Steel Sword', damage: 15, type: 'weapon' },
+      materials: { iron: 10, crystal: 1 }
+    },
+    { 
+      id: 'leather_armor', 
+      name: 'Leather Armor', 
+      type: 'armor',
+      result: { name: 'Leather Armor', defense: 5, type: 'armor' },
+      materials: { leather: 8 }
+    },
+    { 
+      id: 'iron_armor', 
+      name: 'Iron Armor', 
+      type: 'armor',
+      result: { name: 'Iron Armor', defense: 10, type: 'armor' },
+      materials: { iron: 15, leather: 5 }
+    },
+    { 
+      id: 'health_potion', 
+      name: 'Health Potion', 
+      type: 'consumable',
+      result: { type: 'potion', amount: 3 },
+      materials: { essence: 2, crystal: 1 }
+    }
   ]);
-
+  
   const [spells, setSpells] = useState([
     { id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0, maxCooldown: 60 },
     { id: 'lightning', name: 'Lightning', cost: 25, damage: 40, unlocked: false, cooldown: 0, maxCooldown: 90 },
     { id: 'heal', name: 'Heal', cost: 30, heal: 40, unlocked: false, cooldown: 0, maxCooldown: 120 },
-    { id: 'meteor', name: 'Meteor', cost: 50, damage: 80, unlocked: false, cooldown: 0, maxCooldown: 180 },
+    { id: 'meteor', name: 'Meteor', cost: 50, damage: 80, unlocked: false, cooldown: 0, maxCooldown: 180 }
   ]);
-
-  const [base, setBase] = useState({ built: false, x: 1000, y: 1000, structures: [] });
-
+  
+  const [base, setBase] = useState({
+    built: false,
+    x: 1000,
+    y: 1000,
+    structures: []
+  });
+  
   const [enemies, setEnemies] = useState([]);
   const [bosses, setBosses] = useState([]);
   const [projectiles, setProjectiles] = useState([]);
@@ -120,97 +127,64 @@ export default function App() {
   const [terrain, setTerrain] = useState([]);
   const [dungeons, setDungeons] = useState([]);
   const [inDungeon, setInDungeon] = useState(null);
-
   const [keys, setKeys] = useState({});
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [camera, setCamera] = useState({ x: 0, y: 0 });
-
   const [showInventory, setShowInventory] = useState(false);
   const [showBase, setShowBase] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showCrafting, setShowCrafting] = useState(false);
-  const [buildMode, setBuildMode] = useState(null); // {type, name, cost}
-
+  const [buildMode, setBuildMode] = useState(null);
   const [message, setMessage] = useState('');
   const [notifications, setNotifications] = useState([]);
-  // Unused placeholder for now; keep commented to pass CI.
-  // const [quests, setQuests] = useState([
-  //   { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
-  //   { id: 2, title: 'Dungeon Delver', desc: 'Clear a dungeon', progress: 0, goal: 1, reward: 100, complete: false },
-  //   { id: 3, title: 'Boss Slayer', desc: 'Defeat a boss', progress: 0, goal: 1, reward: 200, complete: false },
-  // ]);
+  const [quests, setQuests] = useState([
+    { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
+    { id: 2, title: 'Dungeon Delver', desc: 'Clear a dungeon', progress: 0, goal: 1, reward: 100, complete: false },
+    { id: 3, title: 'Boss Slayer', desc: 'Defeat a boss', progress: 0, goal: 1, reward: 200, complete: false }
+  ]);
+  
+  const gameLoopRef = useRef(null);
+  const spawnTimerRef = useRef(0);
+  const bossTimerRef = useRef(0);
+  const regenTimerRef = useRef(0);
 
-  // ===== Mirror Refs (fresh reads inside stable handlers) =====
-  const keysRef = useRef(keys);
-  const mousePosRef = useRef(mousePos);
-  const playerRef = useRef(player);
-  const enemiesRef = useRef(enemies);
-  const bossesRef = useRef(bosses);
-  const projectilesRef = useRef(projectiles);
-  const particlesRef = useRef(particles);
-  const lootRef = useRef(loot);
-  const dungeonsRef = useRef(dungeons);
-  const exitInProgressRef = useRef(false);
-  const reentryLockRef = useRef(0);
-  const spawnPauseRef = useRef(0);
-  const skillsRef = useRef(skills);
-  const cameraRef = useRef(camera);
-  const buildModeRef = useRef(buildMode);
-  const showInventoryRef = useRef(showInventory);
-  const showBaseRef = useRef(showBase);
-  const showSkillsRef = useRef(showSkills);
-  const showCraftingRef = useRef(showCrafting);
+  const MAP_WIDTH = 2500;
+  const MAP_HEIGHT = 2000;
+  const CANVAS_WIDTH = 1000;
+  const CANVAS_HEIGHT = 600;
 
-  useEffect(() => { keysRef.current = keys; }, [keys]);
-  useEffect(() => { mousePosRef.current = mousePos; }, [mousePos]);
-  useEffect(() => { playerRef.current = player; }, [player]);
-  useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
-  useEffect(() => { bossesRef.current = bosses; }, [bosses]);
-  useEffect(() => { projectilesRef.current = projectiles; }, [projectiles]);
-  useEffect(() => { particlesRef.current = particles; }, [particles]);
-  useEffect(() => { lootRef.current = loot; }, [loot]);
-  useEffect(() => { dungeonsRef.current = dungeons; }, [dungeons]);
-  useEffect(() => { skillsRef.current = skills; }, [skills]);
-  useEffect(() => { cameraRef.current = camera; }, [camera]);
-  useEffect(() => { buildModeRef.current = buildMode; }, [buildMode]);
-  useEffect(() => { showInventoryRef.current = showInventory; }, [showInventory]);
-  useEffect(() => { showBaseRef.current = showBase; }, [showBase]);
-  useEffect(() => { showSkillsRef.current = showSkills; }, [showSkills]);
-  useEffect(() => { showCraftingRef.current = showCrafting; }, [showCrafting]);
-
-  // ===== Utilities =====
-  const showMessage = (msg) => {
-    setMessage(msg);
-    setTimeout(() => setMessage(''), 3000);
-  };
-
-  const showNotification = (msg, type = 'info') => {
-    const id = Math.random();
-    setNotifications((prev) => [...prev, { id, msg, type }]);
-    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 4000);
-  };
-
+  // Calculate total skill bonuses
   const getSkillBonus = (category, skillName, baseValue = 0) => {
     const skill = skills[category]?.[skillName];
     if (!skill) return baseValue;
-    return baseValue + skill.level * skill.bonus;
+    return baseValue + (skill.level * skill.bonus);
   };
 
-  // Unused in this version; keep commented to pass CI.
-  // const getTotalDamage = () => {
-  //   let dmg = playerRef.current.damage + (equipment.weapon?.damage || 0);
-  //   const ps = getSkillBonus('combat', 'powerStrike', 0);
-  //   return Math.floor(dmg * (1 + ps / 100));
-  // };
-  const getTotalCritChance = () => playerRef.current.critChance + getSkillBonus('combat', 'criticalHit', 0);
-  const getTotalCritDamage = () => playerRef.current.critDamage + getSkillBonus('combat', 'deadlyBlow', 0);
-  const getTotalDodge = () => playerRef.current.dodgeChance + getSkillBonus('defense', 'evasion', 0);
-  const getTotalSpeed = () => playerRef.current.speed + getSkillBonus('utility', 'swiftness', 0);
+  const getTotalDamage = () => {
+    let damage = player.damage + (equipment.weapon?.damage || 0);
+    const powerStrikeBonus = getSkillBonus('combat', 'powerStrike', 0);
+    damage *= (1 + powerStrikeBonus / 100);
+    return Math.floor(damage);
+  };
 
-  // ===== World Init =====
+  const getTotalCritChance = () => {
+    return player.critChance + getSkillBonus('combat', 'criticalHit', 0);
+  };
+
+  const getTotalCritDamage = () => {
+    return player.critDamage + getSkillBonus('combat', 'deadlyBlow', 0);
+  };
+
+  const getTotalDodge = () => {
+    return player.dodgeChance + getSkillBonus('defense', 'evasion', 0);
+  };
+
+  const getTotalSpeed = () => {
+    return player.speed + getSkillBonus('utility', 'swiftness', 0);
+  };
+
   useEffect(() => {
-    // terrain
-    const t = [];
+    const newTerrain = [];
     for (let x = 0; x < MAP_WIDTH / 20; x++) {
       for (let y = 0; y < MAP_HEIGHT / 20; y++) {
         const noise = Math.sin(x * 0.08) * Math.cos(y * 0.08) + Math.sin(x * 0.2) * 0.3;
@@ -218,289 +192,60 @@ export default function App() {
         if (noise > 0.6) type = 'forest';
         else if (noise < -0.4) type = 'water';
         else if (Math.random() > 0.97) type = 'rock';
-        t.push({ x: x * 20, y: y * 20, type });
+        
+        newTerrain.push({ x: x * 20, y: y * 20, type });
       }
     }
-    setTerrain(t);
-
-    // dungeons
-    const ds = [];
-    for (let i = 0; i < 5; i++) ds.push({ id: i, x: 300 + i * 450, y: 300 + (i % 2) * 800, cleared: false, enemies: [] });
-    setDungeons(ds);
+    setTerrain(newTerrain);
+    
+    const newDungeons = [];
+    for (let i = 0; i < 5; i++) {
+      newDungeons.push({
+        id: i,
+        x: 300 + i * 450,
+        y: 300 + (i % 2) * 800,
+        cleared: false,
+        enemies: []
+      });
+    }
+    setDungeons(newDungeons);
   }, []);
 
-  // ===== Auto-Save System =====
-  // Load game on startup
-  useEffect(() => {
-    const loadGame = () => {
-      try {
-        const saved = localStorage.getItem('rpg_save');
-        if (saved) {
-          const data = JSON.parse(saved);
-          setPlayer(p => ({
-            ...p,
-            level: data.level || p.level,
-            xp: data.xp || p.xp,
-            health: data.health || p.health,
-            maxHealth: data.maxHealth || p.maxHealth,
-            mana: data.mana || p.mana,
-            maxMana: data.maxMana || p.maxMana,
-            damage: data.damage || p.damage,
-            defense: data.defense || p.defense,
-            skillPoints: data.skillPoints || p.skillPoints,
-            x: data.x || p.x,
-            y: data.y || p.y
-          }));
-          setInventory(inv => ({
-            ...inv,
-            gold: data.gold || inv.gold,
-            items: data.items || inv.items,
-            materials: data.materials || inv.materials,
-            essence: data.essence || inv.essence,
-            crystals: data.crystals || inv.crystals,
-            potions: data.potions || inv.potions
-          }));
-          if (data.equipment) setEquipment(data.equipment);
-          if (data.skills) setSkills(data.skills);
-          showNotification('Game loaded!', 'success');
-        }
-      } catch (err) {
-        console.error('Load failed:', err);
-      }
-    };
-    
-    loadGame();
-  }, []);
+  const startGame = () => {
+    setGameState('playing');
+    showNotification('Your journey begins... The wound burns with power.', 'info');
+  };
 
-  // Auto-save every 30 seconds during gameplay
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-    
-    const saveInterval = setInterval(() => {
-      try {
-        const saveData = {
-          level: player.level,
-          xp: player.xp,
-          health: player.health,
-          maxHealth: player.maxHealth,
-          mana: player.mana,
-          maxMana: player.maxMana,
-          damage: player.damage,
-          defense: player.defense,
-          skillPoints: player.skillPoints,
-          x: player.x,
-          y: player.y,
-          gold: inventory.gold,
-          items: inventory.items,
-          materials: inventory.materials,
-          essence: inventory.essence,
-          crystals: inventory.crystals,
-          potions: inventory.potions,
-          equipment: equipment,
-          skills: skills,
-          timestamp: Date.now()
-        };
-        localStorage.setItem('rpg_save', JSON.stringify(saveData));
-      } catch (err) {
-        console.error('Save failed:', err);
-      }
-    }, 30000); // 30 seconds
+  const showMessage = (msg) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(''), 3000);
+  };
 
-    return () => clearInterval(saveInterval);
-  }, [player, inventory, equipment, skills, gameState]);
+  const showNotification = (msg, type = 'info') => {
+    const id = Math.random();
+    setNotifications(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 4000);
+  };
 
-  // ===== Actions =====
   const drinkPotion = () => {
-    const p = playerRef.current;
-    if (inventory.potions > 0 && p.health < p.maxHealth) {
-      setPlayer((pp) => ({ ...pp, health: Math.min(pp.maxHealth, pp.health + 50) }));
-      setInventory((inv) => ({ ...inv, potions: inv.potions - 1 }));
+    if (inventory.potions > 0 && player.health < player.maxHealth) {
+      setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + 50) }));
+      setInventory(prev => ({ ...prev, potions: prev.potions - 1 }));
       showMessage('Health restored!');
     }
   };
 
-  // Placeholder kept commented for now to pass CI.
-  // const updateQuest = (questId, progress) => { /* wired in later PR */ };
-
-  const craftItem = (recipe) => {
-    const has = Object.entries(recipe.materials).every(([m, amt]) => (inventory.materials[m] || 0) >= amt);
-    if (!has) return showMessage('Not enough materials!');
-    setInventory((prev) => {
-      const mats = { ...prev.materials };
-      Object.entries(recipe.materials).forEach(([m, amt]) => (mats[m] -= amt));
-      const next = { ...prev, materials: mats };
-      if (recipe.type === 'consumable') next.potions += recipe.result.amount;
-      else next.items = [...prev.items, { ...recipe.result, type: recipe.type, id: Math.random() }];
-      return next;
-    });
-    showMessage(`Crafted ${recipe.name}!`);
-  };
-
-  const createParticles = (x, y, color, count) => {
-    const arr = [];
-    for (let i = 0; i < count; i++) arr.push({ x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 30, color });
-    setParticles((prev) => [...prev, ...arr].slice(-200));
-  };
-
-  const castSpell = (index) => {
-    const s = spells[index];
-    const p = playerRef.current;
-    if (!s || !s.unlocked || s.cooldown > 0 || p.mana < s.cost) return;
-    const mp = mousePosRef.current;
-    const ang = Math.atan2(mp.y - p.y, mp.x - p.x);
-    if (s.id === 'heal') {
-      createParticles(p.x, p.y, '#00ff00', 15);
-      setPlayer((pp) => ({ ...pp, health: Math.min(pp.maxHealth, pp.health + s.heal), mana: pp.mana - s.cost }));
-    } else {
-      const spb = getSkillBonus('magic', 'spellPower', 0);
-      const total = Math.floor(s.damage * (1 + spb / 100));
-      const proj = { id: Math.random(), x: p.x, y: p.y, vx: Math.cos(ang) * 8, vy: Math.sin(ang) * 8, damage: total + (equipment.weapon?.damage || 0), type: s.id, life: 100 };
-      setProjectiles((prev) => [...prev, proj]);
-      setPlayer((pp) => ({ ...pp, mana: pp.mana - s.cost }));
-    }
-    const cdr = getSkillBonus('magic', 'fastCasting', 0);
-    const cd = Math.floor(s.maxCooldown * (1 - cdr / 100));
-    setSpells((prev) => prev.map((sp, i) => (i === index ? { ...sp, cooldown: cd } : sp)));
-  };
-
-  const dropLoot = (x, y, isBoss = false) => {
-    const fortune = getSkillBonus('utility', 'fortune', 0);
-    const luck = 1 + fortune / 100;
-    const table = isBoss
-      ? [
-          { type: 'gold', value: Math.floor((50 + Math.random() * 50) * luck), chance: 1 },
-          { type: 'essence', value: 3, chance: 1 },
-          { type: 'potion', value: 2, chance: 1 },
-          { type: 'material', mat: 'iron', value: 5, chance: 1 },
-          { type: 'material', mat: 'crystal', value: 2, chance: 1 },
-          { type: 'weapon', value: { name: 'Legendary Blade', damage: 20 }, chance: 0.5 },
-          { type: 'armor', value: { name: 'Dragon Scale Armor', defense: 15 }, chance: 0.5 },
-        ]
-      : [
-          { type: 'gold', value: Math.floor((5 + Math.random() * 15) * luck), chance: 1 },
-          { type: 'essence', value: 1, chance: 0.3 },
-          { type: 'potion', value: 1, chance: 0.15 },
-          { type: 'material', mat: 'wood', value: 2, chance: 0.4 },
-          { type: 'material', mat: 'leather', value: 1, chance: 0.3 },
-          { type: 'material', mat: 'iron', value: 1, chance: 0.2 },
-          { type: 'weapon', value: { name: 'Iron Sword', damage: 5 }, chance: 0.05 },
-          { type: 'armor', value: { name: 'Leather Armor', defense: 3 }, chance: 0.05 },
-        ];
-    const drops = table.filter((it) => Math.random() < it.chance).map((it) => ({ id: Math.random(), x, y, type: it.type, value: it.value, mat: it.mat, life: 2400 }));
-    setLoot((prev) => [...prev, ...drops]);
-  };
-
-  const pickupLoot = (item) => {
-    if (item.type === 'gold') {
-      setInventory((inv) => ({ ...inv, gold: inv.gold + item.value }));
-      showMessage(`+${item.value} gold`);
-    } else if (item.type === 'essence') {
-      setInventory((inv) => ({ ...inv, essence: inv.essence + item.value }));
-      showMessage(`+${item.value} essence`);
-    } else if (item.type === 'potion') {
-      setInventory((inv) => ({ ...inv, potions: inv.potions + item.value }));
-      showMessage(`+${item.value} potion`);
-    } else if (item.type === 'material') {
-      setInventory((inv) => ({ ...inv, materials: { ...inv.materials, [item.mat]: (inv.materials[item.mat] || 0) + item.value } }));
-      showMessage(`+${item.value} ${item.mat}`);
-    } else if (item.type === 'weapon' || item.type === 'armor') {
-      setInventory((inv) => ({ ...inv, items: [...inv.items, { ...item.value, type: item.type, id: Math.random() }] }));
-      showMessage(`Found: ${item.value.name}!`);
-    }
-  };
-
-  const equipItem = (item) => {
-    if (item.type === 'weapon') {
-      const old = equipment.weapon;
-      setEquipment((e) => ({ ...e, weapon: item }));
-      if (old) setInventory((inv) => ({ ...inv, items: [...inv.items, old] }));
-      setInventory((inv) => ({ ...inv, items: inv.items.filter((i) => i.id !== item.id) }));
-      showMessage(`Equipped: ${item.name}`);
-    } else if (item.type === 'armor') {
-      const old = equipment.armor;
-      setEquipment((e) => ({ ...e, armor: item }));
-      if (old) setInventory((inv) => ({ ...inv, items: [...inv.items, old] }));
-      setInventory((inv) => ({ ...inv, items: inv.items.filter((i) => i.id !== item.id) }));
-      setPlayer((p) => ({ ...p, defense: item.defense }));
-      showMessage(`Equipped: ${item.name}`);
-    }
-  };
-
-  const placeStructure = (worldX, worldY) => {
-    const bm = buildModeRef.current;
-    if (!bm) return;
-    const cost = bm.cost;
-    if (inventory.gold < cost.gold || inventory.essence < cost.essence) return showMessage('Not enough resources!');
-    setInventory((inv) => ({ ...inv, gold: inv.gold - cost.gold, essence: inv.essence - cost.essence }));
-    setBase((b) => ({ ...b, structures: [...b.structures, { type: bm.type, x: worldX, y: worldY, id: Math.random() }] }));
-    showMessage(`${bm.name} built!`);
-  };
-
-  const enterDungeon = (d) => {
-    if (d.cleared) return showMessage('This dungeon has been cleared!');
-    setInDungeon(d.id);
-    showNotification('Entering dungeon... Press E near entrance to exit', 'warning');
-    const dungeonEnemies = [];
-    for (let i = 0; i < 10; i++)
-      dungeonEnemies.push({
-        id: Math.random(),
-        x: d.x + 50 + Math.random() * 300,
-        y: d.y + 50 + Math.random() * 300,
-        spawnX: d.x + 50,
-        spawnY: d.y + 50,
-        health: 80 + playerRef.current.level * 15,
-        maxHealth: 80 + playerRef.current.level * 15,
-        damage: 8 + playerRef.current.level * 3,
-        speed: 0.75,
-        xp: 30,
-        type: 'dungeon_monster',
-        state: 'roaming',
-        roamAngle: Math.random() * Math.PI * 2,
-        aggroSource: null,
-      });
-    setEnemies((prev) => [...prev, ...dungeonEnemies]);
-  };
-
-  const exitDungeon = () => {
-    setInDungeon(null);
-    showMessage('Exited dungeon');
-  };
-
-  const gainXP = (amt) => {
-    setPlayer((prev) => {
-      const newXP = prev.xp + amt;
-      if (newXP >= prev.xpToNext) {
-        const nl = prev.level + 1;
-        showNotification(`Level Up! You are now level ${nl}`, 'success');
-        if (nl === 3) setSpells((s) => s.map((sp) => (sp.id === 'lightning' ? { ...sp, unlocked: true } : sp)));
-        if (nl === 5) setSpells((s) => s.map((sp) => (sp.id === 'heal' ? { ...sp, unlocked: true } : sp)));
-        if (nl === 8) setSpells((s) => s.map((sp) => (sp.id === 'meteor' ? { ...sp, unlocked: true } : sp)));
-        return {
-          ...prev,
-          level: nl,
-          xp: newXP - prev.xpToNext,
-          xpToNext: Math.floor(prev.xpToNext * 1.5),
-          maxHealth: prev.maxHealth + 20,
-          health: prev.maxHealth + 20,
-          maxMana: prev.maxMana + 15,
-          mana: prev.maxMana + 15,
-          damage: prev.damage + 5,
-          skillPoints: prev.skillPoints + 2,
-        };
-      }
-      return { ...prev, xp: newXP };
-    });
-  };
   const upgradeSkill = (category, skillName) => {
-    const skill = skills[category]?.[skillName];
-  
-    if (!skill || player.skillPoints < skill.cost || skill.level >= skill.maxLevel) {
+    const skill = skills[category][skillName];
+    
+    if (player.skillPoints < skill.cost || skill.level >= skill.maxLevel) {
       showMessage('Cannot upgrade skill!');
       return;
     }
-  
+    
     setPlayer(prev => ({ ...prev, skillPoints: prev.skillPoints - skill.cost }));
-  
     setSkills(prev => ({
       ...prev,
       [category]: {
@@ -511,7 +256,7 @@ export default function App() {
         }
       }
     }));
-  
+    
     // Apply immediate stat changes
     if (category === 'magic' && skillName === 'manaPool') {
       setPlayer(prev => ({
@@ -530,763 +275,1428 @@ export default function App() {
     if (category === 'defense' && skillName === 'ironSkin') {
       setPlayer(prev => ({ ...prev, defense: prev.defense + skill.bonus }));
     }
-  
+    
     showMessage(`${skillName} upgraded!`);
   };
-  // ===== Input Handlers (stable via useEvent) =====
-  const onKeyDown = useEvent((e) => {
-    const k = e.key;
-    const lower = k.toLowerCase();
-    setKeys((prev) => ({ ...prev, [lower]: true }));
 
-    if (k === 'i' || k === 'I') {
-      setShowInventory((prev) => {
-        const next = !prev;
-        if (next) {
-          setShowSkills(false);
-          setShowCrafting(false);
-        }
-        return next;
-      });
+  const craftItem = (recipe) => {
+    // Check if player has materials
+    const hasMaterials = Object.entries(recipe.materials).every(([mat, amount]) => {
+      return inventory.materials[mat] >= amount;
+    });
+    
+    if (!hasMaterials) {
+      showMessage('Not enough materials!');
+      return;
     }
-    if (k === 'k' || k === 'K') {
-      setShowSkills((prev) => {
-        const next = !prev;
-        if (next) {
-          setShowInventory(false);
-          setShowCrafting(false);
-        }
-        return next;
+    
+    // Deduct materials
+    setInventory(prev => {
+      const newMaterials = { ...prev.materials };
+      Object.entries(recipe.materials).forEach(([mat, amount]) => {
+        newMaterials[mat] -= amount;
       });
-    }
-    if (k === 'c' || k === 'C') {
-      setShowCrafting((prev) => {
-        const next = !prev;
-        if (next) {
-          setShowInventory(false);
-          setShowSkills(false);
-        }
-        return next;
-      });
-    }
-    if (k === 'b' || k === 'B') {
-      setShowBase((prev) => {
-        if (!prev) setBuildMode(null);
-        return !prev;
-      });
-    }
-    if (k === 'h' || k === 'H') drinkPotion();
-
-    if (k === 'e' || k === 'E') {
-      if (reentryLockRef.current > 0) return;
-      const id = inDungeon;
-      const p = playerRef.current;
-      if (id !== null) {
-        const d = dungeons.find((dd) => dd.id === id);
-        if (d) {
-          const dist = Math.hypot(p.x - d.x, p.y - d.y);
-          if (dist < 150) exitDungeon();
-        }
+      
+      let newInventory = { ...prev, materials: newMaterials };
+      
+      // Add crafted item
+      if (recipe.type === 'consumable') {
+        newInventory.potions += recipe.result.amount;
       } else {
-        dungeons.forEach((d) => {
-          const dist = Math.hypot(p.x - d.x, p.y - d.y);
-          if (dist < 80) enterDungeon(d);
-        });
+        newInventory.items = [...prev.items, { ...recipe.result, id: Math.random() }];
       }
-    }
+      
+      return newInventory;
+    });
+    
+    showMessage(`Crafted ${recipe.name}!`);
+  };
 
-    if (k === 'Escape') {
-      setShowInventory(false);
-      setShowBase(false);
-      setShowSkills(false);
-      setShowCrafting(false);
-      setBuildMode(null);
+  const castSpell = (index) => {
+    const spell = spells[index];
+    if (!spell || !spell.unlocked || spell.cooldown > 0 || player.mana < spell.cost) return;
+    
+    const angle = Math.atan2(mousePos.y - player.y, mousePos.x - player.x);
+    
+    if (spell.id === 'heal') {
+      showMessage('You feel rejuvenated!');
+      createParticles(player.x, player.y, '#00ff00', 15);
+      setPlayer(p => ({ 
+        ...p, 
+        health: Math.min(p.maxHealth, p.health + spell.heal), 
+        mana: p.mana - spell.cost 
+      }));
+    } else {
+      const spellPowerBonus = getSkillBonus('magic', 'spellPower', 0);
+      const totalSpellDamage = Math.floor(spell.damage * (1 + spellPowerBonus / 100));
+      
+      const proj = {
+        id: Math.random(),
+        x: player.x,
+        y: player.y,
+        vx: Math.cos(angle) * 8,
+        vy: Math.sin(angle) * 8,
+        damage: totalSpellDamage + (equipment.weapon?.damage || 0),
+        type: spell.id,
+        life: 100,
+        sourceX: player.x,
+        sourceY: player.y
+      };
+      setProjectiles(prev => [...prev, proj]);
+      setPlayer(p => ({ ...p, mana: p.mana - spell.cost }));
     }
+    
+    const cooldownReduction = getSkillBonus('magic', 'fastCasting', 0);
+    const adjustedCooldown = Math.floor(spell.maxCooldown * (1 - cooldownReduction / 100));
+    
+    setSpells(prev => prev.map((s, i) => 
+      i === index ? { ...s, cooldown: adjustedCooldown } : s
+    ));
+  };
 
-    if (k >= '1' && k <= '4') castSpell(parseInt(k, 10) - 1);
+  const createParticles = (x, y, color, count) => {
+  const newParticles = [];
+  for (let i = 0; i < count; i++) {
+    newParticles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 4,
+      vy: (Math.random() - 0.5) * 4,
+      life: 30,
+      color
+    });
+  }
+  setParticles(prev => {
+    const combined = [...prev, ...newParticles];
+    // Keep only the most recent 100 particles
+    return combined.slice(-100);
   });
+};
 
-  const onKeyUp = useEvent((e) => setKeys((prev) => ({ ...prev, [e.key.toLowerCase()]: false })));
+  const dropLoot = (x, y, isBoss = false) => {
+    const fortuneBonus = getSkillBonus('utility', 'fortune', 0);
+    const luckMultiplier = 1 + (fortuneBonus / 100);
+    
+    const lootTable = isBoss ? [
+      { type: 'gold', value: Math.floor((50 + Math.random() * 50) * luckMultiplier), chance: 1 },
+      { type: 'essence', value: 3, chance: 1 },
+      { type: 'potion', value: 2, chance: 1 },
+      { type: 'material', mat: 'iron', value: 5, chance: 1 },
+      { type: 'material', mat: 'crystal', value: 2, chance: 1 },
+      { type: 'weapon', value: { name: 'Legendary Blade', damage: 20 }, chance: 0.5 },
+      { type: 'armor', value: { name: 'Dragon Scale Armor', defense: 15 }, chance: 0.5 }
+    ] : [
+      { type: 'gold', value: Math.floor((5 + Math.random() * 15) * luckMultiplier), chance: 1 },
+      { type: 'essence', value: 1, chance: 0.3 },
+      { type: 'potion', value: 1, chance: 0.15 },
+      { type: 'material', mat: 'wood', value: 2, chance: 0.4 },
+      { type: 'material', mat: 'leather', value: 1, chance: 0.3 },
+      { type: 'material', mat: 'iron', value: 1, chance: 0.2 },
+      { type: 'weapon', value: { name: 'Iron Sword', damage: 5 }, chance: 0.05 },
+      { type: 'armor', value: { name: 'Leather Armor', defense: 3 }, chance: 0.05 }
+    ];
+    
+    lootTable.forEach(item => {
+      if (Math.random() < item.chance) {
+        setLoot(prev => [...prev, {
+          id: Math.random(),
+          x, y,
+          type: item.type,
+          value: item.value,
+          mat: item.mat,
+          life: 2400
+        }]);
+      }
+    });
+  };
 
-  const onMouseMove = useEvent((e) => {
+  const pickupLoot = (item) => {
+    if (item.type === 'gold') {
+      setInventory(prev => ({ ...prev, gold: prev.gold + item.value }));
+      showMessage(`+${item.value} gold`);
+    } else if (item.type === 'essence') {
+      setInventory(prev => ({ ...prev, essence: prev.essence + item.value }));
+      showMessage(`+${item.value} essence`);
+    } else if (item.type === 'potion') {
+      setInventory(prev => ({ ...prev, potions: prev.potions + item.value }));
+      showMessage(`+${item.value} potion`);
+    } else if (item.type === 'material') {
+      setInventory(prev => ({
+        ...prev,
+        materials: {
+          ...prev.materials,
+          [item.mat]: (prev.materials[item.mat] || 0) + item.value
+        }
+      }));
+      showMessage(`+${item.value} ${item.mat}`);
+    } else if (item.type === 'weapon' || item.type === 'armor') {
+      setInventory(prev => ({ 
+        ...prev, 
+        items: [...prev.items, { ...item.value, type: item.type, id: Math.random() }] 
+      }));
+      showMessage(`Found: ${item.value.name}!`);
+    }
+  };
+
+  const equipItem = (item) => {
+    if (item.type === 'weapon') {
+      const oldWeapon = equipment.weapon;
+      setEquipment(prev => ({ ...prev, weapon: item }));
+      if (oldWeapon) {
+        setInventory(prev => ({ ...prev, items: [...prev.items, oldWeapon] }));
+      }
+      setInventory(prev => ({ ...prev, items: prev.items.filter(i => i.id !== item.id) }));
+      showMessage(`Equipped: ${item.name}`);
+    } else if (item.type === 'armor') {
+      const oldArmor = equipment.armor;
+      setEquipment(prev => ({ ...prev, armor: item }));
+      if (oldArmor) {
+        setInventory(prev => ({ ...prev, items: [...prev.items, oldArmor] }));
+      }
+      setInventory(prev => ({ ...prev, items: prev.items.filter(i => i.id !== item.id) }));
+      setPlayer(prev => ({ ...prev, defense: item.defense }));
+      showMessage(`Equipped: ${item.name}`);
+    }
+  };
+
+  const placeStructure = (worldX, worldY) => {
+    if (!buildMode) return;
+    
+    const cost = buildMode.cost;
+    if (inventory.gold < cost.gold || inventory.essence < cost.essence) {
+      showMessage('Not enough resources!');
+      return;
+    }
+    
+    setInventory(prev => ({
+      ...prev,
+      gold: prev.gold - cost.gold,
+      essence: prev.essence - cost.essence
+    }));
+    
+    setBase(prev => ({
+      ...prev,
+      structures: [...prev.structures, {
+        type: buildMode.type,
+        x: worldX,
+        y: worldY,
+        id: Math.random()
+      }]
+    }));
+    
+    showMessage(`${buildMode.name} built!`);
+  };
+
+  const enterDungeon = (dungeon) => {
+    if (dungeon.cleared) {
+      showMessage('This dungeon has been cleared!');
+      return;
+    }
+    
+    setInDungeon(dungeon.id);
+    showNotification('Entering dungeon... Press E near entrance to exit', 'warning');
+    
+    const dungeonEnemies = [];
+    for (let i = 0; i < 10; i++) {
+      dungeonEnemies.push({
+        id: Math.random(),
+        x: dungeon.x + 50 + Math.random() * 300,
+        y: dungeon.y + 50 + Math.random() * 300,
+        spawnX: dungeon.x + 50,
+        spawnY: dungeon.y + 50,
+        health: 80 + player.level * 15,
+        maxHealth: 80 + player.level * 15,
+        damage: 8 + player.level * 3,
+        speed: 0.75,
+        xp: 30,
+        type: 'dungeon_monster',
+        state: 'roaming',
+        roamAngle: Math.random() * Math.PI * 2,
+        aggroSource: null
+      });
+    }
+    
+    setEnemies(prev => [...prev, ...dungeonEnemies]);
+  };
+
+  const exitDungeon = () => {
+    setInDungeon(null);
+    showMessage('Exited dungeon');
+  };
+
+  const updateQuest = (questId, progress) => {
+    setQuests(prev => prev.map(q => {
+      if (q.id === questId && !q.complete) {
+        const newProgress = q.progress + progress;
+        if (newProgress >= q.goal) {
+          setInventory(inv => ({ ...inv, gold: inv.gold + q.reward }));
+          showNotification(`Quest Complete: ${q.title}! +${q.reward} gold`, 'success');
+          return { ...q, progress: newProgress, complete: true };
+        }
+        return { ...q, progress: newProgress };
+      }
+      return q;
+    }));
+  };
+
+  const gainXP = (amount) => {
+    setPlayer(prev => {
+      const newXP = prev.xp + amount;
+      if (newXP >= prev.xpToNext) {
+        const newLevel = prev.level + 1;
+        showNotification(`Level Up! You are now level ${newLevel}`, 'success');
+        
+        if (newLevel === 3) {
+          setSpells(s => s.map(sp => sp.id === 'lightning' ? { ...sp, unlocked: true } : sp));
+          showNotification('New spell unlocked: Lightning!', 'info');
+        }
+        if (newLevel === 5) {
+          setSpells(s => s.map(sp => sp.id === 'heal' ? { ...sp, unlocked: true } : sp));
+          showNotification('New spell unlocked: Heal!', 'info');
+        }
+        if (newLevel === 8) {
+          setSpells(s => s.map(sp => sp.id === 'meteor' ? { ...sp, unlocked: true } : sp));
+          showNotification('New spell unlocked: Meteor!', 'info');
+        }
+        
+        return {
+          ...prev,
+          level: newLevel,
+          xp: newXP - prev.xpToNext,
+          xpToNext: Math.floor(prev.xpToNext * 1.5),
+          maxHealth: prev.maxHealth + 20,
+          health: prev.maxHealth + 20,
+          maxMana: prev.maxMana + 15,
+          mana: prev.maxMana + 15,
+          damage: prev.damage + 5,
+          skillPoints: prev.skillPoints + 2
+        };
+      }
+      return { ...prev, xp: newXP };
+    });
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      setKeys(prev => ({ ...prev, [e.key.toLowerCase()]: true }));
+      
+      if (e.key === 'i' || e.key === 'I') {
+        setShowInventory(prev => !prev);
+        setShowSkills(false);
+        setShowCrafting(false);
+      }
+      if (e.key === 'k' || e.key === 'K') {
+        setShowSkills(prev => !prev);
+        setShowInventory(false);
+        setShowCrafting(false);
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        setShowCrafting(prev => !prev);
+        setShowInventory(false);
+        setShowSkills(false);
+      }
+      if (e.key === 'b' || e.key === 'B') {
+        setShowBase(prev => !prev);
+        if (!showBase) setBuildMode(null);
+      }
+      if (e.key === 'h' || e.key === 'H') drinkPotion();
+      if (e.key === 'e' || e.key === 'E') {
+        if (inDungeon !== null) {
+          const dungeon = dungeons.find(d => d.id === inDungeon);
+          if (dungeon) {
+            const dist = Math.sqrt(Math.pow(player.x - dungeon.x, 2) + Math.pow(player.y - dungeon.y, 2));
+            if (dist < 150) {
+              exitDungeon();
+            }
+          }
+        } else {
+          dungeons.forEach(dungeon => {
+            const dist = Math.sqrt(Math.pow(player.x - dungeon.x, 2) + Math.pow(player.y - dungeon.y, 2));
+            if (dist < 80) {
+              enterDungeon(dungeon);
+            }
+          });
+        }
+      }
+      if (e.key === 'Escape') {
+        setShowInventory(false);
+        setShowBase(false);
+        setShowSkills(false);
+        setShowCrafting(false);
+        setBuildMode(null);
+      }
+      if (e.key >= '1' && e.key <= '4') castSpell(parseInt(e.key) - 1);
+    };
+    
+    const handleKeyUp = (e) => {
+      setKeys(prev => ({ ...prev, [e.key.toLowerCase()]: false }));
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [showBase, inDungeon, dungeons, player, inventory, mousePos]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
-    const cam = cameraRef.current;
-    setMousePos({ x: cx + cam.x, y: cy + cam.y });
-  });
-
-  const onCanvasClick = useEvent((e) => {
-    const baseOpen = showBaseRef.current;
-    const invOpen = showInventoryRef.current;
-    const skillsOpen = showSkillsRef.current;
-    const craftOpen = showCraftingRef.current;
-    if (gameState === 'playing' && !invOpen && !baseOpen && !skillsOpen && !craftOpen) castSpell(0);
-    else if (baseOpen && buildModeRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const cam = cameraRef.current;
-      const worldX = e.clientX - rect.left + cam.x;
-      const worldY = e.clientY - rect.top + cam.y;
-      placeStructure(worldX, worldY);
-    }
-  });
-
-  // Subscribe once (stable via useEvent shim)
-  useEffect(() => {
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
+    
+    const handleMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+      
+      setMousePos({
+        x: canvasX + camera.x,
+        y: canvasY + camera.y
+      });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    c.addEventListener('mousemove', onMouseMove);
-    c.addEventListener('click', onCanvasClick);
-    return () => {
-      c.removeEventListener('mousemove', onMouseMove);
-      c.removeEventListener('click', onCanvasClick);
+    
+    const handleClick = (e) => {
+      if (gameState === 'playing' && !showInventory && !showBase && !showSkills && !showCrafting) {
+        castSpell(0);
+      } else if (buildMode && showBase) {
+        const rect = canvas.getBoundingClientRect();
+        const worldX = (e.clientX - rect.left) + camera.x;
+        const worldY = (e.clientY - rect.top) + camera.y;
+        placeStructure(worldX, worldY);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('click', handleClick);
+    
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('click', handleClick);
+    };
+  }, [gameState, camera, buildMode, showBase, showInventory, showSkills, showCrafting, mousePos, player, spells]);
 
-  // Camera follow
   useEffect(() => {
     setCamera({
       x: Math.max(0, Math.min(player.x - CANVAS_WIDTH / 2, MAP_WIDTH - CANVAS_WIDTH)),
-      y: Math.max(0, Math.min(player.y - CANVAS_HEIGHT / 2, MAP_HEIGHT - CANVAS_HEIGHT)),
+      y: Math.max(0, Math.min(player.y - CANVAS_HEIGHT / 2, MAP_HEIGHT - CANVAS_HEIGHT))
     });
   }, [player.x, player.y]);
 
-  // ===== Main Loop (PR1: purity + single-pass updates) =====
-  const tick = useEvent(() => {
-    const t = showBaseRef.current ? 0.1 : 0.25; // time multiplier
-
-    // decay the small locks every frame
-    if (reentryLockRef.current > 0) reentryLockRef.current -= 1;
-    if (spawnPauseRef.current > 0) spawnPauseRef.current = Math.max(0, spawnPauseRef.current - t);
-
-    // --- player movement ---
-    const totalSpeed = getTotalSpeed();
-    const k = keysRef.current;
-    setPlayer((prev) => {
-      let newX = prev.x;
-      let newY = prev.y;
-      let mx = 0;
-      let my = 0;
-      if (k['w']) my -= 1;
-      if (k['s']) my += 1;
-      if (k['a']) mx -= 1;
-      if (k['d']) mx += 1;
-      if (mx !== 0 && my !== 0) {
-        const mag = Math.hypot(mx, my);
-        mx = (mx / mag) * totalSpeed;
-        my = (my / mag) * totalSpeed;
-      } else {
-        mx *= totalSpeed;
-        my *= totalSpeed;
-      }
-      newX = Math.max(20, Math.min(MAP_WIDTH - 20, newX + mx));
-      newY = Math.max(20, Math.min(MAP_HEIGHT - 20, newY + my));
-      const mp = mousePosRef.current;
-      const angle = Math.atan2(mp.y - prev.y, mp.x - prev.x);
-      const regen = getSkillBonus('utility', 'regeneration', 0) * t * 0.016;
-      const next = {
-        ...prev,
-        x: newX,
-        y: newY,
-        facingAngle: angle,
-        mana: Math.min(prev.maxMana, prev.mana + 0.2 * t),
-        health: Math.min(prev.maxHealth, prev.health + regen),
-      };
-      if (next.health <= 0) setGameState('gameover');
-      return next;
-    });
-
-    // --- compute next projectiles (pure) ---
-    const nextProjectiles = projectilesRef.current
-      .map((pr) => ({ ...pr, x: pr.x + pr.vx * t, y: pr.y + pr.vy * t, life: pr.life - 1 }))
-      .filter((pr) => pr.life > 0);
-
-    // --- loot lifetime & pickup (pure) ---
-    setLoot((prev) => {
-      const p = playerRef.current;
-      const next = [];
-      for (const it of prev) {
-        const d = Math.hypot(p.x - it.x, p.y - it.y);
-        if (d < 30) { pickupLoot(it); continue; }
-        const life = it.life - 1;
-        if (life > 0) next.push({ ...it, life });
-      }
-      return next.slice(-50);
-    });
-
-    // --- spells cooldown ---
-    setSpells((prev) => prev.map((s) => ({ ...s, cooldown: Math.max(0, s.cooldown - t) })));
-
-    // --- spawn enemies ---
-    spawnTimerRef.current += t;
-    if (
-      spawnTimerRef.current > 240 &&
-      inDungeon === null &&
-      enemiesRef.current.length < 15 &&
-      spawnPauseRef.current <= 0
-    ) {
-      spawnTimerRef.current = 0;
-      const sx = Math.random() * MAP_WIDTH;
-      const sy = Math.random() * MAP_HEIGHT;
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    
+    const timeMultiplier = showBase ? 0.1 : 0.25;  // Quarter speed everywhere
+    
+    const gameLoop = () => {
+      const totalSpeed = getTotalSpeed();
       
-      // Prevent spawning too close to player
-      const distToPlayer = Math.hypot(
-        sx - playerRef.current.x,
-        sy - playerRef.current.y
-      );
-      if (distToPlayer < 200) {
-        // Skip this spawn if too close to player
-      } else {
+      setPlayer(prev => {
+ 	 let newX = prev.x;
+ 	 let newY = prev.y;
+	  let moveX = 0;
+	  let moveY = 0;
+  
+ 	 if (keys['w']) moveY -= 1;
+ 	 if (keys['s']) moveY += 1;
+ 	 if (keys['a']) moveX -= 1;
+ 	 if (keys['d']) moveX += 1;
+  
+	  // Normalize diagonal movement
+ 	 if (moveX !== 0 && moveY !== 0) {
+	    const magnitude = Math.sqrt(moveX * moveX + moveY * moveY);
+ 	   moveX = (moveX / magnitude) * totalSpeed;
+  	  moveY = (moveY / magnitude) * totalSpeed;
+  	} else {
+  	  moveX *= totalSpeed;
+  	  moveY *= totalSpeed;
+  	}
+  
+ 	 newX += moveX;
+ 	 newY += moveY;
+  
+ 	 newX = Math.max(20, Math.min(MAP_WIDTH - 20, newX));
+ 	 newY = Math.max(20, Math.min(MAP_HEIGHT - 20, newY));
+        
+        const angle = Math.atan2(mousePos.y - prev.y, mousePos.x - prev.x);
+        
+        if (prev.health <= 0) {
+          setGameState('gameover');
+        }
+        
+        // Regeneration
+        const regenAmount = getSkillBonus('utility', 'regeneration', 0) * timeMultiplier * 0.016; // 60 FPS
+        
+        return { 
+          ...prev, 
+          x: newX, 
+          y: newY, 
+          facingAngle: angle, 
+          mana: Math.min(prev.maxMana, prev.mana + 0.2 * timeMultiplier),
+          health: Math.min(prev.maxHealth, prev.health + regenAmount)
+        };
+      });
+      
+      setLoot(prev => {
+	const filtered = prev.filter(item => {
+	  const dx = player.x - item.x;
+	  const dy = player.y - item.y;
+	  const dist = Math.sqrt(dx * dx + dy * dy);
+    
+	  if (dist < 30) {
+	    pickupLoot(item);
+            return false;
+          }
+          return item.life-- > 0;
+        });
+  
+        // Keep only the newest 50 loot items
+        return filtered.slice(-50);
+      });
+       
+      setSpells(prev => prev.map(s => ({ ...s, cooldown: Math.max(0, s.cooldown - timeMultiplier) })));
+      
+      spawnTimerRef.current += timeMultiplier;
+      if (spawnTimerRef.current > 240 && inDungeon === null && enemies.length < 10) {
+        spawnTimerRef.current = 0;
+        
+        const spawnX = Math.random() * MAP_WIDTH;
+        const spawnY = Math.random() * MAP_HEIGHT;
+        
         const types = ['demon', 'shadow', 'beast', 'wraith', 'golem'];
         const type = types[Math.floor(Math.random() * types.length)];
+        
         let stats = { health: 50, damage: 5, speed: 0.8, xp: 20 };
         if (type === 'wraith') stats = { health: 30, damage: 8, speed: 1.2, xp: 25 };
         if (type === 'golem') stats = { health: 100, damage: 10, speed: 0.6, xp: 40 };
-        setEnemies((prev) => [
-          ...prev,
-          {
-            id: Math.random(),
-            x: sx,
-            y: sy,
-            spawnX: sx,
-            spawnY: sy,
-            health: stats.health + playerRef.current.level * 10,
-            maxHealth: stats.health + playerRef.current.level * 10,
-            damage: stats.damage + playerRef.current.level * 2,
-            speed: stats.speed,
-            xp: stats.xp,
-            type,
-            state: 'roaming',
-            roamAngle: Math.random() * Math.PI * 2,
-            aggroSource: null,
-          },
-        ]);
-      }
-    }
-
-    // --- boss spawn (unchanged) ---
-    bossTimerRef.current += t;
-    if (bossTimerRef.current > 1800 && bossesRef.current.length === 0 && inDungeon === null) {
-      bossTimerRef.current = 0;
-      const bx = Math.random() * MAP_WIDTH;
-      const by = Math.random() * MAP_HEIGHT;
-      setBosses([
-        {
+        
+        setEnemies(prev => [...prev, {
           id: Math.random(),
-          x: bx,
-          y: by,
-          health: 500 + playerRef.current.level * 100,
-          maxHealth: 500 + playerRef.current.level * 100,
-          damage: 20 + playerRef.current.level * 5,
+          x: spawnX,
+          y: spawnY,
+          spawnX,
+          spawnY,
+          health: stats.health + player.level * 10,
+          maxHealth: stats.health + player.level * 10,
+          damage: stats.damage + player.level * 2,
+          speed: stats.speed,
+          xp: stats.xp,
+          type,
+          state: 'roaming',
+          roamAngle: Math.random() * Math.PI * 2,
+          aggroSource: null
+        }]);
+      }
+      
+      bossTimerRef.current += timeMultiplier;
+      if (bossTimerRef.current > 1800 && bosses.length === 0 && inDungeon === null) {
+        bossTimerRef.current = 0;
+        
+        const bossX = Math.random() * MAP_WIDTH;
+        const bossY = Math.random() * MAP_HEIGHT;
+        
+        setBosses([{
+          id: Math.random(),
+          x: bossX,
+          y: bossY,
+          health: 500 + player.level * 100,
+          maxHealth: 500 + player.level * 100,
+          damage: 20 + player.level * 5,
           speed: 1.5,
           type: 'boss',
           state: 'idle',
           attackCooldown: 0,
           specialCooldown: 0,
-          aggroSource: null,
-        },
-      ]);
-      showNotification('⚠️ A powerful boss has appeared!', 'warning');
-    }
-
-    // --- enemy AI (pure transform) ---
-    const aiEnemies = enemiesRef.current.map((enemy) => {
-      const p = playerRef.current;
-      const dx = p.x - enemy.x;
-      const dy = p.y - enemy.y;
-      const dist = Math.hypot(dx, dy);
-      let newX = enemy.x;
-      let newY = enemy.y;
-      let newState = enemy.state;
-      let roamAngle = enemy.roamAngle;
-      let aggroSource = enemy.aggroSource;
-      const detection = enemy.state === 'hunting' ? 800 : 400;
-      if (aggroSource) {
-        newState = 'hunting';
-        const adx = aggroSource.x - enemy.x;
-        const ady = aggroSource.y - enemy.y;
-        const ad = Math.hypot(adx, ady);
-        if (ad < 50) {
-          aggroSource = null; newState = 'roaming';
-        } else {
-          newX += (adx / ad) * enemy.speed * 1.3 * t;
-          newY += (ady / ad) * enemy.speed * 1.3 * t;
-        }
-      } else if (dist < detection) {
-        newState = 'chasing';
-        newX += (dx / dist) * enemy.speed * t;
-        newY += (dy / dist) * enemy.speed * t;
-        if (dist < 30) {
-          const dodgeRoll = Math.random() * 100;
-          if (dodgeRoll > getTotalDodge()) {
-            setPlayer((p) => {
-              const actual = Math.max(1, enemy.damage - p.defense);
-              return { ...p, health: p.health - actual * 0.1 * t };
-            });
+          aggroSource: null
+        }]);
+        
+        showNotification('⚠️ A powerful boss has appeared!', 'warning');
+      }
+      
+      setEnemies(prev => prev.map(enemy => {
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        const distToPlayer = Math.sqrt(dx * dx + dy * dy);
+        
+        let newX = enemy.x;
+        let newY = enemy.y;
+        let newState = enemy.state;
+        let roamAngle = enemy.roamAngle;
+        let aggroSource = enemy.aggroSource;
+        
+        const detectionRange = enemy.state === 'hunting' ? 800 : 400;
+        
+        if (aggroSource) {
+          newState = 'hunting';
+          const aggroDx = aggroSource.x - enemy.x;
+          const aggroDy = aggroSource.y - enemy.y;
+          const aggroDist = Math.sqrt(aggroDx * aggroDx + aggroDy * aggroDy);
+          
+          if (aggroDist < 50) {
+            aggroSource = null;
+            newState = 'roaming';
           } else {
-            createParticles(p.x, p.y, '#ffff00', 5);
+            newX = enemy.x + (aggroDx / aggroDist) * enemy.speed * 1.3 * timeMultiplier;
+            newY = enemy.y + (aggroDy / aggroDist) * enemy.speed * 1.3 * timeMultiplier;
+          }
+        } else if (distToPlayer < detectionRange) {
+          newState = 'chasing';
+          newX = enemy.x + (dx / distToPlayer) * enemy.speed * timeMultiplier;
+          newY = enemy.y + (dy / distToPlayer) * enemy.speed * timeMultiplier;
+          
+          if (distToPlayer < 30) {
+            const dodgeRoll = Math.random() * 100;
+            if (dodgeRoll > getTotalDodge()) {
+              setPlayer(p => {
+                const actualDamage = Math.max(1, enemy.damage - p.defense);
+                return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
+              });
+            } else {
+              createParticles(player.x, player.y, '#ffff00', 5);
+            }
+          }
+        } else {
+          newState = 'roaming';
+          
+          const distFromSpawn = Math.sqrt(
+            Math.pow(enemy.x - enemy.spawnX, 2) + Math.pow(enemy.y - enemy.spawnY, 2)
+          );
+          
+          if (distFromSpawn > 150 || Math.random() < 0.02) {
+            roamAngle = Math.random() * Math.PI * 2;
+          }
+          
+          newX = enemy.x + Math.cos(roamAngle) * enemy.speed * 0.5 * timeMultiplier;
+          newY = enemy.y + Math.sin(roamAngle) * enemy.speed * 0.5 * timeMultiplier;
+        }
+        
+        return { ...enemy, x: newX, y: newY, state: newState, roamAngle, aggroSource };
+      }).filter(e => e.health > 0));
+      
+      setBosses(prev => prev.map(boss => {
+        const dx = player.x - boss.x;
+        const dy = player.y - boss.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        let aggroSource = boss.aggroSource;
+        let newX = boss.x;
+        let newY = boss.y;
+        let specialCooldown = Math.max(0, boss.specialCooldown - timeMultiplier);
+        
+        // Boss special ability
+        if (dist < 600 && specialCooldown === 0 && Math.random() < 0.01) {
+          specialCooldown = 300; // 5 second cooldown
+          const angle = Math.atan2(dy, dx);
+          
+          // Shoot 3 projectiles in a spread
+          for (let i = -1; i <= 1; i++) {
+            const spreadAngle = angle + (i * 0.3);
+            setProjectiles(projs => [...projs, {
+              id: Math.random(),
+              x: boss.x,
+              y: boss.y,
+              vx: Math.cos(spreadAngle) * 5,
+              vy: Math.sin(spreadAngle) * 5,
+              damage: boss.damage,
+              type: 'boss_attack',
+              life: 150,
+              sourceX: boss.x,
+              sourceY: boss.y,
+              fromEnemy: true
+            }]);
+          }
+          createParticles(boss.x, boss.y, '#ff0000', 20);
+        }
+        
+        if (aggroSource) {
+          const aggroDx = aggroSource.x - boss.x;
+          const aggroDy = aggroSource.y - boss.y;
+          const aggroDist = Math.sqrt(aggroDx * aggroDx + aggroDy * aggroDy);
+          
+          if (aggroDist < 50) {
+            aggroSource = null;
+          } else {
+            newX = boss.x + (aggroDx / aggroDist) * boss.speed * 1.2 * timeMultiplier;
+            newY = boss.y + (aggroDy / aggroDist) * boss.speed * 1.2 * timeMultiplier;
+          }
+        } else if (dist < 600) {
+          newX = boss.x + (dx / dist) * boss.speed * timeMultiplier;
+          newY = boss.y + (dy / dist) * boss.speed * timeMultiplier;
+          
+          if (dist < 40) {
+            const dodgeRoll = Math.random() * 100;
+            if (dodgeRoll > getTotalDodge()) {
+              setPlayer(p => {
+                const actualDamage = Math.max(1, boss.damage - p.defense);
+                return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
+              });
+            } else {
+              createParticles(player.x, player.y, '#ffff00', 8);
+            }
           }
         }
-      } else {
-        newState = 'roaming';
-        const ds = Math.hypot(enemy.x - enemy.spawnX, enemy.y - enemy.spawnY);
-        if (ds > 150 || Math.random() < 0.02) roamAngle = Math.random() * Math.PI * 2;
-        newX += Math.cos(roamAngle) * enemy.speed * 0.5 * t;
-        newY += Math.sin(roamAngle) * enemy.speed * 0.5 * t;
-      }
-      return { ...enemy, x: newX, y: newY, state: newState, roamAngle, aggroSource };
-    });
-
-    // --- projectile/enemy collisions (pure, single pass) ---
-    const collidedEnemies = [];
-    for (const e of aiEnemies) {
-      let health = e.health;
-      let dead = false;
-      for (const pr of nextProjectiles) {
-        const d = Math.hypot(pr.x - e.x, pr.y - e.y);
-        if (d < 20) {
-          const crit = Math.random() * 100 < getTotalCritChance();
-          const dmg = Math.floor(pr.damage * (crit ? getTotalCritDamage() / 100 : 1));
-          health -= dmg;
-          createParticles(e.x, e.y, crit ? '#ffdd00' : '#ff6600', crit ? 12 : 6);
-          if (health <= 0) { dead = true; break; }
-        }
-      }
-      if (dead) {
-        gainXP(e.xp);
-        dropLoot(e.x, e.y, false);
-      } else {
-        collidedEnemies.push({ ...e, health });
-      }
-    }
-
-    // --- particles life (pure) ---
-    setParticles((prev) => prev.map((pa) => ({ ...pa, x: pa.x + pa.vx, y: pa.y + pa.vy, life: pa.life - 1 })).filter((pa) => pa.life > 0));
-
-    // --- commit results once ---
-    setEnemies(collidedEnemies);
-    // --- detect dungeon clear, reward, and auto-exit (one-shot guarded) ---
-    if (inDungeon !== null && !exitInProgressRef.current) {
-        const anyDungeonEnemy = collidedEnemies.some(e => e.type === 'dungeon_monster');
-        if (!anyDungeonEnemy) {
-            exitInProgressRef.current = true;
-
-            // 1) mark cleared
-            setDungeons(ds => ds.map(d => d.id === inDungeon ? { ...d, cleared: true } : d));
-
-            // 2) reward
-            setInventory(inv => ({ ...inv, gold: inv.gold + 100 }));
-
-            // 3) teleport to the portal and exit
-            const d = dungeonsRef.current?.find(dd => dd.id === inDungeon);
-            if (d) {
-                // (optional) auto-collect nearby dungeon loot (radius ~400 around the portal)
-                const near = (L) => Math.hypot(L.x - d.x, L.y - d.y) < 400;
-                lootRef.current.filter(near).forEach(pickupLoot);
-                setLoot(prev => prev.filter(L => !near(L)));
-
-                // nudge off the ring center so the player isn't stuck on the portal stroke
-                setPlayer(p => ({ ...p, x: d.x + 24, y: d.y + 24 }));
+        
+        return {
+          ...boss,
+          x: newX,
+          y: newY,
+          attackCooldown: Math.max(0, boss.attackCooldown - timeMultiplier),
+          specialCooldown,
+          aggroSource
+        };
+      }).filter(b => b.health > 0));
+      
+      setProjectiles(prev => {
+        const updated = prev.map(proj => ({
+          ...proj,
+          x: proj.x + proj.vx * timeMultiplier,
+          y: proj.y + proj.vy * timeMultiplier,
+          life: proj.life - timeMultiplier
+        })).filter(p => p.life > 0 && p.x > 0 && p.x < MAP_WIDTH && p.y > 0 && p.y < MAP_HEIGHT);
+        
+        updated.forEach(proj => {
+          // Check player hits from enemy projectiles
+          if (proj.fromEnemy) {
+            const dx = proj.x - player.x;
+            const dy = proj.y - player.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 20) {
+              proj.life = 0;
+              const dodgeRoll = Math.random() * 100;
+              if (dodgeRoll > getTotalDodge()) {
+                setPlayer(p => ({ ...p, health: p.health - proj.damage }));
+                createParticles(player.x, player.y, '#ff0000', 15);
+              } else {
+                createParticles(player.x, player.y, '#ffff00', 10);
+                showMessage('Dodged!');
+              }
             }
+            return;
+          }
+          
+          setEnemies(enemies => enemies.map(enemy => {
+            const dx = proj.x - enemy.x;
+            const dy = proj.y - enemy.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 25) {
+              proj.life = 0;
+              
+              // Critical hit calculation
+              const critRoll = Math.random() * 100;
+              const isCrit = critRoll < getTotalCritChance();
+              const finalDamage = isCrit ? 
+                Math.floor(proj.damage * (getTotalCritDamage() / 100)) : 
+                proj.damage;
+              
+              if (isCrit) {
+                createParticles(enemy.x, enemy.y, '#ffff00', 15);
+                showMessage('CRITICAL!');
+              } else {
+                createParticles(enemy.x, enemy.y, '#ff6600', 10);
+              }
+              
+              enemy.aggroSource = { x: proj.sourceX, y: proj.sourceY };
+              
+              if (enemy.health - finalDamage <= 0) {
+                gainXP(enemy.xp);
+                dropLoot(enemy.x, enemy.y);
+                updateQuest(1, 1);
+                
+                if (enemy.type === 'dungeon_monster') {
+                  const dungeon = dungeons.find(d => d.id === inDungeon);
+                  if (dungeon) {
+                    const remainingEnemies = enemies.filter(e => 
+                      e.type === 'dungeon_monster' && e.id !== enemy.id
+                    );
+                    if (remainingEnemies.length === 0) {
+                      setDungeons(d => d.map(dun => 
+                        dun.id === inDungeon ? { ...dun, cleared: true } : dun
+                      ));
+                      updateQuest(2, 1);
+                      showNotification('Dungeon Cleared!', 'success');
+                      dropLoot(enemy.x, enemy.y, true);
+                    }
+                  }
+                }
+                
+                return null;
+              }
+              
+              return { ...enemy, health: enemy.health - finalDamage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+            }
+            return enemy;
+          }).filter(Boolean));
+          
+          setBosses(bosses => bosses.map(boss => {
+            const dx = proj.x - boss.x;
+            const dy = proj.y - boss.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 40) {
+              proj.life = 0;
+              
+              const critRoll = Math.random() * 100;
+              const isCrit = critRoll < getTotalCritChance();
+              const finalDamage = isCrit ? 
+                Math.floor(proj.damage * (getTotalCritDamage() / 100)) : 
+                proj.damage;
+              
+              if (isCrit) {
+                createParticles(boss.x, boss.y, '#ffff00', 20);
+                showMessage('CRITICAL HIT!');
+              } else {
+                createParticles(boss.x, boss.y, '#ff0000', 15);
+              }
+              
+              boss.aggroSource = { x: proj.sourceX, y: proj.sourceY };
+              
+              if (boss.health - finalDamage <= 0) {
+                gainXP(200);
+                dropLoot(boss.x, boss.y, true);
+                updateQuest(3, 1);
+                showNotification('🏆 Boss defeated! Legendary loot obtained!', 'success');
+                return null;
+              }
+              
+              return { ...boss, health: boss.health - finalDamage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+            }
+            return boss;
+          }).filter(Boolean));
+        });
+        
+        return updated;
+      });
+      
+      setParticles(prev => prev.map(p => ({
+        ...p,
+        x: p.x + p.vx * timeMultiplier,
+        y: p.y + p.vy * timeMultiplier,
+        life: p.life - timeMultiplier
+      })).filter(p => p.life > 0));
+    };
+    
+    let frameId;
+    let lastTime = 0;
+    const targetFPS = 60;
+    const frameDelay = 1000 / targetFPS;
 
-            setInDungeon(null);
-            reentryLockRef.current = 30;     // ~0.5s @60fps
-            spawnPauseRef.current = 240;     // ~4s @60fps
-            showNotification('Dungeon cleared! +100 gold — exiting...', 'success');
+    const animate = (currentTime) => {
+      frameId = requestAnimationFrame(animate);
+  
+      const deltaTime = currentTime - lastTime;
+  
+      if (deltaTime >= frameDelay) {
+        lastTime = currentTime - (deltaTime % frameDelay);
+        gameLoop();
+      }
+    };
 
-            setTimeout(() => { exitInProgressRef.current = false; }, 500);
-            // TODO: updateQuest(2, 1); // Dungeon Delver (when quests are re-enabled)
-        }
-    }
+    frameId = requestAnimationFrame(animate);
 
-    setProjectiles(nextProjectiles);
-
-    // draw
-    draw();
-  });
+    return () => {
+      if (frameId) cancelAnimationFrame(frameId);
+    };
+  }, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, skills]);
 
   useEffect(() => {
-    if (gameState !== 'playing') return;
-    let raf;
-    const loop = () => {
-      tick();
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState]);
-
-  // ===== Drawing =====
-  const draw = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
-    const cam = cameraRef.current;
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    const minX = camera.x - 20;
+    const maxX = camera.x + CANVAS_WIDTH + 20;
+    const minY = camera.y - 20;
+    const maxY = camera.y + CANVAS_HEIGHT + 20;
+    
+    // Pre-filter visible terrain to avoid checking all tiles
+    const visibleTiles = terrain.filter(tile => 
+      tile.x >= minX && tile.x <= maxX && tile.y >= minY && tile.y <= maxY
+    );
 
-    // background
-    ctx.fillStyle = '#0b1021';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // terrain tiles (clipped to viewport for perf)
-    const tiles = terrain;
-    for (let i = 0; i < tiles.length; i++) {
-      const t = tiles[i];
-      const sx = t.x - cam.x;
-      const sy = t.y - cam.y;
-      if (sx < -20 || sy < -20 || sx > CANVAS_WIDTH + 20 || sy > CANVAS_HEIGHT + 20) continue;
-      if (t.type === 'grass') ctx.fillStyle = '#17381a';
-      else if (t.type === 'forest') ctx.fillStyle = '#0f2b13';
-      else if (t.type === 'water') ctx.fillStyle = '#0c2340';
-      else ctx.fillStyle = '#2b2b2b';
-      ctx.fillRect(sx, sy, 20, 20);
-    }
-
-    // base structures
-    base.structures.forEach((s) => {
-      ctx.fillStyle = '#553311';
-      ctx.fillRect(s.x - cam.x - 10, s.y - cam.y - 10, 20, 20);
+    visibleTiles.forEach(tile => {
+      let color = '#4a7c4e';
+      if (tile.type === 'forest') color = '#2d5a3d';
+      if (tile.type === 'water') color = '#4a6fa5';
+      if (tile.type === 'rock') color = '#666666';
+  
+      ctx.fillStyle = color;
+      ctx.fillRect(tile.x - camera.x, tile.y - camera.y, 20, 20);
     });
-
-    // Draw base center marker
+    
+    dungeons.forEach(dungeon => {
+      ctx.fillStyle = dungeon.cleared ? '#444444' : '#1a1a2e';
+      ctx.fillRect(dungeon.x - camera.x, dungeon.y - camera.y, 100, 100);
+      ctx.strokeStyle = dungeon.cleared ? '#666666' : '#8b00ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(dungeon.x - camera.x, dungeon.y - camera.y, 100, 100);
+      
+      if (!dungeon.cleared && inDungeon !== dungeon.id) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('E to Enter', dungeon.x - camera.x + 50, dungeon.y - camera.y - 10);
+      }
+      
+      if (inDungeon === dungeon.id) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('E to Exit', dungeon.x - camera.x + 50, dungeon.y - camera.y - 10);
+      }
+    });
+    
     if (base.built) {
-      ctx.fillStyle = 'rgba(139, 69, 19, 0.6)';
-      ctx.fillRect(
-        base.x - cam.x - 25,
-        base.y - cam.y - 25,
-        50,
-        50
-      );
-      ctx.strokeStyle = '#CCAA88';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        base.x - cam.x - 25,
-        base.y - cam.y - 25,
-        50,
-        50
-      );
+      ctx.fillStyle = '#8b4513';
+      ctx.fillRect(base.x - camera.x - 40, base.y - camera.y - 40, 80, 80);
+      ctx.strokeStyle = '#654321';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(base.x - camera.x - 40, base.y - camera.y - 40, 80, 80);
     }
-
-    // draw dungeon portals
-    dungeons.forEach((d) => {
-        if (inDungeon !== null && d.id !== inDungeon) return; // hide other portals while inside
-
-        ctx.strokeStyle = d.cleared ? '#888' : '#9933ff';
-        ctx.lineWidth = 3;
+    
+    base.structures.forEach(structure => {
+      let color = '#8b4513';
+      let size = 40;
+      
+      if (structure.type === 'wall') { color = '#808080'; size = 20; }
+      if (structure.type === 'tower') { color = '#4a4a4a'; size = 50; }
+      if (structure.type === 'crafting') { color = '#cd853f'; size = 45; }
+      
+      ctx.fillStyle = color;
+      ctx.fillRect(structure.x - camera.x - size/2, structure.y - camera.y - size/2, size, size);
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(structure.x - camera.x - size/2, structure.y - camera.y - size/2, size, size);
+    });
+    
+    loot.forEach(item => {
+      let color = '#ffd700';
+      if (item.type === 'essence') color = '#8b00ff';
+      if (item.type === 'potion') color = '#ff0000';
+      if (item.type === 'material') color = '#cd853f';
+      if (item.type === 'weapon' || item.type === 'armor') color = '#00ffff';
+      
+      ctx.fillStyle = color;
+      
+      if (item.type === 'potion') {
         ctx.beginPath();
-        ctx.arc(d.x - cam.x, d.y - cam.y, 16, 0, Math.PI * 2);
-        ctx.stroke();
-    });
-
-
-    // enemies
-    enemies.forEach((e) => {
-      ctx.fillStyle = '#9b1c1c';
-      ctx.beginPath();
-      ctx.arc(e.x - cam.x, e.y - cam.y, 10, 0, Math.PI * 2);
+        ctx.moveTo(item.x - camera.x, item.y - camera.y - 10);
+        ctx.lineTo(item.x - camera.x - 8, item.y - camera.y + 8);
+        ctx.lineTo(item.x - camera.x + 8, item.y - camera.y + 8);
+        ctx.closePath();
+        ctx.fill();
+      } else if (item.type === 'weapon' || item.type === 'armor') {
+        ctx.fillRect(item.x - camera.x - 8, item.y - camera.y - 8, 16, 16);
+      } else {
+        ctx.beginPath();
+        ctx.arc(item.x - camera.x, item.y - camera.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = color;
       ctx.fill();
-      // hp bar
-      ctx.fillStyle = '#300';
-      ctx.fillRect(e.x - cam.x - 12, e.y - cam.y - 18, 24, 4);
-      ctx.fillStyle = '#f33';
-      ctx.fillRect(e.x - cam.x - 12, e.y - cam.y - 18, 24 * (e.health / e.maxHealth), 4);
+      ctx.shadowBlur = 0;
     });
-
-    // bosses
-    bosses.forEach((b) => {
-      ctx.fillStyle = '#6b21a8';
+    
+    particles.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life / 30;
+      ctx.fillRect(p.x - camera.x - 2, p.y - camera.y - 2, 4, 4);
+    });
+    ctx.globalAlpha = 1;
+    
+    projectiles.forEach(proj => {
+      let color = '#ff6600';
+      if (proj.type === 'lightning') color = '#ffff00';
+      if (proj.type === 'meteor') color = '#ff0000';
+      if (proj.type === 'boss_attack') color = '#8b0000';
+      
+      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(b.x - cam.x, b.y - cam.y, 16, 0, Math.PI * 2);
+      ctx.arc(proj.x - camera.x, proj.y - camera.y, proj.fromEnemy ? 8 : 6, 0, Math.PI * 2);
       ctx.fill();
-    });
-
-    // projectiles
-    projectiles.forEach((p) => {
-      ctx.fillStyle = p.type === 'fireball' ? '#ff6600' : p.type === 'lightning' ? '#88ccff' : '#ff99ff';
-      ctx.beginPath();
-      ctx.arc(p.x - cam.x, p.y - cam.y, 4, 0, Math.PI * 2);
+      
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = color;
       ctx.fill();
+      ctx.shadowBlur = 0;
     });
-
-    // particles
-    particles.forEach((pa) => {
-      ctx.globalAlpha = Math.max(0.1, pa.life / 30);
-      ctx.fillStyle = pa.color;
-      ctx.fillRect(pa.x - cam.x, pa.y - cam.y, 2, 2);
-      ctx.globalAlpha = 1;
+    
+    enemies.forEach(enemy => {
+      let color = '#cc0000';
+      if (enemy.type === 'shadow') color = '#4a0080';
+      if (enemy.type === 'beast') color = '#804000';
+      if (enemy.type === 'wraith') color = '#9400d3';
+      if (enemy.type === 'golem') color = '#696969';
+      if (enemy.type === 'dungeon_monster') color = '#8b008b';
+      
+      ctx.fillStyle = color;
+      ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 15, 30, 30);
+      
+      if (enemy.state === 'hunting') {
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(enemy.x - camera.x - 15, enemy.y - camera.y - 15, 30, 30);
+      }
+      
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 25, 30, 4);
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 25, 30 * (enemy.health / enemy.maxHealth), 4);
     });
-
-    // player
-    const p = playerRef.current;
-    ctx.fillStyle = '#fef08a';
-    ctx.beginPath();
-    ctx.arc(p.x - cam.x, p.y - cam.y, 10, 0, Math.PI * 2);
-    ctx.fill();
-
-    // player facing line
-    ctx.strokeStyle = '#fff';
-    ctx.beginPath();
-    ctx.moveTo(p.x - cam.x, p.y - cam.y);
-    ctx.lineTo(p.x - cam.x + Math.cos(p.facingAngle) * 18, p.y - cam.y + Math.sin(p.facingAngle) * 18);
-    ctx.stroke();
-
-    // loot
-    loot.forEach((l) => {
-      ctx.fillStyle = l.type === 'gold' ? '#ffd700' : l.type === 'essence' ? '#66ffff' : l.type === 'potion' ? '#ff3366' : '#cccccc';
-      ctx.fillRect(l.x - cam.x - 3, l.y - cam.y - 3, 6, 6);
+    
+    bosses.forEach(boss => {
+      ctx.fillStyle = '#8b0000';
+      ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 30, 60, 60);
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(boss.x - camera.x - 30, boss.y - camera.y - 30, 60, 60);
+      
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 40, 60, 6);
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 40, 60 * (boss.health / boss.maxHealth), 6);
     });
+    
+    ctx.save();
+    ctx.translate(player.x - camera.x, player.y - camera.y);
+    ctx.rotate(player.facingAngle);
+    ctx.fillStyle = '#3498db';
+    ctx.fillRect(-12, -12, 24, 24);
+    ctx.fillStyle = '#2980b9';
+    ctx.fillRect(-12, -12, 12, 12);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(8, -4, 8, 8);
+    ctx.restore();
+    
+  }, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon]);
 
-    // HUD bars
-    drawHUD(ctx);
-  };
-
-  const drawHUD = (ctx) => {
-    const p = playerRef.current;
-    // Health bar
-    ctx.fillStyle = '#222';
-    ctx.fillRect(16, 16, 240, 16);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(16, 16, 240 * (p.health / p.maxHealth), 16);
-    // Mana bar
-    ctx.fillStyle = '#222';
-    ctx.fillRect(16, 40, 240, 12);
-    ctx.fillStyle = '#60a5fa';
-    ctx.fillRect(16, 40, 240 * (p.mana / p.maxMana), 12);
-
-    // Level and XP
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px monospace';
-    ctx.fillText(`Lvl ${p.level}  XP ${p.xp}/${p.xpToNext}`, 16, 66);
-
-    // Quick UI hints
-    ctx.fillStyle = '#bbb';
-    ctx.fillText('I=Inventory  K=Skills  C=Crafting  B=Base  H=Potion  1-4=Spells  E=Enter/Exit', 16, CANVAS_HEIGHT - 12);
-  };
-
-  // ===== UI Components (inline for simplicity) =====
-  const Panel = ({ title, icon: Icon, children, onClose }) => (
-    <div style={styles.panel}>
-      <div style={styles.panelHeader}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {Icon && <Icon size={18} />}
-          <strong>{title}</strong>
+  if (gameState === 'intro') {
+    return (
+      <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
+        <div className="text-center text-white max-w-2xl p-8">
+          <h1 className="text-5xl font-bold mb-6 text-purple-300">The Wound of Power</h1>
+          <p className="text-xl mb-4">
+            In a moment of desperation, you were struck by a being beyond mortal comprehension.
+          </p>
+          <p className="text-xl mb-4">
+            The wound should have killed you... but instead, it awakened something ancient within.
+          </p>
+          <p className="text-xl mb-8">
+            Now, with newfound magical powers, you must defend the realm from the darkness that spreads.
+          </p>
+          <button
+            onClick={startGame}
+            className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
+          >
+            Begin Your Journey
+          </button>
         </div>
-        <button onClick={onClose} style={styles.iconBtn} aria-label="Close"><X size={16} /></button>
       </div>
-      <div style={styles.panelBody}>{children}</div>
-    </div>
-  );
+    );
+  }
 
-  // ===== Render =====
+  if (gameState === 'gameover') {
+    return (
+      <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-red-900 flex items-center justify-center">
+        <div className="text-center text-white max-w-2xl p-8">
+          <h1 className="text-5xl font-bold mb-6 text-red-300">The Darkness Prevails</h1>
+          <p className="text-xl mb-4">Level Reached: {player.level}</p>
+          <p className="text-xl mb-4">Gold Collected: {inventory.gold}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-red-600 hover:bg-red-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const buildingOptions = [
+    { type: 'wall', name: 'Wall', cost: { gold: 20, essence: 0 }, icon: Shield },
+    { type: 'tower', name: 'Tower', cost: { gold: 50, essence: 2 }, icon: Home },
+    { type: 'crafting', name: 'Crafting Station', cost: { gold: 100, essence: 5 }, icon: Hammer }
+  ];
+
   return (
-    <div style={styles.app}>
-      {/* Top HUD / Stats strip */}
-      <div style={styles.topBar}>
-        <div style={styles.stat}><Heart size={16} /> {Math.round(player.health)}/{Math.round(player.maxHealth)}</div>
-        <div style={styles.stat}><Zap size={16} /> {Math.round(player.mana)}/{Math.round(player.maxMana)}</div>
-        <div style={styles.stat}><Shield size={16} /> DEF {player.defense}</div>
-        <div style={styles.stat}><Star size={16} /> LVL {player.level}</div>
-        <div style={styles.stat}><TrendingUp size={16} /> XP {player.xp}/{player.xpToNext}</div>
-        <div style={{ flex: 1 }} />
-        <div style={styles.stat}><Package size={16} /> {inventory.gold}g / {inventory.essence}e / {inventory.potions}p</div>
-      </div>
-
-      {/* Canvas */}
-      <div style={styles.canvasWrap}>
-        <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} style={styles.canvas} />
-
-        {/* Intro overlay */}
-        {gameState === 'intro' && (
-          <div style={styles.overlay}>
-            <h1 style={{ margin: 0 }}>Voxel RPG</h1>
-            <p>The wound burns with power. Press Start to begin.</p>
-            <button style={styles.primaryBtn} onClick={() => { setGameState('playing'); showNotification('Your journey begins...', 'info'); }}>Start</button>
-          </div>
-        )}
-        {/* Game Over overlay */}
-        {gameState === 'gameover' && (
-          <div style={styles.overlay}>
-            <h1 style={{ margin: 0 }}>You Died</h1>
-            <button style={styles.primaryBtn} onClick={() => window.location.reload()}>Restart</button>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom actions */}
-      <div style={styles.bottomBar}>
-        <button style={styles.btn} onClick={() => setShowInventory((v) => !v)}><Package size={16} /> Inventory</button>
-        <button style={styles.btn} onClick={() => setShowBase((v) => !v)}><Home size={16} /> Base</button>
-        <button style={styles.btn} onClick={() => setShowSkills((v) => !v)}><TrendingUp size={16} /> Skills</button>
-        <button style={styles.btn} onClick={() => setShowCrafting((v) => !v)}><Hammer size={16} /> Crafting</button>
-        <div style={{ flex: 1 }} />
-        <button style={styles.btn} onClick={() => castSpell(0)}><Sparkles size={16} /> Cast</button>
-        <button style={styles.btn} onClick={() => {
-          if (window.confirm('Clear all saved data?')) {
-            localStorage.removeItem('rpg_save');
-            showMessage('Save cleared');
-          }
-        }}>Clear Save</button>
-      </div>
-
-      {/* Panels */}
-      {showInventory && (
-        <Panel title="Inventory" icon={Package} onClose={() => setShowInventory(false)}>
-          <div style={styles.sectionTitle}>Items</div>
-          <div style={styles.rowWrap}>
-            {inventory.items.length === 0 && <div style={{ opacity: 0.7 }}>Empty</div>}
-            {inventory.items.map((it) => (
-              <button key={it.id} style={styles.itemBtn} onClick={() => equipItem(it)}>
-                {it.type === 'weapon' ? '⚔️' : '🛡️'} {it.name} {it.damage ? `(DMG ${it.damage})` : it.defense ? `(DEF ${it.defense})` : ''}
-              </button>
-            ))}
-          </div>
-          <div style={styles.sectionTitle}>Materials</div>
-          <div style={styles.rowWrap}>
-            {Object.entries(inventory.materials).map(([k, v]) => (
-              <div key={k} style={styles.pill}>{k}: {v}</div>
-            ))}
-          </div>
-        </Panel>
-      )}
-
-      {showSkills && (
-        <Panel title="Skills" icon={TrendingUp} onClose={() => setShowSkills(false)}>
-          <div style={styles.rowWrap}>
-            {Object.entries(skills).map(([cat, list]) => (
-              <div key={cat} style={{ minWidth: 240 }}>
-                <div style={styles.sectionTitle}>{cat.toUpperCase()}</div>
-                {Object.entries(list).map(([name, s]) => (
-                  <div key={name} style={styles.skillRow}>
-                    <div>
-                      <strong>{name}</strong>
-                      <div style={{ fontSize: 12, opacity: 0.8 }}>{s.desc}</div>
-                    </div>
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={styles.pill}>Lv {s.level}/{s.maxLevel}</div>
-                      <button
-                        disabled={player.skillPoints < s.cost || s.level >= s.maxLevel}
-                        style={styles.smallBtn}
-                        onClick={() => upgradeSkill(cat, name)}
-                      >+{s.cost}</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 8, opacity: 0.8 }}>Skill Points: {player.skillPoints}</div>
-        </Panel>
-      )}
-
-      {showCrafting && (
-        <Panel title="Crafting" icon={Hammer} onClose={() => setShowCrafting(false)}>
-          <div style={styles.col}>
-            {recipes.map((r) => (
-              <div key={r.id} style={styles.skillRow}>
-                <div>
-                  <strong>{r.name}</strong> <span style={{ opacity: 0.8 }}>({r.type})</span>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Materials: {Object.entries(r.materials).map(([m, a]) => `${m}:${a}`).join(', ')}</div>
-                </div>
-                <button style={styles.smallBtn} onClick={() => craftItem(r)}>Craft</button>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      )}
-
-      {showBase && (
-        <Panel title="Base" icon={Home} onClose={() => setShowBase(false)}>
-          {!base.built ? (
-            <button
-              style={styles.primaryBtn}
-              onClick={() => {
-                setBase((b) => ({
-                  ...b,
-                  built: true,
-                  x: playerRef.current.x,
-                  y: playerRef.current.y
-                }));
-                showMessage('Base established at your location!');
-              }}
-            >Establish Base</button>
-          ) : (
-            <div style={styles.col}>
-              <div style={styles.sectionTitle}>Build Structures</div>
-              <div style={styles.rowWrap}>
-                {[
-                  { type: 'turret', name: 'Turret', cost: { gold: 25, essence: 1 } },
-                  { type: 'forge', name: 'Forge', cost: { gold: 40, essence: 2 } },
-                  { type: 'altar', name: 'Altar', cost: { gold: 30, essence: 3 } },
-                ].map((b) => (
-                  <button
-                    key={b.type}
-                    style={buildMode?.type === b.type ? styles.itemBtnActive : styles.itemBtn}
-                    onClick={() => setBuildMode(b)}
-                  >{b.name} — {b.cost.gold}g/{b.cost.essence}e</button>
-                ))}
-              </div>
-            </div>
-          )}
-        </Panel>
-      )}
-
-      {/* Notifications */}
-      <div style={styles.toasts}>
-        {notifications.map((n) => (
-          <div key={n.id} style={{ ...styles.toast, ...(n.type === 'success' ? styles.toastSuccess : n.type === 'warning' ? styles.toastWarn : {}) }}>
-            {n.type === 'warning' && <AlertCircle size={14} style={{ marginRight: 6 }} />}
-            {n.msg}
+    <div className="w-full h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
+      <div className="absolute top-4 right-4 space-y-2 z-10">
+        {notifications.map(notif => (
+          <div 
+            key={notif.id}
+            className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${
+              notif.type === 'success' ? 'bg-green-600' :
+              notif.type === 'warning' ? 'bg-orange-600' :
+              'bg-blue-600'
+            } text-white`}
+          >
+            <AlertCircle size={20} />
+            <span>{notif.msg}</span>
           </div>
         ))}
       </div>
-
-      {/* Message bubble */}
-      {message && <div style={styles.message}>{message}</div>}
+      
+      <div className="mb-4 flex gap-6 text-white flex-wrap justify-center">
+        <div className="flex items-center gap-2">
+          <Heart className="text-red-500" />
+          <div className="w-32 h-6 bg-gray-700 rounded">
+            <div 
+              className="h-full bg-red-500 rounded transition-all"
+              style={{ width: `${Math.max(0, (player.health / player.maxHealth) * 100)}%` }}
+            />
+          </div>
+          <span>{Math.floor(Math.max(0, player.health))}/{player.maxHealth}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Zap className="text-blue-500" />
+          <div className="w-32 h-6 bg-gray-700 rounded">
+            <div 
+              className="h-full bg-blue-500 rounded transition-all"
+              style={{ width: `${(player.mana / player.maxMana) * 100}%` }}
+            />
+          </div>
+          <span>{Math.floor(player.mana)}/{player.maxMana}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <TrendingUp className="text-yellow-500" />
+          <span>Level {player.level}</span>
+          <div className="w-24 h-6 bg-gray-700 rounded">
+            <div 
+              className="h-full bg-yellow-500 rounded transition-all"
+              style={{ width: `${(player.xp / player.xpToNext) * 100}%` }}
+            />
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Package className="text-yellow-300" />
+          <span>Gold: {inventory.gold}</span>
+        </div>
+        
+        {player.skillPoints > 0 && (
+          <div className="flex items-center gap-2 bg-purple-600 px-3 py-1 rounded">
+            <Star className="text-yellow-300" />
+            <span>Skill Points: {player.skillPoints}</span>
+          </div>
+        )}
+      </div>
+      
+      <canvas 
+        ref={canvasRef} 
+        width={CANVAS_WIDTH} 
+        height={CANVAS_HEIGHT}
+        className="border-4 border-purple-500 rounded-lg"
+      />
+      
+      <div className="mt-4 flex gap-4 text-white">
+        {spells.map((spell, i) => (
+          <div 
+            key={spell.id}
+            className={`px-4 py-2 rounded ${
+              spell.unlocked 
+                ? spell.cooldown > 0 
+                  ? 'bg-gray-600' 
+                  : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'
+                : 'bg-gray-800'
+            }`}
+            onClick={() => spell.unlocked && castSpell(i)}
+          >
+            <div className="text-sm">{i + 1}. {spell.name}</div>
+            <div className="text-xs">
+              {spell.unlocked 
+                ? spell.cooldown > 0 
+                  ? `${Math.ceil(spell.cooldown / 60)}s` 
+                  : `${spell.cost} mana`
+                : 'Locked'}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <div className="mt-4 text-white text-center">
+        <p className="text-sm mb-2">
+          WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Enter/Exit Dungeon
+        </p>
+        <p className="text-xs">
+          I: Inventory | K: Skills | C: Crafting | B: Base
+        </p>
+        {message && <p className="text-yellow-300 font-bold">{message}</p>}
+      </div>
+      
+      {/* Skill Tree UI */}
+      {showSkills && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-4xl max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Star /> Skill Tree - {player.skillPoints} Points Available
+            </h3>
+            <X className="cursor-pointer" onClick={() => setShowSkills(false)} />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-6">
+            {Object.entries(skills).map(([category, categorySkills]) => (
+              <div key={category} className="bg-gray-700 p-4 rounded-lg">
+                <h4 className="text-lg font-bold mb-3 capitalize text-purple-300">{category}</h4>
+                <div className="space-y-3">
+                  {Object.entries(categorySkills).map(([skillName, skill]) => (
+                    <div key={skillName} className="bg-gray-800 p-3 rounded">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-bold capitalize text-sm">
+                            {skillName.replace(/([A-Z])/g, ' $1').trim()}
+                          </p>
+                          <p className="text-xs text-gray-400">{skill.desc}</p>
+                        </div>
+                        <span className="text-xs bg-purple-600 px-2 py-1 rounded">
+                          {skill.level}/{skill.maxLevel}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => upgradeSkill(category, skillName)}
+                        disabled={player.skillPoints < skill.cost || skill.level >= skill.maxLevel}
+                        className={`w-full py-2 rounded text-sm ${
+                          player.skillPoints >= skill.cost && skill.level < skill.maxLevel
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-gray-600 cursor-not-allowed'
+                        }`}
+                      >
+                        {skill.level >= skill.maxLevel ? 'Max Level' : `Upgrade (${skill.cost} SP)`}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-6 p-4 bg-gray-700 rounded-lg">
+            <h4 className="font-bold mb-2">Current Stats:</h4>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <p>Damage: {getTotalDamage()}</p>
+                <p>Crit Chance: {getTotalCritChance()}%</p>
+                <p>Crit Damage: {getTotalCritDamage()}%</p>
+              </div>
+              <div>
+                <p>Defense: {player.defense}</p>
+                <p>Dodge: {getTotalDodge()}%</p>
+                <p>Speed: {getTotalSpeed().toFixed(1)}</p>
+              </div>
+              <div>
+                <p>HP: {player.maxHealth}</p>
+                <p>Mana: {player.maxMana}</p>
+                <p>Regen: {getSkillBonus('utility', 'regeneration', 0)}/s</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Crafting UI */}
+      {showCrafting && (
+        <div className="absolute top-20 right-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Hammer /> Crafting
+            </h3>
+            <X className="cursor-pointer" onClick={() => setShowCrafting(false)} />
+          </div>
+          
+          <div className="mb-4 p-3 bg-gray-700 rounded">
+            <h4 className="text-sm font-bold mb-2">Materials:</h4>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {Object.entries(inventory.materials).map(([mat, amount]) => (
+                <p key={mat} className="capitalize">{mat}: {amount}</p>
+              ))}
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {recipes.map(recipe => {
+              const canCraft = Object.entries(recipe.materials).every(([mat, amount]) => 
+                inventory.materials[mat] >= amount
+              );
+              
+              return (
+                <div key={recipe.id} className="bg-gray-700 p-3 rounded">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold text-sm">{recipe.name}</p>
+                      <p className="text-xs text-gray-400 capitalize">{recipe.type}</p>
+                    </div>
+                    <Sparkles className={canCraft ? 'text-green-400' : 'text-gray-500'} size={16} />
+                  </div>
+                  
+                  <div className="mb-2 text-xs">
+                    <p className="text-gray-400 mb-1">Required:</p>
+                    {Object.entries(recipe.materials).map(([mat, amount]) => (
+                      <p key={mat} className={`capitalize ${
+                        inventory.materials[mat] >= amount ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {mat}: {inventory.materials[mat]}/{amount}
+                      </p>
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={() => craftItem(recipe)}
+                    disabled={!canCraft}
+                    className={`w-full py-2 rounded text-sm ${
+                      canCraft
+                        ? 'bg-purple-600 hover:bg-purple-700'
+                        : 'bg-gray-600 cursor-not-allowed'
+                    }`}
+                  >
+                    {canCraft ? 'Craft' : 'Insufficient Materials'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      
+      {/* Inventory UI */}
+      {showInventory && (
+        <div className="absolute top-20 right-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md max-h-96 overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Package /> Inventory
+            </h3>
+            <X className="cursor-pointer" onClick={() => setShowInventory(false)} />
+          </div>
+          <div className="space-y-2 mb-4">
+            <p>💰 Gold: {inventory.gold}</p>
+            <p>✨ Magic Essence: {inventory.essence}</p>
+            <p>💎 Crystals: {inventory.crystals}</p>
+            <p>🧪 Health Potions: {inventory.potions}</p>
+          </div>
+          
+          {equipment.weapon && (
+            <div className="mb-2 p-2 bg-gray-700 rounded">
+              <p className="text-sm text-yellow-300">Equipped Weapon:</p>
+              <p>{equipment.weapon.name} (+{equipment.weapon.damage} damage)</p>
+            </div>
+          )}
+          
+          {equipment.armor && (
+            <div className="mb-2 p-2 bg-gray-700 rounded">
+              <p className="text-sm text-yellow-300">Equipped Armor:</p>
+              <p>{equipment.armor.name} (+{equipment.armor.defense} defense)</p>
+            </div>
+          )}
+          
+          {inventory.items.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-bold mb-2">Items:</h4>
+              {inventory.items.map(item => (
+                <div key={item.id} className="p-2 bg-gray-700 rounded mb-2 flex justify-between items-center">
+                  <div>
+                    <p className="text-sm">{item.name}</p>
+                    <p className="text-xs text-gray-400">
+                      {item.damage && `+${item.damage} damage`}
+                      {item.defense && `+${item.defense} defense`}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => equipItem(item)}
+                    className="bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs"
+                  >
+                    Equip
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <div className="mt-4 border-t border-gray-700 pt-4">
+            <h4 className="font-bold mb-2">Quests:</h4>
+            {quests.map(quest => (
+              <div key={quest.id} className={`p-2 rounded mb-2 ${quest.complete ? 'bg-green-900' : 'bg-gray-700'}`}>
+                <p className="text-sm font-bold">{quest.title}</p>
+                <p className="text-xs">{quest.desc}</p>
+                <p className="text-xs text-gray-400">
+                  {quest.progress}/{quest.goal} {quest.complete && '✓ Complete'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Base Building UI */}
+      {showBase && (
+        <div className="absolute top-20 left-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Home /> Base Building
+            </h3>
+            <X className="cursor-pointer" onClick={() => { setShowBase(false); setBuildMode(null); }} />
+          </div>
+          
+          {!base.built ? (
+            <button
+              onClick={() => {
+                setBase({ ...base, built: true, x: player.x, y: player.y });
+                showMessage('Base established!');
+              }}
+              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded w-full"
+            >
+              Build Base Here
+            </button>
+          ) : (
+            <div>
+              <p className="mb-4 text-sm text-gray-400">
+                Click on a structure below, then click on the map to place it.
+              </p>
+              
+              <div className="space-y-2">
+                {buildingOptions.map(option => {
+                  const Icon = option.icon;
+                  const canAfford = inventory.gold >= option.cost.gold && inventory.essence >= option.cost.essence;
+                  
+                  return (
+                    <div 
+                      key={option.type}
+                      className={`p-3 rounded flex justify-between items-center ${
+                        buildMode?.type === option.type 
+                          ? 'bg-purple-600' 
+                          : canAfford 
+                            ? 'bg-gray-700 hover:bg-gray-600 cursor-pointer' 
+                            : 'bg-gray-900 opacity-50'
+                      }`}
+                      onClick={() => canAfford && setBuildMode(option)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon size={20} />
+                        <span>{option.name}</span>
+                      </div>
+                      <div className="text-xs">
+                        <div>{option.cost.gold}g</div>
+                        {option.cost.essence > 0 && <div>{option.cost.essence}e</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-4 p-3 bg-gray-700 rounded">
+                <p className="text-sm font-bold mb-2">Your Base:</p>
+                <p className="text-xs">Structures: {base.structures.length}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
-}
-
-
-// ===== Styles =====
-const styles = {
-  app: { fontFamily: 'system-ui, Segoe UI, Roboto, sans-serif', color: '#e5e7eb', background: '#0b1021', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  topBar: { display: 'flex', alignItems: 'center', gap: 16, padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.25)', position: 'sticky', top: 0, zIndex: 5 },
-  stat: { display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.95 },
-  canvasWrap: { position: 'relative', alignSelf: 'center', marginTop: 12, boxShadow: '0 6px 24px rgba(0,0,0,0.35)', borderRadius: 12, overflow: 'hidden' },
-  canvas: { display: 'block', background: '#070b16', border: '1px solid rgba(255,255,255,0.08)' },
-  bottomBar: { display: 'flex', alignItems: 'center', gap: 8, padding: 12 },
-  btn: { display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.08)', color: '#e5e7eb', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' },
-  primaryBtn: { background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' },
-  smallBtn: { background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 6, padding: '6px 10px', cursor: 'pointer' },
-  panel: { position: 'fixed', right: 16, top: 76, width: 420, maxHeight: '70vh', overflow: 'auto', background: 'rgba(17,24,39,0.92)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 12px 28px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 10 },
-  panelHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-  panelBody: { padding: 12 },
-  iconBtn: { background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' },
-  overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, background: 'rgba(0,0,0,0.55)' },
-  rowWrap: { display: 'flex', flexWrap: 'wrap', gap: 8 },
-  col: { display: 'flex', flexDirection: 'column', gap: 8 },
-  itemBtn: { background: 'rgba(255,255,255,0.06)', color: 'inherit', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer' },
-  itemBtnActive: { background: 'rgba(37,99,235,0.2)', color: 'inherit', border: '1px solid rgba(37,99,235,0.45)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer' },
-  sectionTitle: { fontWeight: 700, opacity: 0.9, margin: '4px 0' },
-  skillRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 6px', borderBottom: '1px dashed rgba(255,255,255,0.08)' },
-  pill: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 999, padding: '2px 8px', fontSize: 12 },
-  toasts: { position: 'fixed', left: 16, bottom: 16, display: 'flex', flexDirection: 'column', gap: 8 },
-  toast: { background: 'rgba(31,41,55,0.92)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '8px 12px' },
-  toastSuccess: { borderColor: 'rgba(16,185,129,0.6)' },
-  toastWarn: { borderColor: 'rgba(234,179,8,0.6)' },
-  message: { position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', background: 'rgba(17,24,39,0.92)', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' },
 };
+
+export default VoxelRPG;

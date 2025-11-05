@@ -80,6 +80,20 @@ const MAP_HEIGHT = 2000;
 const CANVAS_WIDTH = 1000;
 const CANVAS_HEIGHT = 600;
 
+// Utility functions - defined first so other hooks can reference them
+const showMessage = useCallback((msg) => {
+setMessage(msg);
+setTimeout(() => setMessage(''), 3000);
+}, []);
+
+const showNotification = useCallback((msg, type = 'info') => {
+const id = Math.random();
+setNotifications(prev => [...prev, { id, msg, type }]);
+setTimeout(() => {
+setNotifications(prev => prev.filter(n => n.id !== id));
+}, 4000);
+}, []);
+
 // Save game function
 const saveGame = useCallback(() => {
 const saveData = {
@@ -107,7 +121,7 @@ try {
   return false;
 }
 
-}, [player, equipment, inventory, spells, base, dungeons, quests, inDungeon]);
+}, [player, equipment, inventory, spells, base, dungeons, quests, inDungeon, showNotification]);
 
 // Load game function
 const loadGame = useCallback(() => {
@@ -158,7 +172,7 @@ return false;
   return false;
 }
 
-}, []);
+}, [showMessage, showNotification]);
 
 // Check for existing save on mount
 useEffect(() => {
@@ -205,19 +219,6 @@ setDungeons(newDungeons);
 
 }, []);
 
-const showMessage = useCallback((msg) => {
-setMessage(msg);
-setTimeout(() => setMessage(''), 3000);
-}, []);
-
-const showNotification = useCallback((msg, type = 'info') => {
-const id = Math.random();
-setNotifications(prev => [...prev, { id, msg, type }]);
-setTimeout(() => {
-setNotifications(prev => prev.filter(n => n.id !== id));
-}, 4000);
-}, []);
-
 const startGame = () => {
 setGameState('playing');
 showNotification('Your journey begins... The wound burns with power.', 'info');
@@ -261,7 +262,7 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
   return prev.map((s, i) => i === index ? { ...s, cooldown: 60 } : s);
 });
 
-}, [mousePos.y, mousePos.x]);
+}, [mousePos.y, mousePos.x, showMessage]);
 
 const createParticles = (x, y, color, count) => {
 const newParticles = [];
@@ -323,7 +324,7 @@ items: [...prev.items, { ...item.value, type: item.type, id: Math.random() }]
 }));
 showMessage(`Found: ${item.value.name}!`);
 }
-}, []);
+}, [showMessage]);
 
 const equipItem = (item) => {
 if (item.type === 'weapon') {
@@ -406,12 +407,12 @@ for (let i = 0; i < 10; i++) {
 
 setEnemies(prev => [...prev, ...dungeonEnemies]);
 
-}, [player.level]);
+}, [player.level, showMessage, showNotification]);
 
 const exitDungeon = useCallback(() => {
 setInDungeon(null);
 showMessage('Exited dungeon');
-}, []);
+}, [showMessage]);
 
 const updateQuest = useCallback((questId, progress) => {
 setQuests(prev => prev.map(q => {
@@ -426,7 +427,7 @@ return { ...q, progress: newProgress };
 }
 return q;
 }));
-}, []);
+}, [showNotification]);
 
 const gainXP = useCallback((amount) => {
 setPlayer(prev => {
@@ -463,7 +464,7 @@ showNotification(`Level Up! You are now level ${newLevel}`, 'success');
   return { ...prev, xp: newXP };
 });
 
-}, []);
+}, [showNotification]);
 
 useEffect(() => {
 const handleKeyDown = (e) => {
@@ -874,7 +875,7 @@ return () => {
   }
 };
 
-}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame]);
+}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification]);
 
 useEffect(() => {
 const canvas = canvasRef.current;

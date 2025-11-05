@@ -229,6 +229,86 @@ export default function App() {
     setDungeons(ds);
   }, []);
 
+  // ===== Auto-Save System =====
+  // Load game on startup
+  useEffect(() => {
+    const loadGame = () => {
+      try {
+        const saved = localStorage.getItem('rpg_save');
+        if (saved) {
+          const data = JSON.parse(saved);
+          setPlayer(p => ({
+            ...p,
+            level: data.level || p.level,
+            xp: data.xp || p.xp,
+            health: data.health || p.health,
+            maxHealth: data.maxHealth || p.maxHealth,
+            mana: data.mana || p.mana,
+            maxMana: data.maxMana || p.maxMana,
+            damage: data.damage || p.damage,
+            defense: data.defense || p.defense,
+            skillPoints: data.skillPoints || p.skillPoints,
+            x: data.x || p.x,
+            y: data.y || p.y
+          }));
+          setInventory(inv => ({
+            ...inv,
+            gold: data.gold || inv.gold,
+            items: data.items || inv.items,
+            materials: data.materials || inv.materials,
+            essence: data.essence || inv.essence,
+            crystals: data.crystals || inv.crystals,
+            potions: data.potions || inv.potions
+          }));
+          if (data.equipment) setEquipment(data.equipment);
+          if (data.skills) setSkills(data.skills);
+          showNotification('Game loaded!', 'success');
+        }
+      } catch (err) {
+        console.error('Load failed:', err);
+      }
+    };
+    
+    loadGame();
+  }, []);
+
+  // Auto-save every 30 seconds during gameplay
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    
+    const saveInterval = setInterval(() => {
+      try {
+        const saveData = {
+          level: player.level,
+          xp: player.xp,
+          health: player.health,
+          maxHealth: player.maxHealth,
+          mana: player.mana,
+          maxMana: player.maxMana,
+          damage: player.damage,
+          defense: player.defense,
+          skillPoints: player.skillPoints,
+          x: player.x,
+          y: player.y,
+          gold: inventory.gold,
+          items: inventory.items,
+          materials: inventory.materials,
+          essence: inventory.essence,
+          crystals: inventory.crystals,
+          potions: inventory.potions,
+          equipment: equipment,
+          skills: skills,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('rpg_save', JSON.stringify(saveData));
+      } catch (err) {
+        console.error('Save failed:', err);
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(saveInterval);
+  }, [player, inventory, equipment, skills, gameState]);
+
   // ===== Actions =====
   const drinkPotion = () => {
     const p = playerRef.current;
@@ -652,34 +732,49 @@ export default function App() {
 
     // --- spawn enemies ---
     spawnTimerRef.current += t;
-    if (spawnTimerRef.current > 240 && inDungeon === null && enemiesRef.current.length < 10) {
+    if (
+      spawnTimerRef.current > 240 &&
+      inDungeon === null &&
+      enemiesRef.current.length < 15 &&
+      spawnPauseRef.current <= 0
+    ) {
       spawnTimerRef.current = 0;
       const sx = Math.random() * MAP_WIDTH;
       const sy = Math.random() * MAP_HEIGHT;
-      const types = ['demon', 'shadow', 'beast', 'wraith', 'golem'];
-      const type = types[Math.floor(Math.random() * types.length)];
-      let stats = { health: 50, damage: 5, speed: 0.8, xp: 20 };
-      if (type === 'wraith') stats = { health: 30, damage: 8, speed: 1.2, xp: 25 };
-      if (type === 'golem') stats = { health: 100, damage: 10, speed: 0.6, xp: 40 };
-      setEnemies((prev) => [
-        ...prev,
-        {
-          id: Math.random(),
-          x: sx,
-          y: sy,
-          spawnX: sx,
-          spawnY: sy,
-          health: stats.health + playerRef.current.level * 10,
-          maxHealth: stats.health + playerRef.current.level * 10,
-          damage: stats.damage + playerRef.current.level * 2,
-          speed: stats.speed,
-          xp: stats.xp,
-          type,
-          state: 'roaming',
-          roamAngle: Math.random() * Math.PI * 2,
-          aggroSource: null,
-        },
-      ]);
+      
+      // Prevent spawning too close to player
+      const distToPlayer = Math.hypot(
+        sx - playerRef.current.x,
+        sy - playerRef.current.y
+      );
+      if (distToPlayer < 200) {
+        // Skip this spawn if too close to player
+      } else {
+        const types = ['demon', 'shadow', 'beast', 'wraith', 'golem'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        let stats = { health: 50, damage: 5, speed: 0.8, xp: 20 };
+        if (type === 'wraith') stats = { health: 30, damage: 8, speed: 1.2, xp: 25 };
+        if (type === 'golem') stats = { health: 100, damage: 10, speed: 0.6, xp: 40 };
+        setEnemies((prev) => [
+          ...prev,
+          {
+            id: Math.random(),
+            x: sx,
+            y: sy,
+            spawnX: sx,
+            spawnY: sy,
+            health: stats.health + playerRef.current.level * 10,
+            maxHealth: stats.health + playerRef.current.level * 10,
+            damage: stats.damage + playerRef.current.level * 2,
+            speed: stats.speed,
+            xp: stats.xp,
+            type,
+            state: 'roaming',
+            roamAngle: Math.random() * Math.PI * 2,
+            aggroSource: null,
+          },
+        ]);
+      }
     }
 
     // --- boss spawn (unchanged) ---
@@ -867,6 +962,25 @@ export default function App() {
       ctx.fillRect(s.x - cam.x - 10, s.y - cam.y - 10, 20, 20);
     });
 
+    // Draw base center marker
+    if (base.built) {
+      ctx.fillStyle = 'rgba(139, 69, 19, 0.6)';
+      ctx.fillRect(
+        base.x - cam.x - 25,
+        base.y - cam.y - 25,
+        50,
+        50
+      );
+      ctx.strokeStyle = '#CCAA88';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        base.x - cam.x - 25,
+        base.y - cam.y - 25,
+        50,
+        50
+      );
+    }
+
     // draw dungeon portals
     dungeons.forEach((d) => {
         if (inDungeon !== null && d.id !== inDungeon) return; // hide other portals while inside
@@ -971,7 +1085,7 @@ export default function App() {
           {Icon && <Icon size={18} />}
           <strong>{title}</strong>
         </div>
-        <button type="button" onClick={onClose} style={styles.iconBtn} aria-label="Close"><X size={16} /></button>
+        <button onClick={onClose} style={styles.iconBtn} aria-label="Close"><X size={16} /></button>
       </div>
       <div style={styles.panelBody}>{children}</div>
     </div>
@@ -982,8 +1096,8 @@ export default function App() {
     <div style={styles.app}>
       {/* Top HUD / Stats strip */}
       <div style={styles.topBar}>
-        <div style={styles.stat}><Heart size={16} /> {player.health}/{player.maxHealth}</div>
-        <div style={styles.stat}><Zap size={16} /> {player.mana}/{player.maxMana}</div>
+        <div style={styles.stat}><Heart size={16} /> {Math.round(player.health)}/{Math.round(player.maxHealth)}</div>
+        <div style={styles.stat}><Zap size={16} /> {Math.round(player.mana)}/{Math.round(player.maxMana)}</div>
         <div style={styles.stat}><Shield size={16} /> DEF {player.defense}</div>
         <div style={styles.stat}><Star size={16} /> LVL {player.level}</div>
         <div style={styles.stat}><TrendingUp size={16} /> XP {player.xp}/{player.xpToNext}</div>
@@ -1000,26 +1114,32 @@ export default function App() {
           <div style={styles.overlay}>
             <h1 style={{ margin: 0 }}>Voxel RPG</h1>
             <p>The wound burns with power. Press Start to begin.</p>
-            <button type="button" style={styles.primaryBtn} onClick={() => { setGameState('playing'); showNotification('Your journey begins...', 'info'); }}>Start</button>
+            <button style={styles.primaryBtn} onClick={() => { setGameState('playing'); showNotification('Your journey begins...', 'info'); }}>Start</button>
           </div>
         )}
         {/* Game Over overlay */}
         {gameState === 'gameover' && (
           <div style={styles.overlay}>
             <h1 style={{ margin: 0 }}>You Died</h1>
-            <button type="button" style={styles.primaryBtn} onClick={() => window.location.reload()}>Restart</button>
+            <button style={styles.primaryBtn} onClick={() => window.location.reload()}>Restart</button>
           </div>
         )}
       </div>
 
       {/* Bottom actions */}
       <div style={styles.bottomBar}>
-        <button type="button" style={styles.btn} onClick={() => setShowInventory((v) => !v)}><Package size={16} /> Inventory</button>
-        <button type="button" style={styles.btn} onClick={() => setShowBase((v) => !v)}><Home size={16} /> Base</button>
-        <button type="button" style={styles.btn} onClick={() => setShowSkills((v) => !v)}><TrendingUp size={16} /> Skills</button>
-        <button type="button" style={styles.btn} onClick={() => setShowCrafting((v) => !v)}><Hammer size={16} /> Crafting</button>
+        <button style={styles.btn} onClick={() => setShowInventory((v) => !v)}><Package size={16} /> Inventory</button>
+        <button style={styles.btn} onClick={() => setShowBase((v) => !v)}><Home size={16} /> Base</button>
+        <button style={styles.btn} onClick={() => setShowSkills((v) => !v)}><TrendingUp size={16} /> Skills</button>
+        <button style={styles.btn} onClick={() => setShowCrafting((v) => !v)}><Hammer size={16} /> Crafting</button>
         <div style={{ flex: 1 }} />
-        <button type="button" style={styles.btn} onClick={() => castSpell(0)}><Sparkles size={16} /> Cast</button>
+        <button style={styles.btn} onClick={() => castSpell(0)}><Sparkles size={16} /> Cast</button>
+        <button style={styles.btn} onClick={() => {
+          if (window.confirm('Clear all saved data?')) {
+            localStorage.removeItem('rpg_save');
+            showMessage('Save cleared');
+          }
+        }}>Clear Save</button>
       </div>
 
       {/* Panels */}
@@ -1029,7 +1149,7 @@ export default function App() {
           <div style={styles.rowWrap}>
             {inventory.items.length === 0 && <div style={{ opacity: 0.7 }}>Empty</div>}
             {inventory.items.map((it) => (
-              <button type="button" key={it.id} style={styles.itemBtn} onClick={() => equipItem(it)}>
+              <button key={it.id} style={styles.itemBtn} onClick={() => equipItem(it)}>
                 {it.type === 'weapon' ? '⚔️' : '🛡️'} {it.name} {it.damage ? `(DMG ${it.damage})` : it.defense ? `(DEF ${it.defense})` : ''}
               </button>
             ))}
@@ -1058,7 +1178,6 @@ export default function App() {
                     <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={styles.pill}>Lv {s.level}/{s.maxLevel}</div>
                       <button
-                        type="button"
                         disabled={player.skillPoints < s.cost || s.level >= s.maxLevel}
                         style={styles.smallBtn}
                         onClick={() => upgradeSkill(cat, name)}
@@ -1082,7 +1201,7 @@ export default function App() {
                   <strong>{r.name}</strong> <span style={{ opacity: 0.8 }}>({r.type})</span>
                   <div style={{ fontSize: 12, opacity: 0.8 }}>Materials: {Object.entries(r.materials).map(([m, a]) => `${m}:${a}`).join(', ')}</div>
                 </div>
-                <button type="button" style={styles.smallBtn} onClick={() => craftItem(r)}>Craft</button>
+                <button style={styles.smallBtn} onClick={() => craftItem(r)}>Craft</button>
               </div>
             ))}
           </div>
@@ -1093,11 +1212,15 @@ export default function App() {
         <Panel title="Base" icon={Home} onClose={() => setShowBase(false)}>
           {!base.built ? (
             <button
-              type="button"
               style={styles.primaryBtn}
               onClick={() => {
-                setBase((b) => ({ ...b, built: true }));
-                showMessage('Base established!');
+                setBase((b) => ({
+                  ...b,
+                  built: true,
+                  x: playerRef.current.x,
+                  y: playerRef.current.y
+                }));
+                showMessage('Base established at your location!');
               }}
             >Establish Base</button>
           ) : (
@@ -1110,7 +1233,6 @@ export default function App() {
                   { type: 'altar', name: 'Altar', cost: { gold: 30, essence: 3 } },
                 ].map((b) => (
                   <button
-                    type="button"
                     key={b.type}
                     style={buildMode?.type === b.type ? styles.itemBtnActive : styles.itemBtn}
                     onClick={() => setBuildMode(b)}
@@ -1147,18 +1269,18 @@ const styles = {
   canvasWrap: { position: 'relative', alignSelf: 'center', marginTop: 12, boxShadow: '0 6px 24px rgba(0,0,0,0.35)', borderRadius: 12, overflow: 'hidden' },
   canvas: { display: 'block', background: '#070b16', border: '1px solid rgba(255,255,255,0.08)' },
   bottomBar: { display: 'flex', alignItems: 'center', gap: 8, padding: 12 },
-  btn: { display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.08)', color: '#e5e7eb', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', pointerEvents: 'auto' },
-  primaryBtn: { background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.35)', pointerEvents: 'auto' },
-  smallBtn: { background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', pointerEvents: 'auto' },
-  panel: { position: 'fixed', right: 16, top: 76, width: 420, maxHeight: '70vh', overflow: 'auto', background: 'rgba(17,24,39,0.92)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 12px 28px rgba(0,0,0,0.45)', zIndex: 100 },
+  btn: { display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.08)', color: '#e5e7eb', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' },
+  primaryBtn: { background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' },
+  smallBtn: { background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 6, padding: '6px 10px', cursor: 'pointer' },
+  panel: { position: 'fixed', right: 16, top: 76, width: 420, maxHeight: '70vh', overflow: 'auto', background: 'rgba(17,24,39,0.92)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 12px 28px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 10 },
   panelHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' },
   panelBody: { padding: 12 },
-  iconBtn: { background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', pointerEvents: 'auto' },
+  iconBtn: { background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' },
   overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, background: 'rgba(0,0,0,0.55)' },
   rowWrap: { display: 'flex', flexWrap: 'wrap', gap: 8 },
   col: { display: 'flex', flexDirection: 'column', gap: 8 },
-  itemBtn: { background: 'rgba(255,255,255,0.06)', color: 'inherit', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', pointerEvents: 'auto' },
-  itemBtnActive: { background: 'rgba(37,99,235,0.2)', color: 'inherit', border: '1px solid rgba(37,99,235,0.45)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', pointerEvents: 'auto' },
+  itemBtn: { background: 'rgba(255,255,255,0.06)', color: 'inherit', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer' },
+  itemBtnActive: { background: 'rgba(37,99,235,0.2)', color: 'inherit', border: '1px solid rgba(37,99,235,0.45)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer' },
   sectionTitle: { fontWeight: 700, opacity: 0.9, margin: '4px 0' },
   skillRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 6px', borderBottom: '1px dashed rgba(255,255,255,0.08)' },
   pill: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 999, padding: '2px 8px', fontSize: 12 },

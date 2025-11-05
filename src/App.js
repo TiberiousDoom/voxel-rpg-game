@@ -97,7 +97,6 @@ timestamp: Date.now(),
 version: '1.0'
 };
 
-```
 try {
   localStorage.setItem('voxelRPG_save', JSON.stringify(saveData));
   showNotification('Game saved successfully!', 'success');
@@ -107,7 +106,6 @@ try {
   console.error('Save error:', error);
   return false;
 }
-```
 
 }, [player, equipment, inventory, spells, base, dungeons, quests, inDungeon]);
 
@@ -120,7 +118,6 @@ showNotification('No save file found!', 'warning');
 return false;
 }
 
-```
   const data = JSON.parse(saved);
   
   // Validate save data
@@ -160,7 +157,6 @@ return false;
   console.error('Load error:', error);
   return false;
 }
-```
 
 }, []);
 
@@ -188,7 +184,6 @@ if (noise > 0.6) type = 'forest';
 else if (noise < -0.4) type = 'water';
 else if (Math.random() > 0.97) type = 'rock';
 
-```
     newTerrain.push({ x: x * 20, y: y * 20, type });
   }
 }
@@ -205,7 +200,6 @@ for (let i = 0; i < 5; i++) {
   });
 }
 setDungeons(newDungeons);
-```
 
 }, []);
 
@@ -243,7 +237,6 @@ setSpells(prev => {
 const spell = prev[index];
 if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
 
-```
   setPlayer(p => {
     if (p.mana < spell.cost) return p;
     
@@ -276,7 +269,6 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
   
   return prev.map((s, i) => i === index ? { ...s, cooldown: 60 } : s);
 });
-```
 
 }, [mousePos.y, mousePos.x]);
 
@@ -309,7 +301,6 @@ const lootTable = isBoss ? [
 { type: 'armor', value: { name: 'Leather Armor', defense: 3 }, chance: 0.05 }
 ];
 
-```
 lootTable.forEach(item => {
   if (Math.random() < item.chance) {
     setLoot(prev => [...prev, {
@@ -321,7 +312,6 @@ lootTable.forEach(item => {
     }]);
   }
 });
-```
 
 };
 
@@ -368,7 +358,6 @@ showMessage(`Equipped: ${item.name}`);
 const placeStructure = (worldX, worldY) => {
 if (!buildMode) return;
 
-```
 const cost = buildMode.cost;
 if (inventory.gold < cost.gold || inventory.essence < cost.essence) {
   showMessage('Not enough resources!');
@@ -392,7 +381,6 @@ setBase(prev => ({
 }));
 
 showMessage(`${buildMode.name} built!`);
-```
 
 };
 
@@ -402,7 +390,6 @@ showMessage('This dungeon has been cleared!');
 return;
 }
 
-```
 setInDungeon(dungeon.id);
 showNotification('Entering dungeon... Press E near entrance to exit', 'warning');
 
@@ -427,7 +414,6 @@ for (let i = 0; i < 10; i++) {
 }
 
 setEnemies(prev => [...prev, ...dungeonEnemies]);
-```
 
 }, [player.level]);
 
@@ -458,7 +444,6 @@ if (newXP >= prev.xpToNext) {
 const newLevel = prev.level + 1;
 showNotification(`Level Up! You are now level ${newLevel}`, 'success');
 
-```
     if (newLevel === 3) {
       setSpells(s => s.map(sp => sp.id === 'lightning' ? { ...sp, unlocked: true } : sp));
       showNotification('New spell unlocked: Lightning!', 'info');
@@ -486,7 +471,6 @@ showNotification(`Level Up! You are now level ${newLevel}`, 'success');
   }
   return { ...prev, xp: newXP };
 });
-```
 
 }, []);
 
@@ -494,7 +478,6 @@ useEffect(() => {
 const handleKeyDown = (e) => {
 setKeys(prev => ({ ...prev, [e.key.toLowerCase()]: true }));
 
-```
   if (e.key === 'i' || e.key === 'I') setShowInventory(prev => !prev);
   if (e.key === 'b' || e.key === 'B') {
     setShowBase(prev => !prev);
@@ -547,7 +530,6 @@ return () => {
   window.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('keyup', handleKeyUp);
 };
-```
 
 }, [showBase, inDungeon, dungeons, player.x, player.y, player.health, player.maxHealth, inventory.potions, castSpell, enterDungeon, exitDungeon, showMessage]);
 
@@ -555,7 +537,6 @@ useEffect(() => {
 const canvas = canvasRef.current;
 if (!canvas) return;
 
-```
 const handleMouseMove = (e) => {
   const rect = canvas.getBoundingClientRect();
   const canvasX = e.clientX - rect.left;
@@ -585,7 +566,6 @@ return () => {
   canvas.removeEventListener('mousemove', handleMouseMove);
   canvas.removeEventListener('click', handleClick);
 };
-```
 
 }, [gameState, camera, buildMode, showBase, showInventory, mousePos.x, mousePos.y, castSpell, placeStructure]);
 
@@ -599,7 +579,6 @@ y: Math.max(0, Math.min(player.y - CANVAS_HEIGHT / 2, MAP_HEIGHT - CANVAS_HEIGHT
 useEffect(() => {
 if (gameState !== 'playing') return;
 
-```
 const timeMultiplier = showBase ? 0.2 : 1;
 
 const gameLoop = () => {
@@ -903,7 +882,6 @@ return () => {
     cancelAnimationFrame(gameLoopRef.current);
   }
 };
-```
 
 }, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame]);
 
@@ -911,7 +889,6 @@ useEffect(() => {
 const canvas = canvasRef.current;
 if (!canvas) return;
 
-```
 const ctx = canvas.getContext('2d');
 ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -1081,7 +1058,6 @@ ctx.fillRect(-12, -12, 12, 12);
 ctx.fillStyle = '#ffffff';
 ctx.fillRect(8, -4, 8, 8);
 ctx.restore();
-```
 
 }, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon]);
 
@@ -1161,7 +1137,6 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
 ))}
 </div>
 
-```
   <div className="absolute top-4 left-4 z-10">
     <button
       onClick={saveGame}
@@ -1382,7 +1357,6 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
     </div>
   )}
 </div>
-```
 
 );
 };

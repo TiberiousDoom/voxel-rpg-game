@@ -181,13 +181,13 @@ export default function App() {
   // ===== Utilities =====
   const showMessage = (msg) => {
     setMessage(msg);
-    window.setTimeout(() => setMessage(''), 3000);
+    setTimeout(() => setMessage(''), 3000);
   };
 
   const showNotification = (msg, type = 'info') => {
     const id = Math.random();
     setNotifications((prev) => [...prev, { id, msg, type }]);
-    window.setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 4000);
+    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 4000);
   };
 
   const getSkillBonus = (category, skillName, baseValue = 0) => {
@@ -468,8 +468,6 @@ export default function App() {
         }
         return next;
       });
-      setShowSkills(false);
-      setShowCrafting(false);
     }
     if (k === 'k' || k === 'K') {
       setShowSkills((prev) => {
@@ -480,8 +478,6 @@ export default function App() {
         }
         return next;
       });
-      setShowInventory(false);
-      setShowCrafting(false);
     }
     if (k === 'c' || k === 'C') {
       setShowCrafting((prev) => {
@@ -492,8 +488,6 @@ export default function App() {
         }
         return next;
       });
-      setShowInventory(false);
-      setShowSkills(false);
     }
     if (k === 'b' || k === 'B') {
       setShowBase((prev) => {
@@ -600,7 +594,7 @@ export default function App() {
 
     // --- player movement ---
     const totalSpeed = getTotalSpeed();
-     const k = keysRef.current;
+    const k = keysRef.current;
     setPlayer((prev) => {
       let newX = prev.x;
       let newY = prev.y;

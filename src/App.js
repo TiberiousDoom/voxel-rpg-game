@@ -167,8 +167,10 @@ if (saved) {
 try {
 const data = JSON.parse(saved);
 const saveDate = new Date(data.timestamp);
+// eslint-disable-next-line no-console
 console.log(`Found save from ${saveDate.toLocaleString()}`);
 } catch (error) {
+// eslint-disable-next-line no-console
 console.error('Error reading save:', error);
 }
 }
@@ -203,33 +205,22 @@ setDungeons(newDungeons);
 
 }, []);
 
-const startGame = () => {
-setGameState('playing');
-showNotification('Your journey begins... The wound burns with power.', 'info');
-};
-
-const showMessage = (msg) => {
+const showMessage = useCallback((msg) => {
 setMessage(msg);
 setTimeout(() => setMessage(''), 3000);
-};
+}, []);
 
-const showNotification = (msg, type = 'info') => {
+const showNotification = useCallback((msg, type = 'info') => {
 const id = Math.random();
 setNotifications(prev => [...prev, { id, msg, type }]);
 setTimeout(() => {
 setNotifications(prev => prev.filter(n => n.id !== id));
 }, 4000);
-};
+}, []);
 
-const usePotion = () => {
-setInventory(prev => {
-if (prev.potions > 0 && player.health < player.maxHealth) {
-setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + 50) }));
-showMessage('Health restored!');
-return { ...prev, potions: prev.potions - 1 };
-}
-return prev;
-});
+const startGame = () => {
+setGameState('playing');
+showNotification('Your journey begins... The wound burns with power.', 'info');
 };
 
 const castSpell = useCallback((index) => {
@@ -355,7 +346,7 @@ showMessage(`Equipped: ${item.name}`);
 }
 };
 
-const placeStructure = (worldX, worldY) => {
+const placeStructure = useCallback((worldX, worldY) => {
 if (!buildMode) return;
 
 const cost = buildMode.cost;
@@ -382,7 +373,7 @@ setBase(prev => ({
 
 showMessage(`${buildMode.name} built!`);
 
-};
+}, [buildMode, inventory.gold, inventory.essence, showMessage]);
 
 const enterDungeon = useCallback((dungeon) => {
 if (dungeon.cleared) {

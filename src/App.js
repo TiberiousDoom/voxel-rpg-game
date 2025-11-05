@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from ‘react’;
-import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Upload } from ‘lucide-react’;
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Upload } from 'lucide-react';
 
 const VoxelRPG = () => {
 const canvasRef = useRef(null);
-const [gameState, setGameState] = useState(‘intro’);
+const [gameState, setGameState] = useState('intro');
 const [player, setPlayer] = useState({
 x: 1000,
 y: 1000,
@@ -35,10 +35,10 @@ items: []
 });
 
 const [spells, setSpells] = useState([
-{ id: ‘fireball’, name: ‘Fireball’, cost: 15, damage: 25, unlocked: true, cooldown: 0 },
-{ id: ‘lightning’, name: ‘Lightning’, cost: 25, damage: 40, unlocked: false, cooldown: 0 },
-{ id: ‘heal’, name: ‘Heal’, cost: 30, heal: 40, unlocked: false, cooldown: 0 },
-{ id: ‘meteor’, name: ‘Meteor’, cost: 50, damage: 80, unlocked: false, cooldown: 0 }
+{ id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0 },
+{ id: 'lightning', name: 'Lightning', cost: 25, damage: 40, unlocked: false, cooldown: 0 },
+{ id: 'heal', name: 'Heal', cost: 30, heal: 40, unlocked: false, cooldown: 0 },
+{ id: 'meteor', name: 'Meteor', cost: 50, damage: 80, unlocked: false, cooldown: 0 }
 ]);
 
 const [base, setBase] = useState({
@@ -62,12 +62,12 @@ const [camera, setCamera] = useState({ x: 0, y: 0 });
 const [showInventory, setShowInventory] = useState(false);
 const [showBase, setShowBase] = useState(false);
 const [buildMode, setBuildMode] = useState(null);
-const [message, setMessage] = useState(’’);
+const [message, setMessage] = useState('');
 const [notifications, setNotifications] = useState([]);
 const [quests, setQuests] = useState([
-{ id: 1, title: ‘First Blood’, desc: ‘Defeat 10 enemies’, progress: 0, goal: 10, reward: 50, complete: false },
-{ id: 2, title: ‘Dungeon Delver’, desc: ‘Clear a dungeon’, progress: 0, goal: 1, reward: 100, complete: false },
-{ id: 3, title: ‘Boss Slayer’, desc: ‘Defeat a boss’, progress: 0, goal: 1, reward: 200, complete: false }
+{ id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
+{ id: 2, title: 'Dungeon Delver', desc: 'Clear a dungeon', progress: 0, goal: 1, reward: 100, complete: false },
+{ id: 3, title: 'Boss Slayer', desc: 'Defeat a boss', progress: 0, goal: 1, reward: 200, complete: false }
 ]);
 
 const gameLoopRef = useRef(null);
@@ -94,7 +94,7 @@ inDungeon,
 spawnTimer: spawnTimerRef.current,
 bossTimer: bossTimerRef.current,
 timestamp: Date.now(),
-version: ‘1.0’
+version: '1.0'
 };
 
 ```
@@ -114,9 +114,9 @@ try {
 // Load game function
 const loadGame = useCallback(() => {
 try {
-const saved = localStorage.getItem(‘voxelRPG_save’);
+const saved = localStorage.getItem('voxelRPG_save');
 if (!saved) {
-showNotification(‘No save file found!’, ‘warning’);
+showNotification('No save file found!', 'warning');
 return false;
 }
 
@@ -166,14 +166,14 @@ return false;
 
 // Check for existing save on mount
 useEffect(() => {
-const saved = localStorage.getItem(‘voxelRPG_save’);
+const saved = localStorage.getItem('voxelRPG_save');
 if (saved) {
 try {
 const data = JSON.parse(saved);
 const saveDate = new Date(data.timestamp);
 console.log(`Found save from ${saveDate.toLocaleString()}`);
 } catch (error) {
-console.error(‘Error reading save:’, error);
+console.error('Error reading save:', error);
 }
 }
 }, []);
@@ -183,10 +183,10 @@ const newTerrain = [];
 for (let x = 0; x < MAP_WIDTH / 20; x++) {
 for (let y = 0; y < MAP_HEIGHT / 20; y++) {
 const noise = Math.sin(x * 0.08) * Math.cos(y * 0.08) + Math.sin(x * 0.2) * 0.3;
-let type = ‘grass’;
-if (noise > 0.6) type = ‘forest’;
-else if (noise < -0.4) type = ‘water’;
-else if (Math.random() > 0.97) type = ‘rock’;
+let type = 'grass';
+if (noise > 0.6) type = 'forest';
+else if (noise < -0.4) type = 'water';
+else if (Math.random() > 0.97) type = 'rock';
 
 ```
     newTerrain.push({ x: x * 20, y: y * 20, type });
@@ -210,18 +210,18 @@ setDungeons(newDungeons);
 }, []);
 
 const startGame = () => {
-setGameState(‘playing’);
-showNotification(‘Your journey begins… The wound burns with power.’, ‘info’);
+setGameState('playing');
+showNotification('Your journey begins... The wound burns with power.', 'info');
 };
 
 const showMessage = (msg) => {
 setMessage(msg);
-setTimeout(() => setMessage(’’), 3000);
+setTimeout(() => setMessage(''), 3000);
 };
 
-const showNotification = (msg, type = ‘info’) => {
+const showNotification = (msg, type = 'info') => {
 const id = Math.random();
-setNotifications(prev => […prev, { id, msg, type }]);
+setNotifications(prev => [...prev, { id, msg, type }]);
 setTimeout(() => {
 setNotifications(prev => prev.filter(n => n.id !== id));
 }, 4000);
@@ -230,9 +230,9 @@ setNotifications(prev => prev.filter(n => n.id !== id));
 const usePotion = () => {
 setInventory(prev => {
 if (prev.potions > 0 && player.health < player.maxHealth) {
-setPlayer(p => ({ …p, health: Math.min(p.maxHealth, p.health + 50) }));
-showMessage(‘Health restored!’);
-return { …prev, potions: prev.potions - 1 };
+setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + 50) }));
+showMessage('Health restored!');
+return { ...prev, potions: prev.potions - 1 };
 }
 return prev;
 });
@@ -291,22 +291,22 @@ life: 30,
 color
 });
 }
-setParticles(prev => […prev, …newParticles]);
+setParticles(prev => [...prev, ...newParticles]);
 };
 
 const dropLoot = (x, y, isBoss = false) => {
 const lootTable = isBoss ? [
-{ type: ‘gold’, value: 50 + Math.floor(Math.random() * 50), chance: 1 },
-{ type: ‘essence’, value: 3, chance: 1 },
-{ type: ‘potion’, value: 2, chance: 1 },
-{ type: ‘weapon’, value: { name: ‘Legendary Blade’, damage: 20 }, chance: 0.5 },
-{ type: ‘armor’, value: { name: ‘Dragon Scale Armor’, defense: 15 }, chance: 0.5 }
+{ type: 'gold', value: 50 + Math.floor(Math.random() * 50), chance: 1 },
+{ type: 'essence', value: 3, chance: 1 },
+{ type: 'potion', value: 2, chance: 1 },
+{ type: 'weapon', value: { name: 'Legendary Blade', damage: 20 }, chance: 0.5 },
+{ type: 'armor', value: { name: 'Dragon Scale Armor', defense: 15 }, chance: 0.5 }
 ] : [
-{ type: ‘gold’, value: 5 + Math.floor(Math.random() * 15), chance: 1 },
-{ type: ‘essence’, value: 1, chance: 0.3 },
-{ type: ‘potion’, value: 1, chance: 0.15 },
-{ type: ‘weapon’, value: { name: ‘Iron Sword’, damage: 5 }, chance: 0.05 },
-{ type: ‘armor’, value: { name: ‘Leather Armor’, defense: 3 }, chance: 0.05 }
+{ type: 'gold', value: 5 + Math.floor(Math.random() * 15), chance: 1 },
+{ type: 'essence', value: 1, chance: 0.3 },
+{ type: 'potion', value: 1, chance: 0.15 },
+{ type: 'weapon', value: { name: 'Iron Sword', damage: 5 }, chance: 0.05 },
+{ type: 'armor', value: { name: 'Leather Armor', defense: 3 }, chance: 0.05 }
 ];
 
 ```
@@ -326,41 +326,41 @@ lootTable.forEach(item => {
 };
 
 const pickupLoot = useCallback((item) => {
-if (item.type === ‘gold’) {
-setInventory(prev => ({ …prev, gold: prev.gold + item.value }));
+if (item.type === 'gold') {
+setInventory(prev => ({ ...prev, gold: prev.gold + item.value }));
 showMessage(`+${item.value} gold`);
-} else if (item.type === ‘essence’) {
-setInventory(prev => ({ …prev, essence: prev.essence + item.value }));
+} else if (item.type === 'essence') {
+setInventory(prev => ({ ...prev, essence: prev.essence + item.value }));
 showMessage(`+${item.value} essence`);
-} else if (item.type === ‘potion’) {
-setInventory(prev => ({ …prev, potions: prev.potions + item.value }));
+} else if (item.type === 'potion') {
+setInventory(prev => ({ ...prev, potions: prev.potions + item.value }));
 showMessage(`+${item.value} potion`);
-} else if (item.type === ‘weapon’ || item.type === ‘armor’) {
+} else if (item.type === 'weapon' || item.type === 'armor') {
 setInventory(prev => ({
-…prev,
-items: […prev.items, { …item.value, type: item.type, id: Math.random() }]
+...prev,
+items: [...prev.items, { ...item.value, type: item.type, id: Math.random() }]
 }));
 showMessage(`Found: ${item.value.name}!`);
 }
 }, []);
 
 const equipItem = (item) => {
-if (item.type === ‘weapon’) {
+if (item.type === 'weapon') {
 const oldWeapon = equipment.weapon;
-setEquipment(prev => ({ …prev, weapon: item }));
+setEquipment(prev => ({ ...prev, weapon: item }));
 if (oldWeapon) {
-setInventory(prev => ({ …prev, items: […prev.items, oldWeapon] }));
+setInventory(prev => ({ ...prev, items: [...prev.items, oldWeapon] }));
 }
-setInventory(prev => ({ …prev, items: prev.items.filter(i => i.id !== item.id) }));
+setInventory(prev => ({ ...prev, items: prev.items.filter(i => i.id !== item.id) }));
 showMessage(`Equipped: ${item.name}`);
-} else if (item.type === ‘armor’) {
+} else if (item.type === 'armor') {
 const oldArmor = equipment.armor;
-setEquipment(prev => ({ …prev, armor: item }));
+setEquipment(prev => ({ ...prev, armor: item }));
 if (oldArmor) {
-setInventory(prev => ({ …prev, items: […prev.items, oldArmor] }));
+setInventory(prev => ({ ...prev, items: [...prev.items, oldArmor] }));
 }
-setInventory(prev => ({ …prev, items: prev.items.filter(i => i.id !== item.id) }));
-setPlayer(prev => ({ …prev, defense: item.defense }));
+setInventory(prev => ({ ...prev, items: prev.items.filter(i => i.id !== item.id) }));
+setPlayer(prev => ({ ...prev, defense: item.defense }));
 showMessage(`Equipped: ${item.name}`);
 }
 };
@@ -398,7 +398,7 @@ showMessage(`${buildMode.name} built!`);
 
 const enterDungeon = useCallback((dungeon) => {
 if (dungeon.cleared) {
-showMessage(‘This dungeon has been cleared!’);
+showMessage('This dungeon has been cleared!');
 return;
 }
 
@@ -433,7 +433,7 @@ setEnemies(prev => [...prev, ...dungeonEnemies]);
 
 const exitDungeon = useCallback(() => {
 setInDungeon(null);
-showMessage(‘Exited dungeon’);
+showMessage('Exited dungeon');
 }, []);
 
 const updateQuest = useCallback((questId, progress) => {
@@ -441,11 +441,11 @@ setQuests(prev => prev.map(q => {
 if (q.id === questId && !q.complete) {
 const newProgress = q.progress + progress;
 if (newProgress >= q.goal) {
-setInventory(inv => ({ …inv, gold: inv.gold + q.reward }));
-showNotification(`Quest Complete: ${q.title}! +${q.reward} gold`, ‘success’);
-return { …q, progress: newProgress, complete: true };
+setInventory(inv => ({ ...inv, gold: inv.gold + q.reward }));
+showNotification(`Quest Complete: ${q.title}! +${q.reward} gold`, 'success');
+return { ...q, progress: newProgress, complete: true };
 }
-return { …q, progress: newProgress };
+return { ...q, progress: newProgress };
 }
 return q;
 }));
@@ -456,7 +456,7 @@ setPlayer(prev => {
 const newXP = prev.xp + amount;
 if (newXP >= prev.xpToNext) {
 const newLevel = prev.level + 1;
-showNotification(`Level Up! You are now level ${newLevel}`, ‘success’);
+showNotification(`Level Up! You are now level ${newLevel}`, 'success');
 
 ```
     if (newLevel === 3) {
@@ -492,7 +492,7 @@ showNotification(`Level Up! You are now level ${newLevel}`, ‘success’);
 
 useEffect(() => {
 const handleKeyDown = (e) => {
-setKeys(prev => ({ …prev, [e.key.toLowerCase()]: true }));
+setKeys(prev => ({ ...prev, [e.key.toLowerCase()]: true }));
 
 ```
   if (e.key === 'i' || e.key === 'I') setShowInventory(prev => !prev);
@@ -597,7 +597,7 @@ y: Math.max(0, Math.min(player.y - CANVAS_HEIGHT / 2, MAP_HEIGHT - CANVAS_HEIGHT
 }, [player.x, player.y]);
 
 useEffect(() => {
-if (gameState !== ‘playing’) return;
+if (gameState !== 'playing') return;
 
 ```
 const timeMultiplier = showBase ? 0.2 : 1;
@@ -1085,7 +1085,7 @@ ctx.restore();
 
 }, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon]);
 
-if (gameState === ‘intro’) {
+if (gameState === 'intro') {
 return (
 <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
 <div className="text-center text-white max-w-2xl p-8">
@@ -1094,7 +1094,7 @@ return (
 In a moment of desperation, you were struck by a being beyond mortal comprehension.
 </p>
 <p className="text-xl mb-4">
-The wound should have killed you… but instead, it awakened something ancient within.
+The wound should have killed you... but instead, it awakened something ancient within.
 </p>
 <p className="text-xl mb-8">
 Now, with newfound magical powers, you must defend the realm from the darkness that spreads.
@@ -1109,10 +1109,10 @@ Begin Your Journey
 <button
 onClick={() => {
 if (loadGame()) {
-// Game state set to ‘playing’ in loadGame
+// Game state set to 'playing' in loadGame
 }
 }}
-className=“bg-blue-600 hover:bg-blue-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors flex items-center gap-2”
+className="bg-blue-600 hover:bg-blue-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors flex items-center gap-2"
 >
 <Upload size={24} />
 Load Game
@@ -1123,7 +1123,7 @@ Load Game
 );
 }
 
-if (gameState === ‘gameover’) {
+if (gameState === 'gameover') {
 return (
 <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-red-900 flex items-center justify-center">
 <div className="text-center text-white max-w-2xl p-8">
@@ -1132,7 +1132,7 @@ return (
 <p className="text-xl mb-4">Gold Collected: {inventory.gold}</p>
 <button
 onClick={() => window.location.reload()}
-className=“bg-red-600 hover:bg-red-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors”
+className="bg-red-600 hover:bg-red-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
 >
 Try Again
 </button>
@@ -1142,9 +1142,9 @@ Try Again
 }
 
 const buildingOptions = [
-{ type: ‘wall’, name: ‘Wall’, cost: { gold: 20, essence: 0 }, icon: Shield },
-{ type: ‘tower’, name: ‘Tower’, cost: { gold: 50, essence: 2 }, icon: Home },
-{ type: ‘crafting’, name: ‘Crafting Station’, cost: { gold: 100, essence: 5 }, icon: Hammer }
+{ type: 'wall', name: 'Wall', cost: { gold: 20, essence: 0 }, icon: Shield },
+{ type: 'tower', name: 'Tower', cost: { gold: 50, essence: 2 }, icon: Home },
+{ type: 'crafting', name: 'Crafting Station', cost: { gold: 100, essence: 5 }, icon: Hammer }
 ];
 
 return (

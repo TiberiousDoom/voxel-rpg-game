@@ -635,7 +635,7 @@ return () => {
   canvas.removeEventListener('click', handleClick);
 };
 
-}, [gameState, camera, buildMode, showBase, showInventory, mousePos.x, mousePos.y, castSpell, placeStructure]);
+}, [gameState, camera, buildMode, showBase, showInventory, showSkills, showCrafting, mousePos.x, mousePos.y, castSpell, placeStructure]);
 
 useEffect(() => {
 setCamera({

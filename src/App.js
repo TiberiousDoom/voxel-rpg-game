@@ -976,49 +976,22 @@ const updateCanvasSize = () => {
   const height = window.innerHeight;
 
   if (isTouchDevice) {
-    // Mobile: Maximize viewport, accounting for UI chrome
-    // Header: 24px + Joysticks: 72px (64px + 8px margin) + Safety margin: 10px = 106px total
-    const headerHeight = 24;
-    const joystickHeight = 72;
-    const safetyMargin = 10;
-    const totalUIHeight = headerHeight + joystickHeight + safetyMargin;
-
-    const availableWidth = width - 4; // 2px padding each side
-    const availableHeight = height - totalUIHeight;
-
-    // Use available space while maintaining reasonable aspect ratio
-    const aspectRatio = 5 / 3; // 1.67:1 ratio (wider than original 1000:600)
-    let canvasWidth = availableWidth;
-    let canvasHeight = canvasWidth / aspectRatio;
-
-    // If height-constrained, fit to height instead
-    if (canvasHeight > availableHeight) {
-      canvasHeight = availableHeight;
-      canvasWidth = canvasHeight * aspectRatio;
-    }
+    // Mobile: Fill entire viewport - UI elements will overlay
+    const availableWidth = width;
+    const availableHeight = height;
 
     setCanvasSize({
-      width: Math.floor(canvasWidth),
-      height: Math.floor(canvasHeight)
+      width: Math.floor(availableWidth),
+      height: Math.floor(availableHeight)
     });
   } else {
-    // Desktop: Updated to support taller viewport (1200px height)
-    const uiHeight = 180;
-    const maxCanvasWidth = Math.min(width - 40, 1000);
-    const maxCanvasHeight = Math.min(height - uiHeight, 1200); // Increased from 600 to 1200
-
-    const aspectRatio = 1000 / 1200; // Updated aspect ratio for taller viewport
-    let canvasWidth = maxCanvasWidth;
-    let canvasHeight = canvasWidth / aspectRatio;
-
-    if (canvasHeight > maxCanvasHeight) {
-      canvasHeight = maxCanvasHeight;
-      canvasWidth = canvasHeight * aspectRatio;
-    }
+    // Desktop: Fill entire viewport - UI elements will overlay
+    const availableWidth = width;
+    const availableHeight = height;
 
     setCanvasSize({
-      width: Math.floor(canvasWidth),
-      height: Math.floor(canvasHeight)
+      width: Math.floor(availableWidth),
+      height: Math.floor(availableHeight)
     });
   }
 };
@@ -1295,7 +1268,7 @@ const gameLoop = () => {
   setSpells(prev => prev.map(s => ({ ...s, cooldown: Math.max(0, s.cooldown - timeMultiplier) })));
   
   spawnTimerRef.current += timeMultiplier;
-  if (spawnTimerRef.current > 120 && inDungeon === null) {
+  if (spawnTimerRef.current > 300 && inDungeon === null) {
     spawnTimerRef.current = 0;
     
     const spawnX = Math.random() * MAP_WIDTH;
@@ -1361,7 +1334,7 @@ const gameLoop = () => {
     let roamAngle = enemy.roamAngle;
     let aggroSource = enemy.aggroSource;
     
-    const detectionRange = enemy.state === 'hunting' ? 800 : 400;
+    const detectionRange = enemy.state === 'hunting' ? 350 : 200;
     
     if (aggroSource) {
       newState = 'hunting';
@@ -1747,42 +1720,283 @@ projectiles.forEach(proj => {
 
 enemies.forEach(enemy => {
   if (enemy.x < minX - 50 || enemy.x > maxX + 50 || enemy.y < minY - 50 || enemy.y > maxY + 50) return;
-  
-  let color = '#cc0000';
-  if (enemy.type === 'shadow') color = '#4a0080';
-  if (enemy.type === 'beast') color = '#804000';
-  if (enemy.type === 'wraith') color = '#9400d3';
-  if (enemy.type === 'golem') color = '#696969';
-  if (enemy.type === 'dungeon_monster') color = '#8b008b';
-  
-  ctx.fillStyle = color;
-  ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 15, 30, 30);
-  
+
+  const ex = enemy.x - camera.x;
+  const ey = enemy.y - camera.y;
+
+  ctx.save();
+  ctx.translate(ex, ey);
+
+  // Draw enemy based on type with enhanced sprites
+  if (enemy.type === 'demon') {
+    // Demon: Red horned creature
+    ctx.fillStyle = '#cc0000';
+    // Body
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 12, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Head
+    ctx.fillStyle = '#8b0000';
+    ctx.beginPath();
+    ctx.arc(0, -10, 10, 0, Math.PI * 2);
+    ctx.fill();
+    // Horns
+    ctx.fillStyle = '#ff4444';
+    ctx.beginPath();
+    ctx.moveTo(-8, -15);
+    ctx.lineTo(-10, -22);
+    ctx.lineTo(-6, -16);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(8, -15);
+    ctx.lineTo(10, -22);
+    ctx.lineTo(6, -16);
+    ctx.fill();
+    // Eyes (glowing)
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(-5, -12, 3, 3);
+    ctx.fillRect(2, -12, 3, 3);
+  } else if (enemy.type === 'shadow') {
+    // Shadow: Dark ghost-like creature
+    ctx.fillStyle = '#4a0080';
+    // Wispy body
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 14, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Trailing wisps
+    ctx.fillStyle = '#6a00a0';
+    ctx.beginPath();
+    ctx.ellipse(-8, 8, 6, 10, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(8, 8, 6, 10, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    // Eyes
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-6, -5, 4, 6);
+    ctx.fillRect(2, -5, 4, 6);
+  } else if (enemy.type === 'beast') {
+    // Beast: Brown animal-like creature
+    ctx.fillStyle = '#804000';
+    // Body (quadruped-ish)
+    ctx.fillRect(-12, -5, 24, 12);
+    // Head
+    ctx.fillStyle = '#603000';
+    ctx.fillRect(-16, -8, 12, 10);
+    // Ears
+    ctx.beginPath();
+    ctx.moveTo(-16, -8);
+    ctx.lineTo(-18, -14);
+    ctx.lineTo(-14, -10);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-8, -8);
+    ctx.lineTo(-6, -14);
+    ctx.lineTo(-10, -10);
+    ctx.fill();
+    // Legs
+    ctx.fillStyle = '#5a2800';
+    ctx.fillRect(-10, 7, 4, 8);
+    ctx.fillRect(-2, 7, 4, 8);
+    ctx.fillRect(4, 7, 4, 8);
+    // Tail
+    ctx.fillStyle = '#804000';
+    ctx.fillRect(12, -3, 8, 4);
+  } else if (enemy.type === 'wraith') {
+    // Wraith: Purple floating spectral creature
+    ctx.fillStyle = '#9400d3';
+    ctx.globalAlpha = 0.8;
+    // Floating body with tattered edges
+    ctx.beginPath();
+    ctx.moveTo(0, -18);
+    ctx.lineTo(-10, -8);
+    ctx.lineTo(-12, 5);
+    ctx.lineTo(-8, 15);
+    ctx.lineTo(-4, 12);
+    ctx.lineTo(0, 18);
+    ctx.lineTo(4, 12);
+    ctx.lineTo(8, 15);
+    ctx.lineTo(12, 5);
+    ctx.lineTo(10, -8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    // Hood
+    ctx.fillStyle = '#6a008a';
+    ctx.beginPath();
+    ctx.arc(0, -12, 9, Math.PI, 0, true);
+    ctx.fill();
+    // Glowing eyes
+    ctx.fillStyle = '#ff00ff';
+    ctx.beginPath();
+    ctx.arc(-4, -12, 2, 0, Math.PI * 2);
+    ctx.arc(4, -12, 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (enemy.type === 'golem') {
+    // Golem: Gray rocky bulky creature
+    ctx.fillStyle = '#696969';
+    // Large blocky body
+    ctx.fillRect(-14, -8, 28, 20);
+    // Head (smaller, embedded)
+    ctx.fillStyle = '#505050';
+    ctx.fillRect(-10, -14, 20, 10);
+    // Rock textures
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(-10, -2, 6, 6);
+    ctx.fillRect(4, 2, 6, 6);
+    ctx.fillRect(-6, 8, 8, 4);
+    // Arms
+    ctx.fillStyle = '#5a5a5a';
+    ctx.fillRect(-18, -4, 8, 12);
+    ctx.fillRect(10, -4, 8, 12);
+    // Eyes (glowing cracks)
+    ctx.fillStyle = '#ff6600';
+    ctx.fillRect(-7, -10, 4, 4);
+    ctx.fillRect(3, -10, 4, 4);
+  } else if (enemy.type === 'dungeon_monster') {
+    // Dungeon Monster: Dark magenta elite creature
+    ctx.fillStyle = '#8b008b';
+    // Menacing body
+    ctx.fillRect(-15, -10, 30, 24);
+    ctx.fillStyle = '#6a006a';
+    ctx.beginPath();
+    ctx.moveTo(-15, -10);
+    ctx.lineTo(0, -18);
+    ctx.lineTo(15, -10);
+    ctx.closePath();
+    ctx.fill();
+    // Spikes
+    ctx.fillStyle = '#ff00ff';
+    for (let i = -12; i <= 12; i += 8) {
+      ctx.beginPath();
+      ctx.moveTo(i - 3, 14);
+      ctx.lineTo(i, 22);
+      ctx.lineTo(i + 3, 14);
+      ctx.fill();
+    }
+    // Eyes
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(-8, -6, 5, 5);
+    ctx.fillRect(3, -6, 5, 5);
+  }
+
+  // Draw hunting indicator
   if (enemy.state === 'hunting') {
     ctx.strokeStyle = '#ff0000';
     ctx.lineWidth = 2;
-    ctx.strokeRect(enemy.x - camera.x - 15, enemy.y - camera.y - 15, 30, 30);
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+    ctx.stroke();
   }
-  
+
+  ctx.restore();
+
+  // Health bar
   ctx.fillStyle = '#ff0000';
-  ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 25, 30, 4);
+  ctx.fillRect(ex - 15, ey - 25, 30, 4);
   ctx.fillStyle = '#00ff00';
-  ctx.fillRect(enemy.x - camera.x - 15, enemy.y - camera.y - 25, 30 * (enemy.health / enemy.maxHealth), 4);
+  ctx.fillRect(ex - 15, ey - 25, 30 * (enemy.health / enemy.maxHealth), 4);
 });
 
 bosses.forEach(boss => {
   if (boss.x < minX - 60 || boss.x > maxX + 60 || boss.y < minY - 60 || boss.y > maxY + 60) return;
-  
+
+  const bx = boss.x - camera.x;
+  const by = boss.y - camera.y;
+
+  ctx.save();
+  ctx.translate(bx, by);
+
+  // Enhanced Boss sprite: Massive demonic overlord
+  // Main body
   ctx.fillStyle = '#8b0000';
-  ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 30, 60, 60);
+  ctx.fillRect(-30, -25, 60, 50);
+
+  // Shoulders/armor plates
+  ctx.fillStyle = '#660000';
+  ctx.fillRect(-36, -28, 20, 15);
+  ctx.fillRect(16, -28, 20, 15);
+
+  // Head
+  ctx.fillStyle = '#4a0000';
+  ctx.fillRect(-20, -38, 40, 20);
+
+  // Crown/horns
+  ctx.fillStyle = '#ff0000';
+  // Left horn
+  ctx.beginPath();
+  ctx.moveTo(-18, -38);
+  ctx.lineTo(-24, -50);
+  ctx.lineTo(-14, -40);
+  ctx.closePath();
+  ctx.fill();
+  // Right horn
+  ctx.beginPath();
+  ctx.moveTo(18, -38);
+  ctx.lineTo(24, -50);
+  ctx.lineTo(14, -40);
+  ctx.closePath();
+  ctx.fill();
+  // Center horn
+  ctx.beginPath();
+  ctx.moveTo(-8, -38);
+  ctx.lineTo(0, -48);
+  ctx.lineTo(8, -38);
+  ctx.closePath();
+  ctx.fill();
+
+  // Glowing eyes
+  ctx.fillStyle = '#ffff00';
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = '#ffff00';
+  ctx.fillRect(-14, -32, 8, 8);
+  ctx.fillRect(6, -32, 8, 8);
+  ctx.shadowBlur = 0;
+
+  // Arms
+  ctx.fillStyle = '#8b0000';
+  ctx.fillRect(-42, -15, 16, 30);
+  ctx.fillRect(26, -15, 16, 30);
+
+  // Claws
+  ctx.fillStyle = '#ff4444';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(-42 + i * 5, 15, 3, 10);
+    ctx.fillRect(26 + i * 5, 15, 3, 10);
+  }
+
+  // Legs
+  ctx.fillStyle = '#660000';
+  ctx.fillRect(-20, 25, 14, 20);
+  ctx.fillRect(6, 25, 14, 20);
+
+  // Aura effect
   ctx.strokeStyle = '#ff0000';
   ctx.lineWidth = 3;
-  ctx.strokeRect(boss.x - camera.x - 30, boss.y - camera.y - 30, 60, 60);
-  
+  ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 200) * 0.3;
+  ctx.beginPath();
+  ctx.arc(0, 0, 45, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+
+  // Health bar (larger for boss)
   ctx.fillStyle = '#ff0000';
-  ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 40, 60, 6);
+  ctx.fillRect(bx - 30, by - 55, 60, 6);
   ctx.fillStyle = '#00ff00';
-  ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 40, 60 * (boss.health / boss.maxHealth), 6);
+  ctx.fillRect(bx - 30, by - 55, 60 * (boss.health / boss.maxHealth), 6);
+
+  // Boss name label
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3;
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.strokeText('BOSS', bx, by - 60);
+  ctx.fillText('BOSS', bx, by - 60);
 });
 
 // NEW ENHANCED VISUALS
@@ -1841,16 +2055,94 @@ damageNumbers.forEach(dmg => {
   ctx.globalAlpha = 1;
 });
 
-// Draw player (with screen shake)
+// Draw player (with screen shake) - Enhanced sprite based on class
 ctx.save();
 ctx.translate(player.x - camera.x - screenShake.x, player.y - camera.y - screenShake.y);
 ctx.rotate(player.facingAngle);
-ctx.fillStyle = '#3498db';
-ctx.fillRect(-12, -12, 24, 24);
-ctx.fillStyle = '#2980b9';
-ctx.fillRect(-12, -12, 12, 12);
-ctx.fillStyle = '#ffffff';
-ctx.fillRect(8, -4, 8, 8);
+
+// Determine class colors and style
+let primaryColor = '#3498db';
+let secondaryColor = '#2980b9';
+let accentColor = '#ffffff';
+
+if (playerClass === 'warrior') {
+  primaryColor = '#c0392b'; // Red for warrior
+  secondaryColor = '#a93226';
+  accentColor = '#95a5a6'; // Gray for armor
+} else if (playerClass === 'mage') {
+  primaryColor = '#8e44ad'; // Purple for mage
+  secondaryColor = '#6c3483';
+  accentColor = '#3498db'; // Blue for magic
+} else if (playerClass === 'rogue') {
+  primaryColor = '#16a085'; // Teal for rogue
+  secondaryColor = '#138d75';
+  accentColor = '#34495e'; // Dark for stealth
+}
+
+// Draw body (oval shape)
+ctx.fillStyle = primaryColor;
+ctx.beginPath();
+ctx.ellipse(0, 2, 10, 14, 0, 0, Math.PI * 2);
+ctx.fill();
+
+// Draw head
+ctx.fillStyle = '#f0c69b'; // Skin tone
+ctx.beginPath();
+ctx.arc(0, -10, 8, 0, Math.PI * 2);
+ctx.fill();
+
+// Draw helmet/hair based on class
+ctx.fillStyle = secondaryColor;
+if (playerClass === 'warrior') {
+  // Helmet
+  ctx.fillRect(-8, -18, 16, 8);
+  ctx.fillRect(-10, -14, 20, 4);
+} else if (playerClass === 'mage') {
+  // Pointed hat
+  ctx.beginPath();
+  ctx.moveTo(-8, -12);
+  ctx.lineTo(0, -22);
+  ctx.lineTo(8, -12);
+  ctx.closePath();
+  ctx.fill();
+} else if (playerClass === 'rogue') {
+  // Hood
+  ctx.beginPath();
+  ctx.arc(0, -10, 10, Math.PI, 0);
+  ctx.fill();
+}
+
+// Draw weapon/tool indicator
+ctx.fillStyle = accentColor;
+if (playerClass === 'warrior') {
+  // Sword
+  ctx.fillRect(10, -8, 12, 4);
+  ctx.fillRect(18, -10, 2, 8);
+} else if (playerClass === 'mage') {
+  // Staff
+  ctx.fillRect(10, -10, 2, 20);
+  ctx.beginPath();
+  ctx.arc(11, -12, 4, 0, Math.PI * 2);
+  ctx.fill();
+} else if (playerClass === 'rogue') {
+  // Dagger
+  ctx.fillRect(10, -6, 10, 2);
+  ctx.fillRect(18, -8, 2, 6);
+} else {
+  // Default indicator
+  ctx.fillRect(8, -4, 8, 8);
+}
+
+// Draw arms
+ctx.fillStyle = primaryColor;
+ctx.fillRect(-12, 0, 8, 4);
+ctx.fillRect(4, 0, 8, 4);
+
+// Draw legs
+ctx.fillStyle = secondaryColor;
+ctx.fillRect(-6, 12, 5, 8);
+ctx.fillRect(1, 12, 5, 8);
+
 ctx.restore();
 
 // Draw day/night overlay

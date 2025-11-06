@@ -135,6 +135,10 @@ const [notifications, setNotifications] = useState([]);
 const [isTouchDevice, setIsTouchDevice] = useState(false);
 const [joystickActive, setJoystickActive] = useState(false);
 const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
+const [joystickRightActive, setJoystickRightActive] = useState(false);
+const [joystickRightPos, setJoystickRightPos] = useState({ x: 0, y: 0 });
+const [chargeLevel, setChargeLevel] = useState(0);
+const [sprintActive, setSprintActive] = useState(false);
 const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 600 });
 const [quests, setQuests] = useState([
 { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
@@ -774,6 +778,29 @@ if (Math.abs(dx) < deadzone && Math.abs(dy) < deadzone) {
 }
 }, [joystickActive, joystickPos]);
 
+// Right joystick handler (aiming)
+useEffect(() => {
+if (!joystickRightActive) {
+  return;
+}
+
+// Update player facing angle based on right joystick
+const deadzone = 15;
+const dx = joystickRightPos.x;
+const dy = joystickRightPos.y;
+
+if (Math.abs(dx) > deadzone || Math.abs(dy) > deadzone) {
+  const angle = Math.atan2(dy, dx);
+  setPlayer(prev => ({ ...prev, facingAngle: angle }));
+
+  // Update mousePos to match facing direction for spell casting
+  setMousePos({
+    x: player.x + Math.cos(angle) * 100,
+    y: player.y + Math.sin(angle) * 100
+  });
+}
+}, [joystickRightActive, joystickRightPos, player.x, player.y]);
+
 useEffect(() => {
 const canvas = canvasRef.current;
 if (!canvas) return;
@@ -833,15 +860,19 @@ const gameLoop = () => {
   setPlayer(prev => {
     let newX = prev.x;
     let newY = prev.y;
-    
-    if (keys['w']) newY -= prev.speed * timeMultiplier;
-    if (keys['s']) newY += prev.speed * timeMultiplier;
-    if (keys['a']) newX -= prev.speed * timeMultiplier;
-    if (keys['d']) newX += prev.speed * timeMultiplier;
-    
+
+    // Apply sprint multiplier if active
+    const speedMultiplier = sprintActive ? 2 : 1;
+    const effectiveSpeed = prev.speed * speedMultiplier * timeMultiplier;
+
+    if (keys['w']) newY -= effectiveSpeed;
+    if (keys['s']) newY += effectiveSpeed;
+    if (keys['a']) newX -= effectiveSpeed;
+    if (keys['d']) newX += effectiveSpeed;
+
     newX = Math.max(20, Math.min(MAP_WIDTH - 20, newX));
     newY = Math.max(20, Math.min(MAP_HEIGHT - 20, newY));
-    
+
     const angle = Math.atan2(mousePos.y - prev.y, mousePos.x - prev.x);
     
     if (prev.health <= 0) {
@@ -1124,7 +1155,7 @@ return () => {
   }
 };
 
-}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification]);
+}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification, sprintActive]);
 
 useEffect(() => {
 const canvas = canvasRef.current;
@@ -1776,46 +1807,143 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
   )}
 
   {isTouchDevice && gameState === 'playing' && (
-    <div
-      className="fixed bottom-4 left-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-purple-500 flex items-center justify-center z-50"
-      style={{ touchAction: 'none' }}
-      onTouchStart={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setJoystickActive(true);
-      }}
-      onTouchMove={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const touch = e.touches[0];
-        const rect = e.currentTarget.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const dx = touch.clientX - centerX;
-        const dy = touch.clientY - centerY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const maxDistance = 45;
-        const clampedDistance = Math.min(distance, maxDistance);
-        const angle = Math.atan2(dy, dx);
-        setJoystickPos({
-          x: Math.cos(angle) * clampedDistance,
-          y: Math.sin(angle) * clampedDistance
-        });
-      }}
-      onTouchEnd={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setJoystickActive(false);
-        setJoystickPos({ x: 0, y: 0 });
-      }}
-    >
+    <>
+      {/* Left Joystick - Movement with Sprint */}
       <div
-        className="w-14 h-14 bg-purple-600 rounded-full transition-transform pointer-events-none"
-        style={{
-          transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`
+        className="fixed bottom-4 left-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-purple-500 flex items-center justify-center z-50"
+        style={{ touchAction: 'none' }}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setJoystickActive(true);
+          // Detect force touch for sprint
+          const touch = e.touches[0];
+          setSprintActive((touch.force || 0) > 0.5);
         }}
-      />
-    </div>
+        onTouchMove={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const touch = e.touches[0];
+          const rect = e.currentTarget.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const dx = touch.clientX - centerX;
+          const dy = touch.clientY - centerY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const maxDistance = 45;
+          const clampedDistance = Math.min(distance, maxDistance);
+          const angle = Math.atan2(dy, dx);
+          setJoystickPos({
+            x: Math.cos(angle) * clampedDistance,
+            y: Math.sin(angle) * clampedDistance
+          });
+          // Update sprint based on force
+          setSprintActive((touch.force || 0) > 0.5);
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setJoystickActive(false);
+          setJoystickPos({ x: 0, y: 0 });
+          setSprintActive(false);
+        }}
+      >
+        <div
+          className={`w-14 h-14 rounded-full transition-all pointer-events-none ${
+            sprintActive ? 'bg-yellow-500' : 'bg-purple-600'
+          }`}
+          style={{
+            transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`,
+            boxShadow: sprintActive ? '0 0 15px rgba(255, 255, 0, 0.8)' : 'none'
+          }}
+        />
+      </div>
+
+      {/* Right Joystick - Aiming with Charged Fireball */}
+      <div
+        className="fixed bottom-4 right-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-orange-500 flex items-center justify-center z-50"
+        style={{ touchAction: 'none', position: 'relative' }}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setJoystickRightActive(true);
+          const touch = e.touches[0];
+          const force = touch.force || 0;
+          setChargeLevel(Math.min(force * 2, 1)); // Scale force to 0-1
+        }}
+        onTouchMove={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const touch = e.touches[0];
+          const rect = e.currentTarget.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const dx = touch.clientX - centerX;
+          const dy = touch.clientY - centerY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const maxDistance = 45;
+          const clampedDistance = Math.min(distance, maxDistance);
+          const angle = Math.atan2(dy, dx);
+          setJoystickRightPos({
+            x: Math.cos(angle) * clampedDistance,
+            y: Math.sin(angle) * clampedDistance
+          });
+          // Update charge level based on force
+          const force = touch.force || 0;
+          setChargeLevel(Math.min(force * 2, 1));
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Fire spell based on charge level
+          if (chargeLevel > 0.5) {
+            // Charged fireball
+            castSpell(0);
+            setTimeout(() => castSpell(0), 100); // Double cast for charged effect
+          } else if (Math.abs(joystickRightPos.x) < 10 && Math.abs(joystickRightPos.y) < 10) {
+            // Tap to shoot normal fireball
+            castSpell(0);
+          }
+
+          setJoystickRightActive(false);
+          setJoystickRightPos({ x: 0, y: 0 });
+          setChargeLevel(0);
+        }}
+      >
+        {/* Charge meter circle */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: 'rotate(-90deg)' }}>
+          <circle
+            cx="56"
+            cy="56"
+            r="50"
+            fill="none"
+            stroke="rgba(255, 165, 0, 0.3)"
+            strokeWidth="4"
+          />
+          <circle
+            cx="56"
+            cy="56"
+            r="50"
+            fill="none"
+            stroke="rgba(255, 165, 0, 1)"
+            strokeWidth="4"
+            strokeDasharray={`${2 * Math.PI * 50}`}
+            strokeDashoffset={`${2 * Math.PI * 50 * (1 - chargeLevel)}`}
+            style={{ transition: 'stroke-dashoffset 0.1s' }}
+          />
+        </svg>
+        <div
+          className={`w-14 h-14 rounded-full transition-all pointer-events-none ${
+            chargeLevel > 0.5 ? 'bg-orange-400' : 'bg-orange-600'
+          }`}
+          style={{
+            transform: `translate(${joystickRightPos.x}px, ${joystickRightPos.y}px)`,
+            boxShadow: chargeLevel > 0.5 ? '0 0 20px rgba(255, 165, 0, 0.9)' : 'none'
+          }}
+        />
+      </div>
+    </>
   )}
 </div>
 

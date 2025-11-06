@@ -169,7 +169,7 @@ const [damageNumbers, setDamageNumbers] = useState([]); // {x, y, value, life, t
 const [screenShake, setScreenShake] = useState({ x: 0, y: 0, intensity: 0 });
 const [comboCounter, setComboCounter] = useState({ count: 0, timer: 0 });
 const [aoeEffects, setAoeEffects] = useState([]); // {x, y, radius, type, life}
-const [biome, setBiome] = useState('forest'); // forest, desert, tundra
+// const [biome, setBiome] = useState('forest'); // FUTURE: forest, desert, tundra
 const [pet, setPet] = useState(null); // {type: 'wolf'|'fairy', x, y, health, ability}
 const [achievements, setAchievements] = useState([
   { id: 'kill_100', title: 'Slayer', desc: 'Kill 100 enemies', progress: 0, goal: 100, complete: false, reward: 'Wolf Pet' },
@@ -177,12 +177,13 @@ const [achievements, setAchievements] = useState([
   { id: 'collect_1000_gold', title: 'Wealthy', desc: 'Collect 1000 gold', progress: 0, goal: 1000, complete: false, reward: 'Fairy Pet' }
 ]);
 const [timeOfDay, setTimeOfDay] = useState(0); // 0-1440 (24 hours in game minutes)
-const [npcs, setNpcs] = useState([]); // {id, type, x, y, name, dialogue}
-const [showShop, setShowShop] = useState(false);
-const [showEnchanting, setShowEnchanting] = useState(false);
+// FUTURE FEATURES - Ready to implement
+// const [npcs, setNpcs] = useState([]); // {id, type, x, y, name, dialogue}
+// const [showShop, setShowShop] = useState(false);
+// const [showEnchanting, setShowEnchanting] = useState(false);
+// const [showPetMenu, setShowPetMenu] = useState(false);
+// const [selectedNpc, setSelectedNpc] = useState(null);
 const [showAchievements, setShowAchievements] = useState(false);
-const [showPetMenu, setShowPetMenu] = useState(false);
-const [selectedNpc, setSelectedNpc] = useState(null);
 
 const gameLoopRef = useRef(null);
 const spawnTimerRef = useRef(0);
@@ -313,10 +314,14 @@ const ps = getSkillBonus('combat', 'powerStrike', 0);
 return Math.floor(dmg * (1 + ps / 100));
 };
 
-const getTotalCritChance = () => player.critChance + getSkillBonus('combat', 'criticalHit', 0);
-const getTotalCritDamage = () => player.critDamage + getSkillBonus('combat', 'deadlyBlow', 0);
-const getTotalDodge = () => player.dodgeChance + getSkillBonus('defense', 'evasion', 0);
-const getTotalSpeed = () => player.speed + getSkillBonus('utility', 'swiftness', 0);
+// eslint-disable-next-line react-hooks/exhaustive-deps
+const getTotalCritChance = useCallback(() => player.critChance + getSkillBonus('combat', 'criticalHit', 0), [player.critChance]);
+// eslint-disable-next-line react-hooks/exhaustive-deps
+const getTotalCritDamage = useCallback(() => player.critDamage + getSkillBonus('combat', 'deadlyBlow', 0), [player.critDamage]);
+// eslint-disable-next-line react-hooks/exhaustive-deps
+const getTotalDodge = useCallback(() => player.dodgeChance + getSkillBonus('defense', 'evasion', 0), [player.dodgeChance]);
+// eslint-disable-next-line react-hooks/exhaustive-deps
+const getTotalSpeed = useCallback(() => player.speed + getSkillBonus('utility', 'swiftness', 0), [player.speed]);
 
 const upgradeSkill = useCallback((category, skillName) => {
 const skill = skills[category]?.[skillName];
@@ -501,7 +506,6 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
 
     const angle = Math.atan2(mousePos.y - p.y, mousePos.x - p.x);
     const spellPowerBonus = getClassBonus('spellPower') || 1;
-    const cooldownMod = getClassBonus('cooldownReduction') || 1;
 
     // PROJECTILE SPELLS (Fireball, Lightning, Meteor)
     if (spell.type === 'projectile') {
@@ -574,16 +578,19 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
     else if (spell.type === 'chain') {
       audioManager.play('fireball');
 
-      // Find nearest enemies and chain between them
-      const chainTargets = [];
-      let currentTarget = { x: p.x, y: p.y };
+      // Calculate chain targets without setState in loop
+      setEnemies(currentEnemies => {
+        const chainTargets = [];
+        const chainedIds = new Set();
+        let targetPos = { x: p.x, y: p.y };
 
-      for (let i = 0; i < spell.chains; i++) {
-        setEnemies(enemies => {
-          const nearestEnemy = enemies
-            .filter(e => !chainTargets.includes(e.id))
+        // Find all chain targets
+        for (let i = 0; i < spell.chains; i++) {
+          const nearestEnemy = currentEnemies
+            .filter(e => !chainedIds.has(e.id))
+            // eslint-disable-next-line no-loop-func
             .reduce((nearest, enemy) => {
-              const dist = Math.sqrt(Math.pow(enemy.x - currentTarget.x, 2) + Math.pow(enemy.y - currentTarget.y, 2));
+              const dist = Math.sqrt(Math.pow(enemy.x - targetPos.x, 2) + Math.pow(enemy.y - targetPos.y, 2));
               if (!nearest || dist < nearest.dist) {
                 return { enemy, dist };
               }
@@ -591,23 +598,28 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
             }, null);
 
           if (nearestEnemy && nearestEnemy.dist < 200) {
-            chainTargets.push(nearestEnemy.enemy.id);
-            currentTarget = nearestEnemy.enemy;
-
-            // Create chain visual effect
-            createParticles(nearestEnemy.enemy.x, nearestEnemy.enemy.y, '#ffff00', 10);
-            createDamageNumber(nearestEnemy.enemy.x, nearestEnemy.enemy.y, Math.floor(spell.damage * spellPowerBonus), 'damage');
-            updateCombo();
-
-            return enemies.map(e =>
-              e.id === nearestEnemy.enemy.id
-                ? { ...e, health: e.health - Math.floor(spell.damage * spellPowerBonus) }
-                : e
-            );
+            chainTargets.push(nearestEnemy.enemy);
+            chainedIds.add(nearestEnemy.enemy.id);
+            targetPos = { x: nearestEnemy.enemy.x, y: nearestEnemy.enemy.y };
+          } else {
+            break; // No more valid targets
           }
-          return enemies;
+        }
+
+        // Apply effects to all chained enemies
+        chainTargets.forEach(target => {
+          createParticles(target.x, target.y, '#ffff00', 10);
+          createDamageNumber(target.x, target.y, Math.floor(spell.damage * spellPowerBonus), 'damage');
+          updateCombo();
         });
-      }
+
+        // Apply damage to all chained enemies at once
+        return currentEnemies.map(e =>
+          chainedIds.has(e.id)
+            ? { ...e, health: e.health - Math.floor(spell.damage * spellPowerBonus) }
+            : e
+        );
+      });
     }
 
     // BUFF SPELLS (Shield, Haste)
@@ -887,7 +899,7 @@ triggerScreenShake(20);
   return { ...prev, xp: newXP };
 });
 
-}, [showNotification]);
+}, [showNotification, triggerScreenShake]);
 
 useEffect(() => {
 const handleKeyDown = (e) => {
@@ -1427,9 +1439,20 @@ const gameLoop = () => {
       y: proj.y + proj.vy * timeMultiplier,
       life: proj.life - timeMultiplier
     })).filter(p => p.life > 0 && p.x > 0 && p.x < MAP_WIDTH && p.y > 0 && p.y < MAP_HEIGHT);
-    
+
+    // Build spatial hash for efficient collision detection
+    const spatialHash = spatialHashRef.current;
+    spatialHash.clear();
+    enemies.forEach(enemy => spatialHash.insert(enemy));
+    bosses.forEach(boss => spatialHash.insert(boss));
+
     updated.forEach(proj => {
+      // Use spatial hash to only check nearby enemies (huge performance boost!)
+      const nearbyEnemies = spatialHash.queryRadius(proj.x, proj.y, 100);
+
       setEnemies(enemies => enemies.map(enemy => {
+        // Skip if not in nearby list
+        if (!nearbyEnemies.includes(enemy)) return enemy;
         const dx = proj.x - enemy.x;
         const dy = proj.y - enemy.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1485,8 +1508,13 @@ const gameLoop = () => {
         }
         return enemy;
       }).filter(Boolean));
-      
+
+      // Use spatial hash for boss collisions too
+      const nearbyBosses = spatialHash.queryRadius(proj.x, proj.y, 150);
+
       setBosses(bosses => bosses.map(boss => {
+        // Skip if not in nearby list
+        if (!nearbyBosses.includes(boss)) return boss;
         const dx = proj.x - boss.x;
         const dy = proj.y - boss.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1555,7 +1583,7 @@ return () => {
   }
 };
 
-}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification, sprintActive]);
+}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, player.health, player.maxHealth, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification, sprintActive, activeBuffs, checkAchievement, createDamageNumber, getClassBonus, getTotalCritChance, getTotalCritDamage, inventory.gold, pet, triggerScreenShake, updateCombo, enemies, bosses]);
 
 useEffect(() => {
 const canvas = canvasRef.current;

@@ -132,6 +132,9 @@ const [showCrafting, setShowCrafting] = useState(false);
 const [buildMode, setBuildMode] = useState(null);
 const [message, setMessage] = useState('');
 const [notifications, setNotifications] = useState([]);
+const [isTouchDevice, setIsTouchDevice] = useState(false);
+const [joystickActive, setJoystickActive] = useState(false);
+const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
 const [quests, setQuests] = useState([
 { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
 { id: 2, title: 'Dungeon Delver', desc: 'Clear a dungeon', progress: 0, goal: 1, reward: 100, complete: false },
@@ -689,6 +692,49 @@ return () => {
 };
 
 }, [showBase, inDungeon, dungeons, player.x, player.y, player.health, player.maxHealth, inventory.potions, castSpell, enterDungeon, exitDungeon, showMessage]);
+
+// Detect touch device
+useEffect(() => {
+setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+}, []);
+
+// Virtual joystick handler
+useEffect(() => {
+if (!joystickActive) {
+  // Release all direction keys when joystick is not active
+  setKeys(prev => ({
+    ...prev,
+    w: false,
+    a: false,
+    s: false,
+    d: false
+  }));
+  return;
+}
+
+// Map joystick position to WASD keys
+const deadzone = 15;
+const dx = joystickPos.x;
+const dy = joystickPos.y;
+
+if (Math.abs(dx) < deadzone && Math.abs(dy) < deadzone) {
+  setKeys(prev => ({
+    ...prev,
+    w: false,
+    a: false,
+    s: false,
+    d: false
+  }));
+} else {
+  setKeys(prev => ({
+    ...prev,
+    w: dy < -deadzone,
+    s: dy > deadzone,
+    a: dx < -deadzone,
+    d: dx > deadzone
+  }));
+}
+}, [joystickActive, joystickPos]);
 
 useEffect(() => {
 const canvas = canvasRef.current;
@@ -1685,6 +1731,45 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
           </div>
         </div>
       </div>
+    </div>
+  )}
+
+  {isTouchDevice && gameState === 'playing' && (
+    <div
+      className="fixed bottom-24 left-8 w-32 h-32 bg-gray-800 bg-opacity-50 rounded-full border-2 border-purple-500 flex items-center justify-center"
+      onTouchStart={(e) => {
+        e.preventDefault();
+        setJoystickActive(true);
+      }}
+      onTouchMove={(e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = e.currentTarget.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const dx = touch.clientX - centerX;
+        const dy = touch.clientY - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = 50;
+        const clampedDistance = Math.min(distance, maxDistance);
+        const angle = Math.atan2(dy, dx);
+        setJoystickPos({
+          x: Math.cos(angle) * clampedDistance,
+          y: Math.sin(angle) * clampedDistance
+        });
+      }}
+      onTouchEnd={(e) => {
+        e.preventDefault();
+        setJoystickActive(false);
+        setJoystickPos({ x: 0, y: 0 });
+      }}
+    >
+      <div
+        className="w-16 h-16 bg-purple-600 rounded-full transition-transform"
+        style={{
+          transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`
+        }}
+      />
     </div>
   )}
 </div>

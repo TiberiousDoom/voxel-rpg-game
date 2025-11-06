@@ -150,8 +150,10 @@ const [notifications, setNotifications] = useState([]);
 const [isTouchDevice, setIsTouchDevice] = useState(false);
 const [joystickActive, setJoystickActive] = useState(false);
 const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
+const [leftJoystickTouchId, setLeftJoystickTouchId] = useState(null);
 const [joystickRightActive, setJoystickRightActive] = useState(false);
 const [joystickRightPos, setJoystickRightPos] = useState({ x: 0, y: 0 });
+const [rightJoystickTouchId, setRightJoystickTouchId] = useState(null);
 const [chargeLevel, setChargeLevel] = useState(0);
 const [sprintActive, setSprintActive] = useState(false);
 const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -1449,10 +1451,11 @@ const gameLoop = () => {
     updated.forEach(proj => {
       // Use spatial hash to only check nearby enemies (huge performance boost!)
       const nearbyEnemies = spatialHash.queryRadius(proj.x, proj.y, 100);
+      const nearbyEnemyIds = new Set(nearbyEnemies.map(e => e.id));
 
       setEnemies(enemies => enemies.map(enemy => {
-        // Skip if not in nearby list
-        if (!nearbyEnemies.includes(enemy)) return enemy;
+        // Skip if not in nearby list (compare by ID)
+        if (!nearbyEnemyIds.has(enemy.id)) return enemy;
         const dx = proj.x - enemy.x;
         const dy = proj.y - enemy.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1511,10 +1514,11 @@ const gameLoop = () => {
 
       // Use spatial hash for boss collisions too
       const nearbyBosses = spatialHash.queryRadius(proj.x, proj.y, 150);
+      const nearbyBossIds = new Set(nearbyBosses.map(b => b.id));
 
       setBosses(bosses => bosses.map(boss => {
-        // Skip if not in nearby list
-        if (!nearbyBosses.includes(boss)) return boss;
+        // Skip if not in nearby list (compare by ID)
+        if (!nearbyBossIds.has(boss.id)) return boss;
         const dx = proj.x - boss.x;
         const dy = proj.y - boss.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -2492,15 +2496,19 @@ return (
         onTouchStart={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          const touch = e.changedTouches[0];
+          setLeftJoystickTouchId(touch.identifier);
           setJoystickActive(true);
           // Detect force touch for sprint
-          const touch = e.touches[0];
           setSprintActive((touch.force || 0) > 0.5);
         }}
         onTouchMove={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          const touch = e.touches[0];
+          // Find the touch that belongs to this joystick
+          const touch = Array.from(e.touches).find(t => t.identifier === leftJoystickTouchId);
+          if (!touch) return;
+
           const rect = e.currentTarget.getBoundingClientRect();
           const centerX = rect.left + rect.width / 2;
           const centerY = rect.top + rect.height / 2;
@@ -2520,6 +2528,7 @@ return (
         onTouchEnd={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          setLeftJoystickTouchId(null);
           setJoystickActive(false);
           setJoystickPos({ x: 0, y: 0 });
           setSprintActive(false);
@@ -2553,15 +2562,19 @@ return (
         onTouchStart={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          const touch = e.changedTouches[0];
+          setRightJoystickTouchId(touch.identifier);
           setJoystickRightActive(true);
-          const touch = e.touches[0];
           const force = touch.force || 0;
           setChargeLevel(Math.min(force * 2, 1)); // Scale force to 0-1
         }}
         onTouchMove={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          const touch = e.touches[0];
+          // Find the touch that belongs to this joystick
+          const touch = Array.from(e.touches).find(t => t.identifier === rightJoystickTouchId);
+          if (!touch) return;
+
           const rect = e.currentTarget.getBoundingClientRect();
           const centerX = rect.left + rect.width / 2;
           const centerY = rect.top + rect.height / 2;
@@ -2593,6 +2606,7 @@ return (
             castSpell(0);
           }
 
+          setRightJoystickTouchId(null);
           setJoystickRightActive(false);
           setJoystickRightPos({ x: 0, y: 0 });
           setChargeLevel(0);

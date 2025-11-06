@@ -791,15 +791,18 @@ const dy = joystickRightPos.y;
 
 if (Math.abs(dx) > deadzone || Math.abs(dy) > deadzone) {
   const angle = Math.atan2(dy, dx);
-  setPlayer(prev => ({ ...prev, facingAngle: angle }));
 
-  // Update mousePos to match facing direction for spell casting
-  setMousePos({
-    x: player.x + Math.cos(angle) * 100,
-    y: player.y + Math.sin(angle) * 100
+  // Update player facing angle and mousePos using callbacks to avoid dependencies
+  setPlayer(prev => {
+    // Update mousePos based on current player position at this moment
+    setMousePos({
+      x: prev.x + Math.cos(angle) * 100,
+      y: prev.y + Math.sin(angle) * 100
+    });
+    return { ...prev, facingAngle: angle };
   });
 }
-}, [joystickRightActive, joystickRightPos, player.x, player.y]);
+}, [joystickRightActive, joystickRightPos]);
 
 useEffect(() => {
 const canvas = canvasRef.current;

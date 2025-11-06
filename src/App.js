@@ -139,6 +139,7 @@ const [joystickRightActive, setJoystickRightActive] = useState(false);
 const [joystickRightPos, setJoystickRightPos] = useState({ x: 0, y: 0 });
 const [chargeLevel, setChargeLevel] = useState(0);
 const [sprintActive, setSprintActive] = useState(false);
+const [showMobileMenu, setShowMobileMenu] = useState(false);
 const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 600 });
 const [quests, setQuests] = useState([
 { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
@@ -710,8 +711,8 @@ const updateCanvasSize = () => {
   const height = window.innerHeight;
 
   // Calculate available space for canvas (accounting for UI elements)
-  const uiHeight = isTouchDevice ? 280 : 200; // More space for mobile UI
-  const maxCanvasWidth = Math.min(width - 40, 1000); // Max 1000px, 20px padding each side
+  const uiHeight = isTouchDevice ? 140 : 180; // Compact UI for mobile
+  const maxCanvasWidth = Math.min(width - 20, 1000); // Max 1000px, 10px padding each side
   const maxCanvasHeight = Math.min(height - uiHeight, 600);
 
   // Maintain aspect ratio
@@ -1400,151 +1401,156 @@ const buildingOptions = [
 
 return (
 <div className="w-full h-screen bg-gray-900 flex flex-col items-center justify-center overflow-hidden" style={{ touchAction: 'none' }}>
-<div className="absolute top-4 right-4 space-y-2 z-10">
-{notifications.map(notif => (
-<div
-key={notif.id}
-className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type === 'success' ? 'bg-green-600' : notif.type === 'warning' ? 'bg-orange-600' : 'bg-blue-600' } text-white`}
->
-<AlertCircle size={20} />
-<span>{notif.msg}</span>
-</div>
-))}
-</div>
-
-  <div className="absolute top-4 left-4 z-10">
-    <button
-      onClick={saveGame}
-      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-    >
-      <Save size={20} />
-      Save Game
-    </button>
-  </div>
-  
-  <div className="mb-2 flex gap-2 md:gap-6 text-white flex-wrap justify-center text-xs md:text-base px-2">
-    <div className="flex items-center gap-2">
-      <Heart className="text-red-500" />
-      <div className="w-32 h-6 bg-gray-700 rounded">
-        <div 
-          className="h-full bg-red-500 rounded transition-all"
-          style={{ width: `${Math.max(0, (player.health / player.maxHealth) * 100)}%` }}
-        />
-      </div>
-      <span>{Math.floor(Math.max(0, player.health))}/{player.maxHealth}</span>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      <Zap className="text-blue-500" />
-      <div className="w-32 h-6 bg-gray-700 rounded">
-        <div 
-          className="h-full bg-blue-500 rounded transition-all"
-          style={{ width: `${(player.mana / player.maxMana) * 100}%` }}
-        />
-      </div>
-      <span>{Math.floor(player.mana)}/{player.maxMana}</span>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      <TrendingUp className="text-yellow-500" />
-      <span>Level {player.level}</span>
-      <div className="w-24 h-6 bg-gray-700 rounded">
-        <div 
-          className="h-full bg-yellow-500 rounded transition-all"
-          style={{ width: `${(player.xp / player.xpToNext) * 100}%` }}
-        />
-      </div>
-    </div>
-    
-    <div className="flex items-center gap-2">
-      <Package className="text-yellow-300" />
-      <span>Gold: {inventory.gold}</span>
-    </div>
-  </div>
-  
-  <canvas 
-    ref={canvasRef} 
-    width={CANVAS_WIDTH} 
-    height={CANVAS_HEIGHT}
-    className="border-4 border-purple-500 rounded-lg"
-  />
-  
-  <div className="mt-2 flex gap-2 text-white flex-wrap justify-center">
-    {spells.map((spell, i) => (
+  {/* Toast Notifications - Top Right */}
+  <div className="fixed top-2 right-2 space-y-1 z-50 max-w-xs">
+    {notifications.map(notif => (
       <div
-        key={spell.id}
-        className={`px-2 md:px-4 py-1 md:py-2 rounded ${
-          spell.unlocked
-            ? spell.cooldown > 0
-              ? 'bg-gray-600'
-              : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'
-            : 'bg-gray-800'
-        }`}
-        onClick={() => spell.unlocked && castSpell(i)}
+        key={notif.id}
+        className={`px-3 py-1.5 rounded-md shadow-xl flex items-center gap-1.5 text-xs ${
+          notif.type === 'success' ? 'bg-green-600' : notif.type === 'warning' ? 'bg-orange-600' : 'bg-blue-600'
+        } text-white`}
       >
-        <div className="text-xs md:text-sm">{i + 1}. {spell.name}</div>
-        <div className="text-xs">
-          {spell.unlocked
-            ? spell.cooldown > 0
-              ? `${Math.ceil(spell.cooldown / 60)}s`
-              : `${spell.cost} mana`
-            : 'Locked'}
-        </div>
+        <AlertCircle size={14} />
+        <span className="text-xs">{notif.msg}</span>
       </div>
     ))}
   </div>
 
-  <div className="mt-2 flex gap-2 text-white justify-center flex-wrap">
-    <button
-      onClick={() => setShowInventory(prev => !prev)}
-      className={`px-2 md:px-4 py-1 md:py-2 rounded flex items-center gap-1 md:gap-2 ${
-        showInventory ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
-      } transition-colors`}
-    >
-      <Package size={16} />
-      <span className="text-xs md:text-sm">Inventory</span>
-    </button>
-    <button
-      onClick={() => setShowSkills(prev => !prev)}
-      className={`px-2 md:px-4 py-1 md:py-2 rounded flex items-center gap-1 md:gap-2 ${
-        showSkills ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
-      } transition-colors`}
-    >
-      <Star size={16} />
-      <span className="text-xs md:text-sm">Skills</span>
-    </button>
-    <button
-      onClick={() => setShowCrafting(prev => !prev)}
-      className={`px-2 md:px-4 py-1 md:py-2 rounded flex items-center gap-1 md:gap-2 ${
-        showCrafting ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
-      } transition-colors`}
-    >
-      <Hammer size={16} />
-      <span className="text-xs md:text-sm">Crafting</span>
-    </button>
-    <button
-      onClick={() => {
-        setShowBase(prev => !prev);
-        if (showBase) setBuildMode(null);
-      }}
-      className={`px-2 md:px-4 py-1 md:py-2 rounded flex items-center gap-1 md:gap-2 ${
-        showBase ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
-      } transition-colors`}
-    >
-      <Home size={16} />
-      <span className="text-xs md:text-sm">Base</span>
-    </button>
-  </div>
+  {/* Compact Header with Save + Stats */}
+  <div className="absolute top-0 left-0 right-0 bg-gray-800 bg-opacity-90 px-2 py-1 flex items-center justify-between z-40">
+    {/* Left: Save + Menu */}
+    <div className="flex items-center gap-1">
+      <button
+        onClick={saveGame}
+        className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+      >
+        <Save size={14} />
+        <span className="hidden sm:inline">Save</span>
+      </button>
+      {isTouchDevice && (
+        <button
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+          className="bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+        >
+          ☰
+        </button>
+      )}
+    </div>
 
-  <div className="mt-2 text-white text-center px-2">
-    <p className="text-xs md:text-sm mb-2 hidden md:block">
-      WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Enter/Exit Dungeon | I: Inventory | K: Skills | C: Crafting | B: Base
-    </p>
-    <p className="text-xs mb-2 md:hidden">
-      Potions: {inventory.potions} | Press H to use
-    </p>
-    {message && <p className="text-yellow-300 font-bold text-sm">{message}</p>}
+    {/* Center: Compact Stats */}
+    <div className="flex items-center gap-2 text-white text-xs">
+      <div className="flex items-center gap-1">
+        <Heart size={12} className="text-red-500" />
+        <div className="w-16 h-2 bg-gray-700 rounded-full">
+          <div className="h-full bg-red-500 rounded-full" style={{ width: `${Math.max(0, (player.health / player.maxHealth) * 100)}%` }} />
+        </div>
+        <span className="text-[10px]">{Math.floor(player.health)}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <Zap size={12} className="text-blue-500" />
+        <div className="w-16 h-2 bg-gray-700 rounded-full">
+          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(player.mana / player.maxMana) * 100}%` }} />
+        </div>
+        <span className="text-[10px]">{Math.floor(player.mana)}</span>
+      </div>
+    </div>
+
+    {/* Right: Level + Gold */}
+    <div className="flex items-center gap-2 text-white text-xs">
+      <div className="flex items-center gap-0.5">
+        <TrendingUp size={12} className="text-yellow-500" />
+        <span className="text-[10px]">{player.level}</span>
+      </div>
+      <div className="flex items-center gap-0.5">
+        <Package size={12} className="text-yellow-300" />
+        <span className="text-[10px]">{inventory.gold}</span>
+      </div>
+    </div>
   </div>
+  
+  {/* Game Canvas - Maximized */}
+  <canvas
+    ref={canvasRef}
+    width={CANVAS_WIDTH}
+    height={CANVAS_HEIGHT}
+    className="border-2 border-purple-500 rounded"
+  />
+
+  {/* Desktop: Full menu buttons + spell hotbar */}
+  {!isTouchDevice && (
+    <>
+      <div className="mt-2 flex gap-2 text-white flex-wrap justify-center">
+        {spells.map((spell, i) => (
+          <div
+            key={spell.id}
+            className={`px-3 py-1 rounded text-xs ${
+              spell.unlocked
+                ? spell.cooldown > 0
+                  ? 'bg-gray-600'
+                  : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'
+                : 'bg-gray-800'
+            }`}
+            onClick={() => spell.unlocked && castSpell(i)}
+          >
+            <div>{i + 1}. {spell.name}</div>
+            <div className="text-[10px]">
+              {spell.unlocked ? spell.cooldown > 0 ? `${Math.ceil(spell.cooldown / 60)}s` : `${spell.cost} mana` : 'Locked'}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex gap-2 text-white justify-center flex-wrap">
+        <button onClick={() => setShowInventory(prev => !prev)} className={`px-3 py-1 rounded text-xs ${showInventory ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
+          <Package size={14} className="inline mr-1" />Inventory
+        </button>
+        <button onClick={() => setShowSkills(prev => !prev)} className={`px-3 py-1 rounded text-xs ${showSkills ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
+          <Star size={14} className="inline mr-1" />Skills
+        </button>
+        <button onClick={() => setShowCrafting(prev => !prev)} className={`px-3 py-1 rounded text-xs ${showCrafting ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
+          <Hammer size={14} className="inline mr-1" />Crafting
+        </button>
+        <button onClick={() => { setShowBase(prev => !prev); if (showBase) setBuildMode(null); }} className={`px-3 py-1 rounded text-xs ${showBase ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
+          <Home size={14} className="inline mr-1" />Base
+        </button>
+      </div>
+      <div className="mt-1 text-white text-center px-2 text-xs">
+        WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Dungeon | I: Inv | K: Skills | C: Craft | B: Base
+      </div>
+    </>
+  )}
+
+  {/* Message Display */}
+  {message && (
+    <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-30">
+      <p className="text-yellow-300 font-bold text-sm bg-gray-900 bg-opacity-80 px-3 py-1 rounded">{message}</p>
+    </div>
+  )}
+
+  {/* Mobile Menu Overlay */}
+  {showMobileMenu && isTouchDevice && (
+    <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center" onClick={() => setShowMobileMenu(false)}>
+      <div className="bg-gray-800 rounded-lg p-4 max-w-xs w-full m-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-white font-bold">Menu</h3>
+          <X className="text-white cursor-pointer" onClick={() => setShowMobileMenu(false)} size={20} />
+        </div>
+        <div className="space-y-2">
+          <button onClick={() => { setShowInventory(true); setShowMobileMenu(false); }} className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-2">
+            <Package size={16} />Inventory
+          </button>
+          <button onClick={() => { setShowSkills(true); setShowMobileMenu(false); }} className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-2">
+            <Star size={16} />Skills
+          </button>
+          <button onClick={() => { setShowCrafting(true); setShowMobileMenu(false); }} className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-2">
+            <Hammer size={16} />Crafting
+          </button>
+          <button onClick={() => { setShowBase(true); setShowMobileMenu(false); setBuildMode(null); }} className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-2">
+            <Home size={16} />Base Building
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
   
   {showInventory && (
     <div className="absolute top-20 right-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-md max-h-96 overflow-y-auto">
@@ -1811,9 +1817,29 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
 
   {isTouchDevice && gameState === 'playing' && (
     <>
+      {/* Mobile: Spell Hotbar above Right Joystick */}
+      <div className="fixed bottom-20 right-2 flex flex-col gap-1 z-40">
+        {spells.slice(0, 2).map((spell, i) => (
+          <div
+            key={spell.id}
+            className={`w-12 h-12 rounded flex flex-col items-center justify-center text-white text-[8px] ${
+              spell.unlocked
+                ? spell.cooldown > 0
+                  ? 'bg-gray-600 bg-opacity-80'
+                  : 'bg-purple-600 bg-opacity-90'
+                : 'bg-gray-800 bg-opacity-70'
+            }`}
+            onClick={() => spell.unlocked && castSpell(i)}
+          >
+            <div className="font-bold">{i + 1}</div>
+            <div className="text-[7px]">{spell.unlocked ? spell.cooldown > 0 ? `${Math.ceil(spell.cooldown / 60)}s` : spell.name.slice(0, 4) : '🔒'}</div>
+          </div>
+        ))}
+      </div>
+
       {/* Left Joystick - Movement with Sprint */}
       <div
-        className="fixed bottom-4 left-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-purple-500 flex items-center justify-center z-50 select-none"
+        className="fixed bottom-2 left-2 w-16 h-16 bg-gray-800 bg-opacity-30 rounded-full border border-purple-500 flex items-center justify-center z-50 select-none"
         style={{
           touchAction: 'none',
           WebkitUserSelect: 'none',
@@ -1841,7 +1867,7 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
           const dx = touch.clientX - centerX;
           const dy = touch.clientY - centerY;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const maxDistance = 45;
+          const maxDistance = 27;
           const clampedDistance = Math.min(distance, maxDistance);
           const angle = Math.atan2(dy, dx);
           setJoystickPos({
@@ -1860,19 +1886,19 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
         }}
       >
         <div
-          className={`w-14 h-14 rounded-full transition-all pointer-events-none ${
+          className={`w-8 h-8 rounded-full transition-all pointer-events-none ${
             sprintActive ? 'bg-yellow-500' : 'bg-purple-600'
           }`}
           style={{
             transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`,
-            boxShadow: sprintActive ? '0 0 15px rgba(255, 255, 0, 0.8)' : 'none'
+            boxShadow: sprintActive ? '0 0 10px rgba(255, 255, 0, 0.8)' : 'none'
           }}
         />
       </div>
 
       {/* Right Joystick - Aiming with Charged Fireball */}
       <div
-        className="fixed bottom-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-orange-500 flex items-center justify-center z-50 select-none"
+        className="fixed bottom-2 w-16 h-16 bg-gray-800 bg-opacity-30 rounded-full border border-orange-500 flex items-center justify-center z-50 select-none"
         style={{
           right: 'calc(env(safe-area-inset-right, 0px) + 4px)',
           touchAction: 'none',
@@ -1902,7 +1928,7 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
           const dx = touch.clientX - centerX;
           const dy = touch.clientY - centerY;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const maxDistance = 45;
+          const maxDistance = 27;
           const clampedDistance = Math.min(distance, maxDistance);
           const angle = Math.atan2(dy, dx);
           setJoystickRightPos({
@@ -1935,32 +1961,32 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
         {/* Charge meter circle */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ transform: 'rotate(-90deg)' }}>
           <circle
-            cx="56"
-            cy="56"
-            r="50"
+            cx="32"
+            cy="32"
+            r="28"
             fill="none"
             stroke="rgba(255, 165, 0, 0.3)"
-            strokeWidth="4"
+            strokeWidth="2"
           />
           <circle
-            cx="56"
-            cy="56"
-            r="50"
+            cx="32"
+            cy="32"
+            r="28"
             fill="none"
             stroke="rgba(255, 165, 0, 1)"
-            strokeWidth="4"
-            strokeDasharray={`${2 * Math.PI * 50}`}
-            strokeDashoffset={`${2 * Math.PI * 50 * (1 - chargeLevel)}`}
+            strokeWidth="2"
+            strokeDasharray={`${2 * Math.PI * 28}`}
+            strokeDashoffset={`${2 * Math.PI * 28 * (1 - chargeLevel)}`}
             style={{ transition: 'stroke-dashoffset 0.1s' }}
           />
         </svg>
         <div
-          className={`w-14 h-14 rounded-full transition-all pointer-events-none ${
+          className={`w-8 h-8 rounded-full transition-all pointer-events-none ${
             chargeLevel > 0.5 ? 'bg-orange-400' : 'bg-orange-600'
           }`}
           style={{
             transform: `translate(${joystickRightPos.x}px, ${joystickRightPos.y}px)`,
-            boxShadow: chargeLevel > 0.5 ? '0 0 20px rgba(255, 165, 0, 0.9)' : 'none'
+            boxShadow: chargeLevel > 0.5 ? '0 0 15px rgba(255, 165, 0, 0.9)' : 'none'
           }}
         />
       </div>

@@ -157,7 +157,7 @@ const [rightJoystickTouchId, setRightJoystickTouchId] = useState(null);
 const [chargeLevel, setChargeLevel] = useState(0);
 const [sprintActive, setSprintActive] = useState(false);
 const [showMobileMenu, setShowMobileMenu] = useState(false);
-const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 800 });
+const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 1200 });
 const [quests, setQuests] = useState([
 { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
 { id: 2, title: 'Dungeon Delver', desc: 'Clear a dungeon', progress: 0, goal: 1, reward: 100, complete: false },
@@ -978,10 +978,10 @@ const updateCanvasSize = () => {
   // Calculate available space for canvas (accounting for UI elements)
   const uiHeight = isTouchDevice ? 140 : 180; // Compact UI for mobile
   const maxCanvasWidth = Math.min(width - 20, 1000); // Max 1000px, 10px padding each side
-  const maxCanvasHeight = Math.min(height - uiHeight, 800);
+  const maxCanvasHeight = Math.min(height - uiHeight, 1200);
 
   // Maintain aspect ratio
-  const aspectRatio = 1000 / 800;
+  const aspectRatio = 1000 / 1200;
   let canvasWidth = maxCanvasWidth;
   let canvasHeight = canvasWidth / aspectRatio;
 

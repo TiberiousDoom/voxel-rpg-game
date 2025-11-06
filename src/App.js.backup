@@ -30,13 +30,7 @@ skillPoints: 0
 const [equipment, setEquipment] = useState({
 weapon: null,
 armor: null,
-helmet: null,
-gloves: null,
-boots: null,
-ring1: null,
-ring2: null,
-amulet: null,
-offhand: null
+accessory: null
 });
 
 const [inventory, setInventory] = useState({
@@ -110,16 +104,10 @@ utility: {
 });
 
 const [spells, setSpells] = useState([
-{ id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0, type: 'projectile' },
-{ id: 'lightning', name: 'Lightning', cost: 25, damage: 40, unlocked: false, cooldown: 0, type: 'projectile' },
-{ id: 'heal', name: 'Heal', cost: 30, heal: 40, unlocked: false, cooldown: 0, type: 'self' },
-{ id: 'meteor', name: 'Meteor', cost: 50, damage: 80, unlocked: false, cooldown: 0, type: 'projectile' },
-{ id: 'frostnova', name: 'Frost Nova', cost: 40, damage: 30, unlocked: false, cooldown: 0, type: 'aoe', radius: 150, slow: 0.5 },
-{ id: 'chainlightning', name: 'Chain Lightning', cost: 35, damage: 25, unlocked: false, cooldown: 0, type: 'chain', chains: 5 },
-{ id: 'poisoncloud', name: 'Poison Cloud', cost: 45, damage: 5, unlocked: false, cooldown: 0, type: 'aoe', radius: 100, duration: 180 },
-{ id: 'shield', name: 'Shield', cost: 30, unlocked: false, cooldown: 0, type: 'buff', duration: 300, effect: 'defense', value: 20 },
-{ id: 'haste', name: 'Haste', cost: 25, unlocked: false, cooldown: 0, type: 'buff', duration: 240, effect: 'speed', value: 2 },
-{ id: 'healbeam', name: 'Heal Beam', cost: 2, heal: 1, unlocked: false, cooldown: 0, type: 'channeled' }
+{ id: 'fireball', name: 'Fireball', cost: 15, damage: 25, unlocked: true, cooldown: 0 },
+{ id: 'lightning', name: 'Lightning', cost: 25, damage: 40, unlocked: false, cooldown: 0 },
+{ id: 'heal', name: 'Heal', cost: 30, heal: 40, unlocked: false, cooldown: 0 },
+{ id: 'meteor', name: 'Meteor', cost: 50, damage: 80, unlocked: false, cooldown: 0 }
 ]);
 
 const [base, setBase] = useState({
@@ -150,73 +138,27 @@ const [notifications, setNotifications] = useState([]);
 const [isTouchDevice, setIsTouchDevice] = useState(false);
 const [joystickActive, setJoystickActive] = useState(false);
 const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
-const [leftJoystickTouchId, setLeftJoystickTouchId] = useState(null);
 const [joystickRightActive, setJoystickRightActive] = useState(false);
 const [joystickRightPos, setJoystickRightPos] = useState({ x: 0, y: 0 });
-const [rightJoystickTouchId, setRightJoystickTouchId] = useState(null);
 const [chargeLevel, setChargeLevel] = useState(0);
 const [sprintActive, setSprintActive] = useState(false);
 const [showMobileMenu, setShowMobileMenu] = useState(false);
-const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 1200 });
+const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 600 });
 const [quests, setQuests] = useState([
 { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
 { id: 2, title: 'Dungeon Delver', desc: 'Clear a dungeon', progress: 0, goal: 1, reward: 100, complete: false },
 { id: 3, title: 'Boss Slayer', desc: 'Defeat a boss', progress: 0, goal: 1, reward: 200, complete: false }
 ]);
 
-// NEW ENHANCED FEATURES STATE
-const [playerClass, setPlayerClass] = useState(null); // 'warrior', 'mage', 'rogue'
-const [activeBuffs, setActiveBuffs] = useState([]); // {type, duration, value}
-const [damageNumbers, setDamageNumbers] = useState([]); // {x, y, value, life, type}
-const [screenShake, setScreenShake] = useState({ x: 0, y: 0, intensity: 0 });
-const [comboCounter, setComboCounter] = useState({ count: 0, timer: 0 });
-const [aoeEffects, setAoeEffects] = useState([]); // {x, y, radius, type, life}
-// const [biome, setBiome] = useState('forest'); // FUTURE: forest, desert, tundra
-const [pet, setPet] = useState(null); // {type: 'wolf'|'fairy', x, y, health, ability}
-const [achievements, setAchievements] = useState([
-  { id: 'kill_100', title: 'Slayer', desc: 'Kill 100 enemies', progress: 0, goal: 100, complete: false, reward: 'Wolf Pet' },
-  { id: 'reach_level_10', title: 'Veteran', desc: 'Reach level 10', progress: 0, goal: 10, complete: false, reward: '500 Gold' },
-  { id: 'collect_1000_gold', title: 'Wealthy', desc: 'Collect 1000 gold', progress: 0, goal: 1000, complete: false, reward: 'Fairy Pet' }
-]);
-const [timeOfDay, setTimeOfDay] = useState(0); // 0-1440 (24 hours in game minutes)
-// FUTURE FEATURES - Ready to implement
-// const [npcs, setNpcs] = useState([]); // {id, type, x, y, name, dialogue}
-// const [showShop, setShowShop] = useState(false);
-// const [showEnchanting, setShowEnchanting] = useState(false);
-// const [showPetMenu, setShowPetMenu] = useState(false);
-// const [selectedNpc, setSelectedNpc] = useState(null);
-const [showAchievements, setShowAchievements] = useState(false);
-
 const gameLoopRef = useRef(null);
 const spawnTimerRef = useRef(0);
 const bossTimerRef = useRef(0);
 const autoSaveTimerRef = useRef(0);
-const spatialHashRef = useRef(new SpatialHash(100));
-const projectilePoolRef = useRef(null);
-const particlePoolRef = useRef(null);
 
 const MAP_WIDTH = 2500;
 const MAP_HEIGHT = 2000;
 const CANVAS_WIDTH = canvasSize.width;
 const CANVAS_HEIGHT = canvasSize.height;
-
-// Initialize object pools and audio on mount
-useEffect(() => {
-  // Initialize audio manager
-  audioManager.init();
-
-  // Initialize projectile pool
-  projectilePoolRef.current = new ObjectPool(
-    () => ({ id: 0, x: 0, y: 0, vx: 0, vy: 0, damage: 0, type: '', life: 0, sourceX: 0, sourceY: 0 }),
-    (obj, data) => Object.assign(obj, data, { id: Math.random() })
-  );
-
-  // Initialize particle pool
-  particlePoolRef.current = new ObjectPool(
-    () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, color: '' }),
-    (obj, data) => Object.assign(obj, data)
-  );
-}, []);
 
 // Utility functions - defined first so other hooks can reference them
 const showMessage = useCallback((msg) => {
@@ -232,77 +174,6 @@ setNotifications(prev => prev.filter(n => n.id !== id));
 }, 4000);
 }, []);
 
-// NEW HELPER FUNCTIONS FOR ENHANCED FEATURES
-
-const createDamageNumber = useCallback((x, y, value, type = 'damage') => {
-  setDamageNumbers(prev => [...prev, {
-    id: Math.random(),
-    x, y,
-    value,
-    life: 60,
-    type // 'damage', 'heal', 'crit'
-  }]);
-}, []);
-
-const triggerScreenShake = useCallback((intensity = 10) => {
-  setScreenShake({
-    x: (Math.random() - 0.5) * intensity,
-    y: (Math.random() - 0.5) * intensity,
-    intensity
-  });
-  setTimeout(() => setScreenShake({ x: 0, y: 0, intensity: 0 }), 100);
-}, []);
-
-const updateCombo = useCallback(() => {
-  setComboCounter(prev => ({
-    count: prev.count + 1,
-    timer: 180 // 3 seconds at 60fps
-  }));
-}, []);
-
-const checkAchievement = useCallback((id, progress) => {
-  setAchievements(prev => prev.map(ach => {
-    if (ach.id === id && !ach.complete) {
-      const newProgress = ach.progress + progress;
-      if (newProgress >= ach.goal) {
-        showNotification(`🏆 Achievement Unlocked: ${ach.title}!`, 'success');
-        audioManager.play('levelup');
-
-        // Grant rewards
-        if (ach.reward === 'Wolf Pet') {
-          setPet({ type: 'wolf', x: player.x + 50, y: player.y, health: 100, maxHealth: 100, damage: 10 });
-        } else if (ach.reward === 'Fairy Pet') {
-          setPet({ type: 'fairy', x: player.x + 50, y: player.y, health: 50, maxHealth: 50, healAmount: 2 });
-        } else if (ach.reward.includes('Gold')) {
-          const gold = parseInt(ach.reward);
-          setInventory(inv => ({ ...inv, gold: inv.gold + gold }));
-        }
-
-        return { ...ach, progress: newProgress, complete: true };
-      }
-      return { ...ach, progress: newProgress };
-    }
-    return ach;
-  }));
-}, [player.x, player.y, showNotification]);
-
-const applyBuff = useCallback((buffType, duration, value) => {
-  setActiveBuffs(prev => [...prev, { type: buffType, duration, value, id: Math.random() }]);
-  audioManager.play('heal');
-}, []);
-
-const getClassBonus = useCallback((stat) => {
-  if (!playerClass) return 0;
-
-  const bonuses = {
-    warrior: { health: 50, damage: 10, defense: 5 },
-    mage: { mana: 50, spellPower: 1.3, cooldownReduction: 0.8 },
-    rogue: { speed: 0.5, critChance: 15, dodgeChance: 10 }
-  };
-
-  return bonuses[playerClass]?.[stat] || 0;
-}, [playerClass]);
-
 // Skill helper functions
 const getSkillBonus = (category, skillName, baseValue = 0) => {
 const skill = skills[category]?.[skillName];
@@ -316,14 +187,10 @@ const ps = getSkillBonus('combat', 'powerStrike', 0);
 return Math.floor(dmg * (1 + ps / 100));
 };
 
-// eslint-disable-next-line react-hooks/exhaustive-deps
-const getTotalCritChance = useCallback(() => player.critChance + getSkillBonus('combat', 'criticalHit', 0), [player.critChance]);
-// eslint-disable-next-line react-hooks/exhaustive-deps
-const getTotalCritDamage = useCallback(() => player.critDamage + getSkillBonus('combat', 'deadlyBlow', 0), [player.critDamage]);
-// eslint-disable-next-line react-hooks/exhaustive-deps
-const getTotalDodge = useCallback(() => player.dodgeChance + getSkillBonus('defense', 'evasion', 0), [player.dodgeChance]);
-// eslint-disable-next-line react-hooks/exhaustive-deps
-const getTotalSpeed = useCallback(() => player.speed + getSkillBonus('utility', 'swiftness', 0), [player.speed]);
+const getTotalCritChance = () => player.critChance + getSkillBonus('combat', 'criticalHit', 0);
+const getTotalCritDamage = () => player.critDamage + getSkillBonus('combat', 'deadlyBlow', 0);
+const getTotalDodge = () => player.dodgeChance + getSkillBonus('defense', 'evasion', 0);
+const getTotalSpeed = () => player.speed + getSkillBonus('utility', 'swiftness', 0);
 
 const upgradeSkill = useCallback((category, skillName) => {
 const skill = skills[category]?.[skillName];
@@ -505,13 +372,14 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
 
   setPlayer(p => {
     if (p.mana < spell.cost) return p;
-
+    
     const angle = Math.atan2(mousePos.y - p.y, mousePos.x - p.x);
-    const spellPowerBonus = getClassBonus('spellPower') || 1;
-
-    // PROJECTILE SPELLS (Fireball, Lightning, Meteor)
-    if (spell.type === 'projectile') {
-      audioManager.play('fireball');
+    
+    if (spell.id === 'heal') {
+      showMessage('You feel rejuvenated!');
+      createParticles(p.x, p.y, '#00ff00', 15);
+      return { ...p, health: Math.min(p.maxHealth, p.health + spell.heal), mana: p.mana - spell.cost };
+    } else {
       setEquipment(eq => {
         const proj = {
           id: Math.random(),
@@ -519,7 +387,7 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
           y: p.y,
           vx: Math.cos(angle) * 8,
           vy: Math.sin(angle) * 8,
-          damage: Math.floor((spell.damage + (eq.weapon?.damage || 0)) * spellPowerBonus),
+          damage: spell.damage + (eq.weapon?.damage || 0),
           type: spell.id,
           life: 100,
           sourceX: p.x,
@@ -528,125 +396,14 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
         setProjectiles(projs => [...projs, proj]);
         return eq;
       });
+      return { ...p, mana: p.mana - spell.cost };
     }
-
-    // SELF-HEAL
-    else if (spell.id === 'heal') {
-      showMessage('You feel rejuvenated!');
-      createParticles(p.x, p.y, '#00ff00', 15);
-      audioManager.play('heal');
-      createDamageNumber(p.x, p.y, `+${spell.heal}`, 'heal');
-      return { ...p, health: Math.min(p.maxHealth, p.health + spell.heal), mana: p.mana - spell.cost };
-    }
-
-    // AOE SPELLS (Frost Nova, Poison Cloud)
-    else if (spell.type === 'aoe') {
-      audioManager.play('explosion');
-      triggerScreenShake(15);
-      createParticles(p.x, p.y, spell.id === 'frostnova' ? '#00ffff' : '#00ff00', 30);
-
-      // Create AoE effect visual
-      setAoeEffects(effects => [...effects, {
-        id: Math.random(),
-        x: p.x,
-        y: p.y,
-        radius: spell.radius,
-        type: spell.id,
-        life: spell.duration || 60,
-        damage: Math.floor(spell.damage * spellPowerBonus),
-        slow: spell.slow
-      }]);
-
-      // Immediate damage to nearby enemies
-      setEnemies(enemies => enemies.map(enemy => {
-        const dist = Math.sqrt(Math.pow(enemy.x - p.x, 2) + Math.pow(enemy.y - p.y, 2));
-        if (dist < spell.radius) {
-          createDamageNumber(enemy.x, enemy.y, Math.floor(spell.damage * spellPowerBonus), 'damage');
-          updateCombo();
-
-          // Apply slow effect for Frost Nova
-          if (spell.id === 'frostnova') {
-            enemy.slowed = spell.slow;
-            enemy.slowDuration = 120;
-          }
-
-          return { ...enemy, health: enemy.health - Math.floor(spell.damage * spellPowerBonus) };
-        }
-        return enemy;
-      }));
-    }
-
-    // CHAIN LIGHTNING
-    else if (spell.type === 'chain') {
-      audioManager.play('fireball');
-
-      // Calculate chain targets without setState in loop
-      setEnemies(currentEnemies => {
-        const chainTargets = [];
-        const chainedIds = new Set();
-        let targetPos = { x: p.x, y: p.y };
-
-        // Find all chain targets
-        for (let i = 0; i < spell.chains; i++) {
-          const nearestEnemy = currentEnemies
-            .filter(e => !chainedIds.has(e.id))
-            // eslint-disable-next-line no-loop-func
-            .reduce((nearest, enemy) => {
-              const dist = Math.sqrt(Math.pow(enemy.x - targetPos.x, 2) + Math.pow(enemy.y - targetPos.y, 2));
-              if (!nearest || dist < nearest.dist) {
-                return { enemy, dist };
-              }
-              return nearest;
-            }, null);
-
-          if (nearestEnemy && nearestEnemy.dist < 200) {
-            chainTargets.push(nearestEnemy.enemy);
-            chainedIds.add(nearestEnemy.enemy.id);
-            targetPos = { x: nearestEnemy.enemy.x, y: nearestEnemy.enemy.y };
-          } else {
-            break; // No more valid targets
-          }
-        }
-
-        // Apply effects to all chained enemies
-        chainTargets.forEach(target => {
-          createParticles(target.x, target.y, '#ffff00', 10);
-          createDamageNumber(target.x, target.y, Math.floor(spell.damage * spellPowerBonus), 'damage');
-          updateCombo();
-        });
-
-        // Apply damage to all chained enemies at once
-        return currentEnemies.map(e =>
-          chainedIds.has(e.id)
-            ? { ...e, health: e.health - Math.floor(spell.damage * spellPowerBonus) }
-            : e
-        );
-      });
-    }
-
-    // BUFF SPELLS (Shield, Haste)
-    else if (spell.type === 'buff') {
-      applyBuff(spell.effect, spell.duration, spell.value);
-      createParticles(p.x, p.y, spell.id === 'shield' ? '#4169e1' : '#ffd700', 20);
-      showMessage(`${spell.name} activated!`);
-    }
-
-    // CHANNELED SPELLS (Heal Beam)
-    else if (spell.type === 'channeled') {
-      // Channeled spells are handled per-frame in game loop
-      // Just consume mana here
-    }
-
-    return { ...p, mana: p.mana - spell.cost };
   });
-
-  // Apply cooldown with class bonus
-  const baseCooldown = 60;
-  const cooldownMod = getClassBonus('cooldownReduction') || 1;
-  return prev.map((s, i) => i === index ? { ...s, cooldown: Math.floor(baseCooldown * cooldownMod) } : s);
+  
+  return prev.map((s, i) => i === index ? { ...s, cooldown: 60 } : s);
 });
 
-}, [mousePos.y, mousePos.x, showMessage, getClassBonus, createDamageNumber, triggerScreenShake, updateCombo, applyBuff]);
+}, [mousePos.y, mousePos.x, showMessage]);
 
 const createParticles = (x, y, color, count) => {
 const newParticles = [];
@@ -852,10 +609,7 @@ const newXP = prev.xp + amount;
 if (newXP >= prev.xpToNext) {
 const newLevel = prev.level + 1;
 showNotification(`Level Up! You are now level ${newLevel}`, 'success');
-audioManager.play('levelup');
-triggerScreenShake(20);
 
-    // Unlock new spells at various levels
     if (newLevel === 3) {
       setSpells(s => s.map(sp => sp.id === 'lightning' ? { ...sp, unlocked: true } : sp));
       showNotification('New spell unlocked: Lightning!', 'info');
@@ -864,25 +618,9 @@ triggerScreenShake(20);
       setSpells(s => s.map(sp => sp.id === 'heal' ? { ...sp, unlocked: true } : sp));
       showNotification('New spell unlocked: Heal!', 'info');
     }
-    if (newLevel === 7) {
-      setSpells(s => s.map(sp => sp.id === 'frostnova' ? { ...sp, unlocked: true } : sp));
-      showNotification('New spell unlocked: Frost Nova!', 'info');
-    }
     if (newLevel === 8) {
       setSpells(s => s.map(sp => sp.id === 'meteor' ? { ...sp, unlocked: true } : sp));
       showNotification('New spell unlocked: Meteor!', 'info');
-    }
-    if (newLevel === 10) {
-      setSpells(s => s.map(sp => (sp.id === 'chainlightning' || sp.id === 'shield') ? { ...sp, unlocked: true } : sp));
-      showNotification('New spells unlocked: Chain Lightning & Shield!', 'info');
-    }
-    if (newLevel === 12) {
-      setSpells(s => s.map(sp => (sp.id === 'poisoncloud' || sp.id === 'haste') ? { ...sp, unlocked: true } : sp));
-      showNotification('New spells unlocked: Poison Cloud & Haste!', 'info');
-    }
-    if (newLevel === 15) {
-      setSpells(s => s.map(sp => sp.id === 'healbeam' ? { ...sp, unlocked: true } : sp));
-      showNotification('New spell unlocked: Heal Beam!', 'info');
     }
     
     return {
@@ -901,7 +639,7 @@ triggerScreenShake(20);
   return { ...prev, xp: newXP };
 });
 
-}, [showNotification, triggerScreenShake]);
+}, [showNotification]);
 
 useEffect(() => {
 const handleKeyDown = (e) => {
@@ -975,67 +713,34 @@ const updateCanvasSize = () => {
   const width = window.innerWidth;
   const height = window.innerHeight;
 
-  if (isTouchDevice) {
-    // Mobile: Maximize viewport, accounting for UI chrome
-    // Header: 24px + Joysticks: 72px (64px + 8px margin) + Safety margin: 10px = 106px total
-    const headerHeight = 24;
-    const joystickHeight = 72;
-    const safetyMargin = 10;
-    const totalUIHeight = headerHeight + joystickHeight + safetyMargin;
+  // Calculate available space for canvas (accounting for UI elements)
+  const uiHeight = isTouchDevice ? 140 : 180; // Compact UI for mobile
+  const maxCanvasWidth = Math.min(width - 20, 1000); // Max 1000px, 10px padding each side
+  const maxCanvasHeight = Math.min(height - uiHeight, 600);
 
-    const availableWidth = width - 4; // 2px padding each side
-    const availableHeight = height - totalUIHeight;
+  // Maintain aspect ratio
+  const aspectRatio = 1000 / 600;
+  let canvasWidth = maxCanvasWidth;
+  let canvasHeight = canvasWidth / aspectRatio;
 
-    // Use available space while maintaining reasonable aspect ratio
-    const aspectRatio = 5 / 3; // 1.67:1 ratio (wider than original 1000:600)
-    let canvasWidth = availableWidth;
-    let canvasHeight = canvasWidth / aspectRatio;
-
-    // If height-constrained, fit to height instead
-    if (canvasHeight > availableHeight) {
-      canvasHeight = availableHeight;
-      canvasWidth = canvasHeight * aspectRatio;
-    }
-
-    setCanvasSize({
-      width: Math.floor(canvasWidth),
-      height: Math.floor(canvasHeight)
-    });
-  } else {
-    // Desktop: Updated to support taller viewport (1200px height)
-    const uiHeight = 180;
-    const maxCanvasWidth = Math.min(width - 40, 1000);
-    const maxCanvasHeight = Math.min(height - uiHeight, 1200); // Increased from 600 to 1200
-
-    const aspectRatio = 1000 / 1200; // Updated aspect ratio for taller viewport
-    let canvasWidth = maxCanvasWidth;
-    let canvasHeight = canvasWidth / aspectRatio;
-
-    if (canvasHeight > maxCanvasHeight) {
-      canvasHeight = maxCanvasHeight;
-      canvasWidth = canvasHeight * aspectRatio;
-    }
-
-    setCanvasSize({
-      width: Math.floor(canvasWidth),
-      height: Math.floor(canvasHeight)
-    });
+  if (canvasHeight > maxCanvasHeight) {
+    canvasHeight = maxCanvasHeight;
+    canvasWidth = canvasHeight * aspectRatio;
   }
+
+  setCanvasSize({
+    width: Math.floor(canvasWidth),
+    height: Math.floor(canvasHeight)
+  });
 };
 
 updateCanvasSize();
 window.addEventListener('resize', updateCanvasSize);
 window.addEventListener('orientationchange', updateCanvasSize);
 
-// Also update on visibility change (when browser chrome shows/hides)
-window.addEventListener('scroll', updateCanvasSize);
-document.addEventListener('visibilitychange', updateCanvasSize);
-
 return () => {
   window.removeEventListener('resize', updateCanvasSize);
   window.removeEventListener('orientationchange', updateCanvasSize);
-  window.removeEventListener('scroll', updateCanvasSize);
-  document.removeEventListener('visibilitychange', updateCanvasSize);
 };
 }, [isTouchDevice]);
 
@@ -1158,110 +863,14 @@ const gameLoop = () => {
     autoSaveTimerRef.current = 0;
     saveGame();
   }
-
-  // NEW ENHANCED FEATURES UPDATES
-
-  // Update damage numbers
-  setDamageNumbers(prev => prev.map(dmg => ({
-    ...dmg,
-    y: dmg.y - 1, // Float upward
-    life: dmg.life - 1
-  })).filter(dmg => dmg.life > 0));
-
-  // Update combo counter
-  setComboCounter(prev => {
-    if (prev.timer > 0) {
-      return { ...prev, timer: prev.timer - timeMultiplier };
-    } else if (prev.count > 0) {
-      return { count: 0, timer: 0 };
-    }
-    return prev;
-  });
-
-  // Update active buffs
-  setActiveBuffs(prev => {
-    const updated = prev.map(buff => ({ ...buff, duration: buff.duration - timeMultiplier })).filter(b => b.duration > 0);
-    return updated;
-  });
-
-  // Apply buff effects to player
-  const speedBuff = activeBuffs.find(b => b.type === 'speed');
-  const defenseBuff = activeBuffs.find(b => b.type === 'defense');
-
-  // Update AoE effects (poison clouds, etc.)
-  setAoeEffects(prev => {
-    const updated = prev.map(effect => {
-      // Apply damage from poison cloud
-      if (effect.type === 'poisoncloud' && effect.life % 30 === 0) {
-        setEnemies(enemies => enemies.map(enemy => {
-          const dist = Math.sqrt(Math.pow(enemy.x - effect.x, 2) + Math.pow(enemy.y - effect.y, 2));
-          if (dist < effect.radius) {
-            createDamageNumber(enemy.x, enemy.y, effect.damage, 'damage');
-            return { ...enemy, health: enemy.health - effect.damage };
-          }
-          return enemy;
-        }));
-      }
-      return { ...effect, life: effect.life - timeMultiplier };
-    }).filter(e => e.life > 0);
-    return updated;
-  });
-
-  // Update time of day (24-hour cycle = 1440 minutes, 1 game minute per real second at 60fps)
-  setTimeOfDay(prev => (prev + 0.1 * timeMultiplier) % 1440);
-
-  // Check achievements
-  checkAchievement('reach_level_10', player.level >= 10 ? 1 : 0);
-  checkAchievement('collect_1000_gold', inventory.gold >= 1000 ? 1 : 0);
-
-  // Update pet AI if exists
-  if (pet) {
-    setPet(prev => {
-      if (!prev) return null;
-
-      const dx = player.x - prev.x;
-      const dy = player.y - prev.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      // Follow player if too far
-      if (dist > 100) {
-        return {
-          ...prev,
-          x: prev.x + (dx / dist) * 2 * timeMultiplier,
-          y: prev.y + (dy / dist) * 2 * timeMultiplier
-        };
-      }
-
-      // Wolf attacks nearby enemies
-      if (prev.type === 'wolf') {
-        setEnemies(enemies => enemies.map(enemy => {
-          const enemyDist = Math.sqrt(Math.pow(enemy.x - prev.x, 2) + Math.pow(enemy.y - prev.y, 2));
-          if (enemyDist < 40) {
-            createDamageNumber(enemy.x, enemy.y, prev.damage, 'damage');
-            return { ...enemy, health: enemy.health - prev.damage * 0.1 * timeMultiplier };
-          }
-          return enemy;
-        }));
-      }
-
-      // Fairy heals player
-      if (prev.type === 'fairy' && player.health < player.maxHealth && Math.random() < 0.01) {
-        setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + prev.healAmount) }));
-        createDamageNumber(player.x, player.y, `+${prev.healAmount}`, 'heal');
-      }
-
-      return prev;
-    });
-  }
-
+  
   setPlayer(prev => {
     let newX = prev.x;
     let newY = prev.y;
 
-    // Apply sprint multiplier if active + speed buff
+    // Apply sprint multiplier if active
     const speedMultiplier = sprintActive ? 2 : 1;
-    const buffSpeed = speedBuff ? speedBuff.value : 0;
-    const effectiveSpeed = (prev.speed + buffSpeed + getClassBonus('speed')) * speedMultiplier * timeMultiplier;
+    const effectiveSpeed = prev.speed * speedMultiplier * timeMultiplier;
 
     if (keys['w']) newY -= effectiveSpeed;
     if (keys['s']) newY += effectiveSpeed;
@@ -1383,18 +992,8 @@ const gameLoop = () => {
       
       if (distToPlayer < 30) {
         setPlayer(p => {
-          const buffDefense = defenseBuff ? defenseBuff.value : 0;
-          const totalDefense = p.defense + buffDefense + getClassBonus('defense');
-          const actualDamage = Math.max(1, enemy.damage - totalDefense);
-          const damageDealt = actualDamage * 0.1 * timeMultiplier;
-
-          // Show damage number and play hit sound occasionally
-          if (Math.random() < 0.1) {
-            createDamageNumber(p.x, p.y, Math.floor(damageDealt), 'damage');
-            audioManager.play('hit');
-          }
-
-          return { ...p, health: p.health - damageDealt };
+          const actualDamage = Math.max(1, enemy.damage - p.defense);
+          return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
         });
       }
     } else {
@@ -1441,19 +1040,8 @@ const gameLoop = () => {
       
       if (dist < 40) {
         setPlayer(p => {
-          const buffDefense = defenseBuff ? defenseBuff.value : 0;
-          const totalDefense = p.defense + buffDefense + getClassBonus('defense');
-          const actualDamage = Math.max(1, boss.damage - totalDefense);
-          const damageDealt = actualDamage * 0.1 * timeMultiplier;
-
-          // Show damage number and effects
-          if (Math.random() < 0.15) {
-            createDamageNumber(p.x, p.y, Math.floor(damageDealt), 'damage');
-            triggerScreenShake(8);
-            audioManager.play('hit');
-          }
-
-          return { ...p, health: p.health - damageDealt };
+          const actualDamage = Math.max(1, boss.damage - p.defense);
+          return { ...p, health: p.health - actualDamage * 0.1 * timeMultiplier };
         });
       }
     }
@@ -1474,21 +1062,9 @@ const gameLoop = () => {
       y: proj.y + proj.vy * timeMultiplier,
       life: proj.life - timeMultiplier
     })).filter(p => p.life > 0 && p.x > 0 && p.x < MAP_WIDTH && p.y > 0 && p.y < MAP_HEIGHT);
-
-    // Build spatial hash for efficient collision detection
-    const spatialHash = spatialHashRef.current;
-    spatialHash.clear();
-    enemies.forEach(enemy => spatialHash.insert(enemy));
-    bosses.forEach(boss => spatialHash.insert(boss));
-
+    
     updated.forEach(proj => {
-      // Use spatial hash to only check nearby enemies (huge performance boost!)
-      const nearbyEnemies = spatialHash.queryRadius(proj.x, proj.y, 100);
-      const nearbyEnemyIds = new Set(nearbyEnemies.map(e => e.id));
-
       setEnemies(enemies => enemies.map(enemy => {
-        // Skip if not in nearby list (compare by ID)
-        if (!nearbyEnemyIds.has(enemy.id)) return enemy;
         const dx = proj.x - enemy.x;
         const dy = proj.y - enemy.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1496,38 +1072,22 @@ const gameLoop = () => {
         if (dist < 25) {
           proj.life = 0;
           createParticles(enemy.x, enemy.y, '#ff6600', 10);
-          audioManager.play('hit');
-
-          // Show damage number
-          const isCrit = Math.random() * 100 < getTotalCritChance();
-          const finalDamage = isCrit ? Math.floor(proj.damage * (getTotalCritDamage() / 100)) : proj.damage;
-          createDamageNumber(enemy.x, enemy.y, finalDamage, isCrit ? 'crit' : 'damage');
-
-          // Update combo
-          updateCombo();
-
-          // Screen shake on crit
-          if (isCrit) {
-            triggerScreenShake(12);
-          }
-
+          
           enemy.aggroSource = { x: proj.sourceX, y: proj.sourceY };
-
-          if (enemy.health - finalDamage <= 0) {
+          
+          if (enemy.health - proj.damage <= 0) {
             gainXP(enemy.xp);
             dropLoot(enemy.x, enemy.y);
             updateQuest(1,1);
-            checkAchievement('kill_100', 1);
-            audioManager.play('explosion');
-
+            
             if (enemy.type === 'dungeon_monster') {
               const dungeon = dungeons.find(d => d.id === inDungeon);
               if (dungeon) {
-                const remainingEnemies = enemies.filter(e =>
+                const remainingEnemies = enemies.filter(e => 
                   e.type === 'dungeon_monster' && e.id !== enemy.id
                 );
                 if (remainingEnemies.length === 0) {
-                  setDungeons(d => d.map(dun =>
+                  setDungeons(d => d.map(dun => 
                     dun.id === inDungeon ? { ...dun, cleared: true } : dun
                   ));
                   updateQuest(2, 1);
@@ -1536,22 +1096,16 @@ const gameLoop = () => {
                 }
               }
             }
-
+            
             return null;
           }
-
-          return { ...enemy, health: enemy.health - finalDamage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+          
+          return { ...enemy, health: enemy.health - proj.damage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
         }
         return enemy;
       }).filter(Boolean));
-
-      // Use spatial hash for boss collisions too
-      const nearbyBosses = spatialHash.queryRadius(proj.x, proj.y, 150);
-      const nearbyBossIds = new Set(nearbyBosses.map(b => b.id));
-
+      
       setBosses(bosses => bosses.map(boss => {
-        // Skip if not in nearby list (compare by ID)
-        if (!nearbyBossIds.has(boss.id)) return boss;
         const dx = proj.x - boss.x;
         const dy = proj.y - boss.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1559,30 +1113,18 @@ const gameLoop = () => {
         if (dist < 40) {
           proj.life = 0;
           createParticles(boss.x, boss.y, '#ff0000', 15);
-          audioManager.play('hit');
-
-          // Show damage number with crit chance
-          const isCrit = Math.random() * 100 < getTotalCritChance();
-          const finalDamage = isCrit ? Math.floor(proj.damage * (getTotalCritDamage() / 100)) : proj.damage;
-          createDamageNumber(boss.x, boss.y, finalDamage, isCrit ? 'crit' : 'damage');
-
-          // Update combo and screen shake
-          updateCombo();
-          triggerScreenShake(isCrit ? 18 : 10);
-
+          
           boss.aggroSource = { x: proj.sourceX, y: proj.sourceY };
-
-          if (boss.health - finalDamage <= 0) {
+          
+          if (boss.health - proj.damage <= 0) {
             gainXP(200);
             dropLoot(boss.x, boss.y, true);
             updateQuest(3, 1);
             showNotification('🏆 Boss defeated! Legendary loot obtained!', 'success');
-            triggerScreenShake(25);
-            audioManager.play('explosion');
             return null;
           }
-
-          return { ...boss, health: boss.health - finalDamage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+          
+          return { ...boss, health: boss.health - proj.damage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
         }
         return boss;
       }).filter(Boolean));
@@ -1620,7 +1162,7 @@ return () => {
   }
 };
 
-}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, player.health, player.maxHealth, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification, sprintActive, activeBuffs, checkAchievement, createDamageNumber, getClassBonus, getTotalCritChance, getTotalCritDamage, inventory.gold, pet, triggerScreenShake, updateCombo, enemies, bosses]);
+}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification, sprintActive]);
 
 useEffect(() => {
 const canvas = canvasRef.current;
@@ -1785,65 +1327,8 @@ bosses.forEach(boss => {
   ctx.fillRect(boss.x - camera.x - 30, boss.y - camera.y - 40, 60 * (boss.health / boss.maxHealth), 6);
 });
 
-// NEW ENHANCED VISUALS
-
-// Draw AoE effects
-aoeEffects.forEach(effect => {
-  if (effect.x < minX - effect.radius || effect.x > maxX + effect.radius) return;
-  if (effect.y < minY - effect.radius || effect.y > maxY + effect.radius) return;
-
-  ctx.beginPath();
-  ctx.arc(effect.x - camera.x - screenShake.x, effect.y - camera.y - screenShake.y, effect.radius, 0, Math.PI * 2);
-
-  if (effect.type === 'frostnova') {
-    ctx.fillStyle = `rgba(0, 255, 255, ${effect.life / 60 * 0.3})`;
-    ctx.strokeStyle = `rgba(0, 255, 255, ${effect.life / 60 * 0.6})`;
-  } else if (effect.type === 'poisoncloud') {
-    ctx.fillStyle = `rgba(0, 255, 0, ${effect.life / 180 * 0.2})`;
-    ctx.strokeStyle = `rgba(0, 200, 0, ${effect.life / 180 * 0.5})`;
-  }
-
-  ctx.lineWidth = 2;
-  ctx.fill();
-  ctx.stroke();
-});
-
-// Draw pet
-if (pet) {
-  const petColor = pet.type === 'wolf' ? '#8b4513' : '#ff69b4';
-  ctx.fillStyle = petColor;
-  ctx.fillRect(pet.x - camera.x - screenShake.x - 8, pet.y - camera.y - screenShake.y - 8, 16, 16);
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(pet.x - camera.x - screenShake.x - 8, pet.y - camera.y - screenShake.y - 8, 16, 16);
-}
-
-// Draw damage numbers
-damageNumbers.forEach(dmg => {
-  if (dmg.x < minX || dmg.x > maxX || dmg.y < minY || dmg.y > maxY) return;
-
-  ctx.font = dmg.type === 'crit' ? 'bold 20px Arial' : '16px Arial';
-  ctx.textAlign = 'center';
-  ctx.globalAlpha = dmg.life / 60;
-
-  if (dmg.type === 'crit') {
-    ctx.fillStyle = '#ff0000';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.strokeText(dmg.value.toString(), dmg.x - camera.x - screenShake.x, dmg.y - camera.y - screenShake.y);
-  } else if (dmg.type === 'heal') {
-    ctx.fillStyle = '#00ff00';
-  } else {
-    ctx.fillStyle = '#ffffff';
-  }
-
-  ctx.fillText(dmg.value.toString(), dmg.x - camera.x - screenShake.x, dmg.y - camera.y - screenShake.y);
-  ctx.globalAlpha = 1;
-});
-
-// Draw player (with screen shake)
 ctx.save();
-ctx.translate(player.x - camera.x - screenShake.x, player.y - camera.y - screenShake.y);
+ctx.translate(player.x - camera.x, player.y - camera.y);
 ctx.rotate(player.facingAngle);
 ctx.fillStyle = '#3498db';
 ctx.fillRect(-12, -12, 24, 24);
@@ -1853,26 +1338,12 @@ ctx.fillStyle = '#ffffff';
 ctx.fillRect(8, -4, 8, 8);
 ctx.restore();
 
-// Draw day/night overlay
-const hour = Math.floor(timeOfDay / 60);
-let nightAlpha = 0;
-if (hour >= 20 || hour < 6) {
-  nightAlpha = 0.4; // Night
-} else if (hour >= 18 || hour < 8) {
-  nightAlpha = 0.2; // Dusk/Dawn
-}
-
-if (nightAlpha > 0) {
-  ctx.fillStyle = `rgba(0, 0, 50, ${nightAlpha})`;
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-}
-
-}, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon, CANVAS_WIDTH, CANVAS_HEIGHT, aoeEffects, pet, damageNumbers, screenShake, timeOfDay]);
+}, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon, CANVAS_WIDTH, CANVAS_HEIGHT]);
 
 if (gameState === 'intro') {
 return (
 <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
-<div className="text-center text-white max-w-4xl p-8">
+<div className="text-center text-white max-w-2xl p-8">
 <h1 className="text-5xl font-bold mb-6 text-purple-300">The Wound of Power</h1>
 <p className="text-xl mb-4">
 In a moment of desperation, you were struck by a being beyond mortal comprehension.
@@ -1880,86 +1351,27 @@ In a moment of desperation, you were struck by a being beyond mortal comprehensi
 <p className="text-xl mb-4">
 The wound should have killed you... but instead, it awakened something ancient within.
 </p>
-
-{!playerClass ? (
-  <>
-    <p className="text-2xl mb-6 text-yellow-300">Choose Your Path:</p>
-    <div className="grid grid-cols-3 gap-4 mb-8">
-      <div
-        onClick={() => {
-          setPlayerClass('warrior');
-          setPlayer(p => ({ ...p, maxHealth: p.maxHealth + 50, health: p.maxHealth + 50, damage: p.damage + 10, defense: p.defense + 5 }));
-          showNotification('Warrior class selected! +50 HP, +10 Damage, +5 Defense', 'success');
-        }}
-        className="bg-red-900 hover:bg-red-800 p-6 rounded-lg cursor-pointer border-2 border-red-600 transition-all hover:scale-105"
-      >
-        <Shield size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Warrior</h3>
-        <p className="text-sm">+50 HP, +10 Damage, +5 Defense</p>
-        <p className="text-xs text-gray-300 mt-2">Masters of melee combat and endurance</p>
-      </div>
-
-      <div
-        onClick={() => {
-          setPlayerClass('mage');
-          setPlayer(p => ({ ...p, maxMana: p.maxMana + 50, mana: p.maxMana + 50 }));
-          showNotification('Mage class selected! +50 Mana, +30% Spell Power, -20% Cooldowns', 'success');
-        }}
-        className="bg-blue-900 hover:bg-blue-800 p-6 rounded-lg cursor-pointer border-2 border-blue-600 transition-all hover:scale-105"
-      >
-        <Sparkles size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Mage</h3>
-        <p className="text-sm">+50 Mana, +30% Spell Power</p>
-        <p className="text-xs text-gray-300 mt-2">Unleashes devastating magical attacks</p>
-      </div>
-
-      <div
-        onClick={() => {
-          setPlayerClass('rogue');
-          setPlayer(p => ({ ...p, speed: p.speed + 0.5, critChance: p.critChance + 15, dodgeChance: p.dodgeChance + 10 }));
-          showNotification('Rogue class selected! +0.5 Speed, +15% Crit, +10% Dodge', 'success');
-        }}
-        className="bg-green-900 hover:bg-green-800 p-6 rounded-lg cursor-pointer border-2 border-green-600 transition-all hover:scale-105"
-      >
-        <Swords size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Rogue</h3>
-        <p className="text-sm">+Speed, +15% Crit, +10% Dodge</p>
-        <p className="text-xs text-gray-300 mt-2">Swift assassin with deadly precision</p>
-      </div>
-    </div>
-  </>
-) : (
-  <>
-    <p className="text-xl mb-6 text-green-300">Class Selected: <span className="font-bold capitalize">{playerClass}</span></p>
-    <div className="flex gap-4 justify-center">
-      <button
-        onClick={startGame}
-        className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
-      >
-        Begin Your Journey
-      </button>
-      <button
-        onClick={() => setPlayerClass(null)}
-        className="bg-gray-600 hover:bg-gray-700 text-white text-xl px-8 py-4 rounded-lg transition-colors"
-      >
-        Change Class
-      </button>
-    </div>
-  </>
-)}
-
-<div className="mt-6">
-  <button
-    onClick={() => {
-      if (loadGame()) {
-        // Game state set to 'playing' in loadGame
-      }
-    }}
-    className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-3 rounded-lg transition-colors flex items-center gap-2 mx-auto"
-  >
-    <Upload size={20} />
-    Load Saved Game
-  </button>
+<p className="text-xl mb-8">
+Now, with newfound magical powers, you must defend the realm from the darkness that spreads.
+</p>
+<div className="flex gap-4 justify-center">
+<button
+onClick={startGame}
+className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
+>
+Begin Your Journey
+</button>
+<button
+onClick={() => {
+if (loadGame()) {
+// Game state set to 'playing' in loadGame
+}
+}}
+className="bg-blue-600 hover:bg-blue-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors flex items-center gap-2"
+>
+<Upload size={24} />
+Load Game
+</button>
 </div>
 </div>
 </div>
@@ -2046,7 +1458,7 @@ return (
       </div>
     </div>
 
-    {/* Right: Level + Gold + Class + Time */}
+    {/* Right: Level + Gold */}
     <div className="flex items-center gap-2 text-white text-xs">
       <div className="flex items-center gap-0.5">
         <TrendingUp size={12} className="text-yellow-500" />
@@ -2056,57 +1468,8 @@ return (
         <Package size={12} className="text-yellow-300" />
         <span className="text-[10px]">{inventory.gold}</span>
       </div>
-      {playerClass && (
-        <div className="flex items-center gap-0.5">
-          <Swords size={12} className="text-purple-400" />
-          <span className="text-[10px] capitalize">{playerClass}</span>
-        </div>
-      )}
-      <div className="flex items-center gap-0.5">
-        {Math.floor(timeOfDay / 60) >= 6 && Math.floor(timeOfDay / 60) < 18 ? (
-          <Sun size={12} className="text-yellow-400" />
-        ) : (
-          <Moon size={12} className="text-blue-300" />
-        )}
-        <span className="text-[10px]">{String(Math.floor(timeOfDay / 60)).padStart(2, '0')}:{String(Math.floor(timeOfDay % 60)).padStart(2, '0')}</span>
-      </div>
     </div>
   </div>
-
-  {/* Combo Counter - Top Center */}
-  {comboCounter.count > 0 && (
-    <div className="fixed top-12 left-1/2 transform -translate-x-1/2 z-40">
-      <div className="bg-orange-600 bg-opacity-90 px-4 py-2 rounded-lg text-white font-bold text-xl shadow-xl border-2 border-yellow-400">
-        {comboCounter.count}x COMBO!
-      </div>
-    </div>
-  )}
-
-  {/* Active Buffs - Top Left */}
-  {activeBuffs.length > 0 && (
-    <div className="fixed top-12 left-2 z-40 flex flex-col gap-1">
-      {activeBuffs.map(buff => (
-        <div key={buff.id} className="bg-blue-600 bg-opacity-90 px-3 py-1 rounded text-white text-xs flex items-center gap-2">
-          <Shield size={14} />
-          <span className="capitalize">{buff.type}</span>
-          <span className="text-[10px]">{Math.ceil(buff.duration / 60)}s</span>
-        </div>
-      ))}
-    </div>
-  )}
-
-  {/* Pet Indicator - Bottom Left */}
-  {pet && (
-    <div className="fixed bottom-20 left-2 z-40">
-      <div className="bg-purple-600 bg-opacity-90 px-3 py-2 rounded-lg text-white text-xs flex items-center gap-2">
-        <Users size={14} />
-        <span className="capitalize">{pet.type}</span>
-        <div className="w-12 h-1 bg-gray-700 rounded-full">
-          <div className="h-full bg-green-500 rounded-full" style={{ width: `${(pet.health / pet.maxHealth) * 100}%` }} />
-        </div>
-      </div>
-    </div>
-  )}
   
   {/* Game Canvas - Maximized */}
   <canvas
@@ -2152,12 +1515,9 @@ return (
         <button onClick={() => { setShowBase(prev => !prev); if (showBase) setBuildMode(null); }} className={`px-3 py-1 rounded text-xs ${showBase ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
           <Home size={14} className="inline mr-1" />Base
         </button>
-        <button onClick={() => setShowAchievements(prev => !prev)} className={`px-3 py-1 rounded text-xs ${showAchievements ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
-          <Award size={14} className="inline mr-1" />Achievements
-        </button>
       </div>
       <div className="mt-1 text-white text-center px-2 text-xs">
-        WASD: Move | Mouse: Aim | Click/1-10: Cast Spells | H: Potion ({inventory.potions}) | E: Dungeon
+        WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Dungeon | I: Inv | K: Skills | C: Craft | B: Base
       </div>
     </>
   )}
@@ -2458,40 +1818,6 @@ return (
     </div>
   )}
 
-  {showAchievements && (
-    <div className="absolute top-20 right-20 bg-gray-800 text-white p-6 rounded-lg border-2 border-purple-500 max-w-lg max-h-96 overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold flex items-center gap-2">
-          <Award /> Achievements
-        </h3>
-        <X className="cursor-pointer" onClick={() => setShowAchievements(false)} />
-      </div>
-
-      <div className="space-y-3">
-        {achievements.map(ach => (
-          <div key={ach.id} className={`p-3 rounded-lg ${ach.complete ? 'bg-green-900 border-2 border-green-500' : 'bg-gray-700'}`}>
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="font-bold text-sm">{ach.title}</p>
-                <p className="text-xs text-gray-400">{ach.desc}</p>
-              </div>
-              {ach.complete && <span className="text-2xl">🏆</span>}
-            </div>
-            <div className="mb-1">
-              <div className="w-full h-2 bg-gray-900 rounded-full">
-                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${Math.min(100, (ach.progress / ach.goal) * 100)}%` }} />
-              </div>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span>{ach.progress} / {ach.goal}</span>
-              <span className="text-yellow-300">Reward: {ach.reward}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
-
   {isTouchDevice && gameState === 'playing' && (
     <>
       {/* Mobile: Spell Hotbar above Right Joystick */}
@@ -2529,19 +1855,15 @@ return (
         onTouchStart={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          const touch = e.changedTouches[0];
-          setLeftJoystickTouchId(touch.identifier);
           setJoystickActive(true);
           // Detect force touch for sprint
+          const touch = e.touches[0];
           setSprintActive((touch.force || 0) > 0.5);
         }}
         onTouchMove={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          // Find the touch that belongs to this joystick
-          const touch = Array.from(e.touches).find(t => t.identifier === leftJoystickTouchId);
-          if (!touch) return;
-
+          const touch = e.touches[0];
           const rect = e.currentTarget.getBoundingClientRect();
           const centerX = rect.left + rect.width / 2;
           const centerY = rect.top + rect.height / 2;
@@ -2561,7 +1883,6 @@ return (
         onTouchEnd={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setLeftJoystickTouchId(null);
           setJoystickActive(false);
           setJoystickPos({ x: 0, y: 0 });
           setSprintActive(false);
@@ -2595,19 +1916,15 @@ return (
         onTouchStart={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          const touch = e.changedTouches[0];
-          setRightJoystickTouchId(touch.identifier);
           setJoystickRightActive(true);
+          const touch = e.touches[0];
           const force = touch.force || 0;
           setChargeLevel(Math.min(force * 2, 1)); // Scale force to 0-1
         }}
         onTouchMove={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          // Find the touch that belongs to this joystick
-          const touch = Array.from(e.touches).find(t => t.identifier === rightJoystickTouchId);
-          if (!touch) return;
-
+          const touch = e.touches[0];
           const rect = e.currentTarget.getBoundingClientRect();
           const centerX = rect.left + rect.width / 2;
           const centerY = rect.top + rect.height / 2;
@@ -2639,7 +1956,6 @@ return (
             castSpell(0);
           }
 
-          setRightJoystickTouchId(null);
           setJoystickRightActive(false);
           setJoystickRightPos({ x: 0, y: 0 });
           setChargeLevel(0);

@@ -1810,8 +1810,16 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
     <>
       {/* Left Joystick - Movement with Sprint */}
       <div
-        className="fixed bottom-4 left-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-purple-500 flex items-center justify-center z-50"
-        style={{ touchAction: 'none' }}
+        className="fixed bottom-4 left-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-purple-500 flex items-center justify-center z-50 select-none"
+        style={{
+          touchAction: 'none',
+          WebkitUserSelect: 'none',
+          MozUserSelect: 'none',
+          msUserSelect: 'none',
+          userSelect: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitTapHighlightColor: 'transparent'
+        }}
         onTouchStart={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -1861,8 +1869,18 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
 
       {/* Right Joystick - Aiming with Charged Fireball */}
       <div
-        className="fixed bottom-4 right-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-orange-500 flex items-center justify-center z-50"
-        style={{ touchAction: 'none', position: 'relative' }}
+        className="fixed bottom-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-orange-500 flex items-center justify-center z-50 select-none"
+        style={{
+          right: 'calc(env(safe-area-inset-right, 0px) + 4px)',
+          touchAction: 'none',
+          position: 'fixed',
+          WebkitUserSelect: 'none',
+          MozUserSelect: 'none',
+          msUserSelect: 'none',
+          userSelect: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitTapHighlightColor: 'transparent'
+        }}
         onTouchStart={(e) => {
           e.preventDefault();
           e.stopPropagation();

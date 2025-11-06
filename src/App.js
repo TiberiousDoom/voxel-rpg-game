@@ -975,34 +975,67 @@ const updateCanvasSize = () => {
   const width = window.innerWidth;
   const height = window.innerHeight;
 
-  // Calculate available space for canvas (accounting for UI elements)
-  const uiHeight = isTouchDevice ? 140 : 180; // Compact UI for mobile
-  const maxCanvasWidth = Math.min(width - 20, 1000); // Max 1000px, 10px padding each side
-  const maxCanvasHeight = Math.min(height - uiHeight, 1200);
+  if (isTouchDevice) {
+    // Mobile: Maximize viewport, accounting for UI chrome
+    // Header: 24px + Joysticks: 72px (64px + 8px margin) + Safety margin: 10px = 106px total
+    const headerHeight = 24;
+    const joystickHeight = 72;
+    const safetyMargin = 10;
+    const totalUIHeight = headerHeight + joystickHeight + safetyMargin;
 
-  // Maintain aspect ratio
-  const aspectRatio = 1000 / 1200;
-  let canvasWidth = maxCanvasWidth;
-  let canvasHeight = canvasWidth / aspectRatio;
+    const availableWidth = width - 4; // 2px padding each side
+    const availableHeight = height - totalUIHeight;
 
-  if (canvasHeight > maxCanvasHeight) {
-    canvasHeight = maxCanvasHeight;
-    canvasWidth = canvasHeight * aspectRatio;
+    // Use available space while maintaining reasonable aspect ratio
+    const aspectRatio = 5 / 3; // 1.67:1 ratio (wider than original 1000:600)
+    let canvasWidth = availableWidth;
+    let canvasHeight = canvasWidth / aspectRatio;
+
+    // If height-constrained, fit to height instead
+    if (canvasHeight > availableHeight) {
+      canvasHeight = availableHeight;
+      canvasWidth = canvasHeight * aspectRatio;
+    }
+
+    setCanvasSize({
+      width: Math.floor(canvasWidth),
+      height: Math.floor(canvasHeight)
+    });
+  } else {
+    // Desktop: Updated to support taller viewport (1200px height)
+    const uiHeight = 180;
+    const maxCanvasWidth = Math.min(width - 40, 1000);
+    const maxCanvasHeight = Math.min(height - uiHeight, 1200); // Increased from 600 to 1200
+
+    const aspectRatio = 1000 / 1200; // Updated aspect ratio for taller viewport
+    let canvasWidth = maxCanvasWidth;
+    let canvasHeight = canvasWidth / aspectRatio;
+
+    if (canvasHeight > maxCanvasHeight) {
+      canvasHeight = maxCanvasHeight;
+      canvasWidth = canvasHeight * aspectRatio;
+    }
+
+    setCanvasSize({
+      width: Math.floor(canvasWidth),
+      height: Math.floor(canvasHeight)
+    });
   }
-
-  setCanvasSize({
-    width: Math.floor(canvasWidth),
-    height: Math.floor(canvasHeight)
-  });
 };
 
 updateCanvasSize();
 window.addEventListener('resize', updateCanvasSize);
 window.addEventListener('orientationchange', updateCanvasSize);
 
+// Also update on visibility change (when browser chrome shows/hides)
+window.addEventListener('scroll', updateCanvasSize);
+document.addEventListener('visibilitychange', updateCanvasSize);
+
 return () => {
   window.removeEventListener('resize', updateCanvasSize);
   window.removeEventListener('orientationchange', updateCanvasSize);
+  window.removeEventListener('scroll', updateCanvasSize);
+  document.removeEventListener('visibilitychange', updateCanvasSize);
 };
 }, [isTouchDevice]);
 

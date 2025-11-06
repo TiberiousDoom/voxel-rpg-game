@@ -2159,7 +2159,7 @@ if (nightAlpha > 0) {
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 }
 
-}, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon, CANVAS_WIDTH, CANVAS_HEIGHT, aoeEffects, pet, damageNumbers, screenShake, timeOfDay]);
+}, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon, CANVAS_WIDTH, CANVAS_HEIGHT, aoeEffects, pet, damageNumbers, screenShake, timeOfDay, playerClass]);
 
 if (gameState === 'intro') {
 return (

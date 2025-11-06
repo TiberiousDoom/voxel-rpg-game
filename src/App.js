@@ -135,6 +135,7 @@ const [notifications, setNotifications] = useState([]);
 const [isTouchDevice, setIsTouchDevice] = useState(false);
 const [joystickActive, setJoystickActive] = useState(false);
 const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
+const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 600 });
 const [quests, setQuests] = useState([
 { id: 1, title: 'First Blood', desc: 'Defeat 10 enemies', progress: 0, goal: 10, reward: 50, complete: false },
 { id: 2, title: 'Dungeon Delver', desc: 'Clear a dungeon', progress: 0, goal: 1, reward: 100, complete: false },
@@ -148,8 +149,8 @@ const autoSaveTimerRef = useRef(0);
 
 const MAP_WIDTH = 2500;
 const MAP_HEIGHT = 2000;
-const CANVAS_WIDTH = 1000;
-const CANVAS_HEIGHT = 600;
+const CANVAS_WIDTH = canvasSize.width;
+const CANVAS_HEIGHT = canvasSize.height;
 
 // Utility functions - defined first so other hooks can reference them
 const showMessage = useCallback((msg) => {
@@ -698,6 +699,43 @@ useEffect(() => {
 setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
 }, []);
 
+// Responsive canvas sizing
+useEffect(() => {
+const updateCanvasSize = () => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+
+  // Calculate available space for canvas (accounting for UI elements)
+  const uiHeight = isTouchDevice ? 280 : 200; // More space for mobile UI
+  const maxCanvasWidth = Math.min(width - 40, 1000); // Max 1000px, 20px padding each side
+  const maxCanvasHeight = Math.min(height - uiHeight, 600);
+
+  // Maintain aspect ratio
+  const aspectRatio = 1000 / 600;
+  let canvasWidth = maxCanvasWidth;
+  let canvasHeight = canvasWidth / aspectRatio;
+
+  if (canvasHeight > maxCanvasHeight) {
+    canvasHeight = maxCanvasHeight;
+    canvasWidth = canvasHeight * aspectRatio;
+  }
+
+  setCanvasSize({
+    width: Math.floor(canvasWidth),
+    height: Math.floor(canvasHeight)
+  });
+};
+
+updateCanvasSize();
+window.addEventListener('resize', updateCanvasSize);
+window.addEventListener('orientationchange', updateCanvasSize);
+
+return () => {
+  window.removeEventListener('resize', updateCanvasSize);
+  window.removeEventListener('orientationchange', updateCanvasSize);
+};
+}, [isTouchDevice]);
+
 // Virtual joystick handler
 useEffect(() => {
 if (!joystickActive) {
@@ -777,7 +815,7 @@ setCamera({
 x: Math.max(0, Math.min(player.x - CANVAS_WIDTH / 2, MAP_WIDTH - CANVAS_WIDTH)),
 y: Math.max(0, Math.min(player.y - CANVAS_HEIGHT / 2, MAP_HEIGHT - CANVAS_HEIGHT))
 });
-}, [player.x, player.y]);
+}, [player.x, player.y, CANVAS_WIDTH, CANVAS_HEIGHT]);
 
 useEffect(() => {
 if (gameState !== 'playing') return;
@@ -1262,7 +1300,7 @@ ctx.fillStyle = '#ffffff';
 ctx.fillRect(8, -4, 8, 8);
 ctx.restore();
 
-}, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon]);
+}, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon, CANVAS_WIDTH, CANVAS_HEIGHT]);
 
 if (gameState === 'intro') {
 return (
@@ -1327,7 +1365,7 @@ const buildingOptions = [
 ];
 
 return (
-<div className="w-full h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
+<div className="w-full h-screen bg-gray-900 flex flex-col items-center justify-center overflow-hidden" style={{ touchAction: 'none' }}>
 <div className="absolute top-4 right-4 space-y-2 z-10">
 {notifications.map(notif => (
 <div
@@ -1350,7 +1388,7 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
     </button>
   </div>
   
-  <div className="mb-4 flex gap-6 text-white flex-wrap justify-center">
+  <div className="mb-2 flex gap-2 md:gap-6 text-white flex-wrap justify-center text-xs md:text-base px-2">
     <div className="flex items-center gap-2">
       <Heart className="text-red-500" />
       <div className="w-32 h-6 bg-gray-700 rounded">
@@ -1397,11 +1435,11 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
     className="border-4 border-purple-500 rounded-lg"
   />
   
-  <div className="mt-4 flex gap-4 text-white">
+  <div className="mt-2 flex gap-2 text-white flex-wrap justify-center">
     {spells.map((spell, i) => (
       <div
         key={spell.id}
-        className={`px-4 py-2 rounded ${
+        className={`px-2 md:px-4 py-1 md:py-2 rounded ${
           spell.unlocked
             ? spell.cooldown > 0
               ? 'bg-gray-600'
@@ -1410,7 +1448,7 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
         }`}
         onClick={() => spell.unlocked && castSpell(i)}
       >
-        <div className="text-sm">{i + 1}. {spell.name}</div>
+        <div className="text-xs md:text-sm">{i + 1}. {spell.name}</div>
         <div className="text-xs">
           {spell.unlocked
             ? spell.cooldown > 0
@@ -1422,53 +1460,56 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
     ))}
   </div>
 
-  <div className="mt-4 flex gap-4 text-white justify-center">
+  <div className="mt-2 flex gap-2 text-white justify-center flex-wrap">
     <button
       onClick={() => setShowInventory(prev => !prev)}
-      className={`px-4 py-2 rounded flex items-center gap-2 ${
+      className={`px-2 md:px-4 py-1 md:py-2 rounded flex items-center gap-1 md:gap-2 ${
         showInventory ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
       } transition-colors`}
     >
-      <Package size={20} />
-      <span className="text-sm">Inventory (I)</span>
+      <Package size={16} />
+      <span className="text-xs md:text-sm">Inventory</span>
     </button>
     <button
       onClick={() => setShowSkills(prev => !prev)}
-      className={`px-4 py-2 rounded flex items-center gap-2 ${
+      className={`px-2 md:px-4 py-1 md:py-2 rounded flex items-center gap-1 md:gap-2 ${
         showSkills ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
       } transition-colors`}
     >
-      <Star size={20} />
-      <span className="text-sm">Skills (K)</span>
+      <Star size={16} />
+      <span className="text-xs md:text-sm">Skills</span>
     </button>
     <button
       onClick={() => setShowCrafting(prev => !prev)}
-      className={`px-4 py-2 rounded flex items-center gap-2 ${
+      className={`px-2 md:px-4 py-1 md:py-2 rounded flex items-center gap-1 md:gap-2 ${
         showCrafting ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
       } transition-colors`}
     >
-      <Hammer size={20} />
-      <span className="text-sm">Crafting (C)</span>
+      <Hammer size={16} />
+      <span className="text-xs md:text-sm">Crafting</span>
     </button>
     <button
       onClick={() => {
         setShowBase(prev => !prev);
         if (showBase) setBuildMode(null);
       }}
-      className={`px-4 py-2 rounded flex items-center gap-2 ${
+      className={`px-2 md:px-4 py-1 md:py-2 rounded flex items-center gap-1 md:gap-2 ${
         showBase ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
       } transition-colors`}
     >
-      <Home size={20} />
-      <span className="text-sm">Base (B)</span>
+      <Home size={16} />
+      <span className="text-xs md:text-sm">Base</span>
     </button>
   </div>
 
-  <div className="mt-4 text-white text-center">
-    <p className="text-sm mb-2">
+  <div className="mt-2 text-white text-center px-2">
+    <p className="text-xs md:text-sm mb-2 hidden md:block">
       WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Enter/Exit Dungeon | I: Inventory | K: Skills | C: Crafting | B: Base
     </p>
-    {message && <p className="text-yellow-300 font-bold">{message}</p>}
+    <p className="text-xs mb-2 md:hidden">
+      Potions: {inventory.potions} | Press H to use
+    </p>
+    {message && <p className="text-yellow-300 font-bold text-sm">{message}</p>}
   </div>
   
   {showInventory && (
@@ -1736,13 +1777,16 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
 
   {isTouchDevice && gameState === 'playing' && (
     <div
-      className="fixed bottom-24 left-8 w-32 h-32 bg-gray-800 bg-opacity-50 rounded-full border-2 border-purple-500 flex items-center justify-center"
+      className="fixed bottom-4 left-4 w-28 h-28 bg-gray-800 bg-opacity-50 rounded-full border-2 border-purple-500 flex items-center justify-center z-50"
+      style={{ touchAction: 'none' }}
       onTouchStart={(e) => {
         e.preventDefault();
+        e.stopPropagation();
         setJoystickActive(true);
       }}
       onTouchMove={(e) => {
         e.preventDefault();
+        e.stopPropagation();
         const touch = e.touches[0];
         const rect = e.currentTarget.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -1750,7 +1794,7 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
         const dx = touch.clientX - centerX;
         const dy = touch.clientY - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const maxDistance = 50;
+        const maxDistance = 45;
         const clampedDistance = Math.min(distance, maxDistance);
         const angle = Math.atan2(dy, dx);
         setJoystickPos({
@@ -1760,12 +1804,13 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
       }}
       onTouchEnd={(e) => {
         e.preventDefault();
+        e.stopPropagation();
         setJoystickActive(false);
         setJoystickPos({ x: 0, y: 0 });
       }}
     >
       <div
-        className="w-16 h-16 bg-purple-600 rounded-full transition-transform"
+        className="w-14 h-14 bg-purple-600 rounded-full transition-transform pointer-events-none"
         style={{
           transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`
         }}

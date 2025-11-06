@@ -1353,12 +1353,12 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
   
   <div className="mt-4 flex gap-4 text-white">
     {spells.map((spell, i) => (
-      <div 
+      <div
         key={spell.id}
         className={`px-4 py-2 rounded ${
-          spell.unlocked 
-            ? spell.cooldown > 0 
-              ? 'bg-gray-600' 
+          spell.unlocked
+            ? spell.cooldown > 0
+              ? 'bg-gray-600'
               : 'bg-purple-600 hover:bg-purple-700 cursor-pointer'
             : 'bg-gray-800'
         }`}
@@ -1366,19 +1366,61 @@ className={`px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 ${ notif.type
       >
         <div className="text-sm">{i + 1}. {spell.name}</div>
         <div className="text-xs">
-          {spell.unlocked 
-            ? spell.cooldown > 0 
-              ? `${Math.ceil(spell.cooldown / 60)}s` 
+          {spell.unlocked
+            ? spell.cooldown > 0
+              ? `${Math.ceil(spell.cooldown / 60)}s`
               : `${spell.cost} mana`
             : 'Locked'}
         </div>
       </div>
     ))}
   </div>
-  
+
+  <div className="mt-4 flex gap-4 text-white justify-center">
+    <button
+      onClick={() => setShowInventory(prev => !prev)}
+      className={`px-4 py-2 rounded flex items-center gap-2 ${
+        showInventory ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
+      } transition-colors`}
+    >
+      <Package size={20} />
+      <span className="text-sm">Inventory (I)</span>
+    </button>
+    <button
+      onClick={() => setShowSkills(prev => !prev)}
+      className={`px-4 py-2 rounded flex items-center gap-2 ${
+        showSkills ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
+      } transition-colors`}
+    >
+      <Star size={20} />
+      <span className="text-sm">Skills (K)</span>
+    </button>
+    <button
+      onClick={() => setShowCrafting(prev => !prev)}
+      className={`px-4 py-2 rounded flex items-center gap-2 ${
+        showCrafting ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
+      } transition-colors`}
+    >
+      <Hammer size={20} />
+      <span className="text-sm">Crafting (C)</span>
+    </button>
+    <button
+      onClick={() => {
+        setShowBase(prev => !prev);
+        if (showBase) setBuildMode(null);
+      }}
+      className={`px-4 py-2 rounded flex items-center gap-2 ${
+        showBase ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
+      } transition-colors`}
+    >
+      <Home size={20} />
+      <span className="text-sm">Base (B)</span>
+    </button>
+  </div>
+
   <div className="mt-4 text-white text-center">
     <p className="text-sm mb-2">
-      WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Enter/Exit Dungeon | I: Inventory | B: Base
+      WASD: Move | Mouse: Aim | Click/1-4: Cast | H: Potion ({inventory.potions}) | E: Enter/Exit Dungeon | I: Inventory | K: Skills | C: Crafting | B: Base
     </p>
     {message && <p className="text-yellow-300 font-bold">{message}</p>}
   </div>

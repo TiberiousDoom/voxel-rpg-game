@@ -5,6 +5,8 @@ import Player from './Player';
 import VoxelTerrain from './VoxelTerrain';
 import Enemy from './Enemy';
 import Projectile from './Projectile';
+import TouchControls from './TouchControls';
+import TargetMarker from './TargetMarker';
 import useGameStore from '../../stores/useGameStore';
 
 /**
@@ -12,9 +14,13 @@ import useGameStore from '../../stores/useGameStore';
  */
 const Experience = () => {
   const projectiles = useGameStore((state) => state.projectiles);
+  const targetMarkers = useGameStore((state) => state.targetMarkers);
 
   return (
     <>
+      {/* Touch/Click controls */}
+      <TouchControls />
+
       {/* Sky and lighting */}
       <Sky
         distance={450000}
@@ -73,6 +79,15 @@ const Experience = () => {
       {/* Projectiles (outside physics for now) */}
       {projectiles.map((proj) => (
         <Projectile key={proj.id} {...proj} />
+      ))}
+
+      {/* Target markers for tap-to-move/attack feedback */}
+      {targetMarkers.map((marker) => (
+        <TargetMarker
+          key={marker.id}
+          position={marker.position}
+          duration={2}
+        />
       ))}
 
       {/* Environment for reflections */}

@@ -8,6 +8,7 @@ const useGameStore = create((set, get) => ({
   player: {
     position: [0, 2, 0], // x, y, z in 3D space
     velocity: [0, 0, 0],
+    targetPosition: null, // For tap-to-move
     health: 100,
     maxHealth: 100,
     mana: 100,
@@ -56,8 +57,26 @@ const useGameStore = create((set, get) => ({
   // Projectiles
   projectiles: [],
 
+  // Target markers (for tap-to-move visual feedback)
+  targetMarkers: [],
+
   // Actions
   setGameState: (state) => set({ gameState: state }),
+
+  setPlayerTarget: (targetPosition) =>
+    set((state) => ({
+      player: { ...state.player, targetPosition },
+    })),
+
+  addTargetMarker: (marker) =>
+    set((state) => ({
+      targetMarkers: [...state.targetMarkers, { ...marker, id: Date.now() }],
+    })),
+
+  removeTargetMarker: (id) =>
+    set((state) => ({
+      targetMarkers: state.targetMarkers.filter((m) => m.id !== id),
+    })),
 
   updatePlayer: (updates) =>
     set((state) => ({
@@ -179,6 +198,7 @@ const useGameStore = create((set, get) => ({
       player: {
         position: [0, 2, 0],
         velocity: [0, 0, 0],
+        targetPosition: null,
         health: 100,
         maxHealth: 100,
         mana: 100,
@@ -199,6 +219,7 @@ const useGameStore = create((set, get) => ({
       },
       enemies: [],
       projectiles: [],
+      targetMarkers: [],
     }),
 }));
 

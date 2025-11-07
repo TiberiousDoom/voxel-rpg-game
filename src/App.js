@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Upload, Star, Sparkles, Swords, Users, Award, Moon, Sun } from 'lucide-react';
+import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Star, Sparkles, Swords, Users, Award, Moon, Sun } from 'lucide-react';
 import { SpatialHash } from './utils/SpatialHash';
 import { ObjectPool } from './utils/ObjectPool';
 import { audioManager } from './utils/AudioManager';
+import packageJson from '../package.json';
 
 const VoxelRPG = () => {
 const canvasRef = useRef(null);
@@ -2358,99 +2359,165 @@ if (nightAlpha > 0) {
 }, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon, CANVAS_WIDTH, CANVAS_HEIGHT, aoeEffects, pet, damageNumbers, screenShake, timeOfDay, playerClass]);
 
 if (gameState === 'intro') {
+// If showing class selection
+if (playerClass === 'selecting') {
+  return (
+    <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
+      <div className="text-center text-white max-w-4xl p-8">
+        <h1 className="text-5xl font-bold mb-6 text-purple-300">Choose Your Path</h1>
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div
+            onClick={() => {
+              setPlayerClass('warrior');
+              setPlayer(p => ({ ...p, maxHealth: p.maxHealth + 50, health: p.maxHealth + 50, damage: p.damage + 10, defense: p.defense + 5 }));
+              showNotification('Warrior class selected! +50 HP, +10 Damage, +5 Defense', 'success');
+            }}
+            className="bg-red-900 hover:bg-red-800 p-6 rounded-lg cursor-pointer border-2 border-red-600 transition-all hover:scale-105"
+          >
+            <Shield size={48} className="mx-auto mb-4" />
+            <h3 className="text-2xl font-bold mb-2">Warrior</h3>
+            <p className="text-sm">+50 HP, +10 Damage, +5 Defense</p>
+            <p className="text-xs text-gray-300 mt-2">Masters of melee combat and endurance</p>
+          </div>
+
+          <div
+            onClick={() => {
+              setPlayerClass('mage');
+              setPlayer(p => ({ ...p, maxMana: p.maxMana + 50, mana: p.maxMana + 50 }));
+              showNotification('Mage class selected! +50 Mana, +30% Spell Power, -20% Cooldowns', 'success');
+            }}
+            className="bg-blue-900 hover:bg-blue-800 p-6 rounded-lg cursor-pointer border-2 border-blue-600 transition-all hover:scale-105"
+          >
+            <Sparkles size={48} className="mx-auto mb-4" />
+            <h3 className="text-2xl font-bold mb-2">Mage</h3>
+            <p className="text-sm">+50 Mana, +30% Spell Power</p>
+            <p className="text-xs text-gray-300 mt-2">Unleashes devastating magical attacks</p>
+          </div>
+
+          <div
+            onClick={() => {
+              setPlayerClass('rogue');
+              setPlayer(p => ({ ...p, speed: p.speed + 0.5, critChance: p.critChance + 15, dodgeChance: p.dodgeChance + 10 }));
+              showNotification('Rogue class selected! +0.5 Speed, +15% Crit, +10% Dodge', 'success');
+            }}
+            className="bg-green-900 hover:bg-green-800 p-6 rounded-lg cursor-pointer border-2 border-green-600 transition-all hover:scale-105"
+          >
+            <Swords size={48} className="mx-auto mb-4" />
+            <h3 className="text-2xl font-bold mb-2">Rogue</h3>
+            <p className="text-sm">+Speed, +15% Crit, +10% Dodge</p>
+            <p className="text-xs text-gray-300 mt-2">Swift assassin with deadly precision</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setPlayerClass(null)}
+          className="bg-gray-600 hover:bg-gray-700 text-white text-xl px-8 py-4 rounded-lg transition-colors"
+        >
+          Back to Title
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// If class selected, show confirmation
+if (playerClass && playerClass !== 'selecting') {
+  return (
+    <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
+      <div className="text-center text-white max-w-4xl p-8">
+        <h1 className="text-5xl font-bold mb-6 text-yellow-400">Shovel Monster</h1>
+        <p className="text-xl mb-4">
+          Armed with nothing but your trusty shovel, venture forth into a world filled with monsters!
+        </p>
+        <p className="text-xl mb-4">
+          Dig, fight, and survive in this epic adventure.
+        </p>
+        <p className="text-xl mb-6 text-green-300">Class Selected: <span className="font-bold capitalize">{playerClass}</span></p>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={startGame}
+            className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
+          >
+            Begin Your Journey
+          </button>
+          <button
+            onClick={() => setPlayerClass(null)}
+            className="bg-gray-600 hover:bg-gray-700 text-white text-xl px-8 py-4 rounded-lg transition-colors"
+          >
+            Change Class
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Title screen with image
 return (
-<div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
-<div className="text-center text-white max-w-4xl p-8">
-<h1 className="text-5xl font-bold mb-6 text-purple-300">The Wound of Power</h1>
-<p className="text-xl mb-4">
-In a moment of desperation, you were struck by a being beyond mortal comprehension.
-</p>
-<p className="text-xl mb-4">
-The wound should have killed you... but instead, it awakened something ancient within.
-</p>
+  <div className="w-full h-screen bg-gray-900 flex items-center justify-center overflow-hidden">
+    <div className="relative w-full h-full max-w-md flex items-center justify-center">
+      {/* Title screen background image */}
+      <img
+        src="/voxel-rpg-game/assets/splash/title-screen.png"
+        alt="Shovel Monster Title Screen"
+        className="absolute inset-0 w-full h-full object-contain"
+      />
 
-{!playerClass ? (
-  <>
-    <p className="text-2xl mb-6 text-yellow-300">Choose Your Path:</p>
-    <div className="grid grid-cols-3 gap-4 mb-8">
-      <div
-        onClick={() => {
-          setPlayerClass('warrior');
-          setPlayer(p => ({ ...p, maxHealth: p.maxHealth + 50, health: p.maxHealth + 50, damage: p.damage + 10, defense: p.defense + 5 }));
-          showNotification('Warrior class selected! +50 HP, +10 Damage, +5 Defense', 'success');
-        }}
-        className="bg-red-900 hover:bg-red-800 p-6 rounded-lg cursor-pointer border-2 border-red-600 transition-all hover:scale-105"
-      >
-        <Shield size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Warrior</h3>
-        <p className="text-sm">+50 HP, +10 Damage, +5 Defense</p>
-        <p className="text-xs text-gray-300 mt-2">Masters of melee combat and endurance</p>
+      {/* Version number - bottom right corner */}
+      <div className="absolute bottom-2 right-2 text-white text-xs opacity-50 font-mono">
+        v{packageJson.version}
       </div>
 
-      <div
-        onClick={() => {
-          setPlayerClass('mage');
-          setPlayer(p => ({ ...p, maxMana: p.maxMana + 50, mana: p.maxMana + 50 }));
-          showNotification('Mage class selected! +50 Mana, +30% Spell Power, -20% Cooldowns', 'success');
-        }}
-        className="bg-blue-900 hover:bg-blue-800 p-6 rounded-lg cursor-pointer border-2 border-blue-600 transition-all hover:scale-105"
-      >
-        <Sparkles size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Mage</h3>
-        <p className="text-sm">+50 Mana, +30% Spell Power</p>
-        <p className="text-xs text-gray-300 mt-2">Unleashes devastating magical attacks</p>
-      </div>
+      {/* Clickable button overlays - positioned over the buttons in the image */}
+      <div className="absolute inset-0 flex flex-col justify-end pb-4">
+        {/* NEW GAME button overlay - positioned at ~65% down */}
+        <div
+          onClick={() => setPlayerClass('selecting')}
+          className="relative mx-auto cursor-pointer hover:opacity-80 transition-opacity"
+          style={{
+            width: '60%',
+            height: '8%',
+            marginBottom: '1%'
+          }}
+          title="New Game"
+        >
+          {/* Invisible clickable area */}
+        </div>
 
-      <div
-        onClick={() => {
-          setPlayerClass('rogue');
-          setPlayer(p => ({ ...p, speed: p.speed + 0.5, critChance: p.critChance + 15, dodgeChance: p.dodgeChance + 10 }));
-          showNotification('Rogue class selected! +0.5 Speed, +15% Crit, +10% Dodge', 'success');
-        }}
-        className="bg-green-900 hover:bg-green-800 p-6 rounded-lg cursor-pointer border-2 border-green-600 transition-all hover:scale-105"
-      >
-        <Swords size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Rogue</h3>
-        <p className="text-sm">+Speed, +15% Crit, +10% Dodge</p>
-        <p className="text-xs text-gray-300 mt-2">Swift assassin with deadly precision</p>
+        {/* CONTINUE button overlay - positioned at ~74% down */}
+        <div
+          onClick={() => {
+            if (loadGame()) {
+              // Game state set to 'playing' in loadGame
+            } else {
+              showNotification('No saved game found', 'error');
+            }
+          }}
+          className="relative mx-auto cursor-pointer hover:opacity-80 transition-opacity"
+          style={{
+            width: '60%',
+            height: '8%',
+            marginBottom: '1%'
+          }}
+          title="Continue"
+        >
+          {/* Invisible clickable area */}
+        </div>
+
+        {/* OPTIONS button overlay - positioned at ~83% down */}
+        <div
+          className="relative mx-auto cursor-not-allowed opacity-50"
+          style={{
+            width: '60%',
+            height: '8%',
+            marginBottom: '4%'
+          }}
+          title="Options (Coming Soon)"
+        >
+          {/* Invisible clickable area - disabled for now */}
+        </div>
       </div>
     </div>
-  </>
-) : (
-  <>
-    <p className="text-xl mb-6 text-green-300">Class Selected: <span className="font-bold capitalize">{playerClass}</span></p>
-    <div className="flex gap-4 justify-center">
-      <button
-        onClick={startGame}
-        className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
-      >
-        Begin Your Journey
-      </button>
-      <button
-        onClick={() => setPlayerClass(null)}
-        className="bg-gray-600 hover:bg-gray-700 text-white text-xl px-8 py-4 rounded-lg transition-colors"
-      >
-        Change Class
-      </button>
-    </div>
-  </>
-)}
-
-<div className="mt-6">
-  <button
-    onClick={() => {
-      if (loadGame()) {
-        // Game state set to 'playing' in loadGame
-      }
-    }}
-    className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-3 rounded-lg transition-colors flex items-center gap-2 mx-auto"
-  >
-    <Upload size={20} />
-    Load Saved Game
-  </button>
-</div>
-</div>
-</div>
+  </div>
 );
 }
 

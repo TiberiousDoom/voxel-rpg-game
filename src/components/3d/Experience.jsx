@@ -72,14 +72,14 @@ const Experience = () => {
           <Enemy position={[8, 5, -12]} />
           <Enemy position={[-10, 5, -15]} />
 
+          {/* Projectiles - inside physics for collision detection */}
+          {projectiles.map((proj) => (
+            <Projectile key={proj.id} {...proj} />
+          ))}
+
           {/* TODO: Add interactable objects */}
         </Suspense>
       </Physics>
-
-      {/* Projectiles (outside physics for now) */}
-      {projectiles.map((proj) => (
-        <Projectile key={proj.id} {...proj} />
-      ))}
 
       {/* Target markers for tap-to-move/attack feedback */}
       {targetMarkers.map((marker) => (

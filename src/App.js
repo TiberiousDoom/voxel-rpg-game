@@ -1575,15 +1575,23 @@ const gameLoop = () => {
 };
 
 let lastTime = Date.now();
+const targetFrameTime = 1000 / 60; // 60 FPS = ~16.67ms per frame
+let accumulator = 0;
+
 const animate = () => {
   const currentTime = Date.now();
-  const deltaTime = (currentTime - lastTime) / 16.67;
+  const deltaTime = currentTime - lastTime;
   lastTime = currentTime;
-  
-  if (deltaTime < 3) {
+
+  // Accumulate time
+  accumulator += deltaTime;
+
+  // Run game loop at fixed 60 FPS
+  while (accumulator >= targetFrameTime) {
     gameLoop();
+    accumulator -= targetFrameTime;
   }
-  
+
   gameLoopRef.current = requestAnimationFrame(animate);
 };
 

@@ -7,6 +7,7 @@ import Enemy from './Enemy';
 import Projectile from './Projectile';
 import TouchControls from './TouchControls';
 import TargetMarker from './TargetMarker';
+import DamageNumber from './DamageNumber';
 import useGameStore from '../../stores/useGameStore';
 
 /**
@@ -15,6 +16,8 @@ import useGameStore from '../../stores/useGameStore';
 const Experience = () => {
   const projectiles = useGameStore((state) => state.projectiles);
   const targetMarkers = useGameStore((state) => state.targetMarkers);
+  const damageNumbers = useGameStore((state) => state.damageNumbers);
+  const removeDamageNumber = useGameStore((state) => state.removeDamageNumber);
 
   return (
     <>
@@ -88,6 +91,17 @@ const Experience = () => {
           position={marker.position}
           color={marker.color || '#00ff00'}
           duration={2}
+        />
+      ))}
+
+      {/* Floating damage numbers */}
+      {damageNumbers.map((dmg) => (
+        <DamageNumber
+          key={dmg.id}
+          position={dmg.position}
+          damage={dmg.damage}
+          id={dmg.id}
+          onComplete={removeDamageNumber}
         />
       ))}
 

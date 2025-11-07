@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Physics } from '@react-three/rapier';
+import { Physics, RigidBody } from '@react-three/rapier';
 import { Sky, Environment } from '@react-three/drei';
 import Player from './Player';
 import VoxelTerrain from './VoxelTerrain';
@@ -46,8 +46,16 @@ const Experience = () => {
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
         <Suspense fallback={null}>
-          {/* Terrain */}
+          {/* Terrain - visual only */}
           <VoxelTerrain size={50} voxelSize={2} />
+
+          {/* Ground plane - provides collision */}
+          <RigidBody type="fixed" colliders="cuboid" position={[0, 0, 0]}>
+            <mesh receiveShadow position={[0, 0, 0]}>
+              <boxGeometry args={[200, 1, 200]} />
+              <meshStandardMaterial color="#228b22" transparent opacity={0} />
+            </mesh>
+          </RigidBody>
 
           {/* Player */}
           <Player />

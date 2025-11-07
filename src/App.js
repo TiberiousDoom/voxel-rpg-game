@@ -196,6 +196,8 @@ const projectilePoolRef = useRef(null);
 const particlePoolRef = useRef(null);
 const enemiesRef = useRef([]);
 const bossesRef = useRef([]);
+const pendingEnemyHitsRef = useRef(new Map());
+const pendingBossHitsRef = useRef(new Map());
 
 const MAP_WIDTH = 2500;
 const MAP_HEIGHT = 2000;
@@ -1277,9 +1279,9 @@ const gameLoop = () => {
   }));
   
   setSpells(prev => prev.map(s => ({ ...s, cooldown: Math.max(0, s.cooldown - timeMultiplier) })));
-  
+
   spawnTimerRef.current += timeMultiplier;
-  if (spawnTimerRef.current > 300 && inDungeon === null && enemies.length < 30) {
+  if (spawnTimerRef.current > 300 && inDungeon === null && enemiesRef.current.length < 30) {
     spawnTimerRef.current = 0;
 
     const spawnX = Math.random() * MAP_WIDTH;
@@ -1311,7 +1313,7 @@ const gameLoop = () => {
   }
   
   bossTimerRef.current += timeMultiplier;
-  if (bossTimerRef.current > 1800 && bosses.length === 0 && inDungeon === null) {
+  if (bossTimerRef.current > 1800 && bossesRef.current.length === 0 && inDungeon === null) {
     bossTimerRef.current = 0;
     
     const bossX = Math.random() * MAP_WIDTH;
@@ -1334,6 +1336,9 @@ const gameLoop = () => {
     showNotification('⚠️ A powerful boss has appeared!', 'warning');
   }
   
+  // Get pending damage from projectile collisions
+  const pendingEnemyHits = pendingEnemyHitsRef.current;
+
   setEnemies(prev => prev.map(enemy => {
     const dx = player.x - enemy.x;
     const dy = player.y - enemy.y;
@@ -1368,7 +1373,7 @@ const gameLoop = () => {
       newState = 'chasing';
       newX = enemy.x + (dx / distToPlayer) * effectiveSpeed * timeMultiplier;
       newY = enemy.y + (dy / distToPlayer) * effectiveSpeed * timeMultiplier;
-      
+
       if (distToPlayer < 30) {
         setPlayer(p => {
           const buffDefense = defenseBuff ? defenseBuff.value : 0;
@@ -1387,11 +1392,11 @@ const gameLoop = () => {
       }
     } else {
       newState = 'roaming';
-      
+
       const distFromSpawn = Math.sqrt(
         Math.pow(enemy.x - enemy.spawnX, 2) + Math.pow(enemy.y - enemy.spawnY, 2)
       );
-      
+
       if (distFromSpawn > 150 || Math.random() < 0.02) {
         roamAngle = Math.random() * Math.PI * 2;
       }
@@ -1419,23 +1424,63 @@ const gameLoop = () => {
       delete updatedEnemy.slowed;
     }
 
+    // Apply damage from projectile hits
+    const hit = pendingEnemyHits.get(enemy.id);
+    if (hit) {
+      const newHealth = updatedEnemy.health - hit.damage;
+      if (newHealth <= 0) {
+        gainXP(enemy.xp);
+        dropLoot(enemy.x, enemy.y);
+        updateQuest(1, 1);
+        checkAchievement('kill_100', 1);
+        audioManager.play('explosion');
+
+        if (enemy.type === 'dungeon_monster') {
+          const dungeon = dungeons.find(d => d.id === inDungeon);
+          if (dungeon) {
+            const remainingEnemies = prev.filter(e =>
+              e.type === 'dungeon_monster' && e.id !== enemy.id && !pendingEnemyHits.has(e.id)
+            );
+            if (remainingEnemies.length === 0) {
+              setDungeons(d => d.map(dun =>
+                dun.id === inDungeon ? { ...dun, cleared: true } : dun
+              ));
+              updateQuest(2, 1);
+              showNotification('Dungeon Cleared! Auto-exiting...', 'success');
+              dropLoot(enemy.x, enemy.y, true);
+              setTimeout(() => setInDungeon(null), 1000);
+            }
+          }
+        }
+        return null;
+      }
+      updatedEnemy.health = newHealth;
+      updatedEnemy.aggroSource = hit.aggroSource;
+    }
+
     return updatedEnemy;
-  }).filter(e => e.health > 0));
+  }).filter(e => e && e.health > 0));
+
+  // Clear pending hits after applying
+  pendingEnemyHitsRef.current.clear();
   
+  // Get pending damage from projectile collisions
+  const pendingBossHits = pendingBossHitsRef.current;
+
   setBosses(prev => prev.map(boss => {
     const dx = player.x - boss.x;
     const dy = player.y - boss.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    
+
     let aggroSource = boss.aggroSource;
     let newX = boss.x;
     let newY = boss.y;
-    
+
     if (aggroSource) {
       const aggroDx = aggroSource.x - boss.x;
       const aggroDy = aggroSource.y - boss.y;
       const aggroDist = Math.sqrt(aggroDx * aggroDx + aggroDy * aggroDy);
-      
+
       if (aggroDist < 50) {
         aggroSource = null;
       } else {
@@ -1445,7 +1490,7 @@ const gameLoop = () => {
     } else if (dist < 600) {
       newX = boss.x + (dx / dist) * boss.speed * timeMultiplier;
       newY = boss.y + (dy / dist) * boss.speed * timeMultiplier;
-      
+
       if (dist < 40) {
         setPlayer(p => {
           const buffDefense = defenseBuff ? defenseBuff.value : 0;
@@ -1464,15 +1509,37 @@ const gameLoop = () => {
         });
       }
     }
-    
-    return {
+
+    const updatedBoss = {
       ...boss,
       x: newX,
       y: newY,
       attackCooldown: Math.max(0, boss.attackCooldown - timeMultiplier),
       aggroSource
     };
-  }).filter(b => b.health > 0));
+
+    // Apply damage from projectile hits
+    const hit = pendingBossHits.get(boss.id);
+    if (hit) {
+      const newHealth = updatedBoss.health - hit.damage;
+      if (newHealth <= 0) {
+        gainXP(200);
+        dropLoot(boss.x, boss.y, true);
+        updateQuest(3, 1);
+        showNotification('🏆 Boss defeated! Legendary loot obtained!', 'success');
+        triggerScreenShake(25);
+        audioManager.play('explosion');
+        return null;
+      }
+      updatedBoss.health = newHealth;
+      updatedBoss.aggroSource = hit.aggroSource;
+    }
+
+    return updatedBoss;
+  }).filter(b => b && b.health > 0));
+
+  // Clear pending boss hits after applying
+  pendingBossHitsRef.current.clear();
   
   setProjectiles(prev => {
     const updated = prev.map(proj => ({
@@ -1490,9 +1557,9 @@ const gameLoop = () => {
     currentEnemies.forEach(enemy => spatialHash.insert(enemy));
     currentBosses.forEach(boss => spatialHash.insert(boss));
 
-    // Collect all collisions first (batch processing)
-    const enemyHits = new Map(); // enemyId -> {damage, aggro, kill}
-    const bossHits = new Map(); // bossId -> {damage, aggro, kill}
+    // Clear previous frame's pending hits
+    const enemyHits = new Map();
+    const bossHits = new Map();
 
     updated.forEach(proj => {
       // Check enemy collisions
@@ -1551,64 +1618,9 @@ const gameLoop = () => {
       }
     });
 
-    // Apply all enemy hits in ONE state update
-    if (enemyHits.size > 0) {
-      setEnemies(enemies => enemies.map(enemy => {
-        const hit = enemyHits.get(enemy.id);
-        if (!hit) return enemy;
-
-        const newHealth = enemy.health - hit.damage;
-        if (newHealth <= 0) {
-          gainXP(enemy.xp);
-          dropLoot(enemy.x, enemy.y);
-          updateQuest(1, 1);
-          checkAchievement('kill_100', 1);
-          audioManager.play('explosion');
-
-          if (enemy.type === 'dungeon_monster') {
-            const dungeon = dungeons.find(d => d.id === inDungeon);
-            if (dungeon) {
-              const remainingEnemies = enemies.filter(e =>
-                e.type === 'dungeon_monster' && e.id !== enemy.id && !enemyHits.has(e.id)
-              );
-              if (remainingEnemies.length === 0) {
-                setDungeons(d => d.map(dun =>
-                  dun.id === inDungeon ? { ...dun, cleared: true } : dun
-                ));
-                updateQuest(2, 1);
-                showNotification('Dungeon Cleared! Auto-exiting...', 'success');
-                dropLoot(enemy.x, enemy.y, true);
-                setTimeout(() => setInDungeon(null), 1000);
-              }
-            }
-          }
-          return null;
-        }
-
-        return { ...enemy, health: newHealth, aggroSource: hit.aggroSource };
-      }).filter(Boolean));
-    }
-
-    // Apply all boss hits in ONE state update
-    if (bossHits.size > 0) {
-      setBosses(bosses => bosses.map(boss => {
-        const hit = bossHits.get(boss.id);
-        if (!hit) return boss;
-
-        const newHealth = boss.health - hit.damage;
-        if (newHealth <= 0) {
-          gainXP(200);
-          dropLoot(boss.x, boss.y, true);
-          updateQuest(3, 1);
-          showNotification('🏆 Boss defeated! Legendary loot obtained!', 'success');
-          triggerScreenShake(25);
-          audioManager.play('explosion');
-          return null;
-        }
-
-        return { ...boss, health: newHealth, aggroSource: hit.aggroSource };
-      }).filter(Boolean));
-    }
+    // Store hits in refs to be applied next frame (prevents state update race conditions)
+    pendingEnemyHitsRef.current = enemyHits;
+    pendingBossHitsRef.current = bossHits;
 
     return updated;
   });

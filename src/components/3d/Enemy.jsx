@@ -119,10 +119,11 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime' }) => {
       colliders="cuboid"
       mass={0.8}
       linearDamping={0.8}
+      userData={{ isEnemy: true, takeDamage }}
     >
-      <group>
+      <group userData={{ isEnemy: true, takeDamage }}>
         {/* Enemy body */}
-        <mesh castShadow position={[0, 0.5, 0]}>
+        <mesh castShadow position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
           <boxGeometry args={[1, 1, 1]} />
           <meshStandardMaterial color="#ff4444" />
         </mesh>

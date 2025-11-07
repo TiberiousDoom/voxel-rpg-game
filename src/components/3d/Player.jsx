@@ -25,7 +25,7 @@ const Player = () => {
     const currentPos = body.translation();
     const currentVel = body.linvel();
 
-    // Get movement direction from keyboard
+    // Get movement direction from keyboard or tap-to-move
     const moveSpeed = keys.run ? player.speed * 1.5 : player.speed;
     const velocity = new THREE.Vector3(currentVel.x, currentVel.y, currentVel.z);
 
@@ -40,18 +40,46 @@ const Player = () => {
 
     // Apply keyboard input to velocity
     const movement = new THREE.Vector3();
+    let hasKeyboardInput = false;
 
     if (keys.forward) {
       movement.add(cameraForward.clone().multiplyScalar(moveSpeed));
+      hasKeyboardInput = true;
     }
     if (keys.backward) {
       movement.add(cameraForward.clone().multiplyScalar(-moveSpeed));
+      hasKeyboardInput = true;
     }
     if (keys.left) {
       movement.add(cameraRight.clone().multiplyScalar(-moveSpeed));
+      hasKeyboardInput = true;
     }
     if (keys.right) {
       movement.add(cameraRight.clone().multiplyScalar(moveSpeed));
+      hasKeyboardInput = true;
+    }
+
+    // Tap-to-move: If no keyboard input and we have a target, move towards it
+    if (!hasKeyboardInput && player.targetPosition) {
+      const targetPos = new THREE.Vector3(...player.targetPosition);
+      const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+      const direction = targetPos.clone().sub(currentPosition);
+      direction.y = 0; // Keep movement horizontal
+      const distance = direction.length();
+
+      if (distance > 0.5) {
+        // Still far from target, keep moving
+        direction.normalize();
+        movement.add(direction.multiplyScalar(moveSpeed));
+      } else {
+        // Reached target, clear it
+        useGameStore.getState().setPlayerTarget(null);
+      }
+    }
+
+    // If keyboard input is active, clear tap-to-move target
+    if (hasKeyboardInput && player.targetPosition) {
+      useGameStore.getState().setPlayerTarget(null);
     }
 
     // Apply movement with damping for smooth control

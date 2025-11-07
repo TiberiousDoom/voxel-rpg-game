@@ -221,15 +221,15 @@ const GameUI = () => {
           padding: '10px 20px',
           borderRadius: '10px',
           color: 'white',
-          fontSize: '0.9rem',
+          fontSize: 'clamp(0.7rem, 2.5vw, 0.9rem)',
+          maxWidth: '90vw',
         }}
       >
-        <div style={{ display: 'flex', gap: '20px' }}>
-          <span>WASD - Move</span>
-          <span>Space - Jump</span>
-          <span>Shift - Run</span>
-          <span>1-4 - Spells</span>
-          <span>R - Potion</span>
+        <div style={{ display: 'flex', gap: 'clamp(8px, 3vw, 20px)', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <span>Tap/Click - Move/Attack</span>
+          <span style={{ display: window.innerWidth > 768 ? 'inline' : 'none' }}>WASD - Move</span>
+          <span style={{ display: window.innerWidth > 768 ? 'inline' : 'none' }}>Space - Jump</span>
+          <span style={{ display: window.innerWidth > 768 ? 'inline' : 'none' }}>1-2 - Spells</span>
         </div>
       </div>
 

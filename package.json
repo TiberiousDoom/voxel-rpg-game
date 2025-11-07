@@ -1,7 +1,7 @@
 {
   "name": "voxel-rpg-game",
-  "version": "1.0.0",
-  "description": "A top-down voxel RPG with magic spells, enemy AI, dungeons, base building, and equipment system",
+  "version": "1.1.0",
+  "description": "Shovel Monster - A top-down voxel RPG adventure with magic spells, enemy AI, dungeons, base building, and equipment system",
   "private": false,
   "homepage": "https://TiberiousDoom.github.io/voxel-rpg-game",
   "license": "MIT",

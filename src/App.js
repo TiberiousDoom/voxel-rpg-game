@@ -521,7 +521,7 @@ if (!spell || !spell.unlocked || spell.cooldown > 0) return prev;
           vy: Math.sin(angle) * 8,
           damage: Math.floor((spell.damage + (eq.weapon?.damage || 0)) * spellPowerBonus),
           type: spell.id,
-          life: 100,
+          life: 60,
           sourceX: p.x,
           sourceY: p.y
         };
@@ -1180,8 +1180,8 @@ const gameLoop = () => {
     return updated;
   });
 
-  // Update time of day (24-hour cycle = 1440 minutes, 1 game minute per real second at 60fps)
-  setTimeOfDay(prev => (prev + 0.1 * timeMultiplier) % 1440);
+  // Update time of day (24-hour cycle = 1440 minutes, slowed down 10x for better gameplay)
+  setTimeOfDay(prev => (prev + 0.01 * timeMultiplier) % 1440);
 
   // Check achievements
   checkAchievement('reach_level_10', player.level >= 10 ? 1 : 0);
@@ -1504,8 +1504,10 @@ const gameLoop = () => {
                     dun.id === inDungeon ? { ...dun, cleared: true } : dun
                   ));
                   updateQuest(2, 1);
-                  showNotification('Dungeon Cleared!', 'success');
+                  showNotification('Dungeon Cleared! Auto-exiting...', 'success');
                   dropLoot(enemy.x, enemy.y, true);
+                  // Auto-exit dungeon after clearing
+                  setTimeout(() => setInDungeon(null), 1000);
                 }
               }
             }
@@ -2559,11 +2561,11 @@ return (
   {/* Desktop: Full menu buttons + spell hotbar */}
   {!isTouchDevice && (
     <>
-      <div className="mt-2 flex gap-2 text-white flex-wrap justify-center">
+      <div className="mt-2 flex gap-1.5 text-white flex-wrap justify-center max-w-full px-2">
         {spells.map((spell, i) => (
           <div
             key={spell.id}
-            className={`px-3 py-1 rounded text-xs ${
+            className={`px-2 py-1 rounded text-[10px] whitespace-nowrap ${
               spell.unlocked
                 ? spell.cooldown > 0
                   ? 'bg-gray-600'
@@ -2572,8 +2574,8 @@ return (
             }`}
             onClick={() => spell.unlocked && castSpell(i)}
           >
-            <div>{i + 1}. {spell.name}</div>
-            <div className="text-[10px]">
+            <div className="font-semibold">{i + 1}. {spell.name}</div>
+            <div className="text-[9px]">
               {spell.unlocked ? spell.cooldown > 0 ? `${Math.ceil(spell.cooldown / 60)}s` : `${spell.cost} mana` : 'Locked'}
             </div>
           </div>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Upload, Star, Sparkles, Swords, Users, Award, Moon, Sun } from 'lucide-react';
+import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, Save, Star, Sparkles, Swords, Users, Award, Moon, Sun } from 'lucide-react';
 import { SpatialHash } from './utils/SpatialHash';
 import { ObjectPool } from './utils/ObjectPool';
 import { audioManager } from './utils/AudioManager';
+import packageJson from '../package.json';
 
 const VoxelRPG = () => {
 const canvasRef = useRef(null);
@@ -199,8 +200,9 @@ const bossesRef = useRef([]);
 const pendingEnemyHitsRef = useRef(new Map());
 const pendingBossHitsRef = useRef(new Map());
 
-const MAP_WIDTH = 2500;
-const MAP_HEIGHT = 2000;
+const MAP_WIDTH = 1600;
+const MAP_HEIGHT = 1200;
+const CAMERA_ZOOM = 1.8; // Zoom factor - higher = closer to player
 const CANVAS_WIDTH = canvasSize.width;
 const CANVAS_HEIGHT = canvasSize.height;
 
@@ -1679,10 +1681,18 @@ if (!canvas) return;
 const ctx = canvas.getContext('2d');
 ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-const minX = camera.x - 20;
-const maxX = camera.x + CANVAS_WIDTH + 20;
-const minY = camera.y - 20;
-const maxY = camera.y + CANVAS_HEIGHT + 20;
+// Apply camera zoom
+ctx.save();
+ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
+ctx.translate(CANVAS_WIDTH / 2 / CAMERA_ZOOM, CANVAS_HEIGHT / 2 / CAMERA_ZOOM);
+ctx.translate(-player.x, -player.y);
+
+const viewWidth = CANVAS_WIDTH / CAMERA_ZOOM;
+const viewHeight = CANVAS_HEIGHT / CAMERA_ZOOM;
+const minX = player.x - viewWidth / 2 - 20;
+const maxX = player.x + viewWidth / 2 + 20;
+const minY = player.y - viewHeight / 2 - 20;
+const maxY = player.y + viewHeight / 2 + 20;
 
 const terrainByType = { grass: [], forest: [], water: [], rock: [] };
 terrain.forEach(tile => {
@@ -1706,71 +1716,71 @@ drawTerrainType(terrainByType.rock, '#666666');
 
 dungeons.forEach(dungeon => {
   ctx.fillStyle = dungeon.cleared ? '#444444' : '#1a1a2e';
-  ctx.fillRect(dungeon.x - camera.x, dungeon.y - camera.y, 100, 100);
+  ctx.fillRect(dungeon.x, dungeon.y, 100, 100);
   ctx.strokeStyle = dungeon.cleared ? '#666666' : '#8b00ff';
   ctx.lineWidth = 3;
-  ctx.strokeRect(dungeon.x - camera.x, dungeon.y - camera.y, 100, 100);
-  
+  ctx.strokeRect(dungeon.x, dungeon.y, 100, 100);
+
   if (!dungeon.cleared && inDungeon !== dungeon.id) {
     ctx.fillStyle = '#ffffff';
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('E to Enter', dungeon.x - camera.x + 50, dungeon.y - camera.y - 10);
+    ctx.fillText('E to Enter', dungeon.x + 50, dungeon.y - 10);
   }
-  
+
   if (inDungeon === dungeon.id) {
     ctx.fillStyle = '#ffffff';
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('E to Exit', dungeon.x - camera.x + 50, dungeon.y - camera.y - 10);
+    ctx.fillText('E to Exit', dungeon.x + 50, dungeon.y - 10);
   }
 });
 
 if (base.built) {
   ctx.fillStyle = '#8b4513';
-  ctx.fillRect(base.x - camera.x - 40, base.y - camera.y - 40, 80, 80);
+  ctx.fillRect(base.x - 40, base.y - 40, 80, 80);
   ctx.strokeStyle = '#654321';
   ctx.lineWidth = 3;
-  ctx.strokeRect(base.x - camera.x - 40, base.y - camera.y - 40, 80, 80);
+  ctx.strokeRect(base.x - 40, base.y - 40, 80, 80);
 }
 
 base.structures.forEach(structure => {
   let color = '#8b4513';
   let size = 40;
-  
+
   if (structure.type === 'wall') { color = '#808080'; size = 20; }
   if (structure.type === 'tower') { color = '#4a4a4a'; size = 50; }
   if (structure.type === 'crafting') { color = '#cd853f'; size = 45; }
-  
+
   ctx.fillStyle = color;
-  ctx.fillRect(structure.x - camera.x - size/2, structure.y - camera.y - size/2, size, size);
+  ctx.fillRect(structure.x - size/2, structure.y - size/2, size, size);
   ctx.strokeStyle = '#000000';
   ctx.lineWidth = 2;
-  ctx.strokeRect(structure.x - camera.x - size/2, structure.y - camera.y - size/2, size, size);
+  ctx.strokeRect(structure.x - size/2, structure.y - size/2, size, size);
 });
 
 loot.forEach(item => {
   if (item.x < minX || item.x > maxX || item.y < minY || item.y > maxY) return;
-  
+
   let color = '#ffd700';
   if (item.type === 'essence') color = '#8b00ff';
   if (item.type === 'potion') color = '#ff0000';
   if (item.type === 'weapon' || item.type === 'armor') color = '#00ffff';
-  
+
   ctx.fillStyle = color;
-  
+
   if (item.type === 'potion') {
     ctx.beginPath();
-    ctx.moveTo(item.x - camera.x, item.y - camera.y - 10);
-    ctx.lineTo(item.x - camera.x - 8, item.y - camera.y + 8);
-    ctx.lineTo(item.x - camera.x + 8, item.y - camera.y + 8);
+    ctx.moveTo(item.x, item.y - 10);
+    ctx.lineTo(item.x - 8, item.y + 8);
+    ctx.lineTo(item.x + 8, item.y + 8);
     ctx.closePath();
     ctx.fill();
   } else if (item.type === 'weapon' || item.type === 'armor') {
-    ctx.fillRect(item.x - camera.x - 8, item.y - camera.y - 8, 16, 16);
+    ctx.fillRect(item.x - 8, item.y - 8, 16, 16);
   } else {
     ctx.beginPath();
-    ctx.arc(item.x - camera.x, item.y - camera.y, 8, 0, Math.PI * 2);
+    ctx.arc(item.x, item.y, 8, 0, Math.PI * 2);
     ctx.fill();
   }
 });
@@ -1779,28 +1789,28 @@ particles.forEach(p => {
   if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) return;
   ctx.fillStyle = p.color;
   ctx.globalAlpha = p.life / 30;
-  ctx.fillRect(p.x - camera.x - 2, p.y - camera.y - 2, 4, 4);
+  ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
 });
 ctx.globalAlpha = 1;
 
 projectiles.forEach(proj => {
   if (proj.x < minX || proj.x > maxX || proj.y < minY || proj.y > maxY) return;
-  
+
   let color = '#ff6600';
   if (proj.type === 'lightning') color = '#ffff00';
   if (proj.type === 'meteor') color = '#ff0000';
-  
+
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(proj.x - camera.x, proj.y - camera.y, 6, 0, Math.PI * 2);
+  ctx.arc(proj.x, proj.y, 6, 0, Math.PI * 2);
   ctx.fill();
 });
 
 enemies.forEach(enemy => {
   if (enemy.x < minX - 50 || enemy.x > maxX + 50 || enemy.y < minY - 50 || enemy.y > maxY + 50) return;
 
-  const ex = enemy.x - camera.x;
-  const ey = enemy.y - camera.y;
+  const ex = enemy.x;
+  const ey = enemy.y;
 
   // Animation timing (using enemy position for variation)
   const enemyAnimTime = Date.now() + enemy.id * 1000; // Offset by ID for variation
@@ -2034,8 +2044,8 @@ enemies.forEach(enemy => {
 bosses.forEach(boss => {
   if (boss.x < minX - 60 || boss.x > maxX + 60 || boss.y < minY - 60 || boss.y > maxY + 60) return;
 
-  const bx = boss.x - camera.x;
-  const by = boss.y - camera.y;
+  const bx = boss.x;
+  const by = boss.y;
 
   // Boss animation timing
   const bossAnimTime = Date.now();
@@ -2193,7 +2203,7 @@ aoeEffects.forEach(effect => {
   if (effect.y < minY - effect.radius || effect.y > maxY + effect.radius) return;
 
   ctx.beginPath();
-  ctx.arc(effect.x - camera.x - screenShake.x, effect.y - camera.y - screenShake.y, effect.radius, 0, Math.PI * 2);
+  ctx.arc(effect.x - screenShake.x, effect.y - screenShake.y, effect.radius, 0, Math.PI * 2);
 
   if (effect.type === 'frostnova') {
     ctx.fillStyle = `rgba(0, 255, 255, ${effect.life / 60 * 0.3})`;
@@ -2212,10 +2222,10 @@ aoeEffects.forEach(effect => {
 if (pet) {
   const petColor = pet.type === 'wolf' ? '#8b4513' : '#ff69b4';
   ctx.fillStyle = petColor;
-  ctx.fillRect(pet.x - camera.x - screenShake.x - 8, pet.y - camera.y - screenShake.y - 8, 16, 16);
+  ctx.fillRect(pet.x - screenShake.x - 8, pet.y - screenShake.y - 8, 16, 16);
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 1;
-  ctx.strokeRect(pet.x - camera.x - screenShake.x - 8, pet.y - camera.y - screenShake.y - 8, 16, 16);
+  ctx.strokeRect(pet.x - screenShake.x - 8, pet.y - screenShake.y - 8, 16, 16);
 }
 
 // Draw damage numbers
@@ -2230,20 +2240,20 @@ damageNumbers.forEach(dmg => {
     ctx.fillStyle = '#ff0000';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
-    ctx.strokeText(dmg.value.toString(), dmg.x - camera.x - screenShake.x, dmg.y - camera.y - screenShake.y);
+    ctx.strokeText(dmg.value.toString(), dmg.x - screenShake.x, dmg.y - screenShake.y);
   } else if (dmg.type === 'heal') {
     ctx.fillStyle = '#00ff00';
   } else {
     ctx.fillStyle = '#ffffff';
   }
 
-  ctx.fillText(dmg.value.toString(), dmg.x - camera.x - screenShake.x, dmg.y - camera.y - screenShake.y);
+  ctx.fillText(dmg.value.toString(), dmg.x - screenShake.x, dmg.y - screenShake.y);
   ctx.globalAlpha = 1;
 });
 
 // Draw player (with screen shake) - Enhanced ANIMATED sprite based on class
 ctx.save();
-ctx.translate(player.x - camera.x - screenShake.x, player.y - camera.y - screenShake.y);
+ctx.translate(player.x - screenShake.x, player.y - screenShake.y);
 ctx.rotate(player.facingAngle);
 
 // Animation frame calculation
@@ -2371,7 +2381,10 @@ if (walkFrame === 0) {
 
 ctx.restore();
 
-// Draw day/night overlay
+// Restore context before drawing overlays
+ctx.restore();
+
+// Draw day/night overlay (after restoring to draw in screen space)
 const hour = Math.floor(timeOfDay / 60);
 let nightAlpha = 0;
 if (hour >= 20 || hour < 6) {
@@ -2388,99 +2401,165 @@ if (nightAlpha > 0) {
 }, [player, enemies, bosses, projectiles, particles, terrain, base, loot, dungeons, camera, inDungeon, CANVAS_WIDTH, CANVAS_HEIGHT, aoeEffects, pet, damageNumbers, screenShake, timeOfDay, playerClass]);
 
 if (gameState === 'intro') {
+// If showing class selection
+if (playerClass === 'selecting') {
+  return (
+    <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
+      <div className="text-center text-white max-w-4xl p-8">
+        <h1 className="text-5xl font-bold mb-6 text-purple-300">Choose Your Path</h1>
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div
+            onClick={() => {
+              setPlayerClass('warrior');
+              setPlayer(p => ({ ...p, maxHealth: p.maxHealth + 50, health: p.maxHealth + 50, damage: p.damage + 10, defense: p.defense + 5 }));
+              showNotification('Warrior class selected! +50 HP, +10 Damage, +5 Defense', 'success');
+            }}
+            className="bg-red-900 hover:bg-red-800 p-6 rounded-lg cursor-pointer border-2 border-red-600 transition-all hover:scale-105"
+          >
+            <Shield size={48} className="mx-auto mb-4" />
+            <h3 className="text-2xl font-bold mb-2">Warrior</h3>
+            <p className="text-sm">+50 HP, +10 Damage, +5 Defense</p>
+            <p className="text-xs text-gray-300 mt-2">Masters of melee combat and endurance</p>
+          </div>
+
+          <div
+            onClick={() => {
+              setPlayerClass('mage');
+              setPlayer(p => ({ ...p, maxMana: p.maxMana + 50, mana: p.maxMana + 50 }));
+              showNotification('Mage class selected! +50 Mana, +30% Spell Power, -20% Cooldowns', 'success');
+            }}
+            className="bg-blue-900 hover:bg-blue-800 p-6 rounded-lg cursor-pointer border-2 border-blue-600 transition-all hover:scale-105"
+          >
+            <Sparkles size={48} className="mx-auto mb-4" />
+            <h3 className="text-2xl font-bold mb-2">Mage</h3>
+            <p className="text-sm">+50 Mana, +30% Spell Power</p>
+            <p className="text-xs text-gray-300 mt-2">Unleashes devastating magical attacks</p>
+          </div>
+
+          <div
+            onClick={() => {
+              setPlayerClass('rogue');
+              setPlayer(p => ({ ...p, speed: p.speed + 0.5, critChance: p.critChance + 15, dodgeChance: p.dodgeChance + 10 }));
+              showNotification('Rogue class selected! +0.5 Speed, +15% Crit, +10% Dodge', 'success');
+            }}
+            className="bg-green-900 hover:bg-green-800 p-6 rounded-lg cursor-pointer border-2 border-green-600 transition-all hover:scale-105"
+          >
+            <Swords size={48} className="mx-auto mb-4" />
+            <h3 className="text-2xl font-bold mb-2">Rogue</h3>
+            <p className="text-sm">+Speed, +15% Crit, +10% Dodge</p>
+            <p className="text-xs text-gray-300 mt-2">Swift assassin with deadly precision</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setPlayerClass(null)}
+          className="bg-gray-600 hover:bg-gray-700 text-white text-xl px-8 py-4 rounded-lg transition-colors"
+        >
+          Back to Title
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// If class selected, show confirmation
+if (playerClass && playerClass !== 'selecting') {
+  return (
+    <div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
+      <div className="text-center text-white max-w-4xl p-8">
+        <h1 className="text-5xl font-bold mb-6 text-yellow-400">Shovel Monster</h1>
+        <p className="text-xl mb-4">
+          Armed with nothing but your trusty shovel, venture forth into a world filled with monsters!
+        </p>
+        <p className="text-xl mb-4">
+          Dig, fight, and survive in this epic adventure.
+        </p>
+        <p className="text-xl mb-6 text-green-300">Class Selected: <span className="font-bold capitalize">{playerClass}</span></p>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={startGame}
+            className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
+          >
+            Begin Your Journey
+          </button>
+          <button
+            onClick={() => setPlayerClass(null)}
+            className="bg-gray-600 hover:bg-gray-700 text-white text-xl px-8 py-4 rounded-lg transition-colors"
+          >
+            Change Class
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Title screen with image
 return (
-<div className="w-full h-screen bg-gradient-to-b from-gray-900 to-purple-900 flex items-center justify-center">
-<div className="text-center text-white max-w-4xl p-8">
-<h1 className="text-5xl font-bold mb-6 text-purple-300">The Wound of Power</h1>
-<p className="text-xl mb-4">
-In a moment of desperation, you were struck by a being beyond mortal comprehension.
-</p>
-<p className="text-xl mb-4">
-The wound should have killed you... but instead, it awakened something ancient within.
-</p>
+  <div className="w-full h-screen bg-gray-900 flex items-center justify-center overflow-hidden">
+    <div className="relative w-full h-full max-w-md flex items-center justify-center">
+      {/* Title screen background image */}
+      <img
+        src="/voxel-rpg-game/assets/splash/title-screen.png"
+        alt="Shovel Monster Title Screen"
+        className="absolute inset-0 w-full h-full object-contain"
+      />
 
-{!playerClass ? (
-  <>
-    <p className="text-2xl mb-6 text-yellow-300">Choose Your Path:</p>
-    <div className="grid grid-cols-3 gap-4 mb-8">
-      <div
-        onClick={() => {
-          setPlayerClass('warrior');
-          setPlayer(p => ({ ...p, maxHealth: p.maxHealth + 50, health: p.maxHealth + 50, damage: p.damage + 10, defense: p.defense + 5 }));
-          showNotification('Warrior class selected! +50 HP, +10 Damage, +5 Defense', 'success');
-        }}
-        className="bg-red-900 hover:bg-red-800 p-6 rounded-lg cursor-pointer border-2 border-red-600 transition-all hover:scale-105"
-      >
-        <Shield size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Warrior</h3>
-        <p className="text-sm">+50 HP, +10 Damage, +5 Defense</p>
-        <p className="text-xs text-gray-300 mt-2">Masters of melee combat and endurance</p>
+      {/* Version number - bottom right corner */}
+      <div className="absolute bottom-2 right-2 text-white text-xs opacity-50 font-mono">
+        v{packageJson.version}
       </div>
 
-      <div
-        onClick={() => {
-          setPlayerClass('mage');
-          setPlayer(p => ({ ...p, maxMana: p.maxMana + 50, mana: p.maxMana + 50 }));
-          showNotification('Mage class selected! +50 Mana, +30% Spell Power, -20% Cooldowns', 'success');
-        }}
-        className="bg-blue-900 hover:bg-blue-800 p-6 rounded-lg cursor-pointer border-2 border-blue-600 transition-all hover:scale-105"
-      >
-        <Sparkles size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Mage</h3>
-        <p className="text-sm">+50 Mana, +30% Spell Power</p>
-        <p className="text-xs text-gray-300 mt-2">Unleashes devastating magical attacks</p>
-      </div>
+      {/* Clickable button overlays - positioned over the buttons in the image */}
+      <div className="absolute inset-0 flex flex-col justify-end pb-4">
+        {/* NEW GAME button overlay - positioned at ~65% down */}
+        <div
+          onClick={() => setPlayerClass('selecting')}
+          className="relative mx-auto cursor-pointer hover:opacity-80 transition-opacity"
+          style={{
+            width: '60%',
+            height: '8%',
+            marginBottom: '1%'
+          }}
+          title="New Game"
+        >
+          {/* Invisible clickable area */}
+        </div>
 
-      <div
-        onClick={() => {
-          setPlayerClass('rogue');
-          setPlayer(p => ({ ...p, speed: p.speed + 0.5, critChance: p.critChance + 15, dodgeChance: p.dodgeChance + 10 }));
-          showNotification('Rogue class selected! +0.5 Speed, +15% Crit, +10% Dodge', 'success');
-        }}
-        className="bg-green-900 hover:bg-green-800 p-6 rounded-lg cursor-pointer border-2 border-green-600 transition-all hover:scale-105"
-      >
-        <Swords size={48} className="mx-auto mb-4" />
-        <h3 className="text-2xl font-bold mb-2">Rogue</h3>
-        <p className="text-sm">+Speed, +15% Crit, +10% Dodge</p>
-        <p className="text-xs text-gray-300 mt-2">Swift assassin with deadly precision</p>
+        {/* CONTINUE button overlay - positioned at ~74% down */}
+        <div
+          onClick={() => {
+            if (loadGame()) {
+              // Game state set to 'playing' in loadGame
+            } else {
+              showNotification('No saved game found', 'error');
+            }
+          }}
+          className="relative mx-auto cursor-pointer hover:opacity-80 transition-opacity"
+          style={{
+            width: '60%',
+            height: '8%',
+            marginBottom: '1%'
+          }}
+          title="Continue"
+        >
+          {/* Invisible clickable area */}
+        </div>
+
+        {/* OPTIONS button overlay - positioned at ~83% down */}
+        <div
+          className="relative mx-auto cursor-not-allowed opacity-50"
+          style={{
+            width: '60%',
+            height: '8%',
+            marginBottom: '4%'
+          }}
+          title="Options (Coming Soon)"
+        >
+          {/* Invisible clickable area - disabled for now */}
+        </div>
       </div>
     </div>
-  </>
-) : (
-  <>
-    <p className="text-xl mb-6 text-green-300">Class Selected: <span className="font-bold capitalize">{playerClass}</span></p>
-    <div className="flex gap-4 justify-center">
-      <button
-        onClick={startGame}
-        className="bg-purple-600 hover:bg-purple-700 text-white text-2xl px-12 py-4 rounded-lg transition-colors"
-      >
-        Begin Your Journey
-      </button>
-      <button
-        onClick={() => setPlayerClass(null)}
-        className="bg-gray-600 hover:bg-gray-700 text-white text-xl px-8 py-4 rounded-lg transition-colors"
-      >
-        Change Class
-      </button>
-    </div>
-  </>
-)}
-
-<div className="mt-6">
-  <button
-    onClick={() => {
-      if (loadGame()) {
-        // Game state set to 'playing' in loadGame
-      }
-    }}
-    className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-3 rounded-lg transition-colors flex items-center gap-2 mx-auto"
-  >
-    <Upload size={20} />
-    Load Saved Game
-  </button>
-</div>
-</div>
-</div>
+  </div>
 );
 }
 

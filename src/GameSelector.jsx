@@ -31,19 +31,38 @@ const GameSelector = () => {
         fontFamily: 'Arial, sans-serif',
       }}
     >
-      <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+      <h1 style={{
+        fontSize: 'clamp(1.5rem, 8vw, 3rem)',
+        marginBottom: '1rem',
+        textAlign: 'center',
+        padding: '0 1rem'
+      }}>
         Voxel RPG Game
       </h1>
-      <p style={{ fontSize: '1.2rem', marginBottom: '3rem', opacity: 0.9 }}>
+      <p style={{
+        fontSize: 'clamp(0.9rem, 4vw, 1.2rem)',
+        marginBottom: '2rem',
+        opacity: 0.9,
+        textAlign: 'center',
+        padding: '0 1rem'
+      }}>
         Choose your version
       </p>
 
-      <div style={{ display: 'flex', gap: '2rem' }}>
+      <div style={{
+        display: 'flex',
+        gap: '1rem',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        padding: '0 1rem',
+        maxWidth: '100%'
+      }}>
         <button
           onClick={() => setMode('2d')}
           style={{
-            padding: '2rem 3rem',
-            fontSize: '1.5rem',
+            padding: 'clamp(1rem, 4vw, 2rem) clamp(1.5rem, 6vw, 3rem)',
+            fontSize: 'clamp(1rem, 4vw, 1.5rem)',
             background: 'rgba(255, 255, 255, 0.2)',
             color: 'white',
             border: '2px solid rgba(255, 255, 255, 0.5)',
@@ -51,6 +70,9 @@ const GameSelector = () => {
             cursor: 'pointer',
             transition: 'all 0.3s',
             backdropFilter: 'blur(10px)',
+            minWidth: 'clamp(140px, 40vw, 200px)',
+            maxWidth: '300px',
+            flex: '1 1 auto',
           }}
           onMouseEnter={(e) => {
             e.target.style.background = 'rgba(255, 255, 255, 0.3)';
@@ -60,10 +82,16 @@ const GameSelector = () => {
             e.target.style.background = 'rgba(255, 255, 255, 0.2)';
             e.target.style.transform = 'translateY(0)';
           }}
+          onTouchStart={(e) => {
+            e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+          }}
+          onTouchEnd={(e) => {
+            e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+          }}
         >
-          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎮</div>
+          <div style={{ fontSize: 'clamp(1.5rem, 6vw, 2rem)', marginBottom: '0.5rem' }}>🎮</div>
           <div>2D Canvas</div>
-          <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '0.5rem' }}>
+          <div style={{ fontSize: 'clamp(0.7rem, 3vw, 0.8rem)', opacity: 0.8, marginTop: '0.5rem' }}>
             Original top-down view
           </div>
         </button>
@@ -71,8 +99,8 @@ const GameSelector = () => {
         <button
           onClick={() => setMode('3d')}
           style={{
-            padding: '2rem 3rem',
-            fontSize: '1.5rem',
+            padding: 'clamp(1rem, 4vw, 2rem) clamp(1.5rem, 6vw, 3rem)',
+            fontSize: 'clamp(1rem, 4vw, 1.5rem)',
             background: 'rgba(255, 255, 255, 0.2)',
             color: 'white',
             border: '2px solid rgba(255, 255, 255, 0.5)',
@@ -80,6 +108,9 @@ const GameSelector = () => {
             cursor: 'pointer',
             transition: 'all 0.3s',
             backdropFilter: 'blur(10px)',
+            minWidth: 'clamp(140px, 40vw, 200px)',
+            maxWidth: '300px',
+            flex: '1 1 auto',
           }}
           onMouseEnter={(e) => {
             e.target.style.background = 'rgba(255, 255, 255, 0.3)';
@@ -89,16 +120,31 @@ const GameSelector = () => {
             e.target.style.background = 'rgba(255, 255, 255, 0.2)';
             e.target.style.transform = 'translateY(0)';
           }}
+          onTouchStart={(e) => {
+            e.target.style.background = 'rgba(255, 255, 255, 0.3)';
+          }}
+          onTouchEnd={(e) => {
+            e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+          }}
         >
-          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎯</div>
+          <div style={{ fontSize: 'clamp(1.5rem, 6vw, 2rem)', marginBottom: '0.5rem' }}>🎯</div>
           <div>3D Voxel</div>
-          <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '0.5rem' }}>
+          <div style={{ fontSize: 'clamp(0.7rem, 3vw, 0.8rem)', opacity: 0.8, marginTop: '0.5rem' }}>
             New 3D experience
+          </div>
+          <div style={{ fontSize: 'clamp(0.6rem, 2.5vw, 0.7rem)', opacity: 0.6, marginTop: '0.3rem', fontStyle: 'italic' }}>
+            (Best on PC/Desktop)
           </div>
         </button>
       </div>
 
-      <div style={{ marginTop: '3rem', fontSize: '0.9rem', opacity: 0.7 }}>
+      <div style={{
+        marginTop: 'clamp(1.5rem, 6vw, 3rem)',
+        fontSize: 'clamp(0.7rem, 3vw, 0.9rem)',
+        opacity: 0.7,
+        textAlign: 'center',
+        padding: '0 1rem'
+      }}>
         Press ESC in-game to return to this menu
       </div>
     </div>

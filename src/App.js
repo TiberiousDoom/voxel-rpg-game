@@ -1099,10 +1099,14 @@ const handleMouseMove = (e) => {
   const rect = canvas.getBoundingClientRect();
   const canvasX = e.clientX - rect.left;
   const canvasY = e.clientY - rect.top;
-  
+
+  // Convert screen coordinates to world coordinates with zoom
+  const worldX = (canvasX - CANVAS_WIDTH / 2) / CAMERA_ZOOM + player.x;
+  const worldY = (canvasY - CANVAS_HEIGHT / 2) / CAMERA_ZOOM + player.y;
+
   setMousePos({
-    x: canvasX + camera.x,
-    y: canvasY + camera.y
+    x: worldX,
+    y: worldY
   });
 };
 
@@ -1111,8 +1115,13 @@ const handleClick = (e) => {
     castSpell(0);
   } else if (buildMode && showBase) {
     const rect = canvas.getBoundingClientRect();
-    const worldX = (e.clientX - rect.left) + camera.x;
-    const worldY = (e.clientY - rect.top) + camera.y;
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
+
+    // Convert screen coordinates to world coordinates with zoom
+    const worldX = (canvasX - CANVAS_WIDTH / 2) / CAMERA_ZOOM + player.x;
+    const worldY = (canvasY - CANVAS_HEIGHT / 2) / CAMERA_ZOOM + player.y;
+
     placeStructure(worldX, worldY);
   }
 };
@@ -1125,7 +1134,7 @@ return () => {
   canvas.removeEventListener('click', handleClick);
 };
 
-}, [gameState, camera, buildMode, showBase, showInventory, showSkills, showCrafting, mousePos.x, mousePos.y, castSpell, placeStructure]);
+}, [gameState, camera, buildMode, showBase, showInventory, showSkills, showCrafting, mousePos.x, mousePos.y, castSpell, placeStructure, CANVAS_WIDTH, CANVAS_HEIGHT, CAMERA_ZOOM, player.x, player.y]);
 
 useEffect(() => {
 setCamera({
@@ -2253,7 +2262,7 @@ damageNumbers.forEach(dmg => {
 
 // Draw player (with screen shake) - Enhanced ANIMATED sprite based on class
 ctx.save();
-ctx.translate(-screenShake.x, -screenShake.y);
+ctx.translate(player.x - screenShake.x, player.y - screenShake.y);
 ctx.rotate(player.facingAngle);
 
 // Animation frame calculation

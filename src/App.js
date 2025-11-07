@@ -1728,7 +1728,6 @@ enemies.forEach(enemy => {
   const enemyAnimTime = Date.now() + enemy.id * 1000; // Offset by ID for variation
   const walkCycle = Math.floor(enemyAnimTime / 200) % 4;
   const floatBob = Math.sin(enemyAnimTime / 400) * 2;
-  const breathe = Math.sin(enemyAnimTime / 600) * 1;
 
   ctx.save();
   ctx.translate(ex, ey);
@@ -2017,7 +2016,6 @@ bosses.forEach(boss => {
   ctx.restore();
 
   // Glowing eyes (intense pulsing)
-  const eyeIntensity = 8 + Math.sin(bossAnimTime / 200) * 4;
   ctx.fillStyle = '#ffff00';
   ctx.shadowBlur = 15 + heartbeat;
   ctx.shadowColor = '#ffff00';
@@ -2173,7 +2171,6 @@ ctx.rotate(player.facingAngle);
 // Animation frame calculation
 const animTime = Date.now();
 const walkFrame = Math.floor(animTime / 150) % 4; // 4-frame walk cycle
-const idleFrame = Math.floor(animTime / 500) % 2; // 2-frame idle cycle
 const weaponBob = Math.sin(animTime / 200) * 2; // Smooth bobbing
 
 // Determine class colors and style

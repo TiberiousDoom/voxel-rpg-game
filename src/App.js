@@ -195,11 +195,22 @@ const autoSaveTimerRef = useRef(0);
 const spatialHashRef = useRef(new SpatialHash(100));
 const projectilePoolRef = useRef(null);
 const particlePoolRef = useRef(null);
+const enemiesRef = useRef([]);
+const bossesRef = useRef([]);
 
 const MAP_WIDTH = 2500;
 const MAP_HEIGHT = 2000;
 const CANVAS_WIDTH = canvasSize.width;
 const CANVAS_HEIGHT = canvasSize.height;
+
+// Keep refs in sync with enemies and bosses state for collision detection
+useEffect(() => {
+  enemiesRef.current = enemies;
+}, [enemies]);
+
+useEffect(() => {
+  bossesRef.current = bosses;
+}, [bosses]);
 
 // Initialize object pools and audio on mount
 useEffect(() => {
@@ -1472,11 +1483,13 @@ const gameLoop = () => {
       life: proj.life - timeMultiplier
     })).filter(p => p.life > 0 && p.x > 0 && p.x < MAP_WIDTH && p.y > 0 && p.y < MAP_HEIGHT);
 
-    // Build spatial hash for efficient collision detection
+    // Build spatial hash for efficient collision detection using current enemy/boss refs
     const spatialHash = spatialHashRef.current;
     spatialHash.clear();
-    enemies.forEach(enemy => spatialHash.insert(enemy));
-    bosses.forEach(boss => spatialHash.insert(boss));
+    const currentEnemies = enemiesRef.current;
+    const currentBosses = bossesRef.current;
+    currentEnemies.forEach(enemy => spatialHash.insert(enemy));
+    currentBosses.forEach(boss => spatialHash.insert(boss));
 
     // Collect all collisions first (batch processing)
     const enemyHits = new Map(); // enemyId -> {damage, aggro, kill}
@@ -1642,7 +1655,10 @@ return () => {
   }
 };
 
-}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, player.health, player.maxHealth, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification, sprintActive, activeBuffs, checkAchievement, createDamageNumber, getClassBonus, getTotalCritChance, getTotalCritDamage, inventory.gold, pet, triggerScreenShake, updateCombo, enemies, bosses]);
+// NOTE: enemies and bosses are intentionally excluded from dependencies to prevent memory leak
+// The game loop accesses current enemy/boss state via refs (enemiesRef, bossesRef) instead
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, player.health, player.maxHealth, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification, sprintActive, activeBuffs, checkAchievement, createDamageNumber, getClassBonus, getTotalCritChance, getTotalCritDamage, inventory.gold, pet, triggerScreenShake, updateCombo]);
 
 useEffect(() => {
 const canvas = canvasRef.current;

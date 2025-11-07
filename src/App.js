@@ -1724,171 +1724,225 @@ enemies.forEach(enemy => {
   const ex = enemy.x - camera.x;
   const ey = enemy.y - camera.y;
 
+  // Animation timing (using enemy position for variation)
+  const enemyAnimTime = Date.now() + enemy.id * 1000; // Offset by ID for variation
+  const walkCycle = Math.floor(enemyAnimTime / 200) % 4;
+  const floatBob = Math.sin(enemyAnimTime / 400) * 2;
+  const breathe = Math.sin(enemyAnimTime / 600) * 1;
+
   ctx.save();
   ctx.translate(ex, ey);
 
-  // Draw enemy based on type with enhanced sprites
+  // Draw ANIMATED enemy based on type
   if (enemy.type === 'demon') {
-    // Demon: Red horned creature
+    // Demon: Red horned creature with stomping animation
+    const stomp = walkCycle < 2 ? 1 : -1;
+
     ctx.fillStyle = '#cc0000';
-    // Body
+    // Body (bounces with stomp)
     ctx.beginPath();
-    ctx.ellipse(0, 0, 12, 16, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, stomp, 12, 16, 0, 0, Math.PI * 2);
     ctx.fill();
     // Head
     ctx.fillStyle = '#8b0000';
     ctx.beginPath();
-    ctx.arc(0, -10, 10, 0, Math.PI * 2);
+    ctx.arc(0, -10 + stomp, 10, 0, Math.PI * 2);
     ctx.fill();
-    // Horns
+    // Horns (bob with head)
     ctx.fillStyle = '#ff4444';
     ctx.beginPath();
-    ctx.moveTo(-8, -15);
-    ctx.lineTo(-10, -22);
-    ctx.lineTo(-6, -16);
+    ctx.moveTo(-8, -15 + stomp);
+    ctx.lineTo(-10, -22 + stomp);
+    ctx.lineTo(-6, -16 + stomp);
     ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(8, -15);
-    ctx.lineTo(10, -22);
-    ctx.lineTo(6, -16);
+    ctx.moveTo(8, -15 + stomp);
+    ctx.lineTo(10, -22 + stomp);
+    ctx.lineTo(6, -16 + stomp);
     ctx.fill();
-    // Eyes (glowing)
+    // Eyes (glowing with flicker)
+    const eyeGlow = Math.random() > 0.9 ? 0.5 : 1;
+    ctx.globalAlpha = eyeGlow;
     ctx.fillStyle = '#ffff00';
-    ctx.fillRect(-5, -12, 3, 3);
-    ctx.fillRect(2, -12, 3, 3);
+    ctx.fillRect(-5, -12 + stomp, 3, 3);
+    ctx.fillRect(2, -12 + stomp, 3, 3);
+    ctx.globalAlpha = 1;
   } else if (enemy.type === 'shadow') {
-    // Shadow: Dark ghost-like creature
+    // Shadow: Dark ghost-like creature with floating animation
     ctx.fillStyle = '#4a0080';
-    // Wispy body
-    ctx.globalAlpha = 0.7;
+    // Wispy body (floats up and down)
+    ctx.globalAlpha = 0.7 + Math.sin(enemyAnimTime / 300) * 0.1;
     ctx.beginPath();
-    ctx.ellipse(0, 0, 14, 18, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, floatBob, 14, 18, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Trailing wisps
+    // Trailing wisps (wave animation)
     ctx.fillStyle = '#6a00a0';
+    const wispWave1 = Math.sin(enemyAnimTime / 250) * 3;
+    const wispWave2 = Math.sin(enemyAnimTime / 250 + Math.PI) * 3;
     ctx.beginPath();
-    ctx.ellipse(-8, 8, 6, 10, -0.5, 0, Math.PI * 2);
+    ctx.ellipse(-8 + wispWave1, 8 + floatBob, 6, 10, -0.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(8, 8, 6, 10, 0.5, 0, Math.PI * 2);
+    ctx.ellipse(8 + wispWave2, 8 + floatBob, 6, 10, 0.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
-    // Eyes
+    // Eyes (glow)
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(-6, -5, 4, 6);
-    ctx.fillRect(2, -5, 4, 6);
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = '#ffffff';
+    ctx.fillRect(-6, -5 + floatBob, 4, 6);
+    ctx.fillRect(2, -5 + floatBob, 4, 6);
+    ctx.shadowBlur = 0;
   } else if (enemy.type === 'beast') {
-    // Beast: Brown animal-like creature
+    // Beast: Brown animal-like creature with galloping animation
+    const gallopBounce = Math.abs(Math.sin(enemyAnimTime / 150)) * 3;
+
     ctx.fillStyle = '#804000';
-    // Body (quadruped-ish)
-    ctx.fillRect(-12, -5, 24, 12);
-    // Head
+    // Body (bounces with gallop)
+    ctx.fillRect(-12, -5 - gallopBounce, 24, 12);
+    // Head (bobs with body)
     ctx.fillStyle = '#603000';
-    ctx.fillRect(-16, -8, 12, 10);
-    // Ears
+    ctx.fillRect(-16, -8 - gallopBounce, 12, 10);
+    // Ears (twitch)
+    const earTwitch = walkCycle === 0 ? 2 : 0;
     ctx.beginPath();
-    ctx.moveTo(-16, -8);
-    ctx.lineTo(-18, -14);
-    ctx.lineTo(-14, -10);
+    ctx.moveTo(-16, -8 - gallopBounce);
+    ctx.lineTo(-18, -14 - gallopBounce - earTwitch);
+    ctx.lineTo(-14, -10 - gallopBounce);
     ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(-8, -8);
-    ctx.lineTo(-6, -14);
-    ctx.lineTo(-10, -10);
+    ctx.moveTo(-8, -8 - gallopBounce);
+    ctx.lineTo(-6, -14 - gallopBounce - earTwitch);
+    ctx.lineTo(-10, -10 - gallopBounce);
     ctx.fill();
-    // Legs
+    // Legs (gallop cycle)
     ctx.fillStyle = '#5a2800';
-    ctx.fillRect(-10, 7, 4, 8);
-    ctx.fillRect(-2, 7, 4, 8);
-    ctx.fillRect(4, 7, 4, 8);
-    // Tail
+    if (walkCycle % 2 === 0) {
+      ctx.fillRect(-10, 7 - gallopBounce, 4, 8);
+      ctx.fillRect(-2, 7 - gallopBounce + 2, 4, 6);
+      ctx.fillRect(4, 7 - gallopBounce, 4, 8);
+    } else {
+      ctx.fillRect(-10, 7 - gallopBounce + 2, 4, 6);
+      ctx.fillRect(-2, 7 - gallopBounce, 4, 8);
+      ctx.fillRect(4, 7 - gallopBounce + 2, 4, 6);
+    }
+    // Tail (wags)
+    const tailWag = Math.sin(enemyAnimTime / 150) * 3;
     ctx.fillStyle = '#804000';
-    ctx.fillRect(12, -3, 8, 4);
+    ctx.fillRect(12, -3 - gallopBounce + tailWag, 8, 4);
   } else if (enemy.type === 'wraith') {
-    // Wraith: Purple floating spectral creature
+    // Wraith: Purple floating spectral creature with cloak flutter
+    const floatHover = Math.sin(enemyAnimTime / 350) * 4;
+    const cloakFlutter = Math.sin(enemyAnimTime / 200) * 2;
+
     ctx.fillStyle = '#9400d3';
     ctx.globalAlpha = 0.8;
-    // Floating body with tattered edges
+    // Floating body with tattered edges (flutter animation)
     ctx.beginPath();
-    ctx.moveTo(0, -18);
-    ctx.lineTo(-10, -8);
-    ctx.lineTo(-12, 5);
-    ctx.lineTo(-8, 15);
-    ctx.lineTo(-4, 12);
-    ctx.lineTo(0, 18);
-    ctx.lineTo(4, 12);
-    ctx.lineTo(8, 15);
-    ctx.lineTo(12, 5);
-    ctx.lineTo(10, -8);
+    ctx.moveTo(0, -18 + floatHover);
+    ctx.lineTo(-10, -8 + floatHover);
+    ctx.lineTo(-12 + cloakFlutter, 5 + floatHover);
+    ctx.lineTo(-8 + cloakFlutter, 15 + floatHover);
+    ctx.lineTo(-4, 12 + floatHover);
+    ctx.lineTo(0, 18 + floatHover);
+    ctx.lineTo(4, 12 + floatHover);
+    ctx.lineTo(8 - cloakFlutter, 15 + floatHover);
+    ctx.lineTo(12 - cloakFlutter, 5 + floatHover);
+    ctx.lineTo(10, -8 + floatHover);
     ctx.closePath();
     ctx.fill();
     ctx.globalAlpha = 1;
     // Hood
     ctx.fillStyle = '#6a008a';
     ctx.beginPath();
-    ctx.arc(0, -12, 9, Math.PI, 0, true);
+    ctx.arc(0, -12 + floatHover, 9, Math.PI, 0, true);
     ctx.fill();
-    // Glowing eyes
+    // Glowing eyes (pulse)
+    const eyePulse = 2 + Math.sin(enemyAnimTime / 300) * 0.5;
     ctx.fillStyle = '#ff00ff';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ff00ff';
     ctx.beginPath();
-    ctx.arc(-4, -12, 2, 0, Math.PI * 2);
-    ctx.arc(4, -12, 2, 0, Math.PI * 2);
+    ctx.arc(-4, -12 + floatHover, eyePulse, 0, Math.PI * 2);
+    ctx.arc(4, -12 + floatHover, eyePulse, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
   } else if (enemy.type === 'golem') {
-    // Golem: Gray rocky bulky creature
+    // Golem: Gray rocky bulky creature with slow heavy stomp
+    const heavyStomp = walkCycle < 2 ? 2 : 0;
+    const shake = walkCycle < 2 ? Math.sin(enemyAnimTime / 100) * 1 : 0;
+
     ctx.fillStyle = '#696969';
     // Large blocky body
-    ctx.fillRect(-14, -8, 28, 20);
+    ctx.fillRect(-14 + shake, -8 + heavyStomp, 28, 20);
     // Head (smaller, embedded)
     ctx.fillStyle = '#505050';
-    ctx.fillRect(-10, -14, 20, 10);
-    // Rock textures
+    ctx.fillRect(-10 + shake, -14 + heavyStomp, 20, 10);
+    // Rock textures (shift slightly)
     ctx.fillStyle = '#808080';
-    ctx.fillRect(-10, -2, 6, 6);
-    ctx.fillRect(4, 2, 6, 6);
-    ctx.fillRect(-6, 8, 8, 4);
-    // Arms
+    ctx.fillRect(-10 + shake, -2 + heavyStomp, 6, 6);
+    ctx.fillRect(4 + shake, 2 + heavyStomp, 6, 6);
+    ctx.fillRect(-6 + shake, 8 + heavyStomp, 8, 4);
+    // Arms (swing)
+    const armSwing = walkCycle < 2 ? -2 : 2;
     ctx.fillStyle = '#5a5a5a';
-    ctx.fillRect(-18, -4, 8, 12);
-    ctx.fillRect(10, -4, 8, 12);
-    // Eyes (glowing cracks)
+    ctx.fillRect(-18 + shake, -4 + heavyStomp + armSwing, 8, 12);
+    ctx.fillRect(10 + shake, -4 + heavyStomp - armSwing, 8, 12);
+    // Eyes (glowing cracks pulse)
+    const eyePulse = 1 + Math.sin(enemyAnimTime / 400) * 0.3;
     ctx.fillStyle = '#ff6600';
-    ctx.fillRect(-7, -10, 4, 4);
-    ctx.fillRect(3, -10, 4, 4);
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = '#ff6600';
+    ctx.fillRect(-7 + shake, -10 + heavyStomp, 4 * eyePulse, 4 * eyePulse);
+    ctx.fillRect(3 + shake, -10 + heavyStomp, 4 * eyePulse, 4 * eyePulse);
+    ctx.shadowBlur = 0;
   } else if (enemy.type === 'dungeon_monster') {
-    // Dungeon Monster: Dark magenta elite creature
+    // Dungeon Monster: Dark magenta elite creature with aggressive animation
+    const aggro = Math.sin(enemyAnimTime / 150) * 2;
+
     ctx.fillStyle = '#8b008b';
-    // Menacing body
-    ctx.fillRect(-15, -10, 30, 24);
+    // Menacing body (pulses)
+    const bodyPulse = 1 + Math.sin(enemyAnimTime / 300) * 0.1;
+    ctx.save();
+    ctx.scale(bodyPulse, bodyPulse);
+    ctx.fillRect(-15, -10 + aggro, 30, 24);
     ctx.fillStyle = '#6a006a';
     ctx.beginPath();
-    ctx.moveTo(-15, -10);
-    ctx.lineTo(0, -18);
-    ctx.lineTo(15, -10);
+    ctx.moveTo(-15, -10 + aggro);
+    ctx.lineTo(0, -18 + aggro);
+    ctx.lineTo(15, -10 + aggro);
     ctx.closePath();
     ctx.fill();
-    // Spikes
+    // Spikes (wiggle)
     ctx.fillStyle = '#ff00ff';
     for (let i = -12; i <= 12; i += 8) {
+      const spikeWiggle = Math.sin(enemyAnimTime / 200 + i) * 1;
       ctx.beginPath();
-      ctx.moveTo(i - 3, 14);
-      ctx.lineTo(i, 22);
-      ctx.lineTo(i + 3, 14);
+      ctx.moveTo(i - 3 + spikeWiggle, 14 + aggro);
+      ctx.lineTo(i + spikeWiggle, 22 + aggro);
+      ctx.lineTo(i + 3 + spikeWiggle, 14 + aggro);
       ctx.fill();
     }
-    // Eyes
+    // Eyes (angry glow)
     ctx.fillStyle = '#ff0000';
-    ctx.fillRect(-8, -6, 5, 5);
-    ctx.fillRect(3, -6, 5, 5);
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ff0000';
+    ctx.fillRect(-8, -6 + aggro, 5, 5);
+    ctx.fillRect(3, -6 + aggro, 5, 5);
+    ctx.shadowBlur = 0;
+    ctx.restore();
   }
 
-  // Draw hunting indicator
+  // Draw hunting indicator (pulsing)
   if (enemy.state === 'hunting') {
+    const huntPulse = 20 + Math.sin(enemyAnimTime / 200) * 2;
     ctx.strokeStyle = '#ff0000';
     ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.7;
     ctx.beginPath();
-    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+    ctx.arc(0, 0, huntPulse, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   ctx.restore();
@@ -1906,97 +1960,153 @@ bosses.forEach(boss => {
   const bx = boss.x - camera.x;
   const by = boss.y - camera.y;
 
+  // Boss animation timing
+  const bossAnimTime = Date.now();
+  const breathe = Math.sin(bossAnimTime / 800) * 3; // Slow breathing
+  const heartbeat = Math.sin(bossAnimTime / 300) * 1.5; // Heartbeat pulse
+  const armSwing = Math.sin(bossAnimTime / 400) * 4; // Menacing arm movement
+  const stomp = Math.floor(bossAnimTime / 500) % 2 === 0 ? 1 : -1; // Stomping
+
   ctx.save();
-  ctx.translate(bx, by);
+  ctx.translate(bx, by + stomp);
 
-  // Enhanced Boss sprite: Massive demonic overlord
-  // Main body
+  // Enhanced ANIMATED Boss sprite: Massive demonic overlord
+  // Main body (breathes)
   ctx.fillStyle = '#8b0000';
+  ctx.save();
+  const bodyScale = 1 + breathe * 0.01;
+  ctx.scale(bodyScale, bodyScale);
   ctx.fillRect(-30, -25, 60, 50);
+  ctx.restore();
 
-  // Shoulders/armor plates
+  // Shoulders/armor plates (shift with breathing)
   ctx.fillStyle = '#660000';
-  ctx.fillRect(-36, -28, 20, 15);
-  ctx.fillRect(16, -28, 20, 15);
+  ctx.fillRect(-36, -28 + breathe * 0.3, 20, 15);
+  ctx.fillRect(16, -28 + breathe * 0.3, 20, 15);
 
-  // Head
+  // Head (bobs slightly)
   ctx.fillStyle = '#4a0000';
-  ctx.fillRect(-20, -38, 40, 20);
+  ctx.fillRect(-20, -38 + breathe * 0.5, 40, 20);
 
-  // Crown/horns
+  // Crown/horns (animated)
   ctx.fillStyle = '#ff0000';
+  const hornGlow = 1 + Math.sin(bossAnimTime / 250) * 0.1;
+  ctx.save();
+  ctx.scale(hornGlow, hornGlow);
   // Left horn
   ctx.beginPath();
-  ctx.moveTo(-18, -38);
-  ctx.lineTo(-24, -50);
-  ctx.lineTo(-14, -40);
+  ctx.moveTo(-18, -38 + breathe * 0.5);
+  ctx.lineTo(-24, -50 + breathe * 0.5);
+  ctx.lineTo(-14, -40 + breathe * 0.5);
   ctx.closePath();
   ctx.fill();
   // Right horn
   ctx.beginPath();
-  ctx.moveTo(18, -38);
-  ctx.lineTo(24, -50);
-  ctx.lineTo(14, -40);
+  ctx.moveTo(18, -38 + breathe * 0.5);
+  ctx.lineTo(24, -50 + breathe * 0.5);
+  ctx.lineTo(14, -40 + breathe * 0.5);
   ctx.closePath();
   ctx.fill();
   // Center horn
   ctx.beginPath();
-  ctx.moveTo(-8, -38);
-  ctx.lineTo(0, -48);
-  ctx.lineTo(8, -38);
+  ctx.moveTo(-8, -38 + breathe * 0.5);
+  ctx.lineTo(0, -48 + breathe * 0.5);
+  ctx.lineTo(8, -38 + breathe * 0.5);
   ctx.closePath();
   ctx.fill();
+  ctx.restore();
 
-  // Glowing eyes
+  // Glowing eyes (intense pulsing)
+  const eyeIntensity = 8 + Math.sin(bossAnimTime / 200) * 4;
   ctx.fillStyle = '#ffff00';
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = 15 + heartbeat;
   ctx.shadowColor = '#ffff00';
-  ctx.fillRect(-14, -32, 8, 8);
-  ctx.fillRect(6, -32, 8, 8);
+  ctx.fillRect(-14, -32 + breathe * 0.5, 8 + heartbeat * 0.5, 8 + heartbeat * 0.5);
+  ctx.fillRect(6, -32 + breathe * 0.5, 8 + heartbeat * 0.5, 8 + heartbeat * 0.5);
+
+  // Eye beams occasionally
+  if (Math.sin(bossAnimTime / 1000) > 0.7) {
+    ctx.strokeStyle = '#ffff00';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(-10, -28 + breathe * 0.5);
+    ctx.lineTo(-20, -10);
+    ctx.moveTo(10, -28 + breathe * 0.5);
+    ctx.lineTo(20, -10);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
   ctx.shadowBlur = 0;
 
-  // Arms
+  // Arms (swing menacingly)
   ctx.fillStyle = '#8b0000';
-  ctx.fillRect(-42, -15, 16, 30);
-  ctx.fillRect(26, -15, 16, 30);
+  ctx.fillRect(-42, -15 + armSwing, 16, 30);
+  ctx.fillRect(26, -15 - armSwing, 16, 30);
 
-  // Claws
+  // Claws (flex)
   ctx.fillStyle = '#ff4444';
+  const clawFlex = Math.sin(bossAnimTime / 300) * 2;
   for (let i = 0; i < 3; i++) {
-    ctx.fillRect(-42 + i * 5, 15, 3, 10);
-    ctx.fillRect(26 + i * 5, 15, 3, 10);
+    ctx.fillRect(-42 + i * 5, 15 + armSwing + clawFlex, 3, 10 - clawFlex);
+    ctx.fillRect(26 + i * 5, 15 - armSwing + clawFlex, 3, 10 - clawFlex);
   }
 
-  // Legs
+  // Legs (stomp)
   ctx.fillStyle = '#660000';
-  ctx.fillRect(-20, 25, 14, 20);
-  ctx.fillRect(6, 25, 14, 20);
+  const legStomp = stomp * 2;
+  ctx.fillRect(-20, 25 - legStomp, 14, 20 + legStomp);
+  ctx.fillRect(6, 25 + legStomp, 14, 20 - legStomp);
 
-  // Aura effect
-  ctx.strokeStyle = '#ff0000';
-  ctx.lineWidth = 3;
-  ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 200) * 0.3;
-  ctx.beginPath();
-  ctx.arc(0, 0, 45, 0, Math.PI * 2);
-  ctx.stroke();
+  // Multiple aura layers (menacing presence)
+  for (let layer = 0; layer < 3; layer++) {
+    const auraRadius = 45 + layer * 10 + Math.sin(bossAnimTime / (200 + layer * 50)) * 5;
+    const auraAlpha = 0.3 - layer * 0.08;
+    ctx.strokeStyle = layer === 0 ? '#ff0000' : '#8b0000';
+    ctx.lineWidth = 3 - layer;
+    ctx.globalAlpha = auraAlpha + Math.sin(bossAnimTime / 200) * 0.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.globalAlpha = 1;
+
+  // Shadow beneath (expands with stomp)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+  ctx.beginPath();
+  ctx.ellipse(0, 50, 40 + Math.abs(stomp) * 5, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.restore();
 
-  // Health bar (larger for boss)
+  // Health bar (larger for boss with pulse effect)
+  const healthBarPulse = 1 + Math.sin(bossAnimTime / 300) * 0.05;
+  ctx.save();
+  ctx.translate(bx, by - 55);
+  ctx.scale(healthBarPulse, healthBarPulse);
   ctx.fillStyle = '#ff0000';
-  ctx.fillRect(bx - 30, by - 55, 60, 6);
+  ctx.fillRect(-30, 0, 60, 6);
   ctx.fillStyle = '#00ff00';
-  ctx.fillRect(bx - 30, by - 55, 60 * (boss.health / boss.maxHealth), 6);
+  ctx.fillRect(-30, 0, 60 * (boss.health / boss.maxHealth), 6);
+  // Health bar border
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-30, 0, 60, 6);
+  ctx.restore();
 
-  // Boss name label
+  // Boss name label (animated)
+  const textBob = Math.sin(bossAnimTime / 250) * 2;
   ctx.fillStyle = '#ffffff';
   ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 4;
   ctx.font = 'bold 16px Arial';
   ctx.textAlign = 'center';
-  ctx.strokeText('BOSS', bx, by - 60);
-  ctx.fillText('BOSS', bx, by - 60);
+  // Glow effect
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = '#ff0000';
+  ctx.strokeText('BOSS', bx, by - 60 + textBob);
+  ctx.fillText('BOSS', bx, by - 60 + textBob);
+  ctx.shadowBlur = 0;
 });
 
 // NEW ENHANCED VISUALS
@@ -2055,10 +2165,16 @@ damageNumbers.forEach(dmg => {
   ctx.globalAlpha = 1;
 });
 
-// Draw player (with screen shake) - Enhanced sprite based on class
+// Draw player (with screen shake) - Enhanced ANIMATED sprite based on class
 ctx.save();
 ctx.translate(player.x - camera.x - screenShake.x, player.y - camera.y - screenShake.y);
 ctx.rotate(player.facingAngle);
+
+// Animation frame calculation
+const animTime = Date.now();
+const walkFrame = Math.floor(animTime / 150) % 4; // 4-frame walk cycle
+const idleFrame = Math.floor(animTime / 500) % 2; // 2-frame idle cycle
+const weaponBob = Math.sin(animTime / 200) * 2; // Smooth bobbing
 
 // Determine class colors and style
 let primaryColor = '#3498db';
@@ -2079,69 +2195,104 @@ if (playerClass === 'warrior') {
   accentColor = '#34495e'; // Dark for stealth
 }
 
-// Draw body (oval shape)
+// Body bob animation (breathing)
+const bodyBob = Math.sin(animTime / 600) * 1;
+
+// Draw body (oval shape with breathing)
 ctx.fillStyle = primaryColor;
 ctx.beginPath();
-ctx.ellipse(0, 2, 10, 14, 0, 0, Math.PI * 2);
+ctx.ellipse(0, 2 + bodyBob, 10, 14, 0, 0, Math.PI * 2);
 ctx.fill();
 
-// Draw head
+// Draw head (bobs with body)
 ctx.fillStyle = '#f0c69b'; // Skin tone
 ctx.beginPath();
-ctx.arc(0, -10, 8, 0, Math.PI * 2);
+ctx.arc(0, -10 + bodyBob, 8, 0, Math.PI * 2);
 ctx.fill();
 
-// Draw helmet/hair based on class
+// Draw helmet/hair based on class (bobs with head)
 ctx.fillStyle = secondaryColor;
 if (playerClass === 'warrior') {
   // Helmet
-  ctx.fillRect(-8, -18, 16, 8);
-  ctx.fillRect(-10, -14, 20, 4);
+  ctx.fillRect(-8, -18 + bodyBob, 16, 8);
+  ctx.fillRect(-10, -14 + bodyBob, 20, 4);
 } else if (playerClass === 'mage') {
-  // Pointed hat
+  // Pointed hat (sways slightly)
+  const hatSway = Math.sin(animTime / 400) * 1;
   ctx.beginPath();
-  ctx.moveTo(-8, -12);
-  ctx.lineTo(0, -22);
-  ctx.lineTo(8, -12);
+  ctx.moveTo(-8, -12 + bodyBob);
+  ctx.lineTo(hatSway, -22 + bodyBob);
+  ctx.lineTo(8, -12 + bodyBob);
   ctx.closePath();
   ctx.fill();
 } else if (playerClass === 'rogue') {
   // Hood
   ctx.beginPath();
-  ctx.arc(0, -10, 10, Math.PI, 0);
+  ctx.arc(0, -10 + bodyBob, 10, Math.PI, 0);
   ctx.fill();
 }
 
-// Draw weapon/tool indicator
+// Draw weapon/tool indicator (animated)
 ctx.fillStyle = accentColor;
 if (playerClass === 'warrior') {
-  // Sword
-  ctx.fillRect(10, -8, 12, 4);
-  ctx.fillRect(18, -10, 2, 8);
+  // Sword (slashes animation)
+  const swordAngle = Math.sin(animTime / 300) * 0.1;
+  ctx.save();
+  ctx.rotate(swordAngle);
+  ctx.fillRect(10, -8 + weaponBob, 12, 4);
+  ctx.fillRect(18, -10 + weaponBob, 2, 8);
+  ctx.restore();
 } else if (playerClass === 'mage') {
-  // Staff
-  ctx.fillRect(10, -10, 2, 20);
+  // Staff (glowing orb pulses)
+  ctx.fillRect(10, -10 + weaponBob, 2, 20);
+  const orbGlow = 4 + Math.sin(animTime / 300) * 1.5;
   ctx.beginPath();
-  ctx.arc(11, -12, 4, 0, Math.PI * 2);
+  ctx.arc(11, -12 + weaponBob, orbGlow, 0, Math.PI * 2);
   ctx.fill();
+  // Glow effect
+  ctx.globalAlpha = 0.3;
+  ctx.beginPath();
+  ctx.arc(11, -12 + weaponBob, orbGlow + 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
 } else if (playerClass === 'rogue') {
-  // Dagger
-  ctx.fillRect(10, -6, 10, 2);
-  ctx.fillRect(18, -8, 2, 6);
+  // Dagger (slight twirl)
+  const daggerAngle = Math.sin(animTime / 250) * 0.15;
+  ctx.save();
+  ctx.rotate(daggerAngle);
+  ctx.fillRect(10, -6 + weaponBob, 10, 2);
+  ctx.fillRect(18, -8 + weaponBob, 2, 6);
+  ctx.restore();
 } else {
   // Default indicator
-  ctx.fillRect(8, -4, 8, 8);
+  ctx.fillRect(8, -4 + weaponBob, 8, 8);
 }
 
-// Draw arms
+// Draw arms (swing animation)
+const armSwing = Math.sin(animTime / 200) * 1;
 ctx.fillStyle = primaryColor;
-ctx.fillRect(-12, 0, 8, 4);
-ctx.fillRect(4, 0, 8, 4);
+ctx.fillRect(-12, 0 + armSwing, 8, 4);
+ctx.fillRect(4, 0 - armSwing, 8, 4);
 
-// Draw legs
+// Draw legs (walking animation - 4 frames)
 ctx.fillStyle = secondaryColor;
-ctx.fillRect(-6, 12, 5, 8);
-ctx.fillRect(1, 12, 5, 8);
+if (walkFrame === 0) {
+  // Neutral stance
+  ctx.fillRect(-6, 12, 5, 8);
+  ctx.fillRect(1, 12, 5, 8);
+} else if (walkFrame === 1) {
+  // Left leg forward, right leg back
+  ctx.fillRect(-6, 11, 5, 9);
+  ctx.fillRect(1, 13, 5, 7);
+} else if (walkFrame === 2) {
+  // Neutral stance (mid stride)
+  ctx.fillRect(-6, 12, 5, 8);
+  ctx.fillRect(1, 12, 5, 8);
+} else if (walkFrame === 3) {
+  // Right leg forward, left leg back
+  ctx.fillRect(-6, 13, 5, 7);
+  ctx.fillRect(1, 11, 5, 9);
+}
 
 ctx.restore();
 

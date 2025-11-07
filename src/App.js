@@ -1268,19 +1268,19 @@ const gameLoop = () => {
   setSpells(prev => prev.map(s => ({ ...s, cooldown: Math.max(0, s.cooldown - timeMultiplier) })));
   
   spawnTimerRef.current += timeMultiplier;
-  if (spawnTimerRef.current > 300 && inDungeon === null) {
+  if (spawnTimerRef.current > 300 && inDungeon === null && enemies.length < 30) {
     spawnTimerRef.current = 0;
-    
+
     const spawnX = Math.random() * MAP_WIDTH;
     const spawnY = Math.random() * MAP_HEIGHT;
-    
+
     const types = ['demon', 'shadow', 'beast', 'wraith', 'golem'];
     const type = types[Math.floor(Math.random() * types.length)];
-    
+
     let stats = { health: 50, damage: 5, speed: 1.2, xp: 20 };
     if (type === 'wraith') stats = { health: 30, damage: 8, speed: 2, xp: 25 };
     if (type === 'golem') stats = { health: 100, damage: 10, speed: 0.8, xp: 40 };
-    
+
     setEnemies(prev => [...prev, {
       id: Math.random(),
       x: spawnX,
@@ -1327,32 +1327,36 @@ const gameLoop = () => {
     const dx = player.x - enemy.x;
     const dy = player.y - enemy.y;
     const distToPlayer = Math.sqrt(dx * dx + dy * dy);
-    
+
     let newX = enemy.x;
     let newY = enemy.y;
     let newState = enemy.state;
     let roamAngle = enemy.roamAngle;
     let aggroSource = enemy.aggroSource;
-    
+
+    // Apply slow effect
+    const slowMultiplier = enemy.slowed ? enemy.slowed : 1;
+    const effectiveSpeed = enemy.speed * slowMultiplier;
+
     const detectionRange = enemy.state === 'hunting' ? 350 : 200;
-    
+
     if (aggroSource) {
       newState = 'hunting';
       const aggroDx = aggroSource.x - enemy.x;
       const aggroDy = aggroSource.y - enemy.y;
       const aggroDist = Math.sqrt(aggroDx * aggroDx + aggroDy * aggroDy);
-      
+
       if (aggroDist < 50) {
         aggroSource = null;
         newState = 'roaming';
       } else {
-        newX = enemy.x + (aggroDx / aggroDist) * enemy.speed * 1.3 * timeMultiplier;
-        newY = enemy.y + (aggroDy / aggroDist) * enemy.speed * 1.3 * timeMultiplier;
+        newX = enemy.x + (aggroDx / aggroDist) * effectiveSpeed * 1.3 * timeMultiplier;
+        newY = enemy.y + (aggroDy / aggroDist) * effectiveSpeed * 1.3 * timeMultiplier;
       }
     } else if (distToPlayer < detectionRange) {
       newState = 'chasing';
-      newX = enemy.x + (dx / distToPlayer) * enemy.speed * timeMultiplier;
-      newY = enemy.y + (dy / distToPlayer) * enemy.speed * timeMultiplier;
+      newX = enemy.x + (dx / distToPlayer) * effectiveSpeed * timeMultiplier;
+      newY = enemy.y + (dy / distToPlayer) * effectiveSpeed * timeMultiplier;
       
       if (distToPlayer < 30) {
         setPlayer(p => {
@@ -1380,12 +1384,31 @@ const gameLoop = () => {
       if (distFromSpawn > 150 || Math.random() < 0.02) {
         roamAngle = Math.random() * Math.PI * 2;
       }
-      
-      newX = enemy.x + Math.cos(roamAngle) * enemy.speed * 0.5 * timeMultiplier;
-      newY = enemy.y + Math.sin(roamAngle) * enemy.speed * 0.5 * timeMultiplier;
+
+      newX = enemy.x + Math.cos(roamAngle) * effectiveSpeed * 0.5 * timeMultiplier;
+      newY = enemy.y + Math.sin(roamAngle) * effectiveSpeed * 0.5 * timeMultiplier;
     }
-    
-    return { ...enemy, x: newX, y: newY, state: newState, roamAngle, aggroSource };
+
+    // Update slow effect duration and cleanup
+    let newSlowDuration = enemy.slowDuration;
+    let newSlowed = enemy.slowed;
+    if (enemy.slowDuration > 0) {
+      newSlowDuration = Math.max(0, enemy.slowDuration - timeMultiplier);
+      if (newSlowDuration === 0) {
+        newSlowed = undefined;
+      }
+    }
+
+    const updatedEnemy = { ...enemy, x: newX, y: newY, state: newState, roamAngle, aggroSource };
+    if (newSlowDuration !== undefined && newSlowDuration > 0) {
+      updatedEnemy.slowDuration = newSlowDuration;
+      updatedEnemy.slowed = newSlowed;
+    } else {
+      delete updatedEnemy.slowDuration;
+      delete updatedEnemy.slowed;
+    }
+
+    return updatedEnemy;
   }).filter(e => e.health > 0));
   
   setBosses(prev => prev.map(boss => {
@@ -1454,124 +1477,139 @@ const gameLoop = () => {
     enemies.forEach(enemy => spatialHash.insert(enemy));
     bosses.forEach(boss => spatialHash.insert(boss));
 
-    updated.forEach(proj => {
-      // Use spatial hash to only check nearby enemies (huge performance boost!)
-      const nearbyEnemies = spatialHash.queryRadius(proj.x, proj.y, 100);
-      const nearbyEnemyIds = new Set(nearbyEnemies.map(e => e.id));
+    // Collect all collisions first (batch processing)
+    const enemyHits = new Map(); // enemyId -> {damage, aggro, kill}
+    const bossHits = new Map(); // bossId -> {damage, aggro, kill}
 
-      setEnemies(enemies => enemies.map(enemy => {
-        // Skip if not in nearby list (compare by ID)
-        if (!nearbyEnemyIds.has(enemy.id)) return enemy;
+    updated.forEach(proj => {
+      // Check enemy collisions
+      const nearbyEnemies = spatialHash.queryRadius(proj.x, proj.y, 100);
+
+      for (const enemy of nearbyEnemies) {
         const dx = proj.x - enemy.x;
         const dy = proj.y - enemy.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist < 25) {
+
+        if (dist < 25 && proj.life > 0) {
           proj.life = 0;
           createParticles(enemy.x, enemy.y, '#ff6600', 10);
           audioManager.play('hit');
 
-          // Show damage number
           const isCrit = Math.random() * 100 < getTotalCritChance();
           const finalDamage = isCrit ? Math.floor(proj.damage * (getTotalCritDamage() / 100)) : proj.damage;
           createDamageNumber(enemy.x, enemy.y, finalDamage, isCrit ? 'crit' : 'damage');
-
-          // Update combo
           updateCombo();
 
-          // Screen shake on crit
-          if (isCrit) {
-            triggerScreenShake(12);
-          }
+          if (isCrit) triggerScreenShake(12);
 
-          enemy.aggroSource = { x: proj.sourceX, y: proj.sourceY };
-
-          if (enemy.health - finalDamage <= 0) {
-            gainXP(enemy.xp);
-            dropLoot(enemy.x, enemy.y);
-            updateQuest(1,1);
-            checkAchievement('kill_100', 1);
-            audioManager.play('explosion');
-
-            if (enemy.type === 'dungeon_monster') {
-              const dungeon = dungeons.find(d => d.id === inDungeon);
-              if (dungeon) {
-                const remainingEnemies = enemies.filter(e =>
-                  e.type === 'dungeon_monster' && e.id !== enemy.id
-                );
-                if (remainingEnemies.length === 0) {
-                  setDungeons(d => d.map(dun =>
-                    dun.id === inDungeon ? { ...dun, cleared: true } : dun
-                  ));
-                  updateQuest(2, 1);
-                  showNotification('Dungeon Cleared! Auto-exiting...', 'success');
-                  dropLoot(enemy.x, enemy.y, true);
-                  // Auto-exit dungeon after clearing
-                  setTimeout(() => setInDungeon(null), 1000);
-                }
-              }
-            }
-
-            return null;
-          }
-
-          return { ...enemy, health: enemy.health - finalDamage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+          enemyHits.set(enemy.id, {
+            damage: finalDamage,
+            aggroSource: { x: proj.sourceX, y: proj.sourceY }
+          });
+          break;
         }
-        return enemy;
-      }).filter(Boolean));
+      }
 
-      // Use spatial hash for boss collisions too
+      // Check boss collisions
       const nearbyBosses = spatialHash.queryRadius(proj.x, proj.y, 150);
-      const nearbyBossIds = new Set(nearbyBosses.map(b => b.id));
 
-      setBosses(bosses => bosses.map(boss => {
-        // Skip if not in nearby list (compare by ID)
-        if (!nearbyBossIds.has(boss.id)) return boss;
+      for (const boss of nearbyBosses) {
         const dx = proj.x - boss.x;
         const dy = proj.y - boss.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        if (dist < 40) {
+
+        if (dist < 40 && proj.life > 0) {
           proj.life = 0;
           createParticles(boss.x, boss.y, '#ff0000', 15);
           audioManager.play('hit');
 
-          // Show damage number with crit chance
           const isCrit = Math.random() * 100 < getTotalCritChance();
           const finalDamage = isCrit ? Math.floor(proj.damage * (getTotalCritDamage() / 100)) : proj.damage;
           createDamageNumber(boss.x, boss.y, finalDamage, isCrit ? 'crit' : 'damage');
-
-          // Update combo and screen shake
           updateCombo();
           triggerScreenShake(isCrit ? 18 : 10);
 
-          boss.aggroSource = { x: proj.sourceX, y: proj.sourceY };
-
-          if (boss.health - finalDamage <= 0) {
-            gainXP(200);
-            dropLoot(boss.x, boss.y, true);
-            updateQuest(3, 1);
-            showNotification('🏆 Boss defeated! Legendary loot obtained!', 'success');
-            triggerScreenShake(25);
-            audioManager.play('explosion');
-            return null;
-          }
-
-          return { ...boss, health: boss.health - finalDamage, aggroSource: { x: proj.sourceX, y: proj.sourceY } };
+          bossHits.set(boss.id, {
+            damage: finalDamage,
+            aggroSource: { x: proj.sourceX, y: proj.sourceY }
+          });
+          break;
         }
-        return boss;
-      }).filter(Boolean));
+      }
     });
-    
+
+    // Apply all enemy hits in ONE state update
+    if (enemyHits.size > 0) {
+      setEnemies(enemies => enemies.map(enemy => {
+        const hit = enemyHits.get(enemy.id);
+        if (!hit) return enemy;
+
+        const newHealth = enemy.health - hit.damage;
+        if (newHealth <= 0) {
+          gainXP(enemy.xp);
+          dropLoot(enemy.x, enemy.y);
+          updateQuest(1, 1);
+          checkAchievement('kill_100', 1);
+          audioManager.play('explosion');
+
+          if (enemy.type === 'dungeon_monster') {
+            const dungeon = dungeons.find(d => d.id === inDungeon);
+            if (dungeon) {
+              const remainingEnemies = enemies.filter(e =>
+                e.type === 'dungeon_monster' && e.id !== enemy.id && !enemyHits.has(e.id)
+              );
+              if (remainingEnemies.length === 0) {
+                setDungeons(d => d.map(dun =>
+                  dun.id === inDungeon ? { ...dun, cleared: true } : dun
+                ));
+                updateQuest(2, 1);
+                showNotification('Dungeon Cleared! Auto-exiting...', 'success');
+                dropLoot(enemy.x, enemy.y, true);
+                setTimeout(() => setInDungeon(null), 1000);
+              }
+            }
+          }
+          return null;
+        }
+
+        return { ...enemy, health: newHealth, aggroSource: hit.aggroSource };
+      }).filter(Boolean));
+    }
+
+    // Apply all boss hits in ONE state update
+    if (bossHits.size > 0) {
+      setBosses(bosses => bosses.map(boss => {
+        const hit = bossHits.get(boss.id);
+        if (!hit) return boss;
+
+        const newHealth = boss.health - hit.damage;
+        if (newHealth <= 0) {
+          gainXP(200);
+          dropLoot(boss.x, boss.y, true);
+          updateQuest(3, 1);
+          showNotification('🏆 Boss defeated! Legendary loot obtained!', 'success');
+          triggerScreenShake(25);
+          audioManager.play('explosion');
+          return null;
+        }
+
+        return { ...boss, health: newHealth, aggroSource: hit.aggroSource };
+      }).filter(Boolean));
+    }
+
     return updated;
   });
   
-  setParticles(prev => prev.map(p => ({
-    ...p,
-    x: p.x + p.vx * timeMultiplier,
-    y: p.y + p.vy * timeMultiplier,
-    life: p.life - timeMultiplier
-  })).filter(p => p.life > 0));
+  setParticles(prev => {
+    const updated = prev.map(p => ({
+      ...p,
+      x: p.x + p.vx * timeMultiplier,
+      y: p.y + p.vy * timeMultiplier,
+      life: p.life - timeMultiplier
+    })).filter(p => p.life > 0);
+    // Cap particles at 150 to prevent performance degradation
+    return updated.length > 150 ? updated.slice(-150) : updated;
+  });
 };
 
 let lastTime = Date.now();

@@ -2174,7 +2174,7 @@ damageNumbers.forEach(dmg => {
 
 // Draw player (with screen shake) - Enhanced ANIMATED sprite based on class
 ctx.save();
-ctx.translate(player.x - screenShake.x, player.y - screenShake.y);
+ctx.translate(-screenShake.x, -screenShake.y);
 ctx.rotate(player.facingAngle);
 
 // Animation frame calculation

@@ -86,6 +86,7 @@ const Experience = () => {
         <TargetMarker
           key={marker.id}
           position={marker.position}
+          color={marker.color || '#00ff00'}
           duration={2}
         />
       ))}

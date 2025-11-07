@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -13,9 +13,32 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime' }) => {
   const [maxHealth] = useState(50);
   const [isAlive, setIsAlive] = useState(true);
   const [attackCooldown, setAttackCooldown] = useState(0);
+  const [damageFlash, setDamageFlash] = useState(0);
 
   const player = useGameStore((state) => state.player);
   const dealDamageToPlayer = useGameStore((state) => state.dealDamageToPlayer);
+
+  // Handle taking damage - useCallback ensures stable reference
+  const takeDamage = useCallback((damage) => {
+    setHealth((prev) => {
+      const newHealth = Math.max(0, prev - damage);
+      console.log(`Enemy took ${damage} damage, health: ${newHealth}`);
+      return newHealth;
+    });
+    // Trigger damage flash effect
+    setDamageFlash(1);
+    setTimeout(() => setDamageFlash(0), 200);
+  }, []);
+
+  // Update RigidBody userData with takeDamage function
+  React.useEffect(() => {
+    if (enemyRef.current) {
+      enemyRef.current.userData = {
+        isEnemy: true,
+        takeDamage: takeDamage,
+      };
+    }
+  }, [takeDamage]);
 
   // Enemy AI behavior
   useFrame((state, delta) => {
@@ -86,18 +109,6 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime' }) => {
     }
   });
 
-  // Handle taking damage
-  const takeDamage = (damage) => {
-    setHealth((prev) => Math.max(0, prev - damage));
-  };
-
-  // Store reference to takeDamage in ref for external access
-  React.useEffect(() => {
-    if (enemyRef.current) {
-      enemyRef.current.takeDamage = takeDamage;
-    }
-  }, []);
-
   if (!isAlive) {
     return (
       <group position={position}>
@@ -125,7 +136,11 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime' }) => {
         {/* Enemy body */}
         <mesh castShadow position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
           <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color="#ff4444" />
+          <meshStandardMaterial
+            color={damageFlash > 0 ? "#ffffff" : "#ff4444"}
+            emissive={damageFlash > 0 ? "#ff0000" : "#000000"}
+            emissiveIntensity={damageFlash}
+          />
         </mesh>
 
         {/* Enemy eyes */}

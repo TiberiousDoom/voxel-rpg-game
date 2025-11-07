@@ -51,6 +51,7 @@ const TouchControls = () => {
         if (isEnemy && enemyData?.takeDamage) {
           // Attack enemy
           const playerDamage = useGameStore.getState().player.damage;
+          console.log(`Attacking enemy with ${playerDamage} damage!`);
           enemyData.takeDamage(playerDamage);
 
           // Add red attack marker at enemy position

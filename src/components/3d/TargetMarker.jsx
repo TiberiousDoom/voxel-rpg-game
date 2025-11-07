@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber';
 /**
  * Visual marker showing where player tapped/clicked
  */
-const TargetMarker = ({ position, duration = 2 }) => {
+const TargetMarker = ({ position, duration = 2, color = '#00ff00' }) => {
   const meshRef = useRef();
   const timeRef = useRef(0);
 
@@ -31,7 +31,7 @@ const TargetMarker = ({ position, duration = 2 }) => {
       <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.8, 1, 32]} />
         <meshBasicMaterial
-          color="#00ff00"
+          color={color}
           transparent
           opacity={1}
           side={2}
@@ -42,7 +42,7 @@ const TargetMarker = ({ position, duration = 2 }) => {
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.6, 32]} />
         <meshBasicMaterial
-          color="#00ff00"
+          color={color}
           transparent
           opacity={0.3}
           side={2}
@@ -52,11 +52,11 @@ const TargetMarker = ({ position, duration = 2 }) => {
       {/* Crosshair lines */}
       <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[0.1, 1.2]} />
-        <meshBasicMaterial color="#00ff00" transparent opacity={0.7} />
+        <meshBasicMaterial color={color} transparent opacity={0.7} />
       </mesh>
       <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
         <planeGeometry args={[0.1, 1.2]} />
-        <meshBasicMaterial color="#00ff00" transparent opacity={0.7} />
+        <meshBasicMaterial color={color} transparent opacity={0.7} />
       </mesh>
     </group>
   );

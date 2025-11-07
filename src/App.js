@@ -195,8 +195,9 @@ const spatialHashRef = useRef(new SpatialHash(100));
 const projectilePoolRef = useRef(null);
 const particlePoolRef = useRef(null);
 
-const MAP_WIDTH = 2500;
-const MAP_HEIGHT = 2000;
+const MAP_WIDTH = 1600;
+const MAP_HEIGHT = 1200;
+const CAMERA_ZOOM = 1.8; // Zoom factor - higher = closer to player
 const CANVAS_WIDTH = canvasSize.width;
 const CANVAS_HEIGHT = canvasSize.height;
 
@@ -1602,10 +1603,18 @@ if (!canvas) return;
 const ctx = canvas.getContext('2d');
 ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-const minX = camera.x - 20;
-const maxX = camera.x + CANVAS_WIDTH + 20;
-const minY = camera.y - 20;
-const maxY = camera.y + CANVAS_HEIGHT + 20;
+// Apply camera zoom
+ctx.save();
+ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
+ctx.translate(CANVAS_WIDTH / 2 / CAMERA_ZOOM, CANVAS_HEIGHT / 2 / CAMERA_ZOOM);
+ctx.translate(-player.x, -player.y);
+
+const viewWidth = CANVAS_WIDTH / CAMERA_ZOOM;
+const viewHeight = CANVAS_HEIGHT / CAMERA_ZOOM;
+const minX = player.x - viewWidth / 2 - 20;
+const maxX = player.x + viewWidth / 2 + 20;
+const minY = player.y - viewHeight / 2 - 20;
+const maxY = player.y + viewHeight / 2 + 20;
 
 const terrainByType = { grass: [], forest: [], water: [], rock: [] };
 terrain.forEach(tile => {
@@ -1617,7 +1626,7 @@ const drawTerrainType = (tiles, color) => {
   if (tiles.length === 0) return;
   ctx.fillStyle = color;
   tiles.forEach(tile => {
-    ctx.fillRect(tile.x - camera.x, tile.y - camera.y, 20, 20);
+    ctx.fillRect(tile.x, tile.y, 20, 20);
   });
 };
 
@@ -1628,71 +1637,71 @@ drawTerrainType(terrainByType.rock, '#666666');
 
 dungeons.forEach(dungeon => {
   ctx.fillStyle = dungeon.cleared ? '#444444' : '#1a1a2e';
-  ctx.fillRect(dungeon.x - camera.x, dungeon.y - camera.y, 100, 100);
+  ctx.fillRect(dungeon.x, dungeon.y, 100, 100);
   ctx.strokeStyle = dungeon.cleared ? '#666666' : '#8b00ff';
   ctx.lineWidth = 3;
-  ctx.strokeRect(dungeon.x - camera.x, dungeon.y - camera.y, 100, 100);
-  
+  ctx.strokeRect(dungeon.x, dungeon.y, 100, 100);
+
   if (!dungeon.cleared && inDungeon !== dungeon.id) {
     ctx.fillStyle = '#ffffff';
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('E to Enter', dungeon.x - camera.x + 50, dungeon.y - camera.y - 10);
+    ctx.fillText('E to Enter', dungeon.x + 50, dungeon.y - 10);
   }
-  
+
   if (inDungeon === dungeon.id) {
     ctx.fillStyle = '#ffffff';
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('E to Exit', dungeon.x - camera.x + 50, dungeon.y - camera.y - 10);
+    ctx.fillText('E to Exit', dungeon.x + 50, dungeon.y - 10);
   }
 });
 
 if (base.built) {
   ctx.fillStyle = '#8b4513';
-  ctx.fillRect(base.x - camera.x - 40, base.y - camera.y - 40, 80, 80);
+  ctx.fillRect(base.x - 40, base.y - 40, 80, 80);
   ctx.strokeStyle = '#654321';
   ctx.lineWidth = 3;
-  ctx.strokeRect(base.x - camera.x - 40, base.y - camera.y - 40, 80, 80);
+  ctx.strokeRect(base.x - 40, base.y - 40, 80, 80);
 }
 
 base.structures.forEach(structure => {
   let color = '#8b4513';
   let size = 40;
-  
+
   if (structure.type === 'wall') { color = '#808080'; size = 20; }
   if (structure.type === 'tower') { color = '#4a4a4a'; size = 50; }
   if (structure.type === 'crafting') { color = '#cd853f'; size = 45; }
-  
+
   ctx.fillStyle = color;
-  ctx.fillRect(structure.x - camera.x - size/2, structure.y - camera.y - size/2, size, size);
+  ctx.fillRect(structure.x - size/2, structure.y - size/2, size, size);
   ctx.strokeStyle = '#000000';
   ctx.lineWidth = 2;
-  ctx.strokeRect(structure.x - camera.x - size/2, structure.y - camera.y - size/2, size, size);
+  ctx.strokeRect(structure.x - size/2, structure.y - size/2, size, size);
 });
 
 loot.forEach(item => {
   if (item.x < minX || item.x > maxX || item.y < minY || item.y > maxY) return;
-  
+
   let color = '#ffd700';
   if (item.type === 'essence') color = '#8b00ff';
   if (item.type === 'potion') color = '#ff0000';
   if (item.type === 'weapon' || item.type === 'armor') color = '#00ffff';
-  
+
   ctx.fillStyle = color;
-  
+
   if (item.type === 'potion') {
     ctx.beginPath();
-    ctx.moveTo(item.x - camera.x, item.y - camera.y - 10);
-    ctx.lineTo(item.x - camera.x - 8, item.y - camera.y + 8);
-    ctx.lineTo(item.x - camera.x + 8, item.y - camera.y + 8);
+    ctx.moveTo(item.x, item.y - 10);
+    ctx.lineTo(item.x - 8, item.y + 8);
+    ctx.lineTo(item.x + 8, item.y + 8);
     ctx.closePath();
     ctx.fill();
   } else if (item.type === 'weapon' || item.type === 'armor') {
-    ctx.fillRect(item.x - camera.x - 8, item.y - camera.y - 8, 16, 16);
+    ctx.fillRect(item.x - 8, item.y - 8, 16, 16);
   } else {
     ctx.beginPath();
-    ctx.arc(item.x - camera.x, item.y - camera.y, 8, 0, Math.PI * 2);
+    ctx.arc(item.x, item.y, 8, 0, Math.PI * 2);
     ctx.fill();
   }
 });
@@ -1701,28 +1710,28 @@ particles.forEach(p => {
   if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) return;
   ctx.fillStyle = p.color;
   ctx.globalAlpha = p.life / 30;
-  ctx.fillRect(p.x - camera.x - 2, p.y - camera.y - 2, 4, 4);
+  ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
 });
 ctx.globalAlpha = 1;
 
 projectiles.forEach(proj => {
   if (proj.x < minX || proj.x > maxX || proj.y < minY || proj.y > maxY) return;
-  
+
   let color = '#ff6600';
   if (proj.type === 'lightning') color = '#ffff00';
   if (proj.type === 'meteor') color = '#ff0000';
-  
+
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(proj.x - camera.x, proj.y - camera.y, 6, 0, Math.PI * 2);
+  ctx.arc(proj.x, proj.y, 6, 0, Math.PI * 2);
   ctx.fill();
 });
 
 enemies.forEach(enemy => {
   if (enemy.x < minX - 50 || enemy.x > maxX + 50 || enemy.y < minY - 50 || enemy.y > maxY + 50) return;
 
-  const ex = enemy.x - camera.x;
-  const ey = enemy.y - camera.y;
+  const ex = enemy.x;
+  const ey = enemy.y;
 
   // Animation timing (using enemy position for variation)
   const enemyAnimTime = Date.now() + enemy.id * 1000; // Offset by ID for variation
@@ -1956,8 +1965,8 @@ enemies.forEach(enemy => {
 bosses.forEach(boss => {
   if (boss.x < minX - 60 || boss.x > maxX + 60 || boss.y < minY - 60 || boss.y > maxY + 60) return;
 
-  const bx = boss.x - camera.x;
-  const by = boss.y - camera.y;
+  const bx = boss.x;
+  const by = boss.y;
 
   // Boss animation timing
   const bossAnimTime = Date.now();
@@ -2115,7 +2124,7 @@ aoeEffects.forEach(effect => {
   if (effect.y < minY - effect.radius || effect.y > maxY + effect.radius) return;
 
   ctx.beginPath();
-  ctx.arc(effect.x - camera.x - screenShake.x, effect.y - camera.y - screenShake.y, effect.radius, 0, Math.PI * 2);
+  ctx.arc(effect.x - screenShake.x, effect.y - screenShake.y, effect.radius, 0, Math.PI * 2);
 
   if (effect.type === 'frostnova') {
     ctx.fillStyle = `rgba(0, 255, 255, ${effect.life / 60 * 0.3})`;
@@ -2134,10 +2143,10 @@ aoeEffects.forEach(effect => {
 if (pet) {
   const petColor = pet.type === 'wolf' ? '#8b4513' : '#ff69b4';
   ctx.fillStyle = petColor;
-  ctx.fillRect(pet.x - camera.x - screenShake.x - 8, pet.y - camera.y - screenShake.y - 8, 16, 16);
+  ctx.fillRect(pet.x - screenShake.x - 8, pet.y - screenShake.y - 8, 16, 16);
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 1;
-  ctx.strokeRect(pet.x - camera.x - screenShake.x - 8, pet.y - camera.y - screenShake.y - 8, 16, 16);
+  ctx.strokeRect(pet.x - screenShake.x - 8, pet.y - screenShake.y - 8, 16, 16);
 }
 
 // Draw damage numbers
@@ -2152,20 +2161,20 @@ damageNumbers.forEach(dmg => {
     ctx.fillStyle = '#ff0000';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
-    ctx.strokeText(dmg.value.toString(), dmg.x - camera.x - screenShake.x, dmg.y - camera.y - screenShake.y);
+    ctx.strokeText(dmg.value.toString(), dmg.x - screenShake.x, dmg.y - screenShake.y);
   } else if (dmg.type === 'heal') {
     ctx.fillStyle = '#00ff00';
   } else {
     ctx.fillStyle = '#ffffff';
   }
 
-  ctx.fillText(dmg.value.toString(), dmg.x - camera.x - screenShake.x, dmg.y - camera.y - screenShake.y);
+  ctx.fillText(dmg.value.toString(), dmg.x - screenShake.x, dmg.y - screenShake.y);
   ctx.globalAlpha = 1;
 });
 
 // Draw player (with screen shake) - Enhanced ANIMATED sprite based on class
 ctx.save();
-ctx.translate(player.x - camera.x - screenShake.x, player.y - camera.y - screenShake.y);
+ctx.translate(player.x - screenShake.x, player.y - screenShake.y);
 ctx.rotate(player.facingAngle);
 
 // Animation frame calculation
@@ -2293,7 +2302,10 @@ if (walkFrame === 0) {
 
 ctx.restore();
 
-// Draw day/night overlay
+// Restore context before drawing overlays
+ctx.restore();
+
+// Draw day/night overlay (after restoring to draw in screen space)
 const hour = Math.floor(timeOfDay / 60);
 let nightAlpha = 0;
 if (hour >= 20 || hour < 6) {

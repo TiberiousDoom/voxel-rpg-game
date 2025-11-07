@@ -14,10 +14,16 @@ const TouchControls = () => {
     if (gameState !== 'playing') return;
 
     const raycaster = new THREE.Raycaster();
+    let lastTapTime = 0;
 
     const handlePointerDown = (event) => {
       // Ignore if not in playing state
       if (useGameStore.getState().gameState !== 'playing') return;
+
+      // Prevent duplicate events (mobile fires both touchstart and click)
+      const now = Date.now();
+      if (now - lastTapTime < 300) return; // Ignore if within 300ms of last tap
+      lastTapTime = now;
 
       // Get normalized device coordinates
       const rect = gl.domElement.getBoundingClientRect();
@@ -31,53 +37,67 @@ const TouchControls = () => {
       const intersects = raycaster.intersectObjects(scene.children, true);
 
       if (intersects.length > 0) {
-        const hit = intersects[0];
-
-        // Check if we hit an enemy
-        let currentObject = hit.object;
-        let isEnemy = false;
+        // Check ALL intersections for enemies (prioritize enemies over ground)
+        let enemyHit = null;
         let enemyData = null;
+        let groundHit = null;
 
-        // Traverse up to check if this is part of an enemy
-        while (currentObject) {
-          if (currentObject.userData?.isEnemy) {
-            isEnemy = true;
-            enemyData = currentObject.userData;
-            break;
+        for (let i = 0; i < intersects.length; i++) {
+          const hit = intersects[i];
+          let currentObject = hit.object;
+
+          // Traverse up to check if this is part of an enemy
+          while (currentObject) {
+            if (currentObject.userData?.isEnemy) {
+              enemyHit = hit;
+              enemyData = currentObject.userData;
+              break;
+            }
+            currentObject = currentObject.parent;
           }
-          currentObject = currentObject.parent;
+
+          // If we found an enemy, stop looking
+          if (enemyHit) break;
+
+          // Otherwise, store the first non-enemy hit (probably ground)
+          if (!groundHit) {
+            groundHit = hit;
+          }
         }
 
-        if (isEnemy && enemyData?.takeDamage) {
-          // Attack enemy
+        if (enemyHit && enemyData?.takeDamage) {
+          // Attack enemy - DO NOT MOVE
           const playerDamage = useGameStore.getState().player.damage;
-          console.log(`Attacking enemy with ${playerDamage} damage!`);
+          // console.log(`⚔️ Attacking enemy with ${playerDamage} damage!`);
           enemyData.takeDamage(playerDamage);
 
-          // Add red attack marker at enemy position
+          // Add red attack marker at enemy center (elevated)
           useGameStore.getState().addTargetMarker({
-            position: [hit.point.x, hit.point.y, hit.point.z],
+            position: [enemyHit.point.x, enemyHit.point.y + 1, enemyHit.point.z],
             color: '#ff0000',
           });
 
-          // Remove marker after 1 second
+          // Remove marker after 0.8 seconds
           setTimeout(() => {
             const markers = useGameStore.getState().targetMarkers;
             if (markers.length > 0) {
               useGameStore.getState().removeTargetMarker(markers[0].id);
             }
-          }, 1000);
-        } else {
+          }, 800);
+
+          // Don't move to enemy location - attack in place
+          return;
+        } else if (groundHit) {
           // Move to location (hit ground or other non-enemy object)
           useGameStore.getState().setPlayerTarget([
-            hit.point.x,
-            hit.point.y,
-            hit.point.z,
+            groundHit.point.x,
+            groundHit.point.y,
+            groundHit.point.z,
           ]);
 
           // Add green movement marker
           useGameStore.getState().addTargetMarker({
-            position: [hit.point.x, hit.point.y, hit.point.z],
+            position: [groundHit.point.x, groundHit.point.y, groundHit.point.z],
             color: '#00ff00',
           });
 
@@ -92,9 +112,7 @@ const TouchControls = () => {
       }
     };
 
-    // Add event listeners for both mouse and touch
-    gl.domElement.addEventListener('click', handlePointerDown);
-    gl.domElement.addEventListener('touchstart', (e) => {
+    const handleTouchStart = (e) => {
       if (e.touches.length === 1) {
         const touch = e.touches[0];
         handlePointerDown({
@@ -102,10 +120,15 @@ const TouchControls = () => {
           clientY: touch.clientY,
         });
       }
-    });
+    };
+
+    // Add event listeners for both mouse and touch
+    gl.domElement.addEventListener('click', handlePointerDown);
+    gl.domElement.addEventListener('touchstart', handleTouchStart);
 
     return () => {
       gl.domElement.removeEventListener('click', handlePointerDown);
+      gl.domElement.removeEventListener('touchstart', handleTouchStart);
     };
   }, [gl, scene, camera, gameState]);
 

@@ -60,6 +60,9 @@ const useGameStore = create((set, get) => ({
   // Target markers (for tap-to-move visual feedback)
   targetMarkers: [],
 
+  // Damage numbers (floating damage indicators)
+  damageNumbers: [],
+
   // Actions
   setGameState: (state) => set({ gameState: state }),
 
@@ -76,6 +79,16 @@ const useGameStore = create((set, get) => ({
   removeTargetMarker: (id) =>
     set((state) => ({
       targetMarkers: state.targetMarkers.filter((m) => m.id !== id),
+    })),
+
+  addDamageNumber: (damageNum) =>
+    set((state) => ({
+      damageNumbers: [...state.damageNumbers, { ...damageNum, id: Date.now() + Math.random() }],
+    })),
+
+  removeDamageNumber: (id) =>
+    set((state) => ({
+      damageNumbers: state.damageNumbers.filter((d) => d.id !== id),
     })),
 
   updatePlayer: (updates) =>
@@ -220,6 +233,7 @@ const useGameStore = create((set, get) => ({
       enemies: [],
       projectiles: [],
       targetMarkers: [],
+      damageNumbers: [],
     }),
 }));
 

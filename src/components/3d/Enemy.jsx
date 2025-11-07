@@ -22,13 +22,23 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime' }) => {
   const takeDamage = useCallback((damage) => {
     setHealth((prev) => {
       const newHealth = Math.max(0, prev - damage);
-      console.log(`Enemy took ${damage} damage, health: ${newHealth}`);
+      // console.log(`💥 Enemy took ${damage} damage, health: ${newHealth}/${maxHealth}`);
       return newHealth;
     });
+
     // Trigger damage flash effect
     setDamageFlash(1);
-    setTimeout(() => setDamageFlash(0), 200);
-  }, []);
+    setTimeout(() => setDamageFlash(0), 300);
+
+    // Spawn floating damage number
+    if (enemyRef.current) {
+      const enemyPos = enemyRef.current.translation();
+      useGameStore.getState().addDamageNumber({
+        position: [enemyPos.x, enemyPos.y + 1.5, enemyPos.z],
+        damage: damage,
+      });
+    }
+  }, []); // maxHealth is constant, no need to track it
 
   // Update RigidBody userData with takeDamage function
   React.useEffect(() => {
@@ -132,14 +142,14 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime' }) => {
       linearDamping={0.8}
       userData={{ isEnemy: true, takeDamage }}
     >
-      <group userData={{ isEnemy: true, takeDamage }}>
+      <group userData={{ isEnemy: true, takeDamage }} scale={damageFlash > 0 ? [1.15, 1.15, 1.15] : [1, 1, 1]}>
         {/* Enemy body */}
         <mesh castShadow position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
           <boxGeometry args={[1, 1, 1]} />
           <meshStandardMaterial
-            color={damageFlash > 0 ? "#ffffff" : "#ff4444"}
-            emissive={damageFlash > 0 ? "#ff0000" : "#000000"}
-            emissiveIntensity={damageFlash}
+            color={damageFlash > 0 ? "#ffff00" : "#ff4444"}
+            emissive={damageFlash > 0 ? "#ff4400" : "#000000"}
+            emissiveIntensity={damageFlash > 0 ? 2 : 0}
           />
         </mesh>
 

@@ -192,13 +192,13 @@ const Player = () => {
     >
       <group>
         {/* Player body - simple colored cube for now */}
-        <mesh castShadow position={[0, 0.5, 0]}>
+        <mesh position={[0, 0.5, 0]}>
           <boxGeometry args={[1, 2, 1]} />
           <meshStandardMaterial color="#4169e1" />
         </mesh>
 
         {/* Player head - slightly different color */}
-        <mesh castShadow position={[0, 1.5, 0]}>
+        <mesh position={[0, 1.5, 0]}>
           <boxGeometry args={[0.8, 0.8, 0.8]} />
           <meshStandardMaterial color="#5a7fd6" />
         </mesh>
@@ -207,7 +207,6 @@ const Player = () => {
         <mesh
           position={[0, 1, 0.6]}
           rotation={[0, player.facingAngle, 0]}
-          castShadow
         >
           <coneGeometry args={[0.2, 0.5, 4]} />
           <meshStandardMaterial color="#ff6b6b" />

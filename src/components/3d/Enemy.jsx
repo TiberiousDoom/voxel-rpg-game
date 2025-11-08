@@ -150,7 +150,7 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime' }) => {
         </mesh>
 
         {/* Enemy body */}
-        <mesh castShadow position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
+        <mesh position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
           <boxGeometry args={[1, 1, 1]} />
           <meshStandardMaterial
             color={damageFlash > 0 ? "#ffff00" : "#ff4444"}

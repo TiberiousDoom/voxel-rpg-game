@@ -1,0 +1,140 @@
+ARCHITECTURE REVIEW - QUICK FINDINGS CHECKLIST
+==============================================
+
+1. NO UNNECESSARY DATA REPLICATION ✓ (MOSTLY)
+   Status: PASS - Modules query Foundation instead of caching
+   Issue: But queries aren't validated - orphaned building IDs silently mask failures
+
+2. MEMORY LEAKS ✗ CRITICAL
+   ✗ Build queue entries orphaned when buildings deleted
+   ✗ NPC assignments to non-existent buildings 
+   ✗ Territory building references remain after deletion
+   
+   Impact: Grows with each destroyed building under construction
+
+3. EDGE CASES ✗ NOT HANDLED
+   ✗ Building destroyed during construction (queue remains)
+   ✗ Storage full when storage buildings removed (overflow)
+   ✗ Buildings placed with same ID after deletion (queue collision)
+   ✗ NPC assignments survive building deletion
+   ✗ Territory references survive building deletion
+   ✗ Rapid simultaneous operations (race conditions)
+
+4. STATE CONSISTENCY DURING TRANSITIONS ✗ WEAK
+   ✗ BLUEPRINT→BUILDING→COMPLETE has no atomic guarantee
+   ✗ Multiple modules can have inconsistent views
+   ✗ No synchronization between Foundation and Module 3/4
+
+5. RACE CONDITIONS ✗ POSSIBLE
+   ✗ Building status updates not atomic across modules
+   ✗ Construction progress read/write without locks
+   ✗ Building deletion doesn't coordinate with dependent modules
+
+CRITICAL GAPS:
+==============
+File: /home/user/voxel-rpg-game/src/modules/foundation/stores/useFoundationStore.js
+  Problem: removeBuilding() (lines 103-119) has NO cascade cleanup
+  
+File: /home/user/voxel-rpg-game/src/modules/resource-economy/stores/useResourceEconomyStore.js
+  Problem: No cleanup triggered when building deleted (only cancelConstruction)
+  
+File: /home/user/voxel-rpg-game/src/modules/module4/stores/useNPCSystem.js
+  Problem: No method to unassign NPCs when building deleted
+  
+File: /home/user/voxel-rpg-game/src/modules/module4/stores/useTerritory.js
+  Problem: removeBuildingFromTerritory() never called on deletion
+
+SPECIFIC CODE ISSUES:
+====================
+
+1. useFoundationStore.removeBuilding() (line 103)
+   - Only removes from buildings map
+   - Missing: buildQueue.removeFromQueue(buildingId)
+   - Missing: npcSystem.unassignAllNPCs(buildingId)
+   - Missing: territory.removeBuildingFromTerritory(buildingId)
+
+2. useResourceEconomyStore.cancelConstruction() (line 143)
+   - Removes from queue correctly
+   - But NEVER called when removeBuilding() executed
+   - Same cleanup code duplicated in completeConstruction()
+
+3. useNPCSystem has no deleteNPCsByBuilding() method
+   - Can delete individual NPCs (which triggers cleanup)
+   - But when building deleted, NPCs stay assigned to orphaned building ID
+   - Should auto-unassign all NPCs on building deletion
+
+4. useTerritory.removeBuildingFromTerritory() (line 246)
+   - Method exists and works correctly
+   - But never invoked when removeBuilding() called
+   - Territory marks needsRecalculation = true but leaves orphaned IDs
+
+5. Race condition in ResourceEconomyModule.updateConstructionProgress() (line 166)
+   - Gets completed buildings from economy store
+   - Updates Foundation store AFTER processing
+   - Two separate updates = inconsistent state window
+
+TEST SCENARIOS THAT FAIL:
+========================
+
+Scenario A: Destroy Building Under Construction
+1. Place WALL → status=BLUEPRINT
+2. startConstruction(WALL) → status=BUILDING, queue added
+3. removeBuilding(WALL) → Foundation only
+4. BUG: buildQueue still has WALL entry (memory leak)
+5. BUG: pendingConstructions still has WALL entry
+
+Scenario B: Destroy Building With Assigned NPCs
+1. Place WORKSHOP → status=COMPLETE
+2. assignNPCToBuilding(npc_1, WORKSHOP) → npc.assignedBuildingId = building_id
+3. removeBuilding(WORKSHOP) → Foundation only
+4. BUG: npc_1.assignedBuildingId still points to deleted building_id
+5. BUG: getNPCsInBuilding(building_id) returns undefined NPC
+
+Scenario C: Destroy Building Claimed by Territory
+1. createTerritory()
+2. placeBuilding(TOWER) in territory
+3. addBuildingToTerritory(territory_id, building_id)
+4. removeBuilding(building_id)
+5. BUG: territory.buildingIds still contains building_id
+6. BUG: recalculateBonuses filters it out but orphaned ID remains
+
+Scenario D: ID Collision After Deletion
+1. Create building_1
+2. Delete building_1
+3. Immediately create another building (reuses building_1 ID)
+4. BUG: old buildQueue entry for building_1 still exists
+5. BUG: new building_1 construction interferes with old queue entry
+
+RESOURCE REPLICATION ANALYSIS:
+==============================
+
+✓ NO duplicate building lists - modules query Foundation
+✓ NO duplicate resource caches - all from game inventory
+✓ NO duplicate NPC lists - single source in useNPCSystem
+✓ NO duplicate territory tracking - uses buildingIds array
+
+But: buildQueue in useResourceEconomyStore IS separate cache
+     - Contains entries for buildings under construction
+     - Not synced with Foundation deletion
+     - Causes orphaned entries (memory leak)
+
+SEVERITY ASSESSMENT:
+===================
+
+CRITICAL (Blocks Release):
+- Memory leak: orphaned build queue entries
+- Memory leak: orphaned NPC assignments  
+- Memory leak: orphaned territory references
+- Save corruption: inconsistent state on load
+
+HIGH (Major Gameplay Issues):
+- Race conditions on rapid operations
+- NPCs assigned to deleted buildings
+- Storage overflow not handled
+- Territory bonuses calculated with deleted buildings
+
+MEDIUM (Code Quality):
+- No integration tests for deletion
+- No cascade cleanup mechanism
+- Manual coordination required
+

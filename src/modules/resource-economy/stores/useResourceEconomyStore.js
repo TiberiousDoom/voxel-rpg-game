@@ -349,5 +349,23 @@ export const useResourceEconomyStore = create(
         return state;
       });
     },
+
+    /**
+     * Clean up all references to a deleted building.
+     * Called when Foundation removes a building to prevent orphaned data.
+     *
+     * @param {string} buildingId - The building ID being deleted
+     */
+    cleanupDeletedBuilding: (buildingId) => {
+      set((state) => {
+        // Remove from build queue if present
+        state.buildQueue.removeFromQueue(buildingId);
+
+        // Remove from pending constructions
+        state.pendingConstructions.delete(buildingId);
+
+        return state;
+      });
+    },
   }))
 );

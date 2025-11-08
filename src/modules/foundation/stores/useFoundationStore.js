@@ -18,6 +18,11 @@ import { immer } from 'zustand/middleware/immer';
 import { BUILDING_STATUS, SAVE_VERSION } from '../../../shared/config';
 import { SpatialHash } from '../utils/spatialHash';
 
+// Import other module stores for cascade cleanup
+import { useResourceEconomyStore } from '../../resource-economy/stores/useResourceEconomyStore';
+import { useNPCSystem } from '../../module4/stores/useNPCSystem';
+import { useTerritory } from '../../module4/stores/useTerritory';
+
 // Initialize spatial hash for efficient collision queries
 const spatialHash = new SpatialHash(5); // 5-unit cells for spatial hashing
 
@@ -96,6 +101,7 @@ export const useFoundationStore = create(
      *
      * This is called when a building is destroyed or demolished.
      * It removes the registry entry and updates spatial hash.
+     * It also cascades cleanup to other modules to prevent orphaned data.
      *
      * @param {string} buildingId - The building to remove
      * @returns {boolean} True if building was removed, false if not found
@@ -115,7 +121,26 @@ export const useFoundationStore = create(
         return state;
       });
 
-      return !get().buildings.has(buildingId);
+      const success = !get().buildings.has(buildingId);
+
+      // Cascade cleanup to other modules to prevent orphaned data
+      if (success) {
+        try {
+          // Cleanup in Module 3 (Resource Economy)
+          useResourceEconomyStore.getState().cleanupDeletedBuilding(buildingId);
+
+          // Cleanup in Module 4 (NPC System)
+          useNPCSystem.getState().cleanupDeletedBuilding(buildingId);
+
+          // Cleanup in Module 4 (Territory)
+          useTerritory.getState().cleanupDeletedBuilding(buildingId);
+        } catch (e) {
+          // Silently handle if modules aren't initialized
+          console.warn(`Foundation cleanup warning: ${e.message}`);
+        }
+      }
+
+      return success;
     },
 
     /**

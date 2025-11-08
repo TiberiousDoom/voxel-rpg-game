@@ -334,6 +334,73 @@ export const PERFORMANCE = {
 };
 
 // ============================================================================
+// BUILDING CLASSIFICATIONS BY ROLE
+// ============================================================================
+// These classify buildings into categories based on their function.
+// Used by Module 4 (Territory & Town) to determine bonuses, NPC placement, etc.
+// Centralized here to prevent duplication across modules.
+
+export const BUILDING_CLASSIFICATIONS = {
+  // Defensive buildings - Provide defense/protection bonuses
+  DEFENSIVE_BUILDINGS: [
+    BUILDING_TYPES.WALL,
+    BUILDING_TYPES.TOWER,
+    BUILDING_TYPES.WATCHTOWER,
+    BUILDING_TYPES.GUARD_POST,
+    BUILDING_TYPES.FORTRESS,
+    BUILDING_TYPES.CASTLE,
+  ],
+
+  // Production buildings - Generate resources or allow crafting
+  PRODUCTION_BUILDINGS: [
+    BUILDING_TYPES.CRAFTING_STATION,
+    BUILDING_TYPES.STORAGE_BUILDING,
+    BUILDING_TYPES.BARRACKS,
+    BUILDING_TYPES.MARKETPLACE,
+  ],
+
+  // Buildings that can have NPCs assigned
+  NPC_ASSIGNABLE_BUILDINGS: [
+    BUILDING_TYPES.BARRACKS,
+    BUILDING_TYPES.CRAFTING_STATION,
+    BUILDING_TYPES.MARKETPLACE,
+    BUILDING_TYPES.GUARD_POST,
+  ],
+
+  // Territory control buildings - Expand territory when placed
+  TERRITORY_CONTROL_BUILDINGS: [
+    BUILDING_TYPES.WATCHTOWER,
+    BUILDING_TYPES.GUARD_POST,
+    BUILDING_TYPES.FORTRESS,
+    BUILDING_TYPES.CASTLE,
+  ],
+
+  // Capital buildings - Can serve as town center/capital
+  CAPITAL_BUILDINGS: [
+    BUILDING_TYPES.FORTRESS,
+    BUILDING_TYPES.CASTLE,
+  ],
+};
+
+// Aesthetic/visual values for buildings by type
+// Used by Module 4 for visual polish and aesthetics
+export const BUILDING_AESTHETICS = {
+  // Visual quality rating from 1 (plain) to 5 (beautiful)
+  [BUILDING_TYPES.WALL]: 1,
+  [BUILDING_TYPES.DOOR]: 1,
+  [BUILDING_TYPES.CHEST]: 1,
+  [BUILDING_TYPES.TOWER]: 2,
+  [BUILDING_TYPES.WATCHTOWER]: 3,
+  [BUILDING_TYPES.GUARD_POST]: 2,
+  [BUILDING_TYPES.CRAFTING_STATION]: 3,
+  [BUILDING_TYPES.STORAGE_BUILDING]: 2,
+  [BUILDING_TYPES.BARRACKS]: 3,
+  [BUILDING_TYPES.MARKETPLACE]: 4,
+  [BUILDING_TYPES.FORTRESS]: 4,
+  [BUILDING_TYPES.CASTLE]: 5,
+};
+
+// ============================================================================
 // SAVE/LOAD SCHEMA VERSION
 // ============================================================================
 // Increment this when the building save format changes.

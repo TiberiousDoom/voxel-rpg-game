@@ -442,5 +442,33 @@ export const useNPCSystem = create(
         return state;
       });
     },
+
+    /**
+     * Clean up all NPC references to a deleted building.
+     * Called when Foundation removes a building to prevent orphaned NPC assignments.
+     *
+     * @param {string} buildingId - The building ID being deleted
+     */
+    cleanupDeletedBuilding: (buildingId) => {
+      set((state) => {
+        // Unassign all NPCs from this building
+        Array.from(state.npcs.values()).forEach((npc) => {
+          if (npc.assignedBuildingId === buildingId) {
+            npc.assignedBuildingId = null;
+            npc.assignedRole = null;
+          }
+
+          // Remove from patrol route if present
+          if (npc.patrolRoute && npc.patrolRoute.includes(buildingId)) {
+            npc.patrolRoute = npc.patrolRoute.filter(id => id !== buildingId);
+          }
+        });
+
+        // Remove from NPC assignments tracking
+        state.npcAssignments.delete(buildingId);
+
+        return state;
+      });
+    },
   }))
 );

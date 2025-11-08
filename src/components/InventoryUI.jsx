@@ -15,8 +15,7 @@ const InventoryUI = () => {
   const equipItem = useGameStore((state) => state.equipItem);
   const unequipItem = useGameStore((state) => state.unequipItem);
   const removeItem = useGameStore((state) => state.removeItem);
-  const applyConsumable = useGameStore((state) => state.applyConsumable);
-  const useConsumable = useGameStore((state) => state.useConsumable);
+  const consumeItem = useGameStore((state) => state.consumeItem);
 
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -61,8 +60,7 @@ const InventoryUI = () => {
   };
 
   const handleUseConsumable = (item) => {
-    applyConsumable(item);
-    useConsumable(item);
+    consumeItem(item);
     setSelectedItem(null);
   };
 

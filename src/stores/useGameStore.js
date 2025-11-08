@@ -44,6 +44,7 @@ const useGameStore = create((set, get) => ({
     rage: 0,
     maxRage: 100,
     statusEffects: [], // Array of {type, duration, value}
+    spellCooldowns: {}, // Track cooldowns per spell id
   },
 
   // Equipment
@@ -226,6 +227,43 @@ const useGameStore = create((set, get) => ({
       },
     })),
 
+  setSpellCooldown: (spellId, cooldown) =>
+    set((state) => ({
+      player: {
+        ...state.player,
+        spellCooldowns: {
+          ...state.player.spellCooldowns,
+          [spellId]: cooldown,
+        },
+      },
+    })),
+
+  updateSpellCooldowns: (delta) =>
+    set((state) => {
+      const newCooldowns = { ...state.player.spellCooldowns };
+      let hasChanged = false;
+
+      for (const spellId in newCooldowns) {
+        if (newCooldowns[spellId] > 0) {
+          newCooldowns[spellId] = Math.max(0, newCooldowns[spellId] - delta);
+          hasChanged = true;
+        }
+      }
+
+      if (!hasChanged) return state;
+
+      return {
+        player: {
+          ...state.player,
+          spellCooldowns: newCooldowns,
+        },
+      };
+    }),
+
+  getSpellCooldown: (spellId) => {
+    return get().player.spellCooldowns[spellId] || 0;
+  },
+
   healPlayer: (amount) =>
     set((state) => {
       const newHealth = Math.min(
@@ -377,6 +415,7 @@ const useGameStore = create((set, get) => ({
         skillPoints: 0,
         isJumping: false,
         isGrounded: true,
+        spellCooldowns: {},
       },
       enemies: [],
       projectiles: [],

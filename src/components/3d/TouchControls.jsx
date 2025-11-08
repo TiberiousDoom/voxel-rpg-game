@@ -66,10 +66,32 @@ const TouchControls = () => {
         }
 
         if (enemyHit && enemyData?.takeDamage) {
-          // Attack enemy - DO NOT MOVE
+          // Attack enemy with projectile - DO NOT MOVE
+          const playerPos = useGameStore.getState().player.position;
           const playerDamage = useGameStore.getState().player.damage;
-          // console.log(`⚔️ Attacking enemy with ${playerDamage} damage!`);
-          enemyData.takeDamage(playerDamage);
+
+          // Calculate direction from player to enemy
+          const direction = [
+            enemyHit.point.x - playerPos[0],
+            (enemyHit.point.y + 0.5) - (playerPos[1] + 0.5),
+            enemyHit.point.z - playerPos[2],
+          ];
+          const length = Math.sqrt(direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2);
+          const normalizedDir = [
+            direction[0] / length,
+            direction[1] / length,
+            direction[2] / length,
+          ];
+
+          // Spawn a projectile from player towards enemy
+          useGameStore.getState().addProjectile({
+            id: `tap-attack-${Date.now()}`,
+            position: [playerPos[0], playerPos[1] + 0.5, playerPos[2]],
+            direction: normalizedDir,
+            speed: 25,
+            damage: playerDamage,
+            color: '#00ffff', // Cyan for tap attacks
+          });
 
           // Add red attack marker at enemy center (elevated)
           useGameStore.getState().addTargetMarker({

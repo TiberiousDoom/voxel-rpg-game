@@ -143,6 +143,12 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime' }) => {
       userData={{ isEnemy: true, takeDamage }}
     >
       <group userData={{ isEnemy: true, takeDamage }} scale={damageFlash > 0 ? [1.15, 1.15, 1.15] : [1, 1, 1]}>
+        {/* Invisible larger hitbox for easier tap detection on mobile */}
+        <mesh position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
+          <boxGeometry args={[1.5, 1.5, 1.5]} />
+          <meshBasicMaterial visible={false} />
+        </mesh>
+
         {/* Enemy body */}
         <mesh castShadow position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
           <boxGeometry args={[1, 1, 1]} />

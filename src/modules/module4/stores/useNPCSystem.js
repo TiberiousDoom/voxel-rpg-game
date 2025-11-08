@@ -16,6 +16,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { getNPCCapacity, getSuitableNPCRoles } from '../utils/buildingClassifier';
 import { NPC_ROLES, NPC_STATUSES } from '../types/index';
+import { useFoundationStore } from '../../foundation/stores/useFoundationStore';
 
 /**
  * NPC System Store
@@ -309,16 +310,42 @@ export const useNPCSystem = create(
      * Set patrol route for an NPC
      * @param {string} npcId - NPC to set route for
      * @param {string[]} buildingIds - Array of building IDs to patrol
+     * @returns {Object} Result { success: boolean, error?: string }
      */
     setPatrolRoute: (npcId, buildingIds) => {
+      const npc = get().npcs.get(npcId);
+      if (!npc) {
+        return { success: false, error: 'NPC not found' };
+      }
+
+      // Validate that all building IDs exist
+      const foundationStore = useFoundationStore.getState();
+      const validBuildingIds = buildingIds.filter(id => {
+        const building = foundationStore.getBuilding(id);
+        return building !== null;
+      });
+
+      // Filter out any deleted buildings from patrol route
+      const invalidIds = buildingIds.filter(id => !validBuildingIds.includes(id));
+      if (invalidIds.length > 0) {
+        console.warn(`Invalid building IDs in patrol route: ${invalidIds.join(', ')}`);
+      }
+
+      // Return validation error if route is empty after filtering
+      if (validBuildingIds.length === 0) {
+        return { success: false, error: 'No valid buildings in patrol route' };
+      }
+
       set((state) => {
-        const npc = state.npcs.get(npcId);
-        if (npc) {
-          npc.patrolRoute = [...buildingIds];
-          npc.status = NPC_STATUSES.PATROLLING;
+        const npcToUpdate = state.npcs.get(npcId);
+        if (npcToUpdate) {
+          npcToUpdate.patrolRoute = [...validBuildingIds];
+          npcToUpdate.status = NPC_STATUSES.PATROLLING;
         }
         return state;
       });
+
+      return { success: true };
     },
 
     /**

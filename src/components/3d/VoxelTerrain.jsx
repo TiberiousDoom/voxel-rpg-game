@@ -29,9 +29,9 @@ const VoxelTerrain = ({ size = 50, voxelSize = 2 }) => {
   const { positions, colors, count } = useMemo(() => {
     const voxels = [];
 
-    // Generate terrain
-    for (let x = -size / 2; x < size / 2; x += 1) {
-      for (let z = -size / 2; z < size / 2; z += 1) {
+    // Generate terrain (step by 2 for better performance)
+    for (let x = -size / 2; x < size / 2; x += 2) {
+      for (let z = -size / 2; z < size / 2; z += 2) {
         // Get height from noise function
         const height = Math.floor(simpleNoise(x, z));
 
@@ -102,8 +102,7 @@ const VoxelTerrain = ({ size = 50, voxelSize = 2 }) => {
     <instancedMesh
       ref={meshRef}
       args={[null, null, count]}
-      castShadow
-      receiveShadow
+      receiveShadow // Receive shadows but don't cast them for performance
     >
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial vertexColors />

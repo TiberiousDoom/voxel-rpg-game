@@ -40,8 +40,8 @@ const Experience = () => {
         position={[50, 50, 25]}
         intensity={1}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
         shadow-camera-far={200}
         shadow-camera-left={-50}
         shadow-camera-right={50}
@@ -56,7 +56,7 @@ const Experience = () => {
       <Physics gravity={[0, -20, 0]}>
         <Suspense fallback={null}>
           {/* Terrain - visual only */}
-          <VoxelTerrain size={50} voxelSize={2} />
+          <VoxelTerrain size={40} voxelSize={2} />
 
           {/* Ground plane - provides collision */}
           <RigidBody type="fixed" colliders="cuboid" position={[0, 0, 0]}>

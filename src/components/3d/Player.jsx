@@ -286,7 +286,7 @@ const Player = () => {
       // Decrease potion count
       store.inventory.potions--;
     }
-  }, [keys.spell1, keys.spell2, keys.potion, player.mana, player.facingAngle, player.position]);
+  }, [keys.spell1, keys.spell2, keys.potion, player.mana, player.facingAngle, player.position, player.potionCooldown]);
 
   return (
     <RigidBody

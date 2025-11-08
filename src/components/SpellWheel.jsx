@@ -98,8 +98,6 @@ const SpellWheel = () => {
   }
 
   const radius = 120;
-  const centerX = window.innerWidth / 2;
-  const centerY = window.innerHeight / 2;
 
   return (
     <div

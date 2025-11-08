@@ -416,7 +416,7 @@ const useGameStore = create((set, get) => ({
       };
     }),
 
-  useConsumable: (item) =>
+  consumeItem: (item) =>
     set((state) => {
       const updates = {};
 

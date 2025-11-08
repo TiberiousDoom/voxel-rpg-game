@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Trash2 } from 'lucide-react';
+import { X, Package } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 import { ITEM_TYPES } from '../data/craftingRecipes';
 

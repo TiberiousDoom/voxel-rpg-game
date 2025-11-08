@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Hammer, Package, Sword, Shield, Zap, Heart } from 'lucide-react';
+import { X, Hammer, Package, Sword, Shield, Zap } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 import { CRAFTING_RECIPES, ITEM_TYPES, canCraft, consumeMaterials } from '../data/craftingRecipes';
 
@@ -15,7 +15,6 @@ const CraftingUI = () => {
   const inventory = useGameStore((state) => state.inventory);
   const player = useGameStore((state) => state.player);
   const craftItem = useGameStore((state) => state.craftItem);
-  const equipItem = useGameStore((state) => state.equipItem);
 
   useEffect(() => {
     const handleKeyPress = (e) => {

@@ -390,5 +390,27 @@ export const useTerritory = create(
         return state;
       });
     },
+
+    /**
+     * Clean up all references to a deleted building in territories.
+     * Called when Foundation removes a building to prevent orphaned references.
+     *
+     * @param {string} buildingId - The building ID being deleted
+     */
+    cleanupDeletedBuilding: (buildingId) => {
+      set((state) => {
+        // Remove building from all territories
+        Array.from(state.territories.values()).forEach((territory) => {
+          if (territory.buildingIds && territory.buildingIds.includes(buildingId)) {
+            territory.buildingIds = territory.buildingIds.filter(id => id !== buildingId);
+          }
+
+          // Recalculate territory bonuses after building removal
+          state.lastBonusCalculation = 0; // Trigger recalculation
+        });
+
+        return state;
+      });
+    },
   }))
 );

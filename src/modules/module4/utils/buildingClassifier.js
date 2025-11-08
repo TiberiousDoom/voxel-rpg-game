@@ -6,60 +6,18 @@
  * Building definitions remain in Module 2 (via config.js).
  */
 
-import { BUILDING_TYPES } from '../../../shared/config';
+import { BUILDING_TYPES, BUILDING_CLASSIFICATIONS, BUILDING_AESTHETICS } from '../../../shared/config';
 import { BONUS_TYPES, NPC_ROLES } from '../types/index';
 
 /**
- * Territory Control Buildings - Extend territory boundaries
- * Examples: Watchtower, Guard Post, Fortress, Castle
+ * Import building classifications from shared config to prevent duplication.
+ * These are the single source of truth for building categorization.
  */
-export const TERRITORY_CONTROL_BUILDINGS = [
-  BUILDING_TYPES.WATCHTOWER,
-  BUILDING_TYPES.GUARD_POST,
-  BUILDING_TYPES.FORTRESS,
-  BUILDING_TYPES.CASTLE,
-];
-
-/**
- * NPC Assignable Buildings - Can have NPCs assigned to them
- * Examples: Barracks, Marketplace, Crafting Station
- */
-export const NPC_ASSIGNABLE_BUILDINGS = [
-  BUILDING_TYPES.BARRACKS,
-  BUILDING_TYPES.MARKETPLACE,
-  BUILDING_TYPES.CRAFTING_STATION,
-  BUILDING_TYPES.GUARD_POST,
-];
-
-/**
- * Defensive Buildings - Contribute to town defense rating
- */
-export const DEFENSIVE_BUILDINGS = [
-  BUILDING_TYPES.WALL,
-  BUILDING_TYPES.TOWER,
-  BUILDING_TYPES.WATCHTOWER,
-  BUILDING_TYPES.GUARD_POST,
-  BUILDING_TYPES.FORTRESS,
-  BUILDING_TYPES.CASTLE,
-];
-
-/**
- * Production Buildings - Contribute to resource production
- */
-export const PRODUCTION_BUILDINGS = [
-  BUILDING_TYPES.CRAFTING_STATION,
-  BUILDING_TYPES.STORAGE_BUILDING,
-  BUILDING_TYPES.MARKETPLACE,
-];
-
-/**
- * Capital Buildings - Serve as territory capitals
- * Only one can be primary per territory
- */
-export const CAPITAL_BUILDINGS = [
-  BUILDING_TYPES.FORTRESS,
-  BUILDING_TYPES.CASTLE,
-];
+export const TERRITORY_CONTROL_BUILDINGS = BUILDING_CLASSIFICATIONS.TERRITORY_CONTROL_BUILDINGS;
+export const NPC_ASSIGNABLE_BUILDINGS = BUILDING_CLASSIFICATIONS.NPC_ASSIGNABLE_BUILDINGS;
+export const DEFENSIVE_BUILDINGS = BUILDING_CLASSIFICATIONS.DEFENSIVE_BUILDINGS;
+export const PRODUCTION_BUILDINGS = BUILDING_CLASSIFICATIONS.PRODUCTION_BUILDINGS;
+export const CAPITAL_BUILDINGS = BUILDING_CLASSIFICATIONS.CAPITAL_BUILDINGS;
 
 /**
  * Classify a building by its role in the territory system

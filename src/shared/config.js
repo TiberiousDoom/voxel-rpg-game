@@ -135,6 +135,7 @@ export const RESOURCE_TYPES = {
 export const BUILDING_PROPERTIES = {
   [BUILDING_TYPES.WALL]: {
     tier: BUILDING_TIERS.SURVIVAL,
+    visualId: 'wall_stone',      // Reference to visual asset/sprite
     hp: 50,
     buildTime: 5,              // seconds
     costs: { [RESOURCE_TYPES.GOLD]: 20 },
@@ -146,6 +147,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.DOOR]: {
     tier: BUILDING_TIERS.SURVIVAL,
+    visualId: 'door_wooden',
     hp: 40,
     buildTime: 10,
     costs: { [RESOURCE_TYPES.GOLD]: 25, [RESOURCE_TYPES.WOOD]: 10 },
@@ -157,6 +159,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.CHEST]: {
     tier: BUILDING_TIERS.SURVIVAL,
+    visualId: 'chest_wooden',
     hp: 30,
     buildTime: 8,
     costs: { [RESOURCE_TYPES.GOLD]: 15, [RESOURCE_TYPES.WOOD]: 20 },
@@ -168,6 +171,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.TOWER]: {
     tier: BUILDING_TIERS.PERMANENT,
+    visualId: 'tower_stone',
     hp: 100,
     buildTime: 20,
     costs: { [RESOURCE_TYPES.GOLD]: 50, [RESOURCE_TYPES.ESSENCE]: 5 },
@@ -179,6 +183,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.WATCHTOWER]: {
     tier: BUILDING_TIERS.PERMANENT,
+    visualId: 'watchtower_tall',
     hp: 120,
     buildTime: 30,
     costs: { [RESOURCE_TYPES.GOLD]: 75, [RESOURCE_TYPES.ESSENCE]: 10, [RESOURCE_TYPES.STONE]: 20 },
@@ -190,6 +195,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.GUARD_POST]: {
     tier: BUILDING_TIERS.PERMANENT,
+    visualId: 'guardpost_wooden',
     hp: 90,
     buildTime: 25,
     costs: { [RESOURCE_TYPES.GOLD]: 60, [RESOURCE_TYPES.ESSENCE]: 8 },
@@ -201,6 +207,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.CRAFTING_STATION]: {
     tier: BUILDING_TIERS.TOWN,
+    visualId: 'craftingstation_workshop',
     hp: 100,
     buildTime: 35,
     costs: { [RESOURCE_TYPES.GOLD]: 75, [RESOURCE_TYPES.ESSENCE]: 10, [RESOURCE_TYPES.CRYSTAL]: 5 },
@@ -212,6 +219,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.STORAGE_BUILDING]: {
     tier: BUILDING_TIERS.TOWN,
+    visualId: 'storage_warehouse',
     hp: 110,
     buildTime: 40,
     costs: { [RESOURCE_TYPES.GOLD]: 100, [RESOURCE_TYPES.ESSENCE]: 15, [RESOURCE_TYPES.STONE]: 30 },
@@ -223,6 +231,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.BARRACKS]: {
     tier: BUILDING_TIERS.TOWN,
+    visualId: 'barracks_military',
     hp: 120,
     buildTime: 45,
     costs: { [RESOURCE_TYPES.GOLD]: 120, [RESOURCE_TYPES.ESSENCE]: 20, [RESOURCE_TYPES.STONE]: 40 },
@@ -234,6 +243,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.MARKETPLACE]: {
     tier: BUILDING_TIERS.TOWN,
+    visualId: 'marketplace_trade',
     hp: 100,
     buildTime: 50,
     costs: { [RESOURCE_TYPES.GOLD]: 150, [RESOURCE_TYPES.ESSENCE]: 25, [RESOURCE_TYPES.CRYSTAL]: 10 },
@@ -245,6 +255,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.FORTRESS]: {
     tier: BUILDING_TIERS.CASTLE,
+    visualId: 'fortress_fortified',
     hp: 200,
     buildTime: 120,
     costs: { [RESOURCE_TYPES.GOLD]: 300, [RESOURCE_TYPES.ESSENCE]: 50, [RESOURCE_TYPES.STONE]: 100, [RESOURCE_TYPES.CRYSTAL]: 20 },
@@ -256,6 +267,7 @@ export const BUILDING_PROPERTIES = {
   },
   [BUILDING_TYPES.CASTLE]: {
     tier: BUILDING_TIERS.CASTLE,
+    visualId: 'castle_royal',
     hp: 250,
     buildTime: 180,
     costs: { [RESOURCE_TYPES.GOLD]: 500, [RESOURCE_TYPES.ESSENCE]: 100, [RESOURCE_TYPES.STONE]: 200, [RESOURCE_TYPES.CRYSTAL]: 50 },

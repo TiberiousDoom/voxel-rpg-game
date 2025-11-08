@@ -56,9 +56,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: false,
     },
 
-    // Base Stats (from Foundation/config, included for reference)
-    baseHP: 50,
-    buildTime: 5,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   DOOR: {
@@ -95,8 +93,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: false,
     },
 
-    baseHP: 40,
-    buildTime: 10,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   CHEST: {
@@ -133,8 +130,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: true,  // Multiple chests provide more storage
     },
 
-    baseHP: 30,
-    buildTime: 8,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   // ============================================================
@@ -177,8 +173,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: true,  // Multiple towers improve coverage
     },
 
-    baseHP: 100,
-    buildTime: 20,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   WATCHTOWER: {
@@ -215,8 +210,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: true,
     },
 
-    baseHP: 120,
-    buildTime: 30,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   GUARD_POST: {
@@ -253,8 +247,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: false,
     },
 
-    baseHP: 80,
-    buildTime: 25,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   // ============================================================
@@ -295,8 +288,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: false,
     },
 
-    baseHP: 90,
-    buildTime: 40,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   STORAGE_BUILDING: {
@@ -333,8 +325,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: true,
     },
 
-    baseHP: 150,
-    buildTime: 50,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   BARRACKS: {
@@ -374,8 +365,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: false,
     },
 
-    baseHP: 140,
-    buildTime: 45,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   MARKETPLACE: {
@@ -414,8 +404,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: false,
     },
 
-    baseHP: 160,
-    buildTime: 60,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   // ============================================================
@@ -459,8 +448,7 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: false,
     },
 
-    baseHP: 250,
-    buildTime: 150,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 
   CASTLE: {
@@ -500,40 +488,14 @@ export const BUILDING_CATALOG = {
       worksBestInGroups: false,
     },
 
-    baseHP: 300,
-    buildTime: 180,
+    // Note: HP and buildTime are defined in shared/config.js BUILDING_PROPERTIES
   },
 };
 
 /**
- * Tier definitions - used for progression
+ * Tier definitions are imported from shared config to maintain single source of truth
+ * Import from: ../../shared/config.js -> BUILDING_TIERS
  */
-export const TIER_DEFINITIONS = {
-  SURVIVAL: {
-    id: 'SURVIVAL',
-    name: 'Survival',
-    order: 0,
-    description: 'Basic structures for starting your settlement',
-  },
-  PERMANENT: {
-    id: 'PERMANENT',
-    name: 'Permanent',
-    order: 1,
-    description: 'Established structures for growing communities',
-  },
-  TOWN: {
-    id: 'TOWN',
-    name: 'Town',
-    order: 2,
-    description: 'Urban structures for thriving towns',
-  },
-  CASTLE: {
-    id: 'CASTLE',
-    name: 'Castle',
-    order: 3,
-    description: 'Grand structures for powerful kingdoms',
-  },
-};
 
 /**
  * Building categories for grouping and filtering

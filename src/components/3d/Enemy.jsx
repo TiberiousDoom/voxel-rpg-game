@@ -110,9 +110,25 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
     // Check if dead
     if (health <= 0 && isAlive) {
       setIsAlive(false);
-      // Grant XP to player
-      useGameStore.getState().addXP(25);
+      const enemyPos = body.translation();
+
+      // Spawn XP orb instead of directly granting XP
+      useGameStore.getState().addXPOrb({
+        position: [enemyPos.x, enemyPos.y + 1, enemyPos.z],
+        xpAmount: 25,
+      });
+
+      // Grant gold
       useGameStore.getState().addGold(10);
+
+      // Spawn death particle effect
+      useGameStore.getState().addParticleEffect({
+        position: [enemyPos.x, enemyPos.y + 0.5, enemyPos.z],
+        color: '#ff4444',
+        type: 'explosion',
+        count: 15,
+      });
+
       // TODO: Remove enemy after death animation
       setTimeout(() => {
         // Remove from physics world

@@ -1,14 +1,19 @@
 import React from 'react';
-import { Heart, Zap, TrendingUp, Package, Activity } from 'lucide-react';
+import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
+import { getTotalStats } from '../utils/equipmentStats';
 
 /**
  * GameUI component - HTML overlay for game interface
  */
 const GameUI = () => {
   const player = useGameStore((state) => state.player);
+  const equipment = useGameStore((state) => state.equipment);
   const inventory = useGameStore((state) => state.inventory);
   const gameState = useGameStore((state) => state.gameState);
+
+  // Calculate total stats with equipment bonuses
+  const totalStats = getTotalStats(player, equipment);
 
   if (gameState === 'intro') {
     return (
@@ -202,6 +207,41 @@ const GameUI = () => {
           </div>
         </div>
 
+        {/* Rage bar */}
+        <div style={{ marginBottom: '10px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '5px',
+            }}
+          >
+            <Flame size={20} style={{ marginRight: '8px', color: '#ff6b00' }} />
+            <span>
+              {Math.round(player.rage)} / {player.maxRage}
+            </span>
+          </div>
+          <div
+            style={{
+              width: '100%',
+              height: '20px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '10px',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${(player.rage / player.maxRage) * 100}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #ff6b00, #ff9933)',
+                transition: 'width 0.3s',
+                boxShadow: player.rage >= 100 ? '0 0 10px #ff6b00' : 'none',
+              }}
+            />
+          </div>
+        </div>
+
         {/* Level and XP */}
         <div>
           <div
@@ -253,12 +293,61 @@ const GameUI = () => {
           color: 'white',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Package size={20} style={{ color: '#ffd43b' }} />
-            <span>{inventory.gold} Gold</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Package size={20} style={{ color: '#ffd43b' }} />
+              <span>{inventory.gold} Gold</span>
+            </div>
+            <div>Potions: {inventory.potions}</div>
           </div>
-          <div>Potions: {inventory.potions}</div>
+          <div style={{ fontSize: '0.75rem', color: '#a0aec0', borderTop: '1px solid #4a5568', paddingTop: '8px' }}>
+            Total DMG: {totalStats.damage} | DEF: {totalStats.defense}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom right - Quick access */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          display: 'flex',
+          gap: '10px',
+        }}
+      >
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.6)',
+            padding: '12px',
+            borderRadius: '10px',
+            color: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '5px',
+            border: '2px solid #4a5568',
+          }}
+        >
+          <Package size={24} style={{ color: '#4dabf7' }} />
+          <span style={{ fontSize: '0.7rem' }}>Inventory [I]</span>
+        </div>
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.6)',
+            padding: '12px',
+            borderRadius: '10px',
+            color: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '5px',
+            border: '2px solid #4a5568',
+          }}
+        >
+          <Hammer size={24} style={{ color: '#ffd700' }} />
+          <span style={{ fontSize: '0.7rem' }}>Crafting [C]</span>
         </div>
       </div>
 

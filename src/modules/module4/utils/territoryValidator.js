@@ -3,36 +3,13 @@
  *
  * Validates territory-related operations and rules.
  * Enforces boundaries and constraints defined in Module 4 specifications.
+ *
+ * NOTE: Territory expansion rules are now imported from shared/config.js
+ * to maintain a single source of truth across all modules.
  */
 
+import { TERRITORY_CONFIG, BUILDING_TYPES } from '../../../shared/config';
 import { TERRITORY_CONTROL_BUILDINGS } from './buildingClassifier';
-
-/**
- * Territory expansion rules
- * As territory grows, more resources/buildings are required
- */
-const EXPANSION_RULES = {
-  // Base territory radius (starting size)
-  BASE_RADIUS: 25,
-
-  // Radius increments per watchtower
-  WATCHTOWER_RADIUS_BONUS: 5,
-
-  // Radius increment per guard post
-  GUARD_POST_RADIUS_BONUS: 2,
-
-  // Radius increment per fortress
-  FORTRESS_RADIUS_BONUS: 15,
-
-  // Radius increment per castle
-  CASTLE_RADIUS_BONUS: 25,
-
-  // Maximum possible territory radius
-  MAX_TERRITORY_RADIUS: 100,
-
-  // Minimum distance between territory centers
-  MIN_TERRITORY_SEPARATION: 50,
-};
 
 /**
  * Calculate the maximum territory radius based on buildings
@@ -40,22 +17,17 @@ const EXPANSION_RULES = {
  * @returns {number} Maximum radius achievable
  */
 export function calculateMaxTerritoryRadius(buildings) {
-  let radius = EXPANSION_RULES.BASE_RADIUS;
+  let radius = TERRITORY_CONFIG.BASE_RADIUS;
 
   for (const building of buildings) {
-    if (building.type === 'WATCHTOWER' && building.status === 'COMPLETE') {
-      radius += EXPANSION_RULES.WATCHTOWER_RADIUS_BONUS;
-    } else if (building.type === 'GUARD_POST' && building.status === 'COMPLETE') {
-      radius += EXPANSION_RULES.GUARD_POST_RADIUS_BONUS;
-    } else if (building.type === 'FORTRESS' && building.status === 'COMPLETE') {
-      radius += EXPANSION_RULES.FORTRESS_RADIUS_BONUS;
-    } else if (building.type === 'CASTLE' && building.status === 'COMPLETE') {
-      radius += EXPANSION_RULES.CASTLE_RADIUS_BONUS;
+    if (building.status === 'COMPLETE') {
+      const bonus = TERRITORY_CONFIG.BUILDING_RADIUS_BONUSES[building.type] || 0;
+      radius += bonus;
     }
   }
 
   // Cap at maximum
-  return Math.min(radius, EXPANSION_RULES.MAX_TERRITORY_RADIUS);
+  return Math.min(radius, TERRITORY_CONFIG.MAX_TERRITORY_RADIUS);
 }
 
 /**
@@ -100,7 +72,7 @@ export function validateTerritoryPlacement(newTerritory, existingTerritories) {
     if (distance < minDistance) {
       return {
         valid: false,
-        error: `Territory would overlap with existing territory "${territory.name}". Minimum separation required: ${EXPANSION_RULES.MIN_TERRITORY_SEPARATION} cells`,
+        error: `Territory would overlap with existing territory "${territory.name}". Minimum separation required: ${TERRITORY_CONFIG.MIN_TERRITORY_SEPARATION} cells`,
       };
     }
   }
@@ -148,26 +120,15 @@ export function validateExpansion(territory, newRadius, buildings) {
  * @returns {Object} Requirements { missing: { building: count }, possible: boolean }
  */
 export function getExpansionRequirements(targetRadius, currentBuildings) {
-  let radius = EXPANSION_RULES.BASE_RADIUS;
-  let watchtowers = 0;
-  let guardPosts = 0;
-  let fortresses = 0;
-  let castles = 0;
+  let radius = TERRITORY_CONFIG.BASE_RADIUS;
 
-  // Count existing relevant buildings
+  // Count completed territory control buildings and add their bonuses
   for (const building of currentBuildings) {
-    if (building.status !== 'COMPLETE') continue;
-    if (building.type === 'WATCHTOWER') watchtowers++;
-    if (building.type === 'GUARD_POST') guardPosts++;
-    if (building.type === 'FORTRESS') fortresses++;
-    if (building.type === 'CASTLE') castles++;
+    if (building.status === 'COMPLETE') {
+      const bonus = TERRITORY_CONFIG.BUILDING_RADIUS_BONUSES[building.type] || 0;
+      radius += bonus;
+    }
   }
-
-  // Calculate current radius
-  radius += watchtowers * EXPANSION_RULES.WATCHTOWER_RADIUS_BONUS;
-  radius += guardPosts * EXPANSION_RULES.GUARD_POST_RADIUS_BONUS;
-  radius += fortresses * EXPANSION_RULES.FORTRESS_RADIUS_BONUS;
-  radius += castles * EXPANSION_RULES.CASTLE_RADIUS_BONUS;
 
   if (radius >= targetRadius) {
     return {
@@ -177,25 +138,26 @@ export function getExpansionRequirements(targetRadius, currentBuildings) {
   }
 
   // Calculate what's needed
+  // Strategy: Use the most efficient buildings first (highest bonus)
   let remainingRadius = targetRadius - radius;
   let missing = {};
 
-  // Prefer castles, then fortresses, then watchtowers, then guard posts
-  const castlesNeeded = Math.ceil(remainingRadius / EXPANSION_RULES.CASTLE_RADIUS_BONUS);
-  if (castlesNeeded > 0) {
-    missing.castle = castlesNeeded;
-    remainingRadius -= castlesNeeded * EXPANSION_RULES.CASTLE_RADIUS_BONUS;
-  }
+  // Bonuses sorted by effectiveness (highest first)
+  const bonuses = [
+    { type: BUILDING_TYPES.CASTLE, bonus: TERRITORY_CONFIG.BUILDING_RADIUS_BONUSES[BUILDING_TYPES.CASTLE] },
+    { type: BUILDING_TYPES.FORTRESS, bonus: TERRITORY_CONFIG.BUILDING_RADIUS_BONUSES[BUILDING_TYPES.FORTRESS] },
+    { type: BUILDING_TYPES.WATCHTOWER, bonus: TERRITORY_CONFIG.BUILDING_RADIUS_BONUSES[BUILDING_TYPES.WATCHTOWER] },
+    { type: BUILDING_TYPES.GUARD_POST, bonus: TERRITORY_CONFIG.BUILDING_RADIUS_BONUSES[BUILDING_TYPES.GUARD_POST] },
+  ];
 
-  const fortressesNeeded = Math.ceil(remainingRadius / EXPANSION_RULES.FORTRESS_RADIUS_BONUS);
-  if (fortressesNeeded > 0) {
-    missing.fortress = fortressesNeeded;
-    remainingRadius -= fortressesNeeded * EXPANSION_RULES.FORTRESS_RADIUS_BONUS;
-  }
+  for (const { type, bonus } of bonuses) {
+    if (remainingRadius <= 0) break;
 
-  const watchtowersNeeded = Math.ceil(remainingRadius / EXPANSION_RULES.WATCHTOWER_RADIUS_BONUS);
-  if (watchtowersNeeded > 0) {
-    missing.watchtower = watchtowersNeeded;
+    const needed = Math.ceil(remainingRadius / bonus);
+    if (needed > 0) {
+      missing[type.toLowerCase()] = needed;
+      remainingRadius -= needed * bonus;
+    }
   }
 
   return {
@@ -213,4 +175,8 @@ export function isTerritoryControlBuilding(buildingType) {
   return TERRITORY_CONTROL_BUILDINGS.includes(buildingType);
 }
 
-export const EXPANSION_RULES_EXPORT = EXPANSION_RULES;
+/**
+ * Get territory configuration
+ * @returns {Object} TERRITORY_CONFIG from shared/config.js
+ */
+export const getTerritoryConfig = () => TERRITORY_CONFIG;

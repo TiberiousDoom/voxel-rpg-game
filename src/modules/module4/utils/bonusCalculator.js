@@ -5,7 +5,7 @@
  * Module 4 applies these bonuses but Module 3 is the source of truth for base generation.
  */
 
-import { getTerritoryBonuses } from './buildingClassifier';
+import { getTerritoryBonuses, getPopulationCapacity } from './buildingClassifier';
 import { BONUS_TYPES } from '../types/index';
 
 /**
@@ -59,8 +59,11 @@ export function calculateTownStatistics(buildings, npcs, upgrades = {}) {
     totalBuildingCount++;
 
     if (building.status === 'COMPLETE') {
-      // This would call Module 4's building classifier
-      // For now, we keep it simple
+      // Sum up population capacity from NPC-assignable buildings
+      const capacity = getPopulationCapacity(building.type);
+      if (capacity > 0) {
+        populationCapacity += capacity;
+      }
     }
   }
 

@@ -200,6 +200,12 @@ const bossesRef = useRef([]);
 const pendingEnemyHitsRef = useRef(new Map());
 const pendingBossHitsRef = useRef(new Map());
 
+// CRITICAL PERFORMANCE FIX: Refs to prevent game loop restarts
+const playerRef = useRef(player);
+const inventoryRef = useRef(inventory);
+const petRef = useRef(pet);
+const activeBuffsRef = useRef(activeBuffs);
+
 const MAP_WIDTH = 1600;
 const MAP_HEIGHT = 1200;
 const CAMERA_ZOOM = 1.8; // Zoom factor - higher = closer to player
@@ -214,6 +220,23 @@ useEffect(() => {
 useEffect(() => {
   bossesRef.current = bosses;
 }, [bosses]);
+
+// CRITICAL PERFORMANCE FIX: Keep refs in sync with state
+useEffect(() => {
+  playerRef.current = player;
+}, [player]);
+
+useEffect(() => {
+  inventoryRef.current = inventory;
+}, [inventory]);
+
+useEffect(() => {
+  petRef.current = pet;
+}, [pet]);
+
+useEffect(() => {
+  activeBuffsRef.current = activeBuffs;
+}, [activeBuffs]);
 
 // Initialize object pools and audio on mount
 useEffect(() => {
@@ -1182,8 +1205,8 @@ const gameLoop = () => {
   });
 
   // Apply buff effects to player
-  const speedBuff = activeBuffs.find(b => b.type === 'speed');
-  const defenseBuff = activeBuffs.find(b => b.type === 'defense');
+  const speedBuff = activeBuffsRef.current.find(b => b.type === 'speed');
+  const defenseBuff = activeBuffsRef.current.find(b => b.type === 'defense');
 
   // Update AoE effects (poison clouds, etc.)
   setAoeEffects(prev => {
@@ -1208,16 +1231,16 @@ const gameLoop = () => {
   setTimeOfDay(prev => (prev + 0.01 * timeMultiplier) % 1440);
 
   // Check achievements
-  checkAchievement('reach_level_10', player.level >= 10 ? 1 : 0);
-  checkAchievement('collect_1000_gold', inventory.gold >= 1000 ? 1 : 0);
+  checkAchievement('reach_level_10', playerRef.current.level >= 10 ? 1 : 0);
+  checkAchievement('collect_1000_gold', inventoryRef.current.gold >= 1000 ? 1 : 0);
 
   // Update pet AI if exists
-  if (pet) {
+  if (petRef.current) {
     setPet(prev => {
       if (!prev) return null;
 
-      const dx = player.x - prev.x;
-      const dy = player.y - prev.y;
+      const dx = playerRef.current.x - prev.x;
+      const dy = playerRef.current.y - prev.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       // Follow player if too far
@@ -1242,9 +1265,9 @@ const gameLoop = () => {
       }
 
       // Fairy heals player
-      if (prev.type === 'fairy' && player.health < player.maxHealth && Math.random() < 0.01) {
+      if (prev.type === 'fairy' && playerRef.current.health < playerRef.current.maxHealth && Math.random() < 0.01) {
         setPlayer(p => ({ ...p, health: Math.min(p.maxHealth, p.health + prev.healAmount) }));
-        createDamageNumber(player.x, player.y, `+${prev.healAmount}`, 'heal');
+        createDamageNumber(playerRef.current.x, playerRef.current.y, `+${prev.healAmount}`, 'heal');
       }
 
       return prev;
@@ -1278,8 +1301,8 @@ const gameLoop = () => {
   });
   
   setLoot(prev => prev.filter(item => {
-    const dx = player.x - item.x;
-    const dy = player.y - item.y;
+    const dx = playerRef.current.x - item.x;
+    const dy = playerRef.current.y - item.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     
     if (dist < 30) {
@@ -1311,9 +1334,9 @@ const gameLoop = () => {
       y: spawnY,
       spawnX,
       spawnY,
-      health: stats.health + player.level * 10,
-      maxHealth: stats.health + player.level * 10,
-      damage: stats.damage + player.level * 2,
+      health: stats.health + playerRef.current.level * 10,
+      maxHealth: stats.health + playerRef.current.level * 10,
+      damage: stats.damage + playerRef.current.level * 2,
       speed: stats.speed,
       xp: stats.xp,
       type,
@@ -1334,9 +1357,9 @@ const gameLoop = () => {
       id: Math.random(),
       x: bossX,
       y: bossY,
-      health: 500 + player.level * 100,
-      maxHealth: 500 + player.level * 100,
-      damage: 20 + player.level * 5,
+      health: 500 + playerRef.current.level * 100,
+      maxHealth: 500 + playerRef.current.level * 100,
+      damage: 20 + playerRef.current.level * 5,
       speed: 1.5,
       type: 'boss',
       state: 'idle',
@@ -1348,8 +1371,8 @@ const gameLoop = () => {
   }
   
   setEnemies(prev => prev.map(enemy => {
-    const dx = player.x - enemy.x;
-    const dy = player.y - enemy.y;
+    const dx = playerRef.current.x - enemy.x;
+    const dy = playerRef.current.y - enemy.y;
     const distToPlayer = Math.sqrt(dx * dx + dy * dy);
 
     let newX = enemy.x;
@@ -1436,8 +1459,8 @@ const gameLoop = () => {
   }).filter(e => e.health > 0));
 
   setBosses(prev => prev.map(boss => {
-    const dx = player.x - boss.x;
-    const dy = player.y - boss.y;
+    const dx = playerRef.current.x - boss.x;
+    const dy = playerRef.current.y - boss.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     let aggroSource = boss.aggroSource;
@@ -1680,8 +1703,10 @@ return () => {
 
 // NOTE: enemies and bosses are intentionally excluded from dependencies to prevent memory leak
 // The game loop accesses current enemy/boss state via refs (enemiesRef, bossesRef) instead
+// CRITICAL PERFORMANCE FIX: player.x, player.y, player.*, inventory.*, pet, activeBuffs
+// removed from dependencies and accessed via refs to prevent game loop restarts
 // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [gameState, keys, mousePos, player.x, player.y, player.level, player.defense, player.health, player.maxHealth, showBase, bosses.length, inDungeon, dungeons, gainXP, pickupLoot, updateQuest, saveGame, showNotification, sprintActive, activeBuffs, checkAchievement, createDamageNumber, getClassBonus, getTotalCritChance, getTotalCritDamage, inventory.gold, pet, triggerScreenShake, updateCombo]);
+}, [gameState, keys, mousePos, showBase, bosses.length, inDungeon, dungeons, sprintActive, gainXP, pickupLoot, updateQuest, saveGame, showNotification, checkAchievement, createDamageNumber, getClassBonus, getTotalCritChance, getTotalCritDamage, triggerScreenShake, updateCombo]);
 
 useEffect(() => {
 const canvas = canvasRef.current;

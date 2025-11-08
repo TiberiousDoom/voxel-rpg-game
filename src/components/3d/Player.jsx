@@ -149,8 +149,14 @@ const Player = () => {
         // Apply dodge velocity
         velocity.x = dodgeDirection.current.x * 20;
         velocity.z = dodgeDirection.current.z * 20;
+        // Maintain invincibility during dodge
+        if (!player.isInvincible) {
+          updatePlayer({ isInvincible: true });
+        }
       } else {
         setIsDodging(false);
+        // Remove invincibility after dodge
+        updatePlayer({ isInvincible: false });
       }
     }
 

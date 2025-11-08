@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Zap, TrendingUp, Package, Activity } from 'lucide-react';
+import { Heart, Zap, TrendingUp, Package, Activity, Flame } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 
 /**
@@ -197,6 +197,41 @@ const GameUI = () => {
                 height: '100%',
                 background: 'linear-gradient(90deg, #51cf66, #8ce99a)',
                 transition: 'width 0.3s',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Rage bar */}
+        <div style={{ marginBottom: '10px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '5px',
+            }}
+          >
+            <Flame size={20} style={{ marginRight: '8px', color: '#ff6b00' }} />
+            <span>
+              {Math.round(player.rage)} / {player.maxRage}
+            </span>
+          </div>
+          <div
+            style={{
+              width: '100%',
+              height: '20px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '10px',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${(player.rage / player.maxRage) * 100}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #ff6b00, #ff9933)',
+                transition: 'width 0.3s',
+                boxShadow: player.rage >= 100 ? '0 0 10px #ff6b00' : 'none',
               }}
             />
           </div>

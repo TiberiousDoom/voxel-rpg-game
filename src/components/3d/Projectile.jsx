@@ -66,6 +66,14 @@ const Projectile = ({ id, position, direction, speed = 20, damage = 20, color = 
           position: [hitPos.x, hitPos.y + 2, hitPos.z],
           damage: 'CRIT!',
         });
+
+        // Spawn crit particle effect
+        store.addParticleEffect({
+          position: [hitPos.x, hitPos.y, hitPos.z],
+          color: '#ffff00',
+          type: 'burst',
+          count: 25,
+        });
       }
 
       // Combo visual
@@ -75,6 +83,9 @@ const Projectile = ({ id, position, direction, speed = 20, damage = 20, color = 
           damage: `${player.comboCount}x COMBO`,
         });
       }
+
+      // Add rage for hitting enemies
+      store.addRage(5);
 
       // Remove marker after 0.5 seconds
       setTimeout(() => {

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { getTotalStats } from '../../utils/equipmentStats';
+import { SPELLS, executeSpell } from '../../data/spells';
 
 const Player = () => {
   const playerRef = useRef();
@@ -16,7 +17,7 @@ const Player = () => {
   const cameraState = useGameStore((state) => state.camera);
   const updatePlayer = useGameStore((state) => state.updatePlayer);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
-  const useStamina = useGameStore((state) => state.useStamina);
+  const consumeStamina = useGameStore((state) => state.consumeStamina);
   const regenStamina = useGameStore((state) => state.regenStamina);
   const regenMana = useGameStore((state) => state.regenMana);
 
@@ -112,7 +113,7 @@ const Player = () => {
     const isBlocking = keys.block && player.stamina > 0;
     if (isBlocking) {
       // Use stamina while blocking
-      useStamina(delta * 15); // 15 stamina per second
+      consumeStamina(delta * 15); // 15 stamina per second
       updatePlayer({ isBlocking: true });
     } else {
       updatePlayer({ isBlocking: false });
@@ -121,7 +122,7 @@ const Player = () => {
     // Stamina usage and regeneration
     if (isSprintingNow && isMoving && !isBlocking) {
       // Use stamina while sprinting and moving
-      useStamina(delta * 20); // 20 stamina per second
+      consumeStamina(delta * 20); // 20 stamina per second
     } else if (!isBlocking) {
       // Regenerate stamina when not sprinting or blocking
       regenStamina(delta * 30); // 30 stamina per second
@@ -142,6 +143,9 @@ const Player = () => {
         updatePlayer({ comboTimer: newComboTimer });
       }
     }
+
+    // Update spell cooldowns
+    useGameStore.getState().updateSpellCooldowns(delta);
 
     // Apply movement with damping for smooth control
     velocity.x = THREE.MathUtils.lerp(velocity.x, movement.x, 0.2);
@@ -171,7 +175,7 @@ const Player = () => {
       const now = Date.now();
       if (now - lastSpacePress.current < 300 && player.stamina >= 30 && movement.length() > 0) {
         // Double-tap detected - dodge roll!
-        useStamina(30);
+        consumeStamina(30);
         setIsDodging(true);
         dodgeTimer.current = 0.3; // 0.3 second dodge duration
         dodgeDirection.current = movement.clone().normalize();
@@ -240,64 +244,66 @@ const Player = () => {
     return () => window.removeEventListener('touchstart', handleDoubleTap);
   }, []);
 
-  // Handle spells and actions
-  const lastSpellCast = useRef({ spell1: 0, spell2: 0 });
-
+  // Handle spells and actions - mapped to keys and spell indices
   useEffect(() => {
-    const now = Date.now();
     const store = useGameStore.getState();
+    const currentPlayer = store.player;
 
-    if (keys.spell1 && player.mana >= 20 && now - lastSpellCast.current.spell1 > 500) {
-      // Cast fireball
-      store.useMana(20);
-      lastSpellCast.current.spell1 = now;
+    // Create key to spell mappings
+    const spellKeyMap = {
+      spell1: SPELLS.find(s => s.key === '1'),
+      spell2: SPELLS.find(s => s.key === '2'),
+      spell3: SPELLS.find(s => s.key === '3'),
+      spell4: SPELLS.find(s => s.key === '4'),
+      spell5: SPELLS.find(s => s.key === '5'),
+      spell6: SPELLS.find(s => s.key === '6'),
+      spellQ: SPELLS.find(s => s.key === 'q'),
+      spellE: SPELLS.find(s => s.key === 'e'),
+      spellR: SPELLS.find(s => s.key === 'r'),
+      spellF: SPELLS.find(s => s.key === 'f'),
+      spellT: SPELLS.find(s => s.key === 't'),
+    };
 
-      // Calculate direction from facing angle
-      const direction = [
-        Math.sin(player.facingAngle),
-        0,
-        Math.cos(player.facingAngle),
-      ];
+    // Check each spell key
+    const trycastSpell = (keyName, spell) => {
+      if (!spell) return;
+      if (!keys[keyName]) return;
 
-      store.addProjectile({
-        id: `projectile_${now}`,
-        position: [player.position[0], player.position[1] + 1, player.position[2]],
-        direction,
-        speed: 20,
-        damage: 20,
-        color: '#ff6b00',
-      });
-    }
+      // Check cooldown
+      const cooldown = store.getSpellCooldown(spell.id);
+      if (cooldown > 0) return;
 
-    if (keys.spell2 && player.mana >= 30 && now - lastSpellCast.current.spell2 > 800) {
-      // Cast lightning bolt
-      store.useMana(30);
-      lastSpellCast.current.spell2 = now;
+      // Check mana
+      if (currentPlayer.mana < spell.manaCost) return;
 
-      const direction = [
-        Math.sin(player.facingAngle),
-        0,
-        Math.cos(player.facingAngle),
-      ];
+      // Execute spell
+      const result = executeSpell(spell, currentPlayer, store);
+      if (result.success) {
+        // Set cooldown
+        store.setSpellCooldown(spell.id, spell.cooldown);
+      }
+    };
 
-      store.addProjectile({
-        id: `projectile_${now}`,
-        position: [player.position[0], player.position[1] + 1, player.position[2]],
-        direction,
-        speed: 30,
-        damage: 40,
-        color: '#00bfff',
-      });
-    }
+    // Try to cast each spell
+    trycastSpell('spell1', spellKeyMap.spell1);
+    trycastSpell('spell2', spellKeyMap.spell2);
+    trycastSpell('spell3', spellKeyMap.spell3);
+    trycastSpell('spell4', spellKeyMap.spell4);
+    trycastSpell('spell5', spellKeyMap.spell5);
+    trycastSpell('spell6', spellKeyMap.spell6);
+    trycastSpell('spellQ', spellKeyMap.spellQ);
+    trycastSpell('spellE', spellKeyMap.spellE);
+    trycastSpell('spellR', spellKeyMap.spellR);
+    trycastSpell('spellF', spellKeyMap.spellF);
+    trycastSpell('spellT', spellKeyMap.spellT);
 
-    if (keys.potion && store.inventory.potions > 0 && player.potionCooldown <= 0) {
-      // Use potion
+    // Potion use
+    if (keys.potion && store.inventory.potions > 0 && currentPlayer.potionCooldown <= 0) {
       store.healPlayer(50);
-      store.updatePlayer({ potionCooldown: 5 }); // 5 second cooldown
-      // Decrease potion count
+      store.updatePlayer({ potionCooldown: 5 });
       store.inventory.potions--;
     }
-  }, [keys.spell1, keys.spell2, keys.potion, player.mana, player.facingAngle, player.position]);
+  }, [keys]);
 
   return (
     <RigidBody

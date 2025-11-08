@@ -152,7 +152,7 @@ const useGameStore = create((set, get) => ({
       };
     }),
 
-  useMana: (amount) =>
+  consumeMana: (amount) =>
     set((state) => {
       const newMana = Math.max(0, state.player.mana - amount);
       return {
@@ -160,7 +160,7 @@ const useGameStore = create((set, get) => ({
       };
     }),
 
-  useStamina: (amount) =>
+  consumeStamina: (amount) =>
     set((state) => {
       const newStamina = Math.max(0, state.player.stamina - amount);
       return {

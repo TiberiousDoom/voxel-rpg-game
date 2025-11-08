@@ -14,7 +14,7 @@ const Player = () => {
   const cameraState = useGameStore((state) => state.camera);
   const updatePlayer = useGameStore((state) => state.updatePlayer);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
-  const useStamina = useGameStore((state) => state.useStamina);
+  const consumeStamina = useGameStore((state) => state.consumeStamina);
   const regenStamina = useGameStore((state) => state.regenStamina);
   const regenMana = useGameStore((state) => state.regenMana);
 
@@ -107,7 +107,7 @@ const Player = () => {
     const isBlocking = keys.block && player.stamina > 0;
     if (isBlocking) {
       // Use stamina while blocking
-      useStamina(delta * 15); // 15 stamina per second
+      consumeStamina(delta * 15); // 15 stamina per second
       updatePlayer({ isBlocking: true });
     } else {
       updatePlayer({ isBlocking: false });
@@ -116,7 +116,7 @@ const Player = () => {
     // Stamina usage and regeneration
     if (isSprintingNow && isMoving && !isBlocking) {
       // Use stamina while sprinting and moving
-      useStamina(delta * 20); // 20 stamina per second
+      consumeStamina(delta * 20); // 20 stamina per second
     } else if (!isBlocking) {
       // Regenerate stamina when not sprinting or blocking
       regenStamina(delta * 30); // 30 stamina per second
@@ -160,7 +160,7 @@ const Player = () => {
       const now = Date.now();
       if (now - lastSpacePress.current < 300 && player.stamina >= 30 && movement.length() > 0) {
         // Double-tap detected - dodge roll!
-        useStamina(30);
+        consumeStamina(30);
         setIsDodging(true);
         dodgeTimer.current = 0.3; // 0.3 second dodge duration
         dodgeDirection.current = movement.clone().normalize();
@@ -238,7 +238,7 @@ const Player = () => {
 
     if (keys.spell1 && player.mana >= 20 && now - lastSpellCast.current.spell1 > 500) {
       // Cast fireball
-      store.useMana(20);
+      store.consumeMana(20);
       lastSpellCast.current.spell1 = now;
 
       // Calculate direction from facing angle
@@ -260,7 +260,7 @@ const Player = () => {
 
     if (keys.spell2 && player.mana >= 30 && now - lastSpellCast.current.spell2 > 800) {
       // Cast lightning bolt
-      store.useMana(30);
+      store.consumeMana(30);
       lastSpellCast.current.spell2 = now;
 
       const direction = [

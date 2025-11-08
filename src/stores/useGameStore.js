@@ -40,6 +40,11 @@ const useGameStore = create((set, get) => ({
     potionCooldown: 0,
     comboCount: 0,
     comboTimer: 0,
+    isInvincible: false,
+    rage: 0,
+    maxRage: 100,
+    statusEffects: [], // Array of {type, duration, value}
+    spellCooldowns: {}, // Track cooldowns per spell id
   },
 
   // Equipment
@@ -79,6 +84,12 @@ const useGameStore = create((set, get) => ({
 
   // Loot drops
   lootDrops: [],
+
+  // XP orbs
+  xpOrbs: [],
+
+  // Particle effects
+  particleEffects: [],
 
   // Actions
   setGameState: (state) => set({ gameState: state }),
@@ -123,6 +134,26 @@ const useGameStore = create((set, get) => ({
       lootDrops: state.lootDrops.filter((l) => l.id !== id),
     })),
 
+  addXPOrb: (orb) =>
+    set((state) => ({
+      xpOrbs: [...state.xpOrbs, { ...orb, id: Date.now() + Math.random() }],
+    })),
+
+  removeXPOrb: (id) =>
+    set((state) => ({
+      xpOrbs: state.xpOrbs.filter((o) => o.id !== id),
+    })),
+
+  addParticleEffect: (effect) =>
+    set((state) => ({
+      particleEffects: [...state.particleEffects, { ...effect, id: Date.now() + Math.random() }],
+    })),
+
+  removeParticleEffect: (id) =>
+    set((state) => ({
+      particleEffects: state.particleEffects.filter((p) => p.id !== id),
+    })),
+
   updatePlayer: (updates) =>
     set((state) => ({
       player: { ...state.player, ...updates },
@@ -135,11 +166,103 @@ const useGameStore = create((set, get) => ({
 
   dealDamageToPlayer: (damage) =>
     set((state) => {
-      const newHealth = Math.max(0, state.player.health - damage);
+      // Check invincibility
+      if (state.player.isInvincible) {
+        return state;
+      }
+
+      // Apply blocking damage reduction (75% reduction)
+      let finalDamage = damage;
+      if (state.player.isBlocking) {
+        finalDamage = damage * 0.25;
+      }
+
+      // Apply defense reduction
+      const defenseReduction = state.player.defense * 0.5;
+      finalDamage = Math.max(1, finalDamage - defenseReduction);
+
+      const newHealth = Math.max(0, state.player.health - finalDamage);
+
+      // Gain rage when hit (10 rage per hit)
+      const newRage = Math.min(state.player.maxRage, state.player.rage + 10);
+
       return {
-        player: { ...state.player, health: newHealth },
+        player: {
+          ...state.player,
+          health: newHealth,
+          rage: newRage,
+        },
       };
     }),
+
+  addStatusEffect: (effect) =>
+    set((state) => ({
+      player: {
+        ...state.player,
+        statusEffects: [...state.player.statusEffects, effect],
+      },
+    })),
+
+  removeStatusEffect: (type) =>
+    set((state) => ({
+      player: {
+        ...state.player,
+        statusEffects: state.player.statusEffects.filter((e) => e.type !== type),
+      },
+    })),
+
+  addRage: (amount) =>
+    set((state) => ({
+      player: {
+        ...state.player,
+        rage: Math.min(state.player.maxRage, state.player.rage + amount),
+      },
+    })),
+
+  useRage: (amount) =>
+    set((state) => ({
+      player: {
+        ...state.player,
+        rage: Math.max(0, state.player.rage - amount),
+      },
+    })),
+
+  setSpellCooldown: (spellId, cooldown) =>
+    set((state) => ({
+      player: {
+        ...state.player,
+        spellCooldowns: {
+          ...state.player.spellCooldowns,
+          [spellId]: cooldown,
+        },
+      },
+    })),
+
+  updateSpellCooldowns: (delta) =>
+    set((state) => {
+      const newCooldowns = { ...state.player.spellCooldowns };
+      let hasChanged = false;
+
+      for (const spellId in newCooldowns) {
+        if (newCooldowns[spellId] > 0) {
+          newCooldowns[spellId] = Math.max(0, newCooldowns[spellId] - delta);
+          hasChanged = true;
+        }
+      }
+
+      if (!hasChanged) return state;
+
+      return {
+        player: {
+          ...state.player,
+          spellCooldowns: newCooldowns,
+        },
+      };
+    }),
+
+  getSpellCooldown: (spellId) => {
+    return get().player.spellCooldowns[spellId] || 0;
+  },
 
   healPlayer: (amount) =>
     set((state) => {
@@ -253,6 +376,11 @@ const useGameStore = create((set, get) => ({
       equipment: { ...state.equipment, [slot]: item },
     })),
 
+  unequipItem: (slot) =>
+    set((state) => ({
+      equipment: { ...state.equipment, [slot]: null },
+    })),
+
   addItem: (item) =>
     set((state) => ({
       inventory: {
@@ -260,6 +388,62 @@ const useGameStore = create((set, get) => ({
         items: [...state.inventory.items, item],
       },
     })),
+
+  removeItem: (itemId) =>
+    set((state) => ({
+      inventory: {
+        ...state.inventory,
+        items: state.inventory.items.filter((item) => item.id !== itemId),
+      },
+    })),
+
+  craftItem: (recipe, newMaterials) =>
+    set((state) => {
+      // Update materials
+      const newInventory = {
+        ...state.inventory,
+        materials: newMaterials,
+        items: [...state.inventory.items, { ...recipe, craftedAt: Date.now() }],
+      };
+
+      // If consumable, add to potion count or specific type
+      if (recipe.type === 'consumable' && recipe.id === 'healthPotion') {
+        newInventory.potions = (state.inventory.potions || 0) + 1;
+      }
+
+      return {
+        inventory: newInventory,
+      };
+    }),
+
+  applyConsumable: (item) =>
+    set((state) => {
+      const updates = {};
+
+      if (item.effect) {
+        switch (item.effect.type) {
+          case 'heal':
+            updates.health = Math.min(state.player.maxHealth, state.player.health + item.effect.value);
+            break;
+          case 'mana':
+            updates.mana = Math.min(state.player.maxMana, state.player.mana + item.effect.value);
+            break;
+          case 'rage':
+            updates.rage = Math.min(state.player.maxRage, state.player.rage + item.effect.value);
+            break;
+          default:
+            break;
+        }
+      }
+
+      return {
+        player: { ...state.player, ...updates },
+        inventory: {
+          ...state.inventory,
+          items: state.inventory.items.filter((i) => i !== item),
+        },
+      };
+    }),
 
   reset: () =>
     set({
@@ -292,12 +476,15 @@ const useGameStore = create((set, get) => ({
         skillPoints: 0,
         isJumping: false,
         isGrounded: true,
+        spellCooldowns: {},
       },
       enemies: [],
       projectiles: [],
       targetMarkers: [],
       damageNumbers: [],
       lootDrops: [],
+      xpOrbs: [],
+      particleEffects: [],
     }),
 }));
 

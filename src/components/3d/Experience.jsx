@@ -1,6 +1,5 @@
 import React, { Suspense } from 'react';
 import { Physics, RigidBody } from '@react-three/rapier';
-import { Sky, Environment } from '@react-three/drei';
 import Player from './Player';
 import VoxelTerrain from './VoxelTerrain';
 import Enemy from './Enemy';
@@ -24,33 +23,20 @@ const Experience = () => {
       {/* Touch/Click controls */}
       <TouchControls />
 
-      {/* Sky and lighting */}
-      <Sky
-        distance={450000}
-        sunPosition={[100, 20, 100]}
-        inclination={0.6}
-        azimuth={0.25}
-      />
+      {/* Basic sky color */}
+      <color attach="background" args={['#87ceeb']} />
 
       {/* Ambient light for general illumination */}
-      <ambientLight intensity={0.5} />
+      <ambientLight intensity={0.6} />
 
-      {/* Directional light (sun) with shadows */}
+      {/* Directional light (sun) - no shadows for performance */}
       <directionalLight
         position={[50, 50, 25]}
-        intensity={1}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-far={200}
-        shadow-camera-left={-50}
-        shadow-camera-right={50}
-        shadow-camera-top={50}
-        shadow-camera-bottom={-50}
+        intensity={0.8}
       />
 
       {/* Fog for depth */}
-      <fog attach="fog" args={['#87ceeb', 50, 200]} />
+      <fog attach="fog" args={['#87ceeb', 50, 150]} />
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
@@ -60,7 +46,7 @@ const Experience = () => {
 
           {/* Ground plane - provides collision */}
           <RigidBody type="fixed" colliders="cuboid" position={[0, 0, 0]}>
-            <mesh receiveShadow position={[0, 0, 0]}>
+            <mesh position={[0, 0, 0]}>
               <boxGeometry args={[200, 1, 200]} />
               <meshStandardMaterial color="#228b22" transparent opacity={0} />
             </mesh>
@@ -104,9 +90,6 @@ const Experience = () => {
           onComplete={removeDamageNumber}
         />
       ))}
-
-      {/* Environment for reflections */}
-      <Environment preset="sunset" />
     </>
   );
 };

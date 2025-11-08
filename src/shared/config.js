@@ -139,6 +139,8 @@ export const BUILDING_PROPERTIES = {
     hp: 50,
     buildTime: 5,              // seconds
     costs: { [RESOURCE_TYPES.GOLD]: 20 },
+    npcCapacity: 0,             // Cannot assign NPCs
+    populationCapacity: 0,      // No population housing
     colors: {
       preview: 0xcccccc,      // Light gray for placement preview
       building: 0x888888,     // Medium gray while building
@@ -151,6 +153,8 @@ export const BUILDING_PROPERTIES = {
     hp: 40,
     buildTime: 10,
     costs: { [RESOURCE_TYPES.GOLD]: 25, [RESOURCE_TYPES.WOOD]: 10 },
+    npcCapacity: 0,             // Cannot assign NPCs
+    populationCapacity: 0,      // No population housing
     colors: {
       preview: 0xd4a574,
       building: 0xb8860b,
@@ -163,6 +167,8 @@ export const BUILDING_PROPERTIES = {
     hp: 30,
     buildTime: 8,
     costs: { [RESOURCE_TYPES.GOLD]: 15, [RESOURCE_TYPES.WOOD]: 20 },
+    npcCapacity: 0,             // Cannot assign NPCs
+    populationCapacity: 0,      // No population housing
     colors: {
       preview: 0xc0a080,
       building: 0xb8860b,
@@ -175,6 +181,8 @@ export const BUILDING_PROPERTIES = {
     hp: 100,
     buildTime: 20,
     costs: { [RESOURCE_TYPES.GOLD]: 50, [RESOURCE_TYPES.ESSENCE]: 5 },
+    npcCapacity: 0,             // Cannot assign NPCs
+    populationCapacity: 0,      // No population housing
     colors: {
       preview: 0x666666,
       building: 0x4a4a4a,
@@ -187,6 +195,8 @@ export const BUILDING_PROPERTIES = {
     hp: 120,
     buildTime: 30,
     costs: { [RESOURCE_TYPES.GOLD]: 75, [RESOURCE_TYPES.ESSENCE]: 10, [RESOURCE_TYPES.STONE]: 20 },
+    npcCapacity: 0,             // Cannot assign NPCs
+    populationCapacity: 0,      // No population housing
     colors: {
       preview: 0x556b2f,
       building: 0x444444,
@@ -199,6 +209,8 @@ export const BUILDING_PROPERTIES = {
     hp: 90,
     buildTime: 25,
     costs: { [RESOURCE_TYPES.GOLD]: 60, [RESOURCE_TYPES.ESSENCE]: 8 },
+    npcCapacity: 2,             // Can assign up to 2 NPCs (guards)
+    populationCapacity: 8,      // Houses 8 population units
     colors: {
       preview: 0x8b5a3c,
       building: 0x654321,
@@ -211,6 +223,8 @@ export const BUILDING_PROPERTIES = {
     hp: 100,
     buildTime: 35,
     costs: { [RESOURCE_TYPES.GOLD]: 75, [RESOURCE_TYPES.ESSENCE]: 10, [RESOURCE_TYPES.CRYSTAL]: 5 },
+    npcCapacity: 3,             // Can assign up to 3 crafters
+    populationCapacity: 10,     // Houses 10 population units
     colors: {
       preview: 0xcd853f,
       building: 0xb8860b,
@@ -223,6 +237,8 @@ export const BUILDING_PROPERTIES = {
     hp: 110,
     buildTime: 40,
     costs: { [RESOURCE_TYPES.GOLD]: 100, [RESOURCE_TYPES.ESSENCE]: 15, [RESOURCE_TYPES.STONE]: 30 },
+    npcCapacity: 0,             // Cannot assign NPCs (no workers)
+    populationCapacity: 5,      // Houses 5 population units
     colors: {
       preview: 0xa0522d,
       building: 0x8b4513,
@@ -235,6 +251,8 @@ export const BUILDING_PROPERTIES = {
     hp: 120,
     buildTime: 45,
     costs: { [RESOURCE_TYPES.GOLD]: 120, [RESOURCE_TYPES.ESSENCE]: 20, [RESOURCE_TYPES.STONE]: 40 },
+    npcCapacity: 8,             // Can assign up to 8 guards/soldiers
+    populationCapacity: 20,     // Houses 20 population units
     colors: {
       preview: 0x556b2f,
       building: 0x4a4a4a,
@@ -247,6 +265,8 @@ export const BUILDING_PROPERTIES = {
     hp: 100,
     buildTime: 50,
     costs: { [RESOURCE_TYPES.GOLD]: 150, [RESOURCE_TYPES.ESSENCE]: 25, [RESOURCE_TYPES.CRYSTAL]: 10 },
+    npcCapacity: 4,             // Can assign up to 4 traders
+    populationCapacity: 15,     // Houses 15 population units
     colors: {
       preview: 0xd4af37,
       building: 0xffd700,
@@ -259,6 +279,8 @@ export const BUILDING_PROPERTIES = {
     hp: 200,
     buildTime: 120,
     costs: { [RESOURCE_TYPES.GOLD]: 300, [RESOURCE_TYPES.ESSENCE]: 50, [RESOURCE_TYPES.STONE]: 100, [RESOURCE_TYPES.CRYSTAL]: 20 },
+    npcCapacity: 0,             // Cannot assign NPCs
+    populationCapacity: 0,      // No population housing
     colors: {
       preview: 0x4a4a4a,
       building: 0x2a2a2a,
@@ -271,6 +293,8 @@ export const BUILDING_PROPERTIES = {
     hp: 250,
     buildTime: 180,
     costs: { [RESOURCE_TYPES.GOLD]: 500, [RESOURCE_TYPES.ESSENCE]: 100, [RESOURCE_TYPES.STONE]: 200, [RESOURCE_TYPES.CRYSTAL]: 50 },
+    npcCapacity: 0,             // Cannot assign NPCs
+    populationCapacity: 0,      // No population housing (seat of power)
     colors: {
       preview: 0x2a2a2a,
       building: 0x1a1a1a,
@@ -394,22 +418,96 @@ export const BUILDING_CLASSIFICATIONS = {
   ],
 };
 
-// Aesthetic/visual values for buildings by type
-// Used by Module 4 for visual polish and aesthetics
-export const BUILDING_AESTHETICS = {
-  // Visual quality rating from 1 (plain) to 5 (beautiful)
-  [BUILDING_TYPES.WALL]: 1,
-  [BUILDING_TYPES.DOOR]: 1,
-  [BUILDING_TYPES.CHEST]: 1,
-  [BUILDING_TYPES.TOWER]: 2,
-  [BUILDING_TYPES.WATCHTOWER]: 3,
-  [BUILDING_TYPES.GUARD_POST]: 2,
-  [BUILDING_TYPES.CRAFTING_STATION]: 3,
-  [BUILDING_TYPES.STORAGE_BUILDING]: 2,
-  [BUILDING_TYPES.BARRACKS]: 3,
-  [BUILDING_TYPES.MARKETPLACE]: 4,
-  [BUILDING_TYPES.FORTRESS]: 4,
-  [BUILDING_TYPES.CASTLE]: 5,
+// ============================================================================
+// TERRITORY AND TOWN CONFIGURATION
+// ============================================================================
+// Rules for territory expansion and town growth
+// These constants define how territory expands based on defensive buildings
+
+export const TERRITORY_CONFIG = {
+  // Base territory radius in grid cells (starting size)
+  BASE_RADIUS: 25,
+
+  // Radius expansion per specific control building
+  BUILDING_RADIUS_BONUSES: {
+    [BUILDING_TYPES.WATCHTOWER]: 5,      // Watchtower adds 5 cells to radius
+    [BUILDING_TYPES.GUARD_POST]: 2,      // Guard post adds 2 cells to radius
+    [BUILDING_TYPES.FORTRESS]: 15,       // Fortress adds 15 cells to radius
+    [BUILDING_TYPES.CASTLE]: 25,         // Castle adds 25 cells to radius
+  },
+
+  // Maximum territory radius achievable
+  MAX_TERRITORY_RADIUS: 100,
+
+  // Minimum distance required between territory centers to prevent overlap
+  MIN_TERRITORY_SEPARATION: 50,
+
+  // Territory expansion cost in resources (optional, for future implementation)
+  TERRITORY_EXPANSION_COST: {
+    [RESOURCE_TYPES.GOLD]: 100,
+    [RESOURCE_TYPES.STONE]: 50,
+  },
+
+  // How often to recalculate territory metrics (frames)
+  RECALCULATION_FREQUENCY: 60,
+};
+
+// ============================================================================
+// TOWN UPGRADE DEFINITIONS
+// ============================================================================
+// Town upgrades that increase capability and unlock new features
+
+export const TOWN_UPGRADES = {
+  city_wall: {
+    id: 'city_wall',
+    name: 'City Wall',
+    description: 'Defensive perimeter around town',
+    type: 'DEFENSIVE',
+    buildTime: 60,      // seconds
+    costs: { [RESOURCE_TYPES.GOLD]: 200 },
+    requirements: { buildingCount: 5 },
+    effects: { defense: 10 },
+  },
+  better_marketplace: {
+    id: 'better_marketplace',
+    name: 'Better Marketplace',
+    description: 'Expanded marketplace for increased trade',
+    type: 'FUNCTIONAL',
+    buildTime: 90,
+    costs: { [RESOURCE_TYPES.GOLD]: 300, [RESOURCE_TYPES.ESSENCE]: 20 },
+    requirements: { buildingCount: 10, buildingType: 'MARKETPLACE' },
+    effects: { prosperity: 15 },
+  },
+  monument_construction: {
+    id: 'monument_construction',
+    name: 'Monument Construction',
+    description: 'Aesthetic monument for town pride',
+    type: 'COSMETIC',
+    buildTime: 120,
+    costs: { [RESOURCE_TYPES.GOLD]: 250, [RESOURCE_TYPES.STONE]: 30 },
+    requirements: { buildingCount: 15 },
+    effects: { happiness: 10 },
+  },
+  fortified_defense: {
+    id: 'fortified_defense',
+    name: 'Fortified Defense',
+    description: 'Advanced defensive structures and garrison',
+    type: 'DEFENSIVE',
+    buildTime: 150,
+    costs: { [RESOURCE_TYPES.GOLD]: 500, [RESOURCE_TYPES.STONE]: 100 },
+    requirements: { buildingCount: 20, defensiveBuildings: 5 },
+    effects: { defense: 20 },
+  },
+  prosperity_initiative: {
+    id: 'prosperity_initiative',
+    name: 'Prosperity Initiative',
+    description: 'Town-wide prosperity and happiness program',
+    type: 'FUNCTIONAL',
+    buildTime: 180,
+    costs: { [RESOURCE_TYPES.GOLD]: 400, [RESOURCE_TYPES.ESSENCE]: 40 },
+    requirements: { buildingCount: 25, prosperity: 50 },
+    effects: { prosperity: 25, happiness: 5 },
+  },
 };
 
 // ============================================================================

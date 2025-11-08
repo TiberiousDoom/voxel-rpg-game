@@ -10,66 +10,30 @@
  * 3. Manage aesthetic improvements
  * 4. Coordinate with other modules for compound effects
  * 5. Provide aggregated town data for UI and gameplay
+ *
+ * NOTE: Town upgrade definitions are now imported from shared/config.js
+ * to maintain a single source of truth across all modules.
  */
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { calculateTownStatistics, calculateTownLevel } from '../utils/bonusCalculator';
-import { TOWN_UPGRADE_TYPES } from '../types/index';
+import { TOWN_UPGRADES } from '../../../shared/config';
 
-// Default available upgrades for towns
-const DEFAULT_UPGRADES = {
-  city_wall: {
-    id: 'city_wall',
-    name: 'City Wall',
-    type: TOWN_UPGRADE_TYPES.DEFENSIVE,
-    completed: false,
-    tier: 1,
-    requirements: { buildingCount: 5 },
-    effects: { defense: 10 },
-    buildTime: 60,
-  },
-  better_marketplace: {
-    id: 'better_marketplace',
-    name: 'Better Marketplace',
-    type: TOWN_UPGRADE_TYPES.FUNCTIONAL,
-    completed: false,
-    tier: 2,
-    requirements: { buildingCount: 10, buildingType: 'MARKETPLACE' },
-    effects: { prosperity: 15 },
-    buildTime: 90,
-  },
-  monument_construction: {
-    id: 'monument_construction',
-    name: 'Monument Construction',
-    type: TOWN_UPGRADE_TYPES.COSMETIC,
-    completed: false,
-    tier: 2,
-    requirements: { buildingCount: 15 },
-    effects: { happiness: 10 },
-    buildTime: 120,
-  },
-  fortified_defense: {
-    id: 'fortified_defense',
-    name: 'Fortified Defense',
-    type: TOWN_UPGRADE_TYPES.DEFENSIVE,
-    completed: false,
-    tier: 3,
-    requirements: { buildingCount: 20, defensiveBuildings: 5 },
-    effects: { defense: 20 },
-    buildTime: 150,
-  },
-  prosperity_initiative: {
-    id: 'prosperity_initiative',
-    name: 'Prosperity Initiative',
-    type: TOWN_UPGRADE_TYPES.FUNCTIONAL,
-    completed: false,
-    tier: 3,
-    requirements: { buildingCount: 25, prosperity: 50 },
-    effects: { prosperity: 25, happiness: 5 },
-    buildTime: 180,
-  },
-};
+/**
+ * Initialize town upgrades with completion status
+ * Adds 'completed' flag to upgrades from shared config
+ */
+function initializeUpgrades() {
+  const upgrades = {};
+  for (const [key, upgrade] of Object.entries(TOWN_UPGRADES)) {
+    upgrades[key] = {
+      ...upgrade,
+      completed: false,  // Track completion status per town
+    };
+  }
+  return upgrades;
+}
 
 /**
  * Town Management Store
@@ -121,7 +85,7 @@ export const useTownManagement = create(
             buildingCounts: {},
             populationCapacity: 0,
           },
-          upgrades: { ...DEFAULT_UPGRADES },
+          upgrades: initializeUpgrades(),
           aesthetics: {
             elementCount: 0,
             aestheticRating: 0,

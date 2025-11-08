@@ -34,6 +34,23 @@ const GameUI = () => {
           <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
             Use WASD to move, Space to jump, Shift to run
           </p>
+          <div style={{
+            background: 'rgba(255, 193, 7, 0.2)',
+            border: '2px solid #ffc107',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '2rem',
+            maxWidth: '600px',
+            margin: '0 auto 2rem auto'
+          }}>
+            <p style={{ fontSize: '1rem', margin: 0, color: '#ffc107', fontWeight: 'bold' }}>
+              ⚠️ If experiencing low FPS:
+            </p>
+            <p style={{ fontSize: '0.9rem', margin: '0.5rem 0 0 0', lineHeight: '1.4' }}>
+              Enable Hardware Acceleration in Chrome:<br />
+              Settings → System → "Use hardware acceleration when available"
+            </p>
+          </div>
           <button
             onClick={() => useGameStore.getState().setGameState('playing')}
             style={{

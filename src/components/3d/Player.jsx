@@ -4,6 +4,7 @@ import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { useKeyboard } from '../../hooks/useKeyboard';
+import { getTotalStats } from '../../utils/equipmentStats';
 
 const Player = () => {
   const playerRef = useRef();
@@ -11,12 +12,16 @@ const Player = () => {
   const keys = useKeyboard();
 
   const player = useGameStore((state) => state.player);
+  const equipment = useGameStore((state) => state.equipment);
   const cameraState = useGameStore((state) => state.camera);
   const updatePlayer = useGameStore((state) => state.updatePlayer);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
   const useStamina = useGameStore((state) => state.useStamina);
   const regenStamina = useGameStore((state) => state.regenStamina);
   const regenMana = useGameStore((state) => state.regenMana);
+
+  // Calculate total stats with equipment bonuses
+  const totalStats = getTotalStats(player, equipment);
 
   // Double-tap detection for mobile sprint
   const lastTapTime = useRef(0);
@@ -38,8 +43,8 @@ const Player = () => {
     // Determine if sprinting (keyboard Shift or mobile double-tap)
     const isSprintingNow = (keys.run || isSprinting) && player.stamina > 0;
 
-    // Get movement direction from keyboard or tap-to-move
-    const moveSpeed = isSprintingNow ? player.speed * 1.5 : player.speed;
+    // Get movement direction from keyboard or tap-to-move (use totalStats for equipment bonuses)
+    const moveSpeed = isSprintingNow ? totalStats.speed * 1.5 : totalStats.speed;
     const velocity = new THREE.Vector3(currentVel.x, currentVel.y, currentVel.z);
 
     // Use stamina when sprinting and moving

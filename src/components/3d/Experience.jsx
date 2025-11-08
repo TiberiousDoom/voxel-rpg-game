@@ -8,6 +8,8 @@ import TouchControls from './TouchControls';
 import CameraRotateControls from './CameraRotateControls';
 import TargetMarker from './TargetMarker';
 import DamageNumber from './DamageNumber';
+import XPOrb from './XPOrb';
+import ParticleEffect from './ParticleEffect';
 import useGameStore from '../../stores/useGameStore';
 
 /**
@@ -17,7 +19,11 @@ const Experience = () => {
   const projectiles = useGameStore((state) => state.projectiles);
   const targetMarkers = useGameStore((state) => state.targetMarkers);
   const damageNumbers = useGameStore((state) => state.damageNumbers);
+  const xpOrbs = useGameStore((state) => state.xpOrbs);
+  const particleEffects = useGameStore((state) => state.particleEffects);
   const removeDamageNumber = useGameStore((state) => state.removeDamageNumber);
+  const removeXPOrb = useGameStore((state) => state.removeXPOrb);
+  const removeParticleEffect = useGameStore((state) => state.removeParticleEffect);
 
   return (
     <>
@@ -70,9 +76,23 @@ const Experience = () => {
             <Projectile key={proj.id} {...proj} />
           ))}
 
+          {/* XP Orbs */}
+          {xpOrbs.map((orb) => (
+            <XPOrb key={orb.id} {...orb} onCollect={removeXPOrb} />
+          ))}
+
           {/* TODO: Add interactable objects */}
         </Suspense>
       </Physics>
+
+      {/* Particle Effects (outside physics) */}
+      {particleEffects.map((effect) => (
+        <ParticleEffect
+          key={effect.id}
+          {...effect}
+          onComplete={removeParticleEffect}
+        />
+      ))}
 
       {/* Target markers for tap-to-move/attack feedback */}
       {targetMarkers.map((marker) => (

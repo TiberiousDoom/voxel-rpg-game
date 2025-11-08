@@ -4,6 +4,8 @@ import { Stats } from '@react-three/drei';
 import Experience from './components/3d/Experience';
 import GameUI from './components/GameUI';
 import SpellWheel from './components/SpellWheel';
+import CraftingUI from './components/CraftingUI';
+import InventoryUI from './components/InventoryUI';
 
 /**
  * Main 3D App component
@@ -33,6 +35,12 @@ function App3D() {
 
       {/* Spell selection wheel */}
       <SpellWheel />
+
+      {/* Crafting UI */}
+      <CraftingUI />
+
+      {/* Inventory UI */}
+      <InventoryUI />
     </div>
   );
 }

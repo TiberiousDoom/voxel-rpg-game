@@ -3,6 +3,7 @@ import { Heart, Zap, Package, Home, TrendingUp, X, Shield, Hammer, AlertCircle, 
 import { SpatialHash } from './utils/SpatialHash';
 import { ObjectPool } from './utils/ObjectPool';
 import { audioManager } from './utils/AudioManager';
+import orchestrator from './modules/ModuleOrchestrator';
 import packageJson from '../package.json';
 
 const VoxelRPG = () => {
@@ -242,6 +243,28 @@ useEffect(() => {
 useEffect(() => {
   // Initialize audio manager
   audioManager.init();
+
+  // Initialize Module Orchestrator
+  // The orchestrator coordinates interactions between game modules
+  // (Foundation, Building Types, Resource Economy, Territory & Town Planning)
+  if (orchestrator) {
+    orchestrator.log('Initializing game systems...');
+
+    // In a modular architecture, modules would register themselves here.
+    // Example:
+    // - orchestrator.registerModule('FOUNDATION', foundationModule);
+    // - orchestrator.registerModule('MODULE2', buildingTypesModule);
+    // - orchestrator.registerModule('MODULE3', resourceEconomyModule);
+    // - orchestrator.registerModule('MODULE4', territoryModule);
+    //
+    // Then initialize all modules:
+    // const initResult = orchestrator.initializeModules();
+    // if (!initResult.success) {
+    //   console.warn('Module initialization warnings:', initResult.details);
+    // }
+
+    orchestrator.log('Module orchestrator initialized');
+  }
 
   // Initialize projectile pool
   projectilePoolRef.current = new ObjectPool(

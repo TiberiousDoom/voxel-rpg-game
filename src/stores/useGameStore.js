@@ -376,6 +376,11 @@ const useGameStore = create((set, get) => ({
       equipment: { ...state.equipment, [slot]: item },
     })),
 
+  unequipItem: (slot) =>
+    set((state) => ({
+      equipment: { ...state.equipment, [slot]: null },
+    })),
+
   addItem: (item) =>
     set((state) => ({
       inventory: {
@@ -383,6 +388,62 @@ const useGameStore = create((set, get) => ({
         items: [...state.inventory.items, item],
       },
     })),
+
+  removeItem: (itemId) =>
+    set((state) => ({
+      inventory: {
+        ...state.inventory,
+        items: state.inventory.items.filter((item) => item.id !== itemId),
+      },
+    })),
+
+  craftItem: (recipe, newMaterials) =>
+    set((state) => {
+      // Update materials
+      const newInventory = {
+        ...state.inventory,
+        materials: newMaterials,
+        items: [...state.inventory.items, { ...recipe, craftedAt: Date.now() }],
+      };
+
+      // If consumable, add to potion count or specific type
+      if (recipe.type === 'consumable' && recipe.id === 'healthPotion') {
+        newInventory.potions = (state.inventory.potions || 0) + 1;
+      }
+
+      return {
+        inventory: newInventory,
+      };
+    }),
+
+  useConsumable: (item) =>
+    set((state) => {
+      const updates = {};
+
+      if (item.effect) {
+        switch (item.effect.type) {
+          case 'heal':
+            updates.health = Math.min(state.player.maxHealth, state.player.health + item.effect.value);
+            break;
+          case 'mana':
+            updates.mana = Math.min(state.player.maxMana, state.player.mana + item.effect.value);
+            break;
+          case 'rage':
+            updates.rage = Math.min(state.player.maxRage, state.player.rage + item.effect.value);
+            break;
+          default:
+            break;
+        }
+      }
+
+      return {
+        player: { ...state.player, ...updates },
+        inventory: {
+          ...state.inventory,
+          items: state.inventory.items.filter((i) => i !== item),
+        },
+      };
+    }),
 
   reset: () =>
     set({

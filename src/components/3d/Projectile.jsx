@@ -28,21 +28,59 @@ const Projectile = ({ id, position, direction, speed = 20, damage = 20, color = 
     if (userData?.isEnemy && userData?.takeDamage) {
       hasHit.current = true;
 
-      // Deal damage to enemy
-      userData.takeDamage(damage);
+      const store = useGameStore.getState();
+      const player = store.player;
 
-      // Add hit effect marker
-      const hitPos = event.rigidBody.translation();
-      useGameStore.getState().addTargetMarker({
-        position: [hitPos.x, hitPos.y, hitPos.z],
-        color: '#ff6600',
+      // Calculate critical hit
+      const isCrit = Math.random() * 100 < player.critChance;
+      let finalDamage = damage;
+
+      if (isCrit) {
+        finalDamage = damage * (player.critDamage / 100);
+      }
+
+      // Apply combo bonus
+      const comboBonus = 1 + (player.comboCount * 0.1); // +10% per combo hit
+      finalDamage *= comboBonus;
+
+      // Increment combo
+      store.updatePlayer({
+        comboCount: player.comboCount + 1,
+        comboTimer: 3, // 3 seconds to maintain combo
       });
+
+      // Deal damage to enemy
+      userData.takeDamage(Math.round(finalDamage));
+
+      // Add hit effect marker with different color for crit
+      const hitPos = event.rigidBody.translation();
+      store.addTargetMarker({
+        position: [hitPos.x, hitPos.y, hitPos.z],
+        color: isCrit ? '#ffff00' : '#ff6600',
+      });
+
+      // Critical hit visual effect
+      if (isCrit) {
+        // Spawn additional damage numbers for crit
+        store.addDamageNumber({
+          position: [hitPos.x, hitPos.y + 2, hitPos.z],
+          damage: 'CRIT!',
+        });
+      }
+
+      // Combo visual
+      if (player.comboCount > 1) {
+        store.addDamageNumber({
+          position: [hitPos.x, hitPos.y + 1.8, hitPos.z],
+          damage: `${player.comboCount}x COMBO`,
+        });
+      }
 
       // Remove marker after 0.5 seconds
       setTimeout(() => {
-        const markers = useGameStore.getState().targetMarkers;
+        const markers = store.targetMarkers;
         if (markers.length > 0) {
-          useGameStore.getState().removeTargetMarker(markers[0].id);
+          store.removeTargetMarker(markers[0].id);
         }
       }, 500);
 

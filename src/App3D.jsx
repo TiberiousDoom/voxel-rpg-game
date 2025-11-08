@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { Stats } from '@react-three/drei';
 import Experience from './components/3d/Experience';
 import GameUI from './components/GameUI';
+import SpellWheel from './components/SpellWheel';
 
 /**
  * Main 3D App component
@@ -29,6 +30,9 @@ function App3D() {
 
       {/* HTML UI overlay */}
       <GameUI />
+
+      {/* Spell selection wheel */}
+      <SpellWheel />
     </div>
   );
 }

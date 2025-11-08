@@ -5,6 +5,7 @@ import VoxelTerrain from './VoxelTerrain';
 import Enemy from './Enemy';
 import Projectile from './Projectile';
 import TouchControls from './TouchControls';
+import CameraRotateControls from './CameraRotateControls';
 import TargetMarker from './TargetMarker';
 import DamageNumber from './DamageNumber';
 import useGameStore from '../../stores/useGameStore';
@@ -22,6 +23,9 @@ const Experience = () => {
     <>
       {/* Touch/Click controls */}
       <TouchControls />
+
+      {/* Camera rotation controls */}
+      <CameraRotateControls />
 
       {/* Basic sky color */}
       <color attach="background" args={['#87ceeb']} />
@@ -56,10 +60,10 @@ const Experience = () => {
           <Player />
 
           {/* Enemies - spawn a few for testing */}
-          <Enemy position={[10, 5, 10]} />
-          <Enemy position={[-15, 5, 8]} />
-          <Enemy position={[8, 5, -12]} />
-          <Enemy position={[-10, 5, -15]} />
+          <Enemy position={[10, 5, 10]} name="Slime" />
+          <Enemy position={[-15, 5, 8]} name="Goblin" />
+          <Enemy position={[8, 5, -12]} name="Orc" />
+          <Enemy position={[-10, 5, -15]} name="Skeleton" />
 
           {/* Projectiles - inside physics for collision detection */}
           {projectiles.map((proj) => (

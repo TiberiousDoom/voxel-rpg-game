@@ -11,12 +11,22 @@ const Player = () => {
   const keys = useKeyboard();
 
   const player = useGameStore((state) => state.player);
+  const cameraState = useGameStore((state) => state.camera);
   const updatePlayer = useGameStore((state) => state.updatePlayer);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
+  const useStamina = useGameStore((state) => state.useStamina);
+  const regenStamina = useGameStore((state) => state.regenStamina);
+  const regenMana = useGameStore((state) => state.regenMana);
 
-  // Camera offset from player
-  const cameraOffset = new THREE.Vector3(0, 15, 20);
-  const cameraLookAtOffset = new THREE.Vector3(0, 2, 0);
+  // Double-tap detection for mobile sprint
+  const lastTapTime = useRef(0);
+  const [isSprinting, setIsSprinting] = React.useState(false);
+
+  // Dodge roll state
+  const lastSpacePress = useRef(0);
+  const [isDodging, setIsDodging] = React.useState(false);
+  const dodgeDirection = useRef(new THREE.Vector3());
+  const dodgeTimer = useRef(0);
 
   useFrame((state, delta) => {
     if (!playerRef.current) return;
@@ -25,9 +35,15 @@ const Player = () => {
     const currentPos = body.translation();
     const currentVel = body.linvel();
 
+    // Determine if sprinting (keyboard Shift or mobile double-tap)
+    const isSprintingNow = (keys.run || isSprinting) && player.stamina > 0;
+
     // Get movement direction from keyboard or tap-to-move
-    const moveSpeed = keys.run ? player.speed * 1.5 : player.speed;
+    const moveSpeed = isSprintingNow ? player.speed * 1.5 : player.speed;
     const velocity = new THREE.Vector3(currentVel.x, currentVel.y, currentVel.z);
+
+    // Use stamina when sprinting and moving
+    let isMoving = false;
 
     // Calculate camera forward and right vectors (ignoring Y for horizontal movement)
     const cameraForward = new THREE.Vector3();
@@ -45,18 +61,22 @@ const Player = () => {
     if (keys.forward) {
       movement.add(cameraForward.clone().multiplyScalar(moveSpeed));
       hasKeyboardInput = true;
+      isMoving = true;
     }
     if (keys.backward) {
       movement.add(cameraForward.clone().multiplyScalar(-moveSpeed));
       hasKeyboardInput = true;
+      isMoving = true;
     }
     if (keys.left) {
       movement.add(cameraRight.clone().multiplyScalar(-moveSpeed));
       hasKeyboardInput = true;
+      isMoving = true;
     }
     if (keys.right) {
       movement.add(cameraRight.clone().multiplyScalar(moveSpeed));
       hasKeyboardInput = true;
+      isMoving = true;
     }
 
     // Tap-to-move: If no keyboard input and we have a target, move towards it
@@ -71,6 +91,7 @@ const Player = () => {
         // Still far from target, keep moving
         direction.normalize();
         movement.add(direction.multiplyScalar(moveSpeed));
+        isMoving = true;
       } else {
         // Reached target, clear it
         useGameStore.getState().setPlayerTarget(null);
@@ -82,13 +103,73 @@ const Player = () => {
       useGameStore.getState().setPlayerTarget(null);
     }
 
+    // Blocking
+    const isBlocking = keys.block && player.stamina > 0;
+    if (isBlocking) {
+      // Use stamina while blocking
+      useStamina(delta * 15); // 15 stamina per second
+      updatePlayer({ isBlocking: true });
+    } else {
+      updatePlayer({ isBlocking: false });
+    }
+
+    // Stamina usage and regeneration
+    if (isSprintingNow && isMoving && !isBlocking) {
+      // Use stamina while sprinting and moving
+      useStamina(delta * 20); // 20 stamina per second
+    } else if (!isBlocking) {
+      // Regenerate stamina when not sprinting or blocking
+      regenStamina(delta * 30); // 30 stamina per second
+    }
+
+    // Mana regeneration
+    regenMana(delta * 10); // 10 mana per second
+
+    // Cooldown timers
+    if (player.potionCooldown > 0) {
+      updatePlayer({ potionCooldown: Math.max(0, player.potionCooldown - delta) });
+    }
+    if (player.comboTimer > 0) {
+      const newComboTimer = player.comboTimer - delta;
+      if (newComboTimer <= 0) {
+        updatePlayer({ comboTimer: 0, comboCount: 0 });
+      } else {
+        updatePlayer({ comboTimer: newComboTimer });
+      }
+    }
+
     // Apply movement with damping for smooth control
     velocity.x = THREE.MathUtils.lerp(velocity.x, movement.x, 0.2);
     velocity.z = THREE.MathUtils.lerp(velocity.z, movement.z, 0.2);
 
-    // Jumping
-    if (keys.jump && Math.abs(currentVel.y) < 0.1) {
-      velocity.y = 8;
+    // Dodge roll handling
+    if (isDodging) {
+      dodgeTimer.current -= delta;
+      if (dodgeTimer.current > 0) {
+        // Apply dodge velocity
+        velocity.x = dodgeDirection.current.x * 20;
+        velocity.z = dodgeDirection.current.z * 20;
+      } else {
+        setIsDodging(false);
+      }
+    }
+
+    // Jumping (disabled during dodge)
+    if (keys.jump && Math.abs(currentVel.y) < 0.1 && !isDodging) {
+      // Check for double-tap dodge roll
+      const now = Date.now();
+      if (now - lastSpacePress.current < 300 && player.stamina >= 30 && movement.length() > 0) {
+        // Double-tap detected - dodge roll!
+        useStamina(30);
+        setIsDodging(true);
+        dodgeTimer.current = 0.3; // 0.3 second dodge duration
+        dodgeDirection.current = movement.clone().normalize();
+        lastSpacePress.current = 0; // Reset to prevent triple tap
+      } else {
+        // Single tap - normal jump
+        velocity.y = 8;
+        lastSpacePress.current = now;
+      }
     }
 
     // Apply velocity
@@ -98,17 +179,25 @@ const Player = () => {
     const newPos = [currentPos.x, currentPos.y, currentPos.z];
     setPlayerPosition(newPos);
 
-    // Update camera to follow player
+    // Update camera to follow player with rotation
+    const angle = cameraState.rotationAngle;
+    const distance = cameraState.distance;
+    const height = cameraState.height;
+
+    // Calculate camera position based on rotation angle
+    const offsetX = Math.sin(angle) * distance;
+    const offsetZ = Math.cos(angle) * distance;
+
     const targetCameraPos = new THREE.Vector3(
-      currentPos.x + cameraOffset.x,
-      currentPos.y + cameraOffset.y,
-      currentPos.z + cameraOffset.z
+      currentPos.x + offsetX,
+      currentPos.y + height,
+      currentPos.z + offsetZ
     );
 
     const targetLookAt = new THREE.Vector3(
-      currentPos.x + cameraLookAtOffset.x,
-      currentPos.y + cameraLookAtOffset.y,
-      currentPos.z + cameraLookAtOffset.z
+      currentPos.x,
+      currentPos.y + 2,
+      currentPos.z
     );
 
     // Smooth camera movement
@@ -121,6 +210,24 @@ const Player = () => {
       updatePlayer({ facingAngle: angle });
     }
   });
+
+  // Handle double-tap for mobile sprint
+  useEffect(() => {
+    const handleDoubleTap = (e) => {
+      const now = Date.now();
+      const timeSinceLastTap = now - lastTapTime.current;
+
+      if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+        // Double tap detected
+        setIsSprinting((prev) => !prev);
+      }
+
+      lastTapTime.current = now;
+    };
+
+    window.addEventListener('touchstart', handleDoubleTap);
+    return () => window.removeEventListener('touchstart', handleDoubleTap);
+  }, []);
 
   // Handle spells and actions
   const lastSpellCast = useRef({ spell1: 0, spell2: 0 });
@@ -172,10 +279,12 @@ const Player = () => {
       });
     }
 
-    if (keys.potion && store.inventory.potions > 0) {
+    if (keys.potion && store.inventory.potions > 0 && player.potionCooldown <= 0) {
       // Use potion
       store.healPlayer(50);
-      // TODO: Decrease potion count
+      store.updatePlayer({ potionCooldown: 5 }); // 5 second cooldown
+      // Decrease potion count
+      store.inventory.potions--;
     }
   }, [keys.spell1, keys.spell2, keys.potion, player.mana, player.facingAngle, player.position]);
 

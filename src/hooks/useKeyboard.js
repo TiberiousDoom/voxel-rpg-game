@@ -21,6 +21,7 @@ const KEYMAP = {
   KeyM: 'map',
   Escape: 'menu',
   KeyR: 'potion',
+  KeyQ: 'block',
 };
 
 /**

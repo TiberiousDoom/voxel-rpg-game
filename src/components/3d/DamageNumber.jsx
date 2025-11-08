@@ -27,18 +27,22 @@ const DamageNumber = ({ position, damage, id, onComplete }) => {
     }
   });
 
+  const isNumber = typeof damage === 'number';
+  const isCrit = typeof damage === 'string' && damage.includes('CRIT');
+  const isCombo = typeof damage === 'string' && damage.includes('COMBO');
+
   return (
     <group ref={groupRef} position={[position[0], position[1], position[2]]}>
       <Text
         position={[0, 0, 0]}
-        fontSize={0.5}
-        color="#ff4444"
+        fontSize={isCrit ? 0.7 : isCombo ? 0.5 : 0.5}
+        color={isCrit ? '#ffff00' : isCombo ? '#00ffff' : '#ff4444'}
         anchorX="center"
         anchorY="middle"
         outlineWidth={0.05}
         outlineColor="#000000"
       >
-        {`-${damage}`}
+        {isNumber ? `-${damage}` : damage}
       </Text>
     </group>
   );

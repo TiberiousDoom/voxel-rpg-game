@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Zap, TrendingUp, Package } from 'lucide-react';
+import { Heart, Zap, TrendingUp, Package, Activity } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 
 /**
@@ -32,7 +32,8 @@ const GameUI = () => {
             Voxel RPG 3D
           </h1>
           <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
-            Use WASD to move, Space to jump, Shift to run
+            Use WASD to move, Space to jump, Shift to sprint<br />
+            Right-click drag to rotate camera, Ctrl for spell wheel
           </p>
           <div style={{
             background: 'rgba(255, 193, 7, 0.2)',
@@ -144,7 +145,7 @@ const GameUI = () => {
           >
             <Zap size={20} style={{ marginRight: '8px', color: '#4dabf7' }} />
             <span>
-              {player.mana} / {player.maxMana}
+              {Math.round(player.mana)} / {player.maxMana}
             </span>
           </div>
           <div
@@ -161,6 +162,40 @@ const GameUI = () => {
                 width: `${(player.mana / player.maxMana) * 100}%`,
                 height: '100%',
                 background: 'linear-gradient(90deg, #4dabf7, #74c0fc)',
+                transition: 'width 0.3s',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Stamina bar */}
+        <div style={{ marginBottom: '10px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '5px',
+            }}
+          >
+            <Activity size={20} style={{ marginRight: '8px', color: '#51cf66' }} />
+            <span>
+              {Math.round(player.stamina)} / {player.maxStamina}
+            </span>
+          </div>
+          <div
+            style={{
+              width: '100%',
+              height: '20px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '10px',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${(player.stamina / player.maxStamina) * 100}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #51cf66, #8ce99a)',
                 transition: 'width 0.3s',
               }}
             />

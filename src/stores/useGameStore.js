@@ -4,6 +4,13 @@ const useGameStore = create((set, get) => ({
   // Game state
   gameState: 'intro', // 'intro', 'playing', 'paused', 'gameOver'
 
+  // Camera state
+  camera: {
+    rotationAngle: 0, // Horizontal rotation around player
+    distance: 20,
+    height: 15,
+  },
+
   // Player state
   player: {
     position: [0, 2, 0], // x, y, z in 3D space
@@ -13,6 +20,8 @@ const useGameStore = create((set, get) => ({
     maxHealth: 100,
     mana: 100,
     maxMana: 100,
+    stamina: 100,
+    maxStamina: 100,
     level: 1,
     xp: 0,
     xpToNext: 100,
@@ -26,6 +35,11 @@ const useGameStore = create((set, get) => ({
     skillPoints: 0,
     isJumping: false,
     isGrounded: true,
+    isDodging: false,
+    isBlocking: false,
+    potionCooldown: 0,
+    comboCount: 0,
+    comboTimer: 0,
   },
 
   // Equipment
@@ -63,8 +77,16 @@ const useGameStore = create((set, get) => ({
   // Damage numbers (floating damage indicators)
   damageNumbers: [],
 
+  // Loot drops
+  lootDrops: [],
+
   // Actions
   setGameState: (state) => set({ gameState: state }),
+
+  updateCamera: (updates) =>
+    set((state) => ({
+      camera: { ...state.camera, ...updates },
+    })),
 
   setPlayerTarget: (targetPosition) =>
     set((state) => ({
@@ -89,6 +111,16 @@ const useGameStore = create((set, get) => ({
   removeDamageNumber: (id) =>
     set((state) => ({
       damageNumbers: state.damageNumbers.filter((d) => d.id !== id),
+    })),
+
+  addLootDrop: (loot) =>
+    set((state) => ({
+      lootDrops: [...state.lootDrops, { ...loot, id: Date.now() + Math.random() }],
+    })),
+
+  removeLootDrop: (id) =>
+    set((state) => ({
+      lootDrops: state.lootDrops.filter((l) => l.id !== id),
     })),
 
   updatePlayer: (updates) =>
@@ -123,6 +155,30 @@ const useGameStore = create((set, get) => ({
   useMana: (amount) =>
     set((state) => {
       const newMana = Math.max(0, state.player.mana - amount);
+      return {
+        player: { ...state.player, mana: newMana },
+      };
+    }),
+
+  useStamina: (amount) =>
+    set((state) => {
+      const newStamina = Math.max(0, state.player.stamina - amount);
+      return {
+        player: { ...state.player, stamina: newStamina },
+      };
+    }),
+
+  regenStamina: (amount) =>
+    set((state) => {
+      const newStamina = Math.min(state.player.maxStamina, state.player.stamina + amount);
+      return {
+        player: { ...state.player, stamina: newStamina },
+      };
+    }),
+
+  regenMana: (amount) =>
+    set((state) => {
+      const newMana = Math.min(state.player.maxMana, state.player.mana + amount);
       return {
         player: { ...state.player, mana: newMana },
       };
@@ -208,6 +264,11 @@ const useGameStore = create((set, get) => ({
   reset: () =>
     set({
       gameState: 'intro',
+      camera: {
+        rotationAngle: 0,
+        distance: 20,
+        height: 15,
+      },
       player: {
         position: [0, 2, 0],
         velocity: [0, 0, 0],
@@ -216,6 +277,8 @@ const useGameStore = create((set, get) => ({
         maxHealth: 100,
         mana: 100,
         maxMana: 100,
+        stamina: 100,
+        maxStamina: 100,
         level: 1,
         xp: 0,
         xpToNext: 100,
@@ -234,6 +297,7 @@ const useGameStore = create((set, get) => ({
       projectiles: [],
       targetMarkers: [],
       damageNumbers: [],
+      lootDrops: [],
     }),
 }));
 

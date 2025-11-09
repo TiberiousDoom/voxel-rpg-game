@@ -388,4 +388,5 @@ class SaveManager {
   }
 }
 
-module.exports = SaveManager;
+
+export default SaveManager;

@@ -220,7 +220,8 @@ export function useGameManager(config = {}) {
 
           // Update React state immediately (don't wait for tick)
           queueStateUpdate({
-            npcs: gm.orchestrator.gameState.npcs || []
+            npcs: gm.orchestrator.gameState.npcs || [],
+            population: gm.orchestrator.npcManager?.getStatistics() || {}
           });
         });
 

@@ -195,8 +195,6 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
             color="white"
             anchorX="center"
             anchorY="middle"
-            outlineWidth={0.02}
-            outlineColor="#000000"
           >
             {name}
           </Text>
@@ -234,8 +232,6 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
               color="white"
               anchorX="center"
               anchorY="middle"
-              outlineWidth={0.01}
-              outlineColor="#000000"
             >
               {Math.round(health)}/{maxHealth}
             </Text>

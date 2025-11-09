@@ -203,13 +203,25 @@ export function useGameManager(config = {}) {
         gm.on('building:placed', (data) => {
           // eslint-disable-next-line no-console
           console.log('Building placed:', data.buildingId);
-          // Building list will be updated on next tick:complete
+
+          // Update React state immediately (don't wait for tick)
+          queueStateUpdate({
+            buildings: gm.orchestrator.gameState.buildings?.map(b => ({
+              id: b.id,
+              type: b.type,
+              position: b.position
+            })) || []
+          });
         });
 
         gm.on('npc:spawned', (data) => {
           // eslint-disable-next-line no-console
           console.log('NPC spawned:', data.npc.id);
-          // NPC list will be updated on next tick:complete
+
+          // Update React state immediately (don't wait for tick)
+          queueStateUpdate({
+            npcs: gm.orchestrator.gameState.npcs || []
+          });
         });
 
         gm.on('tier:advanced', (data) => {

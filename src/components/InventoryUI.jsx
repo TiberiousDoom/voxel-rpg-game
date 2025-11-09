@@ -15,7 +15,7 @@ const InventoryUI = () => {
   const equipItem = useGameStore((state) => state.equipItem);
   const unequipItem = useGameStore((state) => state.unequipItem);
   const removeItem = useGameStore((state) => state.removeItem);
-  const consumeItem = useGameStore((state) => state.useConsumable);
+  const consumeItem = useGameStore((state) => state.consumeItem);
 
   useEffect(() => {
     const handleKeyPress = (e) => {

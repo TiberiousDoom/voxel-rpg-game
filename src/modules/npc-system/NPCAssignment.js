@@ -326,4 +326,4 @@ class NPCAssignment {
   }
 }
 
-module.exports = { NPCAssignment, BuildingSlot };
+export { NPCAssignment, BuildingSlot };

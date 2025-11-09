@@ -270,4 +270,4 @@ class MoraleCalculator {
   }
 }
 
-module.exports = MoraleCalculator;
+export default MoraleCalculator;

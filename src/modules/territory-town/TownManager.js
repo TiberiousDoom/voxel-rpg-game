@@ -364,4 +364,4 @@ class TownManager {
   }
 }
 
-module.exports = TownManager;
+export default TownManager;

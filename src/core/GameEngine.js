@@ -327,4 +327,4 @@ class GameEngine {
   }
 }
 
-module.exports = GameEngine;
+export default GameEngine;

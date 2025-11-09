@@ -275,4 +275,4 @@ class ConsumptionSystem {
   }
 }
 
-module.exports = ConsumptionSystem;
+export default ConsumptionSystem;

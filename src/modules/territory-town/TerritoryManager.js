@@ -424,4 +424,4 @@ class TerritoryManager {
   }
 }
 
-module.exports = { TerritoryManager, Territory };
+export { TerritoryManager, Territory };

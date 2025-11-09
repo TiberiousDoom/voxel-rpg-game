@@ -186,4 +186,4 @@ class GameEngineIntegration {
   }
 }
 
-module.exports = GameEngineIntegration;
+export default GameEngineIntegration;

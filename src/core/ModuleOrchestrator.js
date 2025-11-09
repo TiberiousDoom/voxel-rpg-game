@@ -449,4 +449,4 @@ class ModuleOrchestrator {
   }
 }
 
-module.exports = ModuleOrchestrator;
+export default ModuleOrchestrator;

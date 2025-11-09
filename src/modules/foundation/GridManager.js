@@ -320,4 +320,4 @@ class GridManager {
   }
 }
 
-module.exports = GridManager;
+export default GridManager;

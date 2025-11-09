@@ -701,4 +701,4 @@ class BuildingConfig {
   }
 }
 
-module.exports = BuildingConfig;
+export default BuildingConfig;

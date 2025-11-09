@@ -366,4 +366,4 @@ class TierProgression {
   }
 }
 
-module.exports = TierProgression;
+export default TierProgression;

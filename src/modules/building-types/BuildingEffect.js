@@ -395,4 +395,4 @@ class BuildingEffect {
   }
 }
 
-module.exports = BuildingEffect;
+export default BuildingEffect;

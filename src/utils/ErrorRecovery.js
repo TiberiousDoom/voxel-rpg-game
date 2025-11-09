@@ -345,4 +345,4 @@ class ErrorRecovery {
   }
 }
 
-module.exports = ErrorRecovery;
+export default ErrorRecovery;

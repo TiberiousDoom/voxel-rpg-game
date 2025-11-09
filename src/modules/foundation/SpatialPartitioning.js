@@ -314,4 +314,4 @@ class SpatialPartitioning {
   }
 }
 
-module.exports = SpatialPartitioning;
+export default SpatialPartitioning;

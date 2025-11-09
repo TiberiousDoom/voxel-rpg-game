@@ -303,4 +303,4 @@ class StorageManager {
   }
 }
 
-module.exports = StorageManager;
+export default StorageManager;

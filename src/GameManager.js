@@ -15,25 +15,25 @@
  * - Status and statistics
  */
 
-const GameEngine = require('./core/GameEngine');
-const ModuleOrchestrator = require('./core/ModuleOrchestrator');
-const GridManager = require('./modules/foundation/GridManager');
-const SpatialPartitioning = require('./modules/foundation/SpatialPartitioning');
-const BuildingConfig = require('./modules/building-types/BuildingConfig');
-const TierProgression = require('./modules/building-types/TierProgression');
-const BuildingEffect = require('./modules/building-types/BuildingEffect');
-const ProductionTick = require('./modules/resource-economy/ProductionTick');
-const StorageManager = require('./modules/resource-economy/StorageManager');
-const ConsumptionSystem = require('./modules/resource-economy/ConsumptionSystem');
-const MoraleCalculator = require('./modules/resource-economy/MoraleCalculator');
-const { TerritoryManager } = require('./modules/territory-town/TerritoryManager');
-const TownManager = require('./modules/territory-town/TownManager');
-const { NPCManager } = require('./modules/npc-system/NPCManager');
-const { NPCAssignment } = require('./modules/npc-system/NPCAssignment');
-const BrowserSaveManager = require('./persistence/BrowserSaveManager');
-const GameEngineIntegration = require('./persistence/GameEngineIntegration');
-const PerformanceMonitor = require('./utils/PerformanceMonitor');
-const ErrorRecovery = require('./utils/ErrorRecovery');
+import GameEngine from './core/GameEngine';
+import ModuleOrchestrator from './core/ModuleOrchestrator';
+import GridManager from './modules/foundation/GridManager';
+import SpatialPartitioning from './modules/foundation/SpatialPartitioning';
+import BuildingConfig from './modules/building-types/BuildingConfig';
+import TierProgression from './modules/building-types/TierProgression';
+import BuildingEffect from './modules/building-types/BuildingEffect';
+import ProductionTick from './modules/resource-economy/ProductionTick';
+import StorageManager from './modules/resource-economy/StorageManager';
+import ConsumptionSystem from './modules/resource-economy/ConsumptionSystem';
+import MoraleCalculator from './modules/resource-economy/MoraleCalculator';
+import { TerritoryManager } from './modules/territory-town/TerritoryManager';
+import TownManager from './modules/territory-town/TownManager';
+import { NPCManager } from './modules/npc-system/NPCManager';
+import { NPCAssignment } from './modules/npc-system/NPCAssignment';
+import BrowserSaveManager from './persistence/BrowserSaveManager';
+import GameEngineIntegration from './persistence/GameEngineIntegration';
+import PerformanceMonitor from './utils/PerformanceMonitor';
+import ErrorRecovery from './utils/ErrorRecovery';
 
 class GameManager {
   /**

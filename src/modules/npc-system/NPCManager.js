@@ -436,4 +436,4 @@ class NPCManager {
   }
 }
 
-module.exports = { NPCManager, NPC };
+export { NPCManager, NPC };

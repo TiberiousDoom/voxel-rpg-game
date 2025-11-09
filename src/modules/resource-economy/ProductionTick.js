@@ -275,4 +275,4 @@ class ProductionTick {
   }
 }
 
-module.exports = ProductionTick;
+export default ProductionTick;

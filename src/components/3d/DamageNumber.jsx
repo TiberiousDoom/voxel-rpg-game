@@ -39,8 +39,6 @@ const DamageNumber = ({ position, damage, id, onComplete }) => {
         color={isCrit ? '#ffff00' : isCombo ? '#00ffff' : '#ff4444'}
         anchorX="center"
         anchorY="middle"
-        outlineWidth={0.05}
-        outlineColor="#000000"
       >
         {isNumber ? `-${damage}` : damage}
       </Text>

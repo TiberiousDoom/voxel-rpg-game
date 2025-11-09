@@ -260,7 +260,12 @@ class BrowserSaveManager {
         const db = await this.dbPromise;
         if (db) {
           const tx = db.transaction('saves', 'readwrite');
-          await tx.objectStore('saves').delete(slotName);
+          const store = tx.objectStore('saves');
+          await new Promise((resolve, reject) => {
+            const request = store.delete(slotName);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+          });
         }
       }
 

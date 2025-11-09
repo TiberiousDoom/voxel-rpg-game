@@ -1,0 +1,204 @@
+{
+  "timestamp": "2025-11-09T02:18:20.677Z",
+  "tests": [
+    {
+      "testName": "Aura Coverage",
+      "buildingsChecked": 10,
+      "buildingsInAura": 10,
+      "buildingsOutOfAura": 0,
+      "details": [
+        {
+          "building": "Farm 1",
+          "position": "(22, 5, 12)",
+          "distance": "10.00",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 2",
+          "position": "(2, 5, 12)",
+          "distance": "10.00",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 3",
+          "position": "(12, 5, 22)",
+          "distance": "10.00",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 4",
+          "position": "(12, 5, 2)",
+          "distance": "10.00",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 5",
+          "position": "(18, 5, 18)",
+          "distance": "8.49",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 6",
+          "position": "(6, 5, 6)",
+          "distance": "8.49",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 7",
+          "position": "(24, 5, 24)",
+          "distance": "16.97",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 8",
+          "position": "(0, 5, 0)",
+          "distance": "16.97",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 9",
+          "position": "(20, 5, 12)",
+          "distance": "8.00",
+          "withinAura": true
+        },
+        {
+          "building": "Farm 10",
+          "position": "(4, 5, 12)",
+          "distance": "8.00",
+          "withinAura": true
+        }
+      ],
+      "pass": true
+    },
+    {
+      "testName": "Production Impact",
+      "farmDetails": [
+        {
+          "farmId": 1,
+          "distance": "10.00",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 2,
+          "distance": "10.00",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 3,
+          "distance": "10.00",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 4,
+          "distance": "10.00",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 5,
+          "distance": "8.49",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 6,
+          "distance": "8.49",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 7,
+          "distance": "16.97",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 8,
+          "distance": "16.97",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 9,
+          "distance": "8.00",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        },
+        {
+          "farmId": 10,
+          "distance": "8.00",
+          "inAura": true,
+          "production": 1,
+          "productionWithBonus": "1.0500"
+        }
+      ],
+      "totalFarmsInAura": 10,
+      "totalFarmsOutOfAura": 0,
+      "productionWithoutAura": 10,
+      "productionWithAura": 10.5,
+      "productionIncrease": 0.5,
+      "percentIncrease": "5.00",
+      "pass": true
+    },
+    {
+      "testName": "Multiplier Stacking",
+      "multipliers": {
+        "npc": 1.25,
+        "zone": 1.15,
+        "aura": 1.05,
+        "tech": 1.1,
+        "morale": 1.05
+      },
+      "finalMultiplier": 1.7433281250000003,
+      "hardCap": 2,
+      "pass": true
+    },
+    {
+      "testName": "Edge Cases",
+      "edgeCases": [
+        {
+          "case": "Exactly at 50 cells",
+          "distance": 50,
+          "inAura": true,
+          "expected": true,
+          "pass": true
+        },
+        {
+          "case": "Just outside at 50.1 cells",
+          "distance": 50.1,
+          "inAura": false,
+          "expected": false,
+          "pass": true
+        },
+        {
+          "case": "Just inside at 49.9 cells",
+          "distance": 49.9,
+          "inAura": true,
+          "expected": true,
+          "pass": true
+        }
+      ],
+      "allPassed": true,
+      "pass": true
+    }
+  ],
+  "summary": {
+    "totalTests": 4,
+    "passedTests": 4,
+    "failedTests": 0,
+    "allPassed": true,
+    "verdict": "BALANCED"
+  }
+}

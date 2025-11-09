@@ -1,0 +1,130 @@
+
+############################################################
+# AURA RADIUS TESTING - PHASE 4
+############################################################
+
+=== Setting up Aura Radius Test Scenario ===
+
+Town Center placed at (12, 5, 12)
+Aura radius: 50 cells
+
+Placing 10 FARMs at various distances...
+
+Farm 1: (22, 5, 12) (East, distance: 10.00) ✓ IN AURA
+Farm 2: (2, 5, 12) (West, distance: 10.00) ✓ IN AURA
+Farm 3: (12, 5, 22) (North, distance: 10.00) ✓ IN AURA
+Farm 4: (12, 5, 2) (South, distance: 10.00) ✓ IN AURA
+Farm 5: (18, 5, 18) (NE diagonal, distance: 8.49) ✓ IN AURA
+Farm 6: (6, 5, 6) (SW diagonal, distance: 8.49) ✓ IN AURA
+Farm 7: (24, 5, 24) (Far corner, distance: 16.97) ✓ IN AURA
+Farm 8: (0, 5, 0) (Opposite corner, distance: 16.97) ✓ IN AURA
+Farm 9: (20, 5, 12) (Edge 8, distance: 8.00) ✓ IN AURA
+Farm 10: (4, 5, 12) (Edge 9, distance: 8.00) ✓ IN AURA
+
+
+=== TEST 1: AURA COVERAGE ===
+
+✓ Farm 1: distance=10.00 (aura=50)
+✓ Farm 2: distance=10.00 (aura=50)
+✓ Farm 3: distance=10.00 (aura=50)
+✓ Farm 4: distance=10.00 (aura=50)
+✓ Farm 5: distance=8.49 (aura=50)
+✓ Farm 6: distance=8.49 (aura=50)
+✓ Farm 7: distance=16.97 (aura=50)
+✓ Farm 8: distance=16.97 (aura=50)
+✓ Farm 9: distance=8.00 (aura=50)
+✓ Farm 10: distance=8.00 (aura=50)
+
+Summary:
+  Total buildings checked: 10
+  In aura: 10
+  Out of aura: 0
+  Coverage: 100.0%
+
+✗ FAIL: Expected 6-8 farms in aura, got 10
+
+
+=== TEST 2: PRODUCTION IMPACT ===
+
+Farm 1: (22, 5, 12) (10.00 cells) production: 1.0 × 1.05 = 1.05
+Farm 2: (2, 5, 12) (10.00 cells) production: 1.0 × 1.05 = 1.05
+Farm 3: (12, 5, 22) (10.00 cells) production: 1.0 × 1.05 = 1.05
+Farm 4: (12, 5, 2) (10.00 cells) production: 1.0 × 1.05 = 1.05
+Farm 5: (18, 5, 18) (8.49 cells) production: 1.0 × 1.05 = 1.05
+Farm 6: (6, 5, 6) (8.49 cells) production: 1.0 × 1.05 = 1.05
+Farm 7: (24, 5, 24) (16.97 cells) production: 1.0 × 1.05 = 1.05
+Farm 8: (0, 5, 0) (16.97 cells) production: 1.0 × 1.05 = 1.05
+Farm 9: (20, 5, 12) (8.00 cells) production: 1.0 × 1.05 = 1.05
+Farm 10: (4, 5, 12) (8.00 cells) production: 1.0 × 1.05 = 1.05
+
+Production Summary:
+  Base production (all farms): 10 food/tick
+  Farms in aura: 10 × 1.05 = 10.50 food/tick
+  Farms outside aura: 0 × 1.0 = 0.00 food/tick
+  Total production: 10.50 food/tick
+  Increase: 0.50 food/tick (5.00%)
+
+✓ PASS: Aura should provide 3-6% production increase, got 5.00%
+
+
+=== TEST 3: MULTIPLIER STACKING ===
+
+Multiplier stack (in order):
+  1. NPC skill (trained): 1.25x
+  2. Zone bonus (agricultural): 1.15x
+  3. Aura (Town Center): 1.05x
+  4. Technology (basic): 1.1x
+  5. Morale (good): 1.05x
+
+After NPC: 1.2500x
+After Zone: 1.4375x
+After Aura: 1.5094x
+After Tech: 1.6603x
+After Morale: 1.7433x
+
+Before cap: 1.7433x
+Hard cap: 2x
+After cap: 1.7433x
+
+✓ PASS: Final multiplier 1.7433x is valid (1.5-2.0x range)
+  Aura does not cause multiplier overflow ✓
+
+
+=== TEST 4: DISTANCE EDGE CASES ===
+
+Edge case 1: Building at exactly 50 cells
+  Distance: 50
+  Aura radius: 50
+  In aura: true (at or inside boundary)
+  ✓ Expected: true
+
+Edge case 2: Building at 50.1 cells
+  Distance: 50.1
+  Aura radius: 50
+  In aura: false (outside boundary)
+  ✓ Expected: false
+
+Edge case 3: Building at 49.9 cells
+  Distance: 49.9
+  Aura radius: 50
+  In aura: true (inside boundary)
+  ✓ Expected: true
+
+✓ PASS: All edge cases handled correctly
+
+
+============================================================
+TEST SUMMARY
+============================================================
+✗ FAIL: Aura Coverage
+✓ PASS: Production Impact
+✓ PASS: Multiplier Stacking
+✓ PASS: Edge Cases
+
+============================================================
+✗ 1 TEST(S) FAILED
+Aura Radius Verdict: REQUIRES ADJUSTMENT
+============================================================
+
+Results saved to: /home/user/voxel-rpg-game/src/prototypes/aura-testing/aura-test-results.json
+Report saved to: /home/user/voxel-rpg-game/src/prototypes/aura-testing/AURA_TESTING_RESULTS.md

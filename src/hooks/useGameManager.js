@@ -113,6 +113,9 @@ export function useGameManager(config = {}) {
         setIsInitializing(true);
         setError(null);
 
+        // eslint-disable-next-line no-console
+        console.log('useGameManager: Starting initialization...');
+
         // Create GameManager with browser-compatible SaveManager
         const gm = new GameManager({
           ...options,
@@ -120,11 +123,20 @@ export function useGameManager(config = {}) {
           SaveManager: BrowserSaveManager
         });
 
+        // eslint-disable-next-line no-console
+        console.log('useGameManager: GameManager instance created');
+
         // Initialize all systems
         const initSuccess = gm.initialize();
+        // eslint-disable-next-line no-console
+        console.log('useGameManager: Initialize result:', initSuccess);
+
         if (!initSuccess) {
           throw new Error('Failed to initialize GameManager');
         }
+
+        // eslint-disable-next-line no-console
+        console.log('useGameManager: GameManager initialized successfully');
 
         gameManagerRef.current = gm;
 

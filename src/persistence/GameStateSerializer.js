@@ -178,21 +178,33 @@ class GameStateSerializer {
   static _serializeSpatial(spatial) {
     return {
       chunkSize: spatial.chunkSize,
-      buildingsByChunk: Array.from(spatial.buildingsByChunk.entries()).map(([key, buildings]) => ({
+      chunks: Array.from(spatial.chunks.entries()).map(([key, buildingIds]) => ({
         key,
-        buildings: buildings.map(b => ({ id: b.id, type: b.type, position: { ...b.position } }))
+        buildingIds: Array.from(buildingIds)
+      })),
+      buildingChunks: Array.from(spatial.buildingChunks.entries()).map(([buildingId, chunkKeys]) => ({
+        buildingId,
+        chunkKeys: Array.from(chunkKeys)
       }))
     };
   }
 
   static _deserializeSpatial(data, spatial, errors) {
-    if (!data || !data.buildingsByChunk) return;
+    if (!data) return;
 
     try {
-      spatial.buildingsByChunk.clear();
+      if (data.chunks) {
+        spatial.chunks.clear();
+        for (const chunk of data.chunks) {
+          spatial.chunks.set(chunk.key, new Set(chunk.buildingIds));
+        }
+      }
 
-      for (const chunk of data.buildingsByChunk) {
-        spatial.buildingsByChunk.set(chunk.key, chunk.buildings);
+      if (data.buildingChunks) {
+        spatial.buildingChunks.clear();
+        for (const mapping of data.buildingChunks) {
+          spatial.buildingChunks.set(mapping.buildingId, new Set(mapping.chunkKeys));
+        }
       }
     } catch (err) {
       errors.push(`Spatial deserialization error: ${err.message}`);

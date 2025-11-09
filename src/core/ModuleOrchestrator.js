@@ -359,6 +359,9 @@ class ModuleOrchestrator {
       this.territoryManager.addBuildingToTerritory(territory, building);
     }
 
+    // Update game state immediately for UI reactivity
+    this._updateGameState();
+
     return {
       success: true,
       buildingId: building.id,
@@ -395,6 +398,9 @@ class ModuleOrchestrator {
       this.npcManager.unassignNPC(npcId);
     }
 
+    // Update game state immediately for UI reactivity
+    this._updateGameState();
+
     return true;
   }
 
@@ -407,6 +413,10 @@ class ModuleOrchestrator {
     const npc = this.npcManager.spawnNPC(role, position);
     this.townManager.spawnNPC(role);
     this.consumption.registerNPC(npc.id, false);
+
+    // Update game state immediately for UI reactivity
+    this._updateGameState();
+
     return npc;
   }
 

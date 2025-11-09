@@ -205,4 +205,3 @@ class BuildingFactory {
   }
 }
 
-module.exports = BuildingFactory;

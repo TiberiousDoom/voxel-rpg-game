@@ -168,4 +168,5 @@ class SaveMigration {
   }
 }
 
-module.exports = SaveMigration;
+
+export default SaveMigration;

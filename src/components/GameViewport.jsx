@@ -41,7 +41,6 @@ function GameViewport({
 
   const NPC_COLOR = '#FF6B6B';
   const GRID_COLOR = '#E0E0E0';
-  const HOVER_COLOR = '#FFD700';
   const SELECTED_COLOR = '#FF4444';
 
   /**
@@ -226,6 +225,7 @@ function GameViewport({
   /**
    * Canvas animation loop
    */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -234,6 +234,7 @@ function GameViewport({
     if (!ctx) return;
 
     drawViewport(ctx);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildings, npcs, hoveredPosition, selectedBuildingType]);
 
   return (

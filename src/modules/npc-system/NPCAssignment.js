@@ -291,13 +291,9 @@ class NPCAssignment {
    */
   getStatistics() {
     const buildingStats = [];
-    let totalFilled = 0;
-    let totalSlots = 0;
 
     for (const [buildingId, slots] of this.slots) {
       const filled = slots.filter(s => s.isOccupied()).length;
-      totalFilled += filled;
-      totalSlots += slots.length;
 
       buildingStats.push({
         buildingId,

@@ -174,15 +174,20 @@ function GameViewport({
     if (!canvasRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
 
-    const position = canvasToWorld(x, y);
+    // Account for canvas scaling (CSS vs internal resolution)
+    const scaleX = CANVAS_WIDTH / rect.width;
+    const scaleY = CANVAS_HEIGHT / rect.height;
+
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    const position = canvasToWorld(canvasX, canvasY);
 
     if (selectedBuildingType) {
       onPlaceBuilding(selectedBuildingType, {
         x: position.x,
-        y: 50, // Fixed height for now
+        y: 25, // Fixed height (gridHeight is 50, so valid range is 0-49)
         z: position.z
       });
     } else {
@@ -197,10 +202,15 @@ function GameViewport({
     if (!canvasRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
 
-    const position = canvasToWorld(x, y);
+    // Account for canvas scaling (CSS vs internal resolution)
+    const scaleX = CANVAS_WIDTH / rect.width;
+    const scaleY = CANVAS_HEIGHT / rect.height;
+
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    const position = canvasToWorld(canvasX, canvasY);
 
     // Clamp to grid bounds
     if (

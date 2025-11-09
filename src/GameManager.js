@@ -486,7 +486,4 @@ class GameManager {
   }
 }
 
-// Support both CommonJS and ES6 module imports
-module.exports = GameManager;
-module.exports.default = GameManager;
 export default GameManager;

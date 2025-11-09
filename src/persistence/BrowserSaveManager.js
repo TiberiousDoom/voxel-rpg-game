@@ -11,8 +11,8 @@
  * - Metadata: Always in localStorage for fast listing
  */
 
-const GameStateSerializer = require('./GameStateSerializer');
-const SaveValidator = require('./SaveValidator');
+import GameStateSerializer from './GameStateSerializer';
+import SaveValidator from './SaveValidator';
 
 class BrowserSaveManager {
   /**
@@ -185,7 +185,7 @@ class BrowserSaveManager {
       const checksumValid = await this._validateChecksum(saveData);
       if (!checksumValid) {
         // Try to recover
-        const recovered = SaveValidator.repairSave(saveData);
+        const recovered = await SaveValidator.repairSave(saveData);
         if (!recovered.success) {
           return {
             success: false,
@@ -630,4 +630,4 @@ class BrowserSaveManager {
   }
 }
 
-module.exports = BrowserSaveManager;
+export default BrowserSaveManager;

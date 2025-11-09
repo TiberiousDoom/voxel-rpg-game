@@ -623,3 +623,4 @@ class GameStateSerializer {
 }
 
 module.exports = GameStateSerializer;
+export default GameStateSerializer;

@@ -1,0 +1,245 @@
+/**
+ * BuildMenu.css - Build menu styles
+ */
+
+.build-menu {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.panel-title {
+  margin: 0;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-title {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Building Selection Grid */
+.buildings-section {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.buildings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.building-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.building-button:hover {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: #999;
+}
+
+.building-button.active {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.2);
+}
+
+.building-icon {
+  font-size: 24px;
+}
+
+.building-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.building-description {
+  font-size: 10px;
+  color: #999;
+  font-style: italic;
+}
+
+/* NPC Controls */
+.npc-controls,
+.tier-controls {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.control-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.control-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-icon {
+  font-size: 16px;
+}
+
+.button-text {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.button-hint {
+  margin: 6px 0 0 0;
+  font-size: 10px;
+  color: #999;
+  text-align: center;
+}
+
+/* Build Instructions */
+.build-instructions {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.build-instructions h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.build-instructions ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.build-instructions li {
+  margin: 4px 0;
+}
+
+/* Current Selection */
+.current-selection {
+  padding: 12px;
+  background: rgba(102, 126, 234, 0.1);
+  border-top: 2px solid #667eea;
+  flex-shrink: 0;
+}
+
+.selection-text {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.selection-hint {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  color: #666;
+  font-style: italic;
+}
+
+.cancel-button {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #667eea;
+  border-radius: 4px;
+  background: white;
+  color: #667eea;
+  font-weight: 600;
+  font-size: 11px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background: #667eea;
+  color: white;
+}
+
+/* Scrollbar */
+.build-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.build-menu::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.build-menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.build-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .buildings-grid {
+    grid-template-columns: 1fr;
+  }
+}

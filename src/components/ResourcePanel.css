@@ -1,0 +1,132 @@
+/**
+ * ResourcePanel.css - Resource display styles
+ */
+
+.resource-panel {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.panel-title {
+  margin: 0;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 8px 8px 0 0;
+}
+
+.resources-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+}
+
+.resource-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.resource-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  text-align: center;
+  width: 30px;
+}
+
+.resource-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 70px;
+}
+
+.resource-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.resource-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+}
+
+.resource-bar {
+  flex: 1;
+  height: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  min-width: 50px;
+}
+
+.resource-footer {
+  padding: 10px;
+  border-top: 1px solid #e0e0e0;
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.resource-note {
+  margin: 0;
+  font-size: 11px;
+  color: #999;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Scrollbar */
+.resources-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.resources-grid::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.resources-grid::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.resources-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .resource-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .resource-bar {
+    width: 100%;
+  }
+}

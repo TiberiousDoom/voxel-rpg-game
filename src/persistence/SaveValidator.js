@@ -6,9 +6,8 @@
  * - Corruption detection
  * - Partial recovery of corrupted data
  * - Checksum generation and validation
+ * - Uses browser-native SubtleCrypto API instead of Node.js crypto
  */
-
-const crypto = require('crypto');
 
 class SaveValidator {
   /**
@@ -198,11 +197,11 @@ class SaveValidator {
   }
 
   /**
-   * Generate checksum for save data
+   * Generate checksum for save data using SubtleCrypto (browser-native)
    * @param {Object} data - Save data
-   * @returns {string} Checksum
+   * @returns {Promise<string>} Checksum (hex-encoded SHA-256)
    */
-  static generateChecksum(data) {
+  static async generateChecksum(data) {
     // Create a copy without checksum
     const dataCopy = { ...data };
     delete dataCopy.checksum;
@@ -216,33 +215,39 @@ class SaveValidator {
       npcs: dataCopy.npcs
     });
 
-    return crypto
-      .createHash('sha256')
-      .update(criticalData)
-      .digest('hex');
+    // Use browser-native SubtleCrypto API
+    const encoder = new TextEncoder();
+    const data_uint8 = encoder.encode(criticalData);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data_uint8);
+
+    // Convert to hex string
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    return hashHex;
   }
 
   /**
    * Validate save checksum
    * @param {Object} data - Save data with checksum
-   * @returns {boolean} Is checksum valid
+   * @returns {Promise<boolean>} Is checksum valid
    */
-  static validateChecksum(data) {
+  static async validateChecksum(data) {
     if (!data.checksum) {
       // No checksum in file, can't validate
       return true;
     }
 
-    const expectedChecksum = this.generateChecksum(data);
+    const expectedChecksum = await this.generateChecksum(data);
     return expectedChecksum === data.checksum;
   }
 
   /**
    * Attempt to repair corrupted save data
    * @param {Object} data - Potentially corrupted save data
-   * @returns {Object} {success, data}
+   * @returns {Promise<Object>} {success, data}
    */
-  static repairSave(data) {
+  static async repairSave(data) {
     if (!data || typeof data !== 'object') {
       return { success: false, data: null };
     }
@@ -292,7 +297,7 @@ class SaveValidator {
     }
 
     // Regenerate checksum
-    repaired.checksum = this.generateChecksum(repaired);
+    repaired.checksum = await this.generateChecksum(repaired);
 
     return {
       success: true,
@@ -437,4 +442,4 @@ class SaveValidator {
   }
 }
 
-module.exports = SaveValidator;
+export default SaveValidator;

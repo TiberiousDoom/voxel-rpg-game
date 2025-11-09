@@ -30,7 +30,7 @@ const { TerritoryManager } = require('./modules/territory-town/TerritoryManager'
 const TownManager = require('./modules/territory-town/TownManager');
 const { NPCManager } = require('./modules/npc-system/NPCManager');
 const { NPCAssignment } = require('./modules/npc-system/NPCAssignment');
-const SaveManager = require('./persistence/SaveManager');
+const BrowserSaveManager = require('./persistence/BrowserSaveManager');
 const GameEngineIntegration = require('./persistence/GameEngineIntegration');
 const PerformanceMonitor = require('./utils/PerformanceMonitor');
 const ErrorRecovery = require('./utils/ErrorRecovery');
@@ -98,6 +98,12 @@ class GameManager {
       const storage = new StorageManager();
       const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
       const consumption = new ConsumptionSystem();
+
+      // Initialize BrowserSaveManager for browser-based persistence
+      this.saveManager = new BrowserSaveManager({
+        maxLocalStorageSaveSize: 100 * 1024, // 100KB
+        useIndexedDB: true
+      });
       const morale = new MoraleCalculator();
       const territoryManager = new TerritoryManager(buildingConfig);
       const townManager = new TownManager(buildingConfig);
@@ -123,9 +129,6 @@ class GameManager {
 
       // Create game engine
       this.engine = new GameEngine(this.orchestrator);
-
-      // Initialize save manager
-      this.saveManager = new SaveManager(this.config.savePath);
 
       // Initialize persistence integration
       this.persistenceIntegration = new GameEngineIntegration(
@@ -483,4 +486,7 @@ class GameManager {
   }
 }
 
+// Support both CommonJS and ES6 module imports
 module.exports = GameManager;
+module.exports.default = GameManager;
+export default GameManager;

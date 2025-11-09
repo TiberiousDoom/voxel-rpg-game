@@ -1,0 +1,213 @@
+/**
+ * NPCPanel.css - NPC and morale display styles
+ */
+
+.npc-panel {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.panel-title {
+  margin: 0;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 8px 8px 0 0;
+}
+
+.npc-panel > div {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.npc-panel > div:last-child {
+  border-bottom: none;
+  flex: 1;
+}
+
+/* Population Section */
+.population-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.stat-item label {
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.stat-value {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.alive-count {
+  color: #4caf50;
+}
+
+.separator {
+  color: #999;
+}
+
+.total-count {
+  color: #666;
+}
+
+.population-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.population-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50 0%, #81c784 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: 11px;
+  color: #999;
+  text-align: center;
+}
+
+/* Morale Section */
+.morale-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.morale-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.morale-header label {
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 13px;
+}
+
+.morale-emoji {
+  font-size: 20px;
+}
+
+.morale-value {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  padding: 4px;
+}
+
+.morale-bar {
+  width: 100%;
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.morale-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.morale-state {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.morale-info {
+  background: rgba(0, 0, 0, 0.02);
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 2px solid #667eea;
+}
+
+.info-text {
+  margin: 0;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Footer */
+.npc-footer {
+  background: rgba(0, 0, 0, 0.01);
+  padding: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.stat-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.stat-hint strong {
+  color: #333;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stat-item {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+
+  .stat-value {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .morale-header {
+    justify-content: flex-start;
+  }
+}

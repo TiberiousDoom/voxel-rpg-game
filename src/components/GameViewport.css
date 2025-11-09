@@ -1,0 +1,134 @@
+/**
+ * GameViewport.css - Game world viewport styles
+ */
+
+.game-viewport {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  gap: 10px;
+}
+
+.viewport-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.viewport-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+  font-weight: 600;
+}
+
+.building-type-indicator {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.building-type-indicator strong {
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+/* Canvas */
+.viewport-canvas {
+  flex: 1;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: crosshair;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.viewport-canvas:hover {
+  border-color: #999;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Footer */
+.viewport-footer {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 10px;
+}
+
+.viewport-hint {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+}
+
+.building-legend {
+  background: rgba(0, 0, 0, 0.02);
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.building-legend h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.building-legend ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 6px;
+}
+
+.building-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #555;
+  padding: 4px 6px;
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .building-legend ul {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  }
+
+  .building-legend li {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .viewport-canvas {
+    max-width: 100%;
+    max-height: 300px;
+  }
+
+  .building-legend ul {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

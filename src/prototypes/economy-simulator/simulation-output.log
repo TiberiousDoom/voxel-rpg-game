@@ -1,0 +1,90 @@
+
+############################################################
+# ECONOMY SIMULATOR - 1 HOUR SIMULATION TEST
+############################################################
+
+=== Setting up test economy scenario ===
+
+Buildings created:
+  - CAMPFIRE (5 production)
+  - FARM (1 production)
+  - FARM (1 production)
+  - WORKSHOP (1 production)
+  - STORAGE (0 production)
+
+NPCs created: 3
+  - FARMER (ID: 0)
+  - FARMER (ID: 1)
+  - WORKER (ID: 2)
+
+Starting resources:
+  - Gold: 620
+  - Storage: 620/2000
+
+
+=== Running simulation for 720 ticks (60.0 minutes) ===
+
+
+⚠️  All NPCs starved at tick 3
+
+=== Simulation Complete ===
+Real time elapsed: 0.00s
+Simulation speed: 4455853.63x real-time
+
+============================================================
+SIMULATION SUMMARY
+============================================================
+
+Duration: 3 ticks (0.3 minutes)
+
+Final Resources:
+  Food: 0
+  Wood: -200
+  Stone: 0
+  Gold: 620
+
+Production Summary:
+  Total Food: -133
+  Total Wood: -200
+
+Consumption Summary:
+  Total Consumed: 0.17 food
+  NPCs Starved: 3
+  Final NPC Count: 0
+
+Final Morale:
+  Town Morale: 0
+  Production Multiplier: 1.0000x
+  State: Fair
+
+Average Happiness: 0
+
+============================================================
+
+============================================================
+VALIDATION
+============================================================
+
+✗ VALIDATION FAILED
+
+Issues:
+  - All NPCs starved - consumption too high or production too low
+
+Key Metrics:
+  - Simulation duration: 0.3 minutes
+  - Food balance: 0
+  - NPCs survived: 0
+  - Average morale: -17.7
+
+============================================================
+SAVING RESULTS
+============================================================
+
+Results saved to: /home/user/voxel-rpg-game/src/prototypes/economy-simulator/economy-simulation-results.json
+Report saved to: /home/user/voxel-rpg-game/src/prototypes/economy-simulator/ECONOMY_SIMULATOR_REPORT.md
+
+============================================================
+SIMULATION COMPLETE
+============================================================
+
+✗ Economy has ISSUES - may need adjustment

@@ -1,0 +1,67 @@
+{
+  "timestamp": "2025-11-09T02:02:31.095Z",
+  "testRuns": [
+    {
+      "npcCount": 50,
+      "tickDuration": 600,
+      "simulationTimeMs": 97.57879799999999,
+      "simulationSpeed": "1.63",
+      "fps": {
+        "average": 6262.2,
+        "min": 79.3,
+        "max": 9514.5
+      },
+      "frameTiming": {
+        "averageMs": "0.16",
+        "minMs": "0.11",
+        "maxMs": "12.60",
+        "pathfindingMs": "0.02",
+        "movementMs": "0.13"
+      },
+      "movement": {
+        "npcMovedThisTick": 30000,
+        "totalDistance": "41853.55",
+        "averageDistancePerNPC": "837.07",
+        "averageMovementTicksPerNPC": "600.00",
+        "stuckRecoveries": 0
+      },
+      "pass": {
+        "fps50OrBetter": true,
+        "fps25OrBetter": true,
+        "pathfindingUnder50ms": true,
+        "noCrashes": true
+      }
+    },
+    {
+      "npcCount": 100,
+      "tickDuration": 600,
+      "simulationTimeMs": 151.267061,
+      "simulationSpeed": "2.52",
+      "fps": {
+        "average": 3997.8,
+        "min": 121.9,
+        "max": 19625.9
+      },
+      "frameTiming": {
+        "averageMs": "0.25",
+        "minMs": "0.05",
+        "maxMs": "8.20",
+        "pathfindingMs": "0.01",
+        "movementMs": "0.22"
+      },
+      "movement": {
+        "npcMovedThisTick": 60000,
+        "totalDistance": "83809.82",
+        "averageDistancePerNPC": "838.10",
+        "averageMovementTicksPerNPC": "600.00",
+        "stuckRecoveries": 0
+      },
+      "pass": {
+        "fps50OrBetter": true,
+        "fps25OrBetter": true,
+        "pathfindingUnder50ms": true,
+        "noCrashes": true
+      }
+    }
+  ]
+}

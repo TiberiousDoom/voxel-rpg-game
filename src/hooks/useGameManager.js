@@ -106,6 +106,7 @@ export function useGameManager(config = {}) {
    * Initialize GameManager and set up event listeners
    * Runs only once on component mount
    */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const initializeGameManager = async () => {
       try {
@@ -188,11 +189,13 @@ export function useGameManager(config = {}) {
         });
 
         gm.on('building:placed', (data) => {
+          // eslint-disable-next-line no-console
           console.log('Building placed:', data.buildingId);
           // Building list will be updated on next tick:complete
         });
 
         gm.on('npc:spawned', (data) => {
+          // eslint-disable-next-line no-console
           console.log('NPC spawned:', data.npc.id);
           // NPC list will be updated on next tick:complete
         });
@@ -204,10 +207,12 @@ export function useGameManager(config = {}) {
         });
 
         gm.on('game:saved', (data) => {
+          // eslint-disable-next-line no-console
           console.log('Game saved:', data.slot);
         });
 
         gm.on('game:loaded', (data) => {
+          // eslint-disable-next-line no-console
           console.log('Game loaded:', data.slot);
           // State will be updated on next tick:complete
         });
@@ -263,6 +268,7 @@ export function useGameManager(config = {}) {
         gameManagerRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - run only on mount
 
   /**

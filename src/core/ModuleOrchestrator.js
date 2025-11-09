@@ -335,6 +335,7 @@ class ModuleOrchestrator {
    */
   placeBuilding(building) {
     // Validate with BuildingConfig
+    // eslint-disable-next-line no-unused-vars
     const config = this.buildingConfig.getConfig(building.type);
 
     // Place on grid

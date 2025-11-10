@@ -85,6 +85,7 @@ class GameManager {
   initialize() {
     try {
       if (this.gameState !== GameManager.GAME_STATE.UNINITIALIZED) {
+        // eslint-disable-next-line no-console
         console.warn('Game already initialized');
         return false;
       }
@@ -159,6 +160,7 @@ class GameManager {
 
       return true;
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Failed to initialize game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
       this._emit('game:error', { error: err.message });
@@ -174,11 +176,13 @@ class GameManager {
   async startGame(saveSlot = null) {
     try {
       if (this.gameState === GameManager.GAME_STATE.RUNNING) {
+        // eslint-disable-next-line no-console
         console.warn('Game already running');
         return false;
       }
 
       if (!this.orchestrator || !this.engine) {
+        // eslint-disable-next-line no-console
         console.error('Game not initialized');
         return false;
       }
@@ -192,6 +196,7 @@ class GameManager {
         );
 
         if (!loadResult.success) {
+          // eslint-disable-next-line no-console
           console.error('Failed to load save:', loadResult.message);
           return false;
         }
@@ -215,6 +220,7 @@ class GameManager {
 
       return true;
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Failed to start game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
       this._emit('game:error', { error: err.message });
@@ -242,6 +248,7 @@ class GameManager {
 
       return true;
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Failed to stop game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
       return false;
@@ -465,6 +472,7 @@ class GameManager {
         try {
           callback(data);
         } catch (err) {
+          // eslint-disable-next-line no-console
           console.error(`Error in event callback for ${event}:`, err);
         }
       }

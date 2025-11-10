@@ -68,8 +68,9 @@ function GameViewport({
 
   /**
    * Draw the game world
+   * Memoized to prevent unnecessary re-renders
    */
-  const drawViewport = (ctx) => {
+  const drawViewport = React.useCallback((ctx) => {
     // Clear canvas
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -167,7 +168,7 @@ function GameViewport({
         TILE_SIZE - 4
       );
     }
-  };
+  }, [buildings, npcs, hoveredPosition, selectedBuildingType, CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, GRID_COLOR, BUILDING_COLORS, NPC_COLOR, SELECTED_COLOR]);
 
   /**
    * Handle canvas click for placement
@@ -279,8 +280,7 @@ function GameViewport({
         cancelAnimationFrame(rafRef.current);
       }
     };
-  // Only re-render when these actually change
-  }, [buildings, npcs, hoveredPosition, selectedBuildingType]);
+  }, [drawViewport]);
 
   return (
     <div className="game-viewport">

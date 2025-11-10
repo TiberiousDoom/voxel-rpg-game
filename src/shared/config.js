@@ -57,13 +57,13 @@ export const BUILDING_TIERS = {
 // The grid is square-based with configurable cell size.
 
 // Grid dimensions: The playable building area is a square grid.
-// Why 100x100? It provides sufficient space for a mid-size settlement
-// while remaining performant with spatial hashing.
+// 10x10 grid matches the GameViewport canvas size for proper visual alignment.
+// This ensures buildings placed in the world appear correctly in the viewport.
 export const GRID = {
   CELL_SIZE: 1,              // Size of each grid cell in world units
-  GRID_WIDTH: 100,           // Grid cells wide
-  GRID_HEIGHT: 100,          // Grid cells tall
-  GRID_ORIGIN: { x: -50, z: -50 }, // World position of grid origin (bottom-left)
+  GRID_WIDTH: 10,            // Grid cells wide (matches GameViewport GRID_WIDTH)
+  GRID_HEIGHT: 10,           // Grid cells tall (matches GameViewport GRID_HEIGHT)
+  GRID_ORIGIN: { x: -5, z: -5 }, // World position of grid origin (bottom-left)
 
   // Rotation rules: Buildings can snap to cardinal directions
   ALLOWED_ROTATIONS: [0, 90, 180, 270], // Degrees

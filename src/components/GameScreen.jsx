@@ -92,6 +92,19 @@ function GameScreen() {
 
         {/* Center - Main Game Viewport */}
         <main className="game-viewport-container">
+          {/* Game Stopped Banner - Show when game is not running */}
+          {!gameState.isRunning && (
+            <div className="game-stopped-banner">
+              <div className="banner-content">
+                <h2>⚠️ Game is Stopped</h2>
+                <p>Click the <strong>▶️ PLAY</strong> button at the bottom to start!</p>
+                <p className="banner-hint">
+                  Resources won't produce and NPCs won't work until the game is running.
+                </p>
+              </div>
+            </div>
+          )}
+
           <GameViewport
             buildings={gameState.buildings}
             npcs={gameState.npcs}
@@ -111,7 +124,15 @@ function GameScreen() {
           <BuildMenu
             selectedBuildingType={selectedBuildingType}
             onSelectBuilding={setSelectedBuildingType}
-            onSpawnNPC={() => actions.spawnNPC('FARMER')}
+            onSpawnNPC={() => {
+              // Generate random position within grid bounds (0-9)
+              const randomPos = {
+                x: Math.floor(Math.random() * 10),
+                y: 25,
+                z: Math.floor(Math.random() * 10)
+              };
+              actions.spawnNPC('FARMER', randomPos);
+            }}
             onAdvanceTier={() => actions.advanceTier()}
           />
         </aside>

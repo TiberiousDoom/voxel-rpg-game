@@ -243,6 +243,7 @@ export function useGameManager(config = {}) {
         });
 
         gm.on('game:error', (data) => {
+          // eslint-disable-next-line no-console
           console.error('Game error:', data.error);
           setError(data.error);
         });
@@ -262,6 +263,7 @@ export function useGameManager(config = {}) {
         setIsReady(true);
         setIsInitializing(false);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error('Failed to initialize GameManager:', err);
         setError(err.message);
         setIsInitializing(false);
@@ -282,6 +284,7 @@ export function useGameManager(config = {}) {
       // Stop game if running
       if (gameManagerRef.current?.isRunning) {
         gameManagerRef.current.stopGame().catch(err => {
+          // eslint-disable-next-line no-console
           console.error('Error stopping game:', err);
         });
       }

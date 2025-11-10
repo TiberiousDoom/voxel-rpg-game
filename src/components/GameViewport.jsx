@@ -11,6 +11,26 @@
 import React, { useState, useRef } from 'react';
 import './GameViewport.css';
 
+// Grid constants
+const GRID_WIDTH = 10;
+const GRID_HEIGHT = 10;
+const TILE_SIZE = 40;
+const CANVAS_WIDTH = GRID_WIDTH * TILE_SIZE;
+const CANVAS_HEIGHT = GRID_HEIGHT * TILE_SIZE;
+
+// Color constants (moved outside component to prevent re-creation on every render)
+const BUILDING_COLORS = {
+  FARM: '#90EE90',
+  HOUSE: '#D2B48C',
+  WAREHOUSE: '#A9A9A9',
+  TOWN_CENTER: '#FFD700',
+  WATCHTOWER: '#8B4513'
+};
+
+const NPC_COLOR = '#FF6B6B';
+const GRID_COLOR = '#E0E0E0';
+const SELECTED_COLOR = '#FF4444';
+
 /**
  * GameViewport Component
  * Renders the voxel game world with buildings and NPCs
@@ -26,24 +46,6 @@ function GameViewport({
   const canvasRef = useRef(null);
   const rafRef = useRef(null); // requestAnimationFrame reference
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
-
-  const GRID_WIDTH = 10;
-  const GRID_HEIGHT = 10;
-  const TILE_SIZE = 40;
-  const CANVAS_WIDTH = GRID_WIDTH * TILE_SIZE;
-  const CANVAS_HEIGHT = GRID_HEIGHT * TILE_SIZE;
-
-  const BUILDING_COLORS = {
-    FARM: '#90EE90',
-    HOUSE: '#D2B48C',
-    WAREHOUSE: '#A9A9A9',
-    TOWN_CENTER: '#FFD700',
-    WATCHTOWER: '#8B4513'
-  };
-
-  const NPC_COLOR = '#FF6B6B';
-  const GRID_COLOR = '#E0E0E0';
-  const SELECTED_COLOR = '#FF4444';
 
   /**
    * Convert world position to canvas coordinates
@@ -168,7 +170,7 @@ function GameViewport({
         TILE_SIZE - 4
       );
     }
-  }, [buildings, npcs, hoveredPosition, selectedBuildingType, CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, GRID_COLOR, BUILDING_COLORS, NPC_COLOR, SELECTED_COLOR]);
+  }, [buildings, npcs, hoveredPosition, selectedBuildingType]);
 
   /**
    * Handle canvas click for placement

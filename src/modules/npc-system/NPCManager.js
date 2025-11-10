@@ -244,8 +244,6 @@ class NPCManager {
     this.idleNPCs.add(id);
     this.stats.totalSpawned++;
 
-    console.log(`[NPCManager] Spawned NPC ${id} (${role}) at position (${position.x}, ${position.y}, ${position.z})`);
-
     // Register with town system
     this.townManager.spawnNPC(role);
 

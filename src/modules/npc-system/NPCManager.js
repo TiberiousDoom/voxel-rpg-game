@@ -206,10 +206,32 @@ class NPCManager {
   /**
    * Spawn a new NPC
    * @param {string} role - NPC role (FARMER, CRAFTSMAN, GUARD, WORKER)
-   * @param {Object} position - Starting position
+   * @param {Object} position - Starting position (if null, generates random position)
    * @returns {NPC} Created NPC
    */
-  spawnNPC(role, position = { x: 50, y: 25, z: 50 }) {
+  spawnNPC(role, position = null) {
+    const GRID_SIZE = 10; // Must match GRID.GRID_WIDTH from config.js
+
+    // If no position provided, generate random position within grid bounds
+    if (!position) {
+      position = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: 25,
+        z: Math.floor(Math.random() * GRID_SIZE)
+      };
+    }
+
+    // Validate position is within bounds
+    if (position.x < 0 || position.x >= GRID_SIZE ||
+        position.z < 0 || position.z >= GRID_SIZE) {
+      console.warn(`[NPCManager] Spawn position (${position.x}, ${position.z}) out of bounds, using random`);
+      position = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: 25,
+        z: Math.floor(Math.random() * GRID_SIZE)
+      };
+    }
+
     const id = this.npcIdCounter++;
     const npc = new NPC(id, {
       role: role,
@@ -221,6 +243,8 @@ class NPCManager {
     this.npcs.set(id, npc);
     this.idleNPCs.add(id);
     this.stats.totalSpawned++;
+
+    console.log(`[NPCManager] Spawned NPC ${id} (${role}) at position (${position.x}, ${position.y}, ${position.z})`);
 
     // Register with town system
     this.townManager.spawnNPC(role);

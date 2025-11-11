@@ -147,8 +147,8 @@ function GameScreen() {
           onStop={actions.stopGame}
           onPause={actions.pauseGame}
           onResume={actions.resumeGame}
-          onSave={() => actions.saveGame('autosave')}
-          onLoad={() => actions.loadGame('autosave')}
+          onSave={(slot) => actions.saveGame(slot)}
+          onLoad={(slot) => actions.loadGame(slot)}
         />
       </footer>
 

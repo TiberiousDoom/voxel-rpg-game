@@ -15,7 +15,7 @@ describe('GridManager', () => {
 
   describe('Constructor', () => {
     test('creates grid with default size', () => {
-      expect(gridManager.gridSize).toBe(100);
+      expect(gridManager.gridSize).toBe(10);
       expect(gridManager.gridHeight).toBe(50);
     });
 
@@ -38,7 +38,7 @@ describe('GridManager', () => {
 
   describe('Position Validation', () => {
     test('validates position within bounds', () => {
-      const result = gridManager.validateBounds(50, 25, 50);
+      const result = gridManager.validateBounds(5, 25, 5);
       expect(result.valid).toBe(true);
     });
 
@@ -49,7 +49,7 @@ describe('GridManager', () => {
     });
 
     test('rejects X coordinate beyond grid size', () => {
-      const result = gridManager.validateBounds(100, 0, 0);
+      const result = gridManager.validateBounds(10, 0, 0);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('out of bounds');
     });
@@ -62,7 +62,7 @@ describe('GridManager', () => {
 
     test('accepts boundary values', () => {
       expect(gridManager.validateBounds(0, 0, 0).valid).toBe(true);
-      expect(gridManager.validateBounds(99, 0, 99).valid).toBe(true);
+      expect(gridManager.validateBounds(9, 0, 9).valid).toBe(true);
       expect(gridManager.validateBounds(0, 49, 0).valid).toBe(true);
     });
   });

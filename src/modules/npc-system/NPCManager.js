@@ -264,28 +264,6 @@ class NPCManager {
     };
   }
 
-    const id = this.npcIdCounter++;
-    const npc = new NPC(id, {
-      role: role,
-      position: position,
-      happiness: 50,
-      morale: 0
-    });
-
-    this.npcs.set(id, npc);
-    this.idleNPCs.add(id);
-    this.stats.totalSpawned++;
-
-    // Register with town system
-    this.townManager.spawnNPC(role);
-
-    return {
-      success: true,
-      npcId: id,
-      npc: npc
-    };
-  }
-
   /**
    * Get NPC by ID
    * @param {number} npcId - NPC ID

@@ -14,116 +14,116 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import useGameManager from '../useGameManager';
 
-// Mock GameManager class
-class MockGameManager {
-  constructor() {
-    this.isRunning = false;
-    this.eventListeners = {};
-    this.orchestrator = {
-      tickCount: 0,
-      gameState: {
-        currentTier: 'SURVIVAL',
-        buildings: [],
-        npcs: []
-      },
-      getStatistics: jest.fn().mockReturnValue({
-        aliveCount: 0,
-        totalSpawned: 0
-      }),
-      storage: {
-        getStorage: jest.fn().mockReturnValue({
-          food: 100,
-          wood: 50,
-          stone: 50,
-          gold: 0,
-          essence: 0,
-          crystal: 0
-        })
-      },
-      morale: {
-        getCurrentMorale: jest.fn().mockReturnValue(0),
-        getMoraleState: jest.fn().mockReturnValue('NEUTRAL')
-      },
-      npcManager: {
+// Mock GameManager - must be defined inline in jest.mock to avoid TDZ issues
+jest.mock('../../GameManager', () => {
+  return class MockGameManager {
+    constructor() {
+      this.isRunning = false;
+      this.eventListeners = {};
+      this.orchestrator = {
+        tickCount: 0,
+        gameState: {
+          currentTier: 'SURVIVAL',
+          buildings: [],
+          npcs: []
+        },
         getStatistics: jest.fn().mockReturnValue({
           aliveCount: 0,
           totalSpawned: 0
-        })
+        }),
+        storage: {
+          getStorage: jest.fn().mockReturnValue({
+            food: 100,
+            wood: 50,
+            stone: 50,
+            gold: 0,
+            essence: 0,
+            crystal: 0
+          })
+        },
+        morale: {
+          getCurrentMorale: jest.fn().mockReturnValue(0),
+          getMoraleState: jest.fn().mockReturnValue('NEUTRAL')
+        },
+        npcManager: {
+          getStatistics: jest.fn().mockReturnValue({
+            aliveCount: 0,
+            totalSpawned: 0
+          })
+        }
+      };
+      this.engine = {
+        fps: 60
+      };
+      this.performanceMonitor = null;
+    }
+
+    initialize() {
+      return true;
+    }
+
+    async stopGame() {
+      return true;
+    }
+
+    async startGame() {
+      return true;
+    }
+
+    pauseGame() {}
+
+    resumeGame() {}
+
+    placeBuilding() {
+      return { success: true };
+    }
+
+    spawnNPC() {
+      return { id: 'npc-1', role: 'FARMER' };
+    }
+
+    advanceTier() {
+      return { success: true };
+    }
+
+    saveGame() {
+      return { success: true };
+    }
+
+    loadGame() {
+      return { success: true };
+    }
+
+    getSaveSlots() {
+      return [];
+    }
+
+    getGameStatus() {
+      return {};
+    }
+
+    on(event, callback) {
+      if (!this.eventListeners[event]) {
+        this.eventListeners[event] = [];
       }
-    };
-    this.engine = {
-      fps: 60
-    };
-    this.performanceMonitor = null;
-  }
-
-  initialize() {
-    return true;
-  }
-
-  async stopGame() {
-    return true;
-  }
-
-  async startGame() {
-    return true;
-  }
-
-  pauseGame() {}
-
-  resumeGame() {}
-
-  placeBuilding() {
-    return { success: true };
-  }
-
-  spawnNPC() {
-    return { id: 'npc-1', role: 'FARMER' };
-  }
-
-  advanceTier() {
-    return { success: true };
-  }
-
-  saveGame() {
-    return { success: true };
-  }
-
-  loadGame() {
-    return { success: true };
-  }
-
-  getSaveSlots() {
-    return [];
-  }
-
-  getGameStatus() {
-    return {};
-  }
-
-  on(event, callback) {
-    if (!this.eventListeners[event]) {
-      this.eventListeners[event] = [];
+      this.eventListeners[event].push(callback);
     }
-    this.eventListeners[event].push(callback);
-  }
 
-  off(event, callback) {
-    if (this.eventListeners[event]) {
-      this.eventListeners[event] = this.eventListeners[event].filter(
-        cb => cb !== callback
-      );
+    off(event, callback) {
+      if (this.eventListeners[event]) {
+        this.eventListeners[event] = this.eventListeners[event].filter(
+          cb => cb !== callback
+        );
+      }
     }
-  }
 
-  emit(event, data) {
-    if (this.eventListeners[event]) {
-      this.eventListeners[event].forEach(cb => cb(data));
+    emit(event, data) {
+      if (this.eventListeners[event]) {
+        this.eventListeners[event].forEach(cb => cb(data));
+      }
     }
-  }
-}
-
-jest.mock('../../GameManager', () => MockGameManager);
+  };
+});
 
 jest.mock('../../persistence/BrowserSaveManager', () => {
   return jest.fn().mockImplementation(() => ({}));
@@ -142,13 +142,13 @@ describe('useGameManager Hook', () => {
     test('should initialize hook on mount', async () => {
       const { result } = renderHook(() => useGameManager());
 
-      expect(result.current.isInitializing).toBe(true);
-
+      // With mock GameManager, initialization is synchronous
+      // So we just wait for the hook to be ready
       await waitFor(() => {
         expect(result.current.isInitializing).toBe(false);
+        expect(result.current.isReady).toBe(true);
       });
 
-      expect(result.current.isReady).toBe(true);
       expect(result.current.gameManager).toBeDefined();
     });
 
@@ -331,7 +331,8 @@ describe('useGameManager Hook', () => {
         result.current.actions.spawnNPC('FARMER');
       });
 
-      expect(spawnNPCSpy).toHaveBeenCalledWith('FARMER');
+      // spawnNPC accepts (role, position), position will be undefined if not provided
+      expect(spawnNPCSpy).toHaveBeenCalledWith('FARMER', undefined);
     });
 
     test('should call saveGame with slot name', async () => {
@@ -347,7 +348,8 @@ describe('useGameManager Hook', () => {
         result.current.actions.saveGame('slot-1');
       });
 
-      expect(saveGameSpy).toHaveBeenCalledWith('slot-1');
+      // saveGame accepts (slotName, description), description defaults to ''
+      expect(saveGameSpy).toHaveBeenCalledWith('slot-1', '');
     });
   });
 

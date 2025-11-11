@@ -184,6 +184,11 @@ export const calculateTotalProduction = (buildings) => {
   const totalProduction = {};
 
   buildings.forEach((building) => {
+    // Skip null/undefined buildings
+    if (!building || !building.type) {
+      return;
+    }
+
     const data = getProductionData(building.type);
     if (data && data.produces) {
       Object.entries(data.produces).forEach(([resource, rate]) => {

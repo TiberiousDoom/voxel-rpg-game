@@ -40,7 +40,11 @@ export default class GameManager extends EventEmitter {
    */
   initialize() {
     try {
-      console.log('[GameManager] Initializing...');
+      if (this.gameState !== GameManager.GAME_STATE.UNINITIALIZED) {
+        // eslint-disable-next-line no-console
+        console.warn('Game already initialized');
+        return false;
+      }
 
       // Initialize save manager
       this.saveManager = new BrowserSaveManager({
@@ -137,11 +141,16 @@ export default class GameManager extends EventEmitter {
   async startGame(saveSlot = null) {
     try {
       if (this.gameState === GameManager.GAME_STATE.RUNNING) {
-        console.warn('[GameManager] Game already running');
+        // eslint-disable-next-line no-console
+        console.warn('Game already running');
         return false;
       }
 
-      console.log('[GameManager] Starting game...');
+      if (!this.orchestrator || !this.engine) {
+        // eslint-disable-next-line no-console
+        console.error('Game not initialized');
+        return false;
+      }
 
       // Load save if provided
       if (saveSlot && this.saveManager?.saveExists(saveSlot)) {
@@ -540,6 +549,19 @@ export default class GameManager extends EventEmitter {
     };
   }
 
+  /**
+   * Emit game event
+   * @private
+   */
+  _emit(event, data) {
+    if (this.eventCallbacks.has(event)) {
+      for (const callback of this.eventCallbacks.get(event)) {
+        try {
+          callback(data);
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error(`Error in event callback for ${event}:`, err);
+        }
   _createMockConsumptionSystem() {
     return {
       executeConsumptionTick: () => ({

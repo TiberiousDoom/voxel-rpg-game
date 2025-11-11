@@ -377,15 +377,24 @@ class GameManager {
    * Spawn an NPC
    * @param {string} role - NPC role
    * @param {Object} position - Starting position
-   * @returns {Object} NPC or error
+   * @returns {Object} Result object with success status
    */
   spawnNPC(role, position) {
     try {
-      const npc = this.orchestrator.spawnNPC(role, position);
-      this._emit('npc:spawned', { npc });
-      return npc;
+      const result = this.orchestrator.spawnNPC(role, position);
+
+      if (result.success) {
+        this._emit('npc:spawned', { npc: result.npc });
+      } else {
+        this._emit('game:error', { error: result.error });
+      }
+
+      return result;
     } catch (err) {
-      const errorResult = { error: err.message };
+      const errorResult = {
+        success: false,
+        error: err.message
+      };
       this._emit('game:error', { error: err.message });
       return errorResult;
     }

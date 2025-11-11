@@ -12,7 +12,8 @@ describe('NPCManager', () => {
   beforeEach(() => {
     mockTownManager = {
       getMaxPopulation: jest.fn().mockReturnValue(100),
-      getCurrentTown: jest.fn().mockReturnValue({ name: 'TestTown' })
+      getCurrentTown: jest.fn().mockReturnValue({ name: 'TestTown' }),
+      spawnNPC: jest.fn()
     };
 
     npcManager = new NPCManager(mockTownManager);
@@ -25,8 +26,8 @@ describe('NPCManager', () => {
 
     test('initializes statistics', () => {
       const stats = npcManager.getStatistics();
-      expect(stats.total).toBe(0);
-      expect(stats.alive).toBe(0);
+      expect(stats.totalSpawned).toBe(0);
+      expect(stats.aliveCount).toBe(0);
     });
   });
 
@@ -61,8 +62,8 @@ describe('NPCManager', () => {
       npcManager.spawnNPC();
 
       const stats = npcManager.getStatistics();
-      expect(stats.total).toBe(1);
-      expect(stats.alive).toBe(1);
+      expect(stats.totalSpawned).toBe(1);
+      expect(stats.aliveCount).toBe(1);
     });
   });
 

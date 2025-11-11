@@ -276,18 +276,18 @@ class ModuleOrchestrator {
 
     if (result.canAdvance) {
       // Consume resources
-      const cost = this.tierProgression.getRequirementsForTier(targetTier);
-      for (const [resource, amount] of Object.entries(cost)) {
-        if (resource !== 'buildingsRequired') {
-          this.storage.removeResource(resource, amount);
-        }
+      const requirements = this.tierProgression.getRequirementsForTier(targetTier);
+      const resourceCost = requirements.resourceRequirements || {};
+
+      for (const [resource, amount] of Object.entries(resourceCost)) {
+        this.storage.removeResource(resource, amount);
       }
 
       this.gameState.currentTier = targetTier;
       return {
         success: true,
         newTier: targetTier,
-        resourcesSpent: cost
+        resourcesSpent: resourceCost
       };
     }
 
@@ -408,16 +408,23 @@ class ModuleOrchestrator {
    * Spawn NPC
    * @param {string} role - NPC role
    * @param {Object} position - Starting position
+   * @returns {Object} Result object with success status
    */
   spawnNPC(role, position) {
-    const npc = this.npcManager.spawnNPC(role, position);
-    this.townManager.spawnNPC(role);
-    this.consumption.registerNPC(npc.id, false);
+    const result = this.npcManager.spawnNPC(role, position);
+
+    if (!result.success) {
+      return result;
+    }
+
+    // townManager.spawnNPC is already called by npcManager.spawnNPC
+    // so we don't need to call it again here
+    this.consumption.registerNPC(result.npc.id, false);
 
     // Update game state immediately for UI reactivity
     this._updateGameState();
 
-    return npc;
+    return result;
   }
 
   /**

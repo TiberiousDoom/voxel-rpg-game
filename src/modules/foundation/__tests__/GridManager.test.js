@@ -227,9 +227,9 @@ describe('GridManager', () => {
       expect(found.id).toBe(buildingId);
     });
 
-    test('returns undefined for non-existent building', () => {
+    test('returns null for non-existent building', () => {
       const found = gridManager.getBuilding('non-existent');
-      expect(found).toBeUndefined();
+      expect(found).toBeNull();
     });
 
     test('gets building at position', () => {
@@ -239,7 +239,7 @@ describe('GridManager', () => {
 
       const { buildingId } = gridManager.placeBuilding(building);
 
-      const found = gridManager.getBuildingAtPosition(5, 0, 5);
+      const found = gridManager.getBuildingAt(5, 0, 5);
       expect(found).toBeDefined();
       expect(found.id).toBe(buildingId);
     });

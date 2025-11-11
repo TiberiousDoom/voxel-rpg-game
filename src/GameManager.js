@@ -543,6 +543,11 @@ export default class GameManager extends EventEmitter {
       essence: 0,
       crystal: 0
     };
+    const capacity = 1000;
+
+    const getTotalUsage = () => {
+      return Object.values(storage).reduce((sum, val) => sum + val, 0);
+    };
 
     return {
       getStorage: () => ({ ...storage }),
@@ -552,6 +557,17 @@ export default class GameManager extends EventEmitter {
       },
       removeResource: (type, amount) => {
         storage[type] = Math.max(0, (storage[type] || 0) - amount);
+      },
+      getStatus: () => {
+        const usage = getTotalUsage();
+        return {
+          storage: { ...storage },
+          capacity: capacity,
+          usage: usage,
+          available: Math.max(0, capacity - usage),
+          percentUsed: ((usage / capacity) * 100).toFixed(1),
+          isFull: usage >= capacity
+        };
       }
     };
   }

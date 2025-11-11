@@ -13,10 +13,10 @@
 class GridManager {
   /**
    * Initialize the grid manager
-   * @param {number} gridSize - Size of the grid (default 100)
+   * @param {number} gridSize - Size of the grid (default 10)
    * @param {number} gridHeight - Height of the grid (default 50)
    */
-  constructor(gridSize = 100, gridHeight = 50) {
+  constructor(gridSize = 10, gridHeight = 50) {
     this.gridSize = gridSize;
     this.gridHeight = gridHeight;
 

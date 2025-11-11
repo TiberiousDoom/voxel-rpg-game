@@ -1,103 +1,96 @@
-/**
- * NPCPanel.jsx - Display NPC information
- *
- * Shows:
- * - Population (alive count / total spawned)
- * - Current morale
- * - Morale state indicator
- */
-
 import React from 'react';
 import './NPCPanel.css';
 
 /**
- * NPC info panel component
+ * NPCPanel Component
+ * Displays NPC population and morale information
  */
-function NPCPanel({ population = {}, morale = 0 }) {
-  const aliveCount = population.aliveCount || 0;
-  const totalSpawned = population.totalSpawned || 0;
+function NPCPanel({ population = {}, morale = 0, moraleState = 'NEUTRAL' }) {
+  // Calculate population percentage for progress bar
+  const populationPercent = population.totalSpawned > 0
+    ? Math.round((population.aliveCount || 0) / population.totalSpawned * 100)
+    : 100;
 
-  /**
-   * Get morale color and state label
-   */
-  const getMoraleState = (value) => {
-    if (value < -50) return { label: 'Miserable', color: '#FF0000', emoji: '😢' };
-    if (value < -25) return { label: 'Upset', color: '#FF6B6B', emoji: '😠' };
-    if (value < 0) return { label: 'Unhappy', color: '#FFA500', emoji: '😕' };
-    if (value === 0) return { label: 'Neutral', color: '#FFD700', emoji: '😐' };
-    if (value <= 25) return { label: 'Happy', color: '#90EE90', emoji: '🙂' };
-    return { label: 'Thrilled', color: '#00FF00', emoji: '😄' };
+  // Determine morale emoji and label
+  const getMoraleDisplay = () => {
+    if (morale < -50) return { emoji: '😢', label: 'Miserable', color: '#d32f2f' };
+    if (morale < -25) return { emoji: '😠', label: 'Upset', color: '#f57c00' };
+    if (morale < 0) return { emoji: '😕', label: 'Unhappy', color: '#ffa726' };
+    if (morale === 0) return { emoji: '😐', label: 'Neutral', color: '#9e9e9e' };
+    if (morale < 25) return { emoji: '🙂', label: 'Happy', color: '#66bb6a' };
+    return { emoji: '😄', label: 'Thrilled', color: '#4caf50' };
   };
 
-  const moraleState = getMoraleState(morale);
-  const moralePercent = Math.max(0, Math.min(100, (morale + 100) / 2));
+  const moraleDisplay = getMoraleDisplay();
+
+  // Calculate morale bar width (convert -100 to 100 range to 0 to 100%)
+  const moraleBarWidth = ((morale + 100) / 200) * 100;
 
   return (
     <div className="npc-panel">
-      <h3 className="panel-title">Population & Morale</h3>
-
-      {/* Population Stats */}
+      <h3>POPULATION & MORALE</h3>
+      
+      {/* Population Section */}
       <div className="population-section">
-        <div className="stat-item">
-          <label>Population:</label>
-          <div className="stat-value">
-            <span className="alive-count">{aliveCount}</span>
-            <span className="separator">/</span>
-            <span className="total-count">{totalSpawned}</span>
+        <div className="section-header">
+          <span className="label">POPULATION:</span>
+          <span className="value">
+            {population.aliveCount || 0} / {population.totalSpawned || 0}
+          </span>
+        </div>
+        
+        <div className="progress-bar-container">
+          <div 
+            className="progress-bar population-bar"
+            style={{ 
+              width: `${populationPercent}%`,
+              backgroundColor: populationPercent > 50 ? '#4caf50' : 
+                              populationPercent > 25 ? '#ff9800' : '#f44336'
+            }}
+          />
+        </div>
+        
+        <div className="population-status">
+          {populationPercent}% alive
+          {population.totalSpawned === 0 && (
+            <span className="hint"> - Spawn NPCs to work in your settlement</span>
+          )}
+        </div>
+      </div>
+
+      {/* Morale Section */}
+      <div className="morale-section">
+        <div className="section-header">
+          <span className="label">MORALE:</span>
+          <span className="morale-indicator">
+            <span className="morale-emoji">{moraleDisplay.emoji}</span>
+            <span className="morale-value" style={{ color: moraleDisplay.color }}>
+              {morale > 0 ? '+' : ''}{morale}
+            </span>
+          </span>
+        </div>
+        
+        <div className="morale-bar-container">
+          <div className="morale-bar-background">
+            <div className="morale-bar-center-mark" />
+            <div 
+              className="morale-bar"
+              style={{ 
+                width: `${moraleBarWidth}%`,
+                backgroundColor: moraleDisplay.color
+              }}
+            />
           </div>
         </div>
-        <div className="population-bar">
-          <div
-            className="population-fill"
-            style={{
-              width: totalSpawned > 0 ? (aliveCount / totalSpawned) * 100 : 0 + '%'
-            }}
-          />
+        
+        <div className="morale-status">
+          <span style={{ color: moraleDisplay.color }}>
+            {moraleDisplay.label}
+          </span>
         </div>
-        <p className="stat-label">
-          {totalSpawned === 0
-            ? 'No NPCs spawned yet'
-            : `${Math.round((aliveCount / totalSpawned) * 100)}% alive`}
-        </p>
-      </div>
-
-      {/* Morale Stats */}
-      <div className="morale-section">
-        <div className="morale-header">
-          <label>Morale:</label>
-          <span className="morale-emoji">{moraleState.emoji}</span>
-        </div>
-
-        <div className="morale-value" style={{ color: moraleState.color }}>
-          {morale > 0 ? '+' : ''}{morale}
-        </div>
-
-        <div className="morale-bar">
-          <div
-            className="morale-fill"
-            style={{
-              width: moralePercent + '%',
-              backgroundColor: moraleState.color
-            }}
-          />
-        </div>
-
-        <p className="morale-state" style={{ color: moraleState.color }}>
-          {moraleState.label}
-        </p>
-
+        
         <div className="morale-info">
-          <p className="info-text">
-            Morale affects NPC efficiency and happiness. Keep your population
-            happy by ensuring they have adequate resources and assignments.
-          </p>
-        </div>
-      </div>
-
-      <div className="npc-footer">
-        <div className="stat-hint">
-          <strong>Tip:</strong> Spawn more NPCs from the Build Menu to expand your
-          settlement
+          Morale affects NPC efficiency and resource production.
         </div>
       </div>
     </div>

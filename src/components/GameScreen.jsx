@@ -1,14 +1,4 @@
-/**
- * GameScreen.jsx - Main game container component
- *
- * This is the top-level game container that:
- * - Initializes the game using useGameManager hook
- * - Manages overall layout
- * - Renders all game UI panels
- * - Handles game lifecycle (start/stop/pause)
- */
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import GameViewport from './GameViewport';
 import ResourcePanel from './ResourcePanel';
@@ -24,6 +14,14 @@ import './GameScreen.css';
 function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing } = useGame();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
+  
+  // Auto-start the game when ready (for testing)
+  useEffect(() => {
+    if (isReady && !gameState.isRunning && !gameState.isPaused) {
+      console.log('[GameScreen] Auto-starting game for testing...');
+      actions.startGame();
+    }
+  }, [isReady, gameState.isRunning, gameState.isPaused, actions]);
 
   // Show loading state
   if (isInitializing) {
@@ -32,6 +30,7 @@ function GameScreen() {
         <div className="loading-spinner">
           <h1>Initializing Game...</h1>
           <p>Setting up GameManager and loading systems...</p>
+          <div className="spinner"></div>
         </div>
       </div>
     );
@@ -59,83 +58,104 @@ function GameScreen() {
         <div className="loading-spinner">
           <h1>Waiting for Game...</h1>
           <p>Initializing game systems...</p>
+          <div className="spinner"></div>
         </div>
       </div>
     );
   }
+
+  // Game is not running reminder
+  const showPlayReminder = !gameState.isRunning && !gameState.isPaused;
 
   return (
     <div className="game-screen">
       <header className="game-header">
         <h1>Voxel RPG Game</h1>
         <div className="header-info">
-          <span className="tier-badge">Tier: {gameState.currentTier}</span>
-          <span className="tick-counter">Tick: {gameState.currentTick}</span>
-          {gameState.isRunning && (
-            <span className="status-indicator running">Running</span>
-          )}
-          {gameState.isPaused && (
-            <span className="status-indicator paused">Paused</span>
-          )}
-          {!gameState.isRunning && (
-            <span className="status-indicator stopped">Stopped</span>
-          )}
+          <span className="tier-badge">
+            Tier: {gameState.currentTier || 'SURVIVAL'}
+          </span>
+          <span className="tick-counter">
+            Tick: {gameState.currentTick || 0}
+          </span>
+          <span className={`status-indicator ${
+            gameState.isRunning ? 'running' : 
+            gameState.isPaused ? 'paused' : 'stopped'
+          }`}>
+            {gameState.isRunning ? '● Running' : 
+             gameState.isPaused ? '⏸ Paused' : '⬛ Stopped'}
+          </span>
         </div>
       </header>
 
-      <div className="game-layout">
-        {/* Left Panel - Resource & NPC Info */}
+      <main className="game-layout">
+        {/* Left Sidebar - Resources & NPCs */}
         <aside className="game-sidebar left-sidebar">
-          <ResourcePanel resources={gameState.resources} />
-          <NPCPanel population={gameState.population} morale={gameState.morale} />
+          <ResourcePanel resources={gameState.resources || {}} />
+          <NPCPanel 
+            population={gameState.population || {}}
+            morale={gameState.morale || 0}
+            moraleState={gameState.moraleState || 'NEUTRAL'}
+          />
         </aside>
 
-        {/* Center - Main Game Viewport */}
-        <main className="game-viewport-container">
+        {/* Center - Game Viewport */}
+        <div className="game-viewport-container">
+          {/* Play Reminder Banner */}
+          {showPlayReminder && (
+            <div className="play-reminder-banner">
+              <h2>⚠️ Game is Stopped</h2>
+              <p>Click the <strong>▶️ PLAY</strong> button below to start!</p>
+              <p className="hint">
+                Resources won't produce and NPCs won't work until the game is running.
+              </p>
+            </div>
+          )}
+
           <GameViewport
-            buildings={gameState.buildings}
-            npcs={gameState.npcs}
+            buildings={gameState.buildings || []}
+            npcs={gameState.npcs || []}
             selectedBuildingType={selectedBuildingType}
-            onPlaceBuilding={(type, position) => {
-              actions.placeBuilding(type, position);
-              setSelectedBuildingType(null);
-            }}
-            onSelectTile={(position) => {
-              // Could be used for selection preview
+            onBuildingPlace={(position) => {
+              if (selectedBuildingType) {
+                actions.placeBuilding(selectedBuildingType, position);
+                setSelectedBuildingType(null);
+              }
             }}
           />
-        </main>
+        </div>
 
-        {/* Right Panel - Build Menu & Controls */}
+        {/* Right Sidebar - Build Menu */}
         <aside className="game-sidebar right-sidebar">
           <BuildMenu
             selectedBuildingType={selectedBuildingType}
-            onSelectBuilding={setSelectedBuildingType}
-            onSpawnNPC={() => actions.spawnNPC('FARMER')}
-            onAdvanceTier={() => actions.advanceTier()}
+            onBuildingSelect={setSelectedBuildingType}
+            onSpawnNPC={() => actions.spawnNPC('WORKER')}
+            onAdvanceTier={() => actions.advanceTier('SETTLEMENT')}
           />
         </aside>
-      </div>
+      </main>
 
       {/* Bottom Control Bar */}
-      <footer className="game-footer">
+      <footer>
         <GameControlBar
           isRunning={gameState.isRunning}
           isPaused={gameState.isPaused}
-          onStart={actions.startGame}
-          onStop={actions.stopGame}
-          onPause={actions.pauseGame}
-          onResume={actions.resumeGame}
-          onSave={() => actions.saveGame('autosave')}
-          onLoad={() => actions.loadGame('autosave')}
+          onStart={() => actions.startGame()}
+          onStop={() => actions.stopGame()}
+          onPause={() => actions.pauseGame()}
+          onResume={() => actions.resumeGame()}
+          onSave={(slotName) => actions.saveGame(slotName)}
+          onLoad={(slotName) => actions.loadGame(slotName)}
+          getSaveSlots={actions.getSaveSlots}
         />
       </footer>
 
-      {/* Error Toast (if any) */}
-      {error && isReady && (
+      {/* Error Toast */}
+      {error && (
         <div className="error-toast">
-          <p>{error}</p>
-          <button onClick={() => window.location.reload()}>Dismiss</button>
+          <span>⚠️ {error}</span>
+          <button onClick={() => window.location.reload()}>Refresh</button>
         </div>
       )}
     </div>

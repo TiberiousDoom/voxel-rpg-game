@@ -284,6 +284,48 @@
   }
 }
 
+/* Slot Selector */
+.slot-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.slot-selector label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+}
+
+.slot-dropdown {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.slot-dropdown:hover {
+  border-color: #667eea;
+}
+
+.slot-dropdown:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.slot-dropdown option {
+  padding: 8px;
+}
+
 @media (max-width: 480px) {
   .control-group {
     min-width: 100%;
@@ -295,5 +337,14 @@
 
   .control-btn {
     min-width: auto;
+  }
+
+  .slot-selector {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .slot-selector label {
+    font-size: 12px;
   }
 }

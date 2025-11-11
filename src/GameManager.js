@@ -64,6 +64,7 @@ export default class GameManager extends EventEmitter {
       this.gameState = GameManager.GAME_STATE.INITIALIZED;
       this.emit('game:initialized', {});
 
+      // eslint-disable-next-line no-console
       console.log('[GameManager] Initialization complete');
       return true;
     } catch (err) {
@@ -174,11 +175,12 @@ export default class GameManager extends EventEmitter {
       this.gameState = GameManager.GAME_STATE.RUNNING;
       
       // Emit started event with current state
-      this.emit('game:started', { 
+      this.emit('game:started', {
         tick: this.currentTick,
         timestamp: Date.now()
       });
 
+      // eslint-disable-next-line no-console
       console.log('[GameManager] Game started successfully');
       return true;
     } catch (err) {
@@ -249,6 +251,7 @@ export default class GameManager extends EventEmitter {
    */
   async stopGame() {
     try {
+      // eslint-disable-next-line no-console
       console.log('[GameManager] Stopping game...');
 
       // Clear tick timer
@@ -260,6 +263,7 @@ export default class GameManager extends EventEmitter {
       this.gameState = GameManager.GAME_STATE.STOPPED;
       this.emit('game:stopped', { tick: this.currentTick });
 
+      // eslint-disable-next-line no-console
       console.log('[GameManager] Game stopped');
       return true;
     } catch (err) {
@@ -276,6 +280,7 @@ export default class GameManager extends EventEmitter {
     if (this.gameState === GameManager.GAME_STATE.RUNNING) {
       this.gameState = GameManager.GAME_STATE.PAUSED;
       this.emit('game:paused', {});
+      // eslint-disable-next-line no-console
       console.log('[GameManager] Game paused');
       return true;
     }
@@ -289,6 +294,7 @@ export default class GameManager extends EventEmitter {
     if (this.gameState === GameManager.GAME_STATE.PAUSED) {
       this.gameState = GameManager.GAME_STATE.RUNNING;
       this.emit('game:resumed', {});
+      // eslint-disable-next-line no-console
       console.log('[GameManager] Game resumed');
       return true;
     }
@@ -473,6 +479,7 @@ export default class GameManager extends EventEmitter {
       this.engine.destroy();
     }
 
+    // eslint-disable-next-line no-console
     console.log('[GameManager] Destroyed');
   }
 

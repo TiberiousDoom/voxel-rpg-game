@@ -5,9 +5,9 @@
  * Total: 30+ tests covering all core functionality
  */
 
-const GridManager = require('../GridManager');
-const BuildingFactory = require('../BuildingFactory');
-const SpatialPartitioning = require('../SpatialPartitioning');
+import GridManager from '../GridManager';
+import BuildingFactory from '../BuildingFactory';
+import SpatialPartitioning from '../SpatialPartitioning';
 
 // ============================================================================
 // GRIDMANAGER TESTS

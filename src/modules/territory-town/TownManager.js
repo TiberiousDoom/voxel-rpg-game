@@ -182,6 +182,17 @@ class TownManager {
   }
 
   /**
+   * Get maximum population limit
+   * This is a simplified version that returns a default max population
+   * In a full implementation, this would be based on tier, buildings, etc.
+   * @returns {number} Maximum population
+   */
+  getMaxPopulation() {
+    // Default maximum population (can be overridden by tier/buildings)
+    return 1000;
+  }
+
+  /**
    * Calculate housing capacity from buildings
    * @param {Array<Object>} buildings - Buildings to check
    * @returns {number} Total housing slots

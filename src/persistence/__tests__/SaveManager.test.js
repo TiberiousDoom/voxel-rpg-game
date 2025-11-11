@@ -14,9 +14,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const SaveManager = require('../SaveManager');
-const SaveValidator = require('../SaveValidator');
-const GameStateSerializer = require('../GameStateSerializer');
+import SaveManager from '../SaveManager';
+import SaveValidator from '../SaveValidator';
+import GameStateSerializer from '../GameStateSerializer';
 
 // Mock test save path
 const TEST_SAVE_PATH = path.join(__dirname, '.test-saves');
@@ -550,7 +550,7 @@ describe('SaveManager Tests', () => {
   // ============================================
 
   describe('Checksum and Integrity', () => {
-    test('should generate consistent checksums', () => {
+    test('should generate consistent checksums', async () => {
       const testData = {
         version: 1,
         timestamp: '2025-11-09T00:00:00Z',
@@ -559,13 +559,13 @@ describe('SaveManager Tests', () => {
         storage: { storage: { food: 100 } }
       };
 
-      const checksum1 = SaveValidator.generateChecksum(testData);
-      const checksum2 = SaveValidator.generateChecksum(testData);
+      const checksum1 = await SaveValidator.generateChecksum(testData);
+      const checksum2 = await SaveValidator.generateChecksum(testData);
 
       expect(checksum1).toBe(checksum2);
     });
 
-    test('should detect when data is modified', () => {
+    test('should detect when data is modified', async () => {
       const testData = {
         version: 1,
         timestamp: '2025-11-09T00:00:00Z',
@@ -574,16 +574,16 @@ describe('SaveManager Tests', () => {
         storage: { storage: { food: 100 } }
       };
 
-      const checksum1 = SaveValidator.generateChecksum(testData);
+      const checksum1 = await SaveValidator.generateChecksum(testData);
 
       // Modify data
       testData.metadata.gameTick = 200;
-      const checksum2 = SaveValidator.generateChecksum(testData);
+      const checksum2 = await SaveValidator.generateChecksum(testData);
 
       expect(checksum1).not.toBe(checksum2);
     });
 
-    test('should validate correct checksums', () => {
+    test('should validate correct checksums', async () => {
       const testData = {
         version: 1,
         metadata: { gameTick: 100 },
@@ -591,14 +591,14 @@ describe('SaveManager Tests', () => {
         storage: { storage: { food: 100 } }
       };
 
-      testData.checksum = SaveValidator.generateChecksum(testData);
+      testData.checksum = await SaveValidator.generateChecksum(testData);
 
-      const isValid = SaveValidator.validateChecksum(testData);
+      const isValid = await SaveValidator.validateChecksum(testData);
 
       expect(isValid).toBe(true);
     });
 
-    test('should reject invalid checksums', () => {
+    test('should reject invalid checksums', async () => {
       const testData = {
         version: 1,
         metadata: { gameTick: 100 },
@@ -607,7 +607,7 @@ describe('SaveManager Tests', () => {
         checksum: 'invalid-checksum-12345'
       };
 
-      const isValid = SaveValidator.validateChecksum(testData);
+      const isValid = await SaveValidator.validateChecksum(testData);
 
       expect(isValid).toBe(false);
     });

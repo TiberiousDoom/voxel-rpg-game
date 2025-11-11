@@ -25,6 +25,19 @@ if (!global.performance.now) {
   global.performance.now = () => Date.now();
 }
 
+// Mock TextEncoder and TextDecoder for Node.js environment
+if (typeof global.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  global.TextEncoder = TextEncoder;
+  global.TextDecoder = TextDecoder;
+}
+
+// Mock crypto.subtle for Web Crypto API in Node.js
+if (typeof global.crypto === 'undefined') {
+  const { webcrypto } = require('crypto');
+  global.crypto = webcrypto;
+}
+
 // Suppress console warnings in tests unless explicitly testing for them
 const originalWarn = console.warn;
 const originalError = console.error;

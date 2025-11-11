@@ -399,10 +399,20 @@ export default class GameManager extends EventEmitter {
   }
 
   /**
+   * Spawn an NPC
+   * @param {string} role - NPC role
+   * @param {Object} position - Starting position
+   * @returns {Object} Result object with success status
    * Save the game
    */
   saveGame(slotName, description = '') {
     try {
+      const result = this.orchestrator.spawnNPC(role, position);
+
+      if (result.success) {
+        this._emit('npc:spawned', { npc: result.npc });
+      } else {
+        this._emit('game:error', { error: result.error });
       const result = this.saveManager.saveGame(
         this.orchestrator,
         this.engine,
@@ -416,6 +426,12 @@ export default class GameManager extends EventEmitter {
 
       return result;
     } catch (err) {
+      const errorResult = {
+        success: false,
+        error: err.message
+      };
+      this._emit('game:error', { error: err.message });
+      return errorResult;
       console.error('[GameManager] Failed to save game:', err);
       return { success: false, message: err.message };
     }

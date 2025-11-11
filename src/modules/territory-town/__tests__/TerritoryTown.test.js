@@ -7,9 +7,9 @@
  * Total: 25 tests
  */
 
-const { TerritoryManager, Territory } = require('../TerritoryManager');
-const TownManager = require('../TownManager');
-const BuildingConfig = require('../../building-types/BuildingConfig');
+import { TerritoryManager, Territory } from '../TerritoryManager';
+import TownManager from '../TownManager';
+import BuildingConfig from '../../building-types/BuildingConfig';
 
 describe('Module 4: Territory & Town', () => {
   // ============================================

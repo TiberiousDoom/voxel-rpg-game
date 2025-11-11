@@ -21,21 +21,21 @@
  * 9. Complete game scenario (15-minute survival)
  */
 
-const GameEngine = require('../GameEngine');
-const ModuleOrchestrator = require('../ModuleOrchestrator');
-const GridManager = require('../../modules/foundation/GridManager');
-const SpatialPartitioning = require('../../modules/foundation/SpatialPartitioning');
-const BuildingConfig = require('../../modules/building-types/BuildingConfig');
-const TierProgression = require('../../modules/building-types/TierProgression');
-const BuildingEffect = require('../../modules/building-types/BuildingEffect');
-const ProductionTick = require('../../modules/resource-economy/ProductionTick');
-const StorageManager = require('../../modules/resource-economy/StorageManager');
-const ConsumptionSystem = require('../../modules/resource-economy/ConsumptionSystem');
-const MoraleCalculator = require('../../modules/resource-economy/MoraleCalculator');
-const { TerritoryManager } = require('../../modules/territory-town/TerritoryManager');
-const TownManager = require('../../modules/territory-town/TownManager');
-const { NPCManager } = require('../../modules/npc-system/NPCManager');
-const { NPCAssignment } = require('../../modules/npc-system/NPCAssignment');
+import GameEngine from '../GameEngine';
+import ModuleOrchestrator from '../ModuleOrchestrator';
+import GridManager from '../../modules/foundation/GridManager';
+import SpatialPartitioning from '../../modules/foundation/SpatialPartitioning';
+import BuildingConfig from '../../modules/building-types/BuildingConfig';
+import TierProgression from '../../modules/building-types/TierProgression';
+import BuildingEffect from '../../modules/building-types/BuildingEffect';
+import ProductionTick from '../../modules/resource-economy/ProductionTick';
+import StorageManager from '../../modules/resource-economy/StorageManager';
+import ConsumptionSystem from '../../modules/resource-economy/ConsumptionSystem';
+import MoraleCalculator from '../../modules/resource-economy/MoraleCalculator';
+import { TerritoryManager } from '../../modules/territory-town/TerritoryManager';
+import TownManager from '../../modules/territory-town/TownManager';
+import { NPCManager } from '../../modules/npc-system/NPCManager';
+import { NPCAssignment } from '../../modules/npc-system/NPCAssignment';
 
 describe('GameEngine Integration Tests', () => {
   let gameEngine;
@@ -451,11 +451,13 @@ describe('GameEngine Integration Tests', () => {
     test('should spawn NPC during game', async () => {
       await gameEngine.start();
 
-      const npc = orchestrator.spawnNPC('FARMER', { x: 50, y: 25, z: 50 });
+      const result = orchestrator.spawnNPC('FARMER', { x: 50, y: 25, z: 50 });
 
-      expect(npc).toBeDefined();
-      expect(npc.role).toBe('FARMER');
-      expect(npc.alive).toBe(true);
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(result.npc).toBeDefined();
+      expect(result.npc.role).toBe('FARMER');
+      expect(result.npc.alive).toBe(true);
 
       const stats = npcManager.getStatistics();
       expect(stats.aliveCount).toBe(1);
@@ -475,8 +477,8 @@ describe('GameEngine Integration Tests', () => {
       };
       orchestrator.placeBuilding(building);
 
-      const npc = orchestrator.spawnNPC('FARMER');
-      const assigned = npcAssignment.assignNPC(npc.id, 'farm1');
+      const result = orchestrator.spawnNPC('FARMER');
+      const assigned = npcAssignment.assignNPC(result.npc.id, 'farm1');
 
       expect(assigned).toBe(true);
       const staffing = npcAssignment.getStaffingLevel('farm1');
@@ -581,7 +583,7 @@ describe('GameEngine Integration Tests', () => {
       // Spawn NPCs
       const npc1 = orchestrator.spawnNPC('FARMER');
       const npc2 = orchestrator.spawnNPC('WORKER');
-      npcAssignment.assignNPC(npc1.id, 'farm1');
+      npcAssignment.assignNPC(npc1.npc.id, 'farm1');
 
       // Wait for ticks to execute
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -612,8 +614,8 @@ describe('GameEngine Integration Tests', () => {
       };
       orchestrator.placeBuilding(farm);
 
-      const npc = orchestrator.spawnNPC('FARMER');
-      npcAssignment.assignNPC(npc.id, 'farm1');
+      const result = orchestrator.spawnNPC('FARMER');
+      npcAssignment.assignNPC(result.npc.id, 'farm1');
 
       // Get initial snapshot
       const snapshot1 = gameEngine.getGameSnapshot();

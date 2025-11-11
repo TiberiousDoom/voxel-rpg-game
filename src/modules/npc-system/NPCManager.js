@@ -203,11 +203,11 @@ class NPCManager {
     };
   }
 
-  /**
+   /**
    * Spawn a new NPC
    * @param {string} role - NPC role (FARMER, CRAFTSMAN, GUARD, WORKER)
    * @param {Object} position - Starting position (if null, generates random position)
-   * @returns {NPC} Created NPC
+   * @returns {Object} Result object with success status and npcId
    */
   spawnNPC(role, position = null) {
     const GRID_SIZE = 10; // Must match GRID.GRID_WIDTH from config.js
@@ -232,6 +232,16 @@ class NPCManager {
       };
     }
 
+    // Check population limit
+    const maxPopulation = this.townManager.getMaxPopulation();
+    if (this.npcs.size >= maxPopulation) {
+      return {
+        success: false,
+        error: `Cannot spawn NPC: population limit reached (${maxPopulation})`
+      };
+    }
+
+    // Continue with the rest of YOUR branch's code for creating the NPC
     const id = this.npcIdCounter++;
     const npc = new NPC(id, {
       role: role,
@@ -247,7 +257,33 @@ class NPCManager {
     // Register with town system
     this.townManager.spawnNPC(role);
 
-    return npc;
+    return {
+      success: true,
+      npcId: id,
+      npc: npc
+    };
+  }
+
+    const id = this.npcIdCounter++;
+    const npc = new NPC(id, {
+      role: role,
+      position: position,
+      happiness: 50,
+      morale: 0
+    });
+
+    this.npcs.set(id, npc);
+    this.idleNPCs.add(id);
+    this.stats.totalSpawned++;
+
+    // Register with town system
+    this.townManager.spawnNPC(role);
+
+    return {
+      success: true,
+      npcId: id,
+      npc: npc
+    };
   }
 
   /**
@@ -257,6 +293,14 @@ class NPCManager {
    */
   getNPC(npcId) {
     return this.npcs.get(npcId) || null;
+  }
+
+  /**
+   * Get all NPCs (alive and dead)
+   * @returns {Array<NPC>} All NPCs
+   */
+  getAllNPCs() {
+    return Array.from(this.npcs.values());
   }
 
   /**
@@ -402,6 +446,45 @@ class NPCManager {
     // Unassign and update town
     this.unassignNPC(npcId);
     this.townManager.killNPC(npcId);
+  }
+
+  /**
+   * Remove an NPC completely from the system
+   * @param {number} npcId - NPC ID
+   * @returns {Object} Result object with success status
+   */
+  removeNPC(npcId) {
+    const npc = this.npcs.get(npcId);
+
+    if (!npc) {
+      return {
+        success: false,
+        error: `NPC ${npcId} not found`
+      };
+    }
+
+    // Unassign if assigned
+    if (npc.assignedBuilding) {
+      this.unassignNPC(npcId);
+    }
+
+    // Remove from status sets
+    this.workingNPCs.delete(npcId);
+    this.restingNPCs.delete(npcId);
+    this.idleNPCs.delete(npcId);
+
+    // Remove from main collection
+    this.npcs.delete(npcId);
+
+    // Update town manager if it has a removeNPC method
+    if (this.townManager && typeof this.townManager.removeNPC === 'function') {
+      this.townManager.removeNPC(npcId);
+    }
+
+    return {
+      success: true,
+      npcId: npcId
+    };
   }
 
   /**

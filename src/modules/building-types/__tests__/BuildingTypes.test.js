@@ -8,10 +8,10 @@
  * Total: 45+ tests
  */
 
-const BuildingConfig = require('../BuildingConfig');
-const TierProgression = require('../TierProgression');
-const BuildingEffect = require('../BuildingEffect');
-const SpatialPartitioning = require('../../foundation/SpatialPartitioning');
+import BuildingConfig from '../BuildingConfig';
+import TierProgression from '../TierProgression';
+import BuildingEffect from '../BuildingEffect';
+import SpatialPartitioning from '../../foundation/SpatialPartitioning';
 
 describe('Module 2: Building Types & Properties', () => {
   // ============================================

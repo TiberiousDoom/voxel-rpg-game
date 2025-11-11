@@ -9,13 +9,13 @@
  * Total: 32 tests
  */
 
-const StorageManager = require('../StorageManager');
-const ConsumptionSystem = require('../ConsumptionSystem');
-const MoraleCalculator = require('../MoraleCalculator');
-const ProductionTick = require('../ProductionTick');
-const BuildingConfig = require('../../building-types/BuildingConfig');
-const BuildingEffect = require('../../building-types/BuildingEffect');
-const SpatialPartitioning = require('../../foundation/SpatialPartitioning');
+import StorageManager from '../StorageManager';
+import ConsumptionSystem from '../ConsumptionSystem';
+import MoraleCalculator from '../MoraleCalculator';
+import ProductionTick from '../ProductionTick';
+import BuildingConfig from '../../building-types/BuildingConfig';
+import BuildingEffect from '../../building-types/BuildingEffect';
+import SpatialPartitioning from '../../foundation/SpatialPartitioning';
 
 describe('Module 3: Resource Economy', () => {
   // ============================================

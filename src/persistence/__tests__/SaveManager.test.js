@@ -14,9 +14,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const SaveManager = require('../SaveManager');
-const SaveValidator = require('../SaveValidator');
-const GameStateSerializer = require('../GameStateSerializer');
+import SaveManager from '../SaveManager';
+import SaveValidator from '../SaveValidator';
+import GameStateSerializer from '../GameStateSerializer';
 
 // Mock test save path
 const TEST_SAVE_PATH = path.join(__dirname, '.test-saves');

@@ -10,20 +10,20 @@
  * Tests: 35+ comprehensive integration scenarios
  */
 
-const GridManager = require('../foundation/GridManager');
-const SpatialPartitioning = require('../foundation/SpatialPartitioning');
+import GridManager from '../foundation/GridManager';
+import SpatialPartitioning from '../foundation/SpatialPartitioning';
 
-const BuildingConfig = require('../building-types/BuildingConfig');
-const TierProgression = require('../building-types/TierProgression');
-const BuildingEffect = require('../building-types/BuildingEffect');
+import BuildingConfig from '../building-types/BuildingConfig';
+import TierProgression from '../building-types/TierProgression';
+import BuildingEffect from '../building-types/BuildingEffect';
 
-const ProductionTick = require('../resource-economy/ProductionTick');
-const StorageManager = require('../resource-economy/StorageManager');
-const ConsumptionSystem = require('../resource-economy/ConsumptionSystem');
-const MoraleCalculator = require('../resource-economy/MoraleCalculator');
+import ProductionTick from '../resource-economy/ProductionTick';
+import StorageManager from '../resource-economy/StorageManager';
+import ConsumptionSystem from '../resource-economy/ConsumptionSystem';
+import MoraleCalculator from '../resource-economy/MoraleCalculator';
 
-const { TerritoryManager } = require('../territory-town/TerritoryManager');
-const TownManager = require('../territory-town/TownManager');
+import { TerritoryManager } from '../territory-town/TerritoryManager';
+import TownManager from '../territory-town/TownManager';
 
 describe('Full System Integration Tests', () => {
   let grid;

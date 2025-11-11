@@ -7,10 +7,10 @@
  * Total: 27 tests
  */
 
-const { NPCManager, NPC } = require('../NPCManager');
-const { NPCAssignment } = require('../NPCAssignment');
-const TownManager = require('../../territory-town/TownManager');
-const BuildingConfig = require('../../building-types/BuildingConfig');
+import { NPCManager, NPC } from '../NPCManager';
+import { NPCAssignment } from '../NPCAssignment';
+import TownManager from '../../territory-town/TownManager';
+import BuildingConfig from '../../building-types/BuildingConfig';
 
 describe('NPC System', () => {
   // ============================================

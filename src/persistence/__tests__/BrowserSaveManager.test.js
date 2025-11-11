@@ -11,7 +11,7 @@
  * - Corrupted file recovery
  */
 
-const BrowserSaveManager = require('../BrowserSaveManager');
+import BrowserSaveManager from '../BrowserSaveManager';
 
 // Mock localStorage
 const localStorageMock = (() => {

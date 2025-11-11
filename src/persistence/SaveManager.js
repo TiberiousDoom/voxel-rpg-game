@@ -11,8 +11,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const GameStateSerializer = require('./GameStateSerializer');
-const SaveValidator = require('./SaveValidator');
+const GameStateSerializer = require('./GameStateSerializer').default || require('./GameStateSerializer');
+const SaveValidator = require('./SaveValidator').default || require('./SaveValidator');
 
 class SaveManager {
   /**

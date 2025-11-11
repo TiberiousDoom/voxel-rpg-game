@@ -13,7 +13,12 @@ describe('NPCManager', () => {
     mockTownManager = {
       getMaxPopulation: jest.fn().mockReturnValue(100),
       getCurrentTown: jest.fn().mockReturnValue({ name: 'TestTown' }),
-      spawnNPC: jest.fn()
+      spawnNPC: jest.fn(),
+      updateNPCHappiness: jest.fn(),
+      killNPC: jest.fn(),
+      removeNPC: jest.fn(),
+      assignNPC: jest.fn(),
+      unassignNPC: jest.fn()
     };
 
     npcManager = new NPCManager(mockTownManager);

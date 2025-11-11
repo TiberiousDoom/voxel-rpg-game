@@ -203,13 +203,35 @@ class NPCManager {
     };
   }
 
-  /**
+   /**
    * Spawn a new NPC
    * @param {string} role - NPC role (FARMER, CRAFTSMAN, GUARD, WORKER)
-   * @param {Object} position - Starting position
+   * @param {Object} position - Starting position (if null, generates random position)
    * @returns {Object} Result object with success status and npcId
    */
-  spawnNPC(role, position = { x: 50, y: 25, z: 50 }) {
+  spawnNPC(role, position = null) {
+    const GRID_SIZE = 10; // Must match GRID.GRID_WIDTH from config.js
+
+    // If no position provided, generate random position within grid bounds
+    if (!position) {
+      position = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: 25,
+        z: Math.floor(Math.random() * GRID_SIZE)
+      };
+    }
+
+    // Validate position is within bounds
+    if (position.x < 0 || position.x >= GRID_SIZE ||
+        position.z < 0 || position.z >= GRID_SIZE) {
+      console.warn(`[NPCManager] Spawn position (${position.x}, ${position.z}) out of bounds, using random`);
+      position = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: 25,
+        z: Math.floor(Math.random() * GRID_SIZE)
+      };
+    }
+
     // Check population limit
     const maxPopulation = this.townManager.getMaxPopulation();
     if (this.npcs.size >= maxPopulation) {
@@ -218,6 +240,29 @@ class NPCManager {
         error: `Cannot spawn NPC: population limit reached (${maxPopulation})`
       };
     }
+
+    // Continue with the rest of YOUR branch's code for creating the NPC
+    const id = this.npcIdCounter++;
+    const npc = new NPC(id, {
+      role: role,
+      position: position,
+      happiness: 50,
+      morale: 0
+    });
+
+    this.npcs.set(id, npc);
+    this.idleNPCs.add(id);
+    this.stats.totalSpawned++;
+
+    // Register with town system
+    this.townManager.spawnNPC(role);
+
+    return {
+      success: true,
+      npcId: id,
+      npc: npc
+    };
+  }
 
     const id = this.npcIdCounter++;
     const npc = new NPC(id, {

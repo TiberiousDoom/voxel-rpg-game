@@ -632,7 +632,33 @@ export default class GameManager extends EventEmitter {
 
   _createMockTownManager() {
     return {
-      getHousingCapacity: () => 10
+      getHousingCapacity: () => 10,
+      getStatistics: (buildings = []) => {
+        return {
+          population: {
+            alive: 0,
+            dead: 0,
+            totalSpawned: 0,
+            averageSkill: 0
+          },
+          happiness: {
+            average: 0,
+            min: 0,
+            max: 0
+          },
+          morale: {
+            average: 0,
+            min: 0,
+            max: 0
+          },
+          housing: {
+            capacity: 10,
+            occupied: 0,
+            occupancyPercent: 0
+          },
+          createdAt: Date.now()
+        };
+      }
     };
   }
 

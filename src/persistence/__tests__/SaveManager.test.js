@@ -59,6 +59,8 @@ function createMockOrchestrator() {
     },
     spatial: {
       chunkSize: 10,
+      chunks: new Map(),
+      buildingChunks: new Map(),
       buildingsByChunk: new Map()
     },
     tierProgression: {},
@@ -132,6 +134,10 @@ describe('SaveManager Tests', () => {
   describe('Basic Save/Load', () => {
     test('should save game state to file', () => {
       const result = saveManager.saveGame(orchestrator, engine, 'test-save', 'Test save');
+
+      if (!result.success) {
+        console.log('Save failed with message:', result.message);
+      }
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('saved');

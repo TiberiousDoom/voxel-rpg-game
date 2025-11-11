@@ -251,6 +251,14 @@ class NPCManager {
   }
 
   /**
+   * Get all NPCs (alive and dead)
+   * @returns {Array<NPC>} All NPCs
+   */
+  getAllNPCs() {
+    return Array.from(this.npcs.values());
+  }
+
+  /**
    * Get all alive NPCs
    * @returns {Array<NPC>} Living NPCs
    */

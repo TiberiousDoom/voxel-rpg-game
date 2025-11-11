@@ -451,11 +451,13 @@ describe('GameEngine Integration Tests', () => {
     test('should spawn NPC during game', async () => {
       await gameEngine.start();
 
-      const npc = orchestrator.spawnNPC('FARMER', { x: 50, y: 25, z: 50 });
+      const result = orchestrator.spawnNPC('FARMER', { x: 50, y: 25, z: 50 });
 
-      expect(npc).toBeDefined();
-      expect(npc.role).toBe('FARMER');
-      expect(npc.alive).toBe(true);
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(result.npc).toBeDefined();
+      expect(result.npc.role).toBe('FARMER');
+      expect(result.npc.alive).toBe(true);
 
       const stats = npcManager.getStatistics();
       expect(stats.aliveCount).toBe(1);
@@ -475,8 +477,8 @@ describe('GameEngine Integration Tests', () => {
       };
       orchestrator.placeBuilding(building);
 
-      const npc = orchestrator.spawnNPC('FARMER');
-      const assigned = npcAssignment.assignNPC(npc.id, 'farm1');
+      const result = orchestrator.spawnNPC('FARMER');
+      const assigned = npcAssignment.assignNPC(result.npc.id, 'farm1');
 
       expect(assigned).toBe(true);
       const staffing = npcAssignment.getStaffingLevel('farm1');
@@ -581,7 +583,7 @@ describe('GameEngine Integration Tests', () => {
       // Spawn NPCs
       const npc1 = orchestrator.spawnNPC('FARMER');
       const npc2 = orchestrator.spawnNPC('WORKER');
-      npcAssignment.assignNPC(npc1.id, 'farm1');
+      npcAssignment.assignNPC(npc1.npc.id, 'farm1');
 
       // Wait for ticks to execute
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -612,8 +614,8 @@ describe('GameEngine Integration Tests', () => {
       };
       orchestrator.placeBuilding(farm);
 
-      const npc = orchestrator.spawnNPC('FARMER');
-      npcAssignment.assignNPC(npc.id, 'farm1');
+      const result = orchestrator.spawnNPC('FARMER');
+      npcAssignment.assignNPC(result.npc.id, 'farm1');
 
       // Get initial snapshot
       const snapshot1 = gameEngine.getGameSnapshot();

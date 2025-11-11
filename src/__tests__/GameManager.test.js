@@ -312,7 +312,9 @@ describe('GameManager', () => {
       const result = gameManager.spawnNPC();
 
       expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(result.npcId).toBeDefined();
+      expect(result.npc).toBeDefined();
     });
 
     test('retrieves game status', () => {

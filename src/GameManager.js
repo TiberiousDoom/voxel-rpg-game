@@ -562,6 +562,10 @@ export default class GameManager extends EventEmitter {
           // eslint-disable-next-line no-console
           console.error(`Error in event callback for ${event}:`, err);
         }
+      }
+    }
+  }
+
   _createMockConsumptionSystem() {
     return {
       executeConsumptionTick: () => ({

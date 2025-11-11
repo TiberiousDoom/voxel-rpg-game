@@ -18,6 +18,7 @@ function GameScreen() {
   // Auto-start the game when ready (for testing)
   useEffect(() => {
     if (isReady && !gameState.isRunning && !gameState.isPaused) {
+      // eslint-disable-next-line no-console
       console.log('[GameScreen] Auto-starting game for testing...');
       actions.startGame();
     }

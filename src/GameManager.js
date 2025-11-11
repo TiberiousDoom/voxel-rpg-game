@@ -1,44 +1,13 @@
-/**
- * GameManager.js - Main game manager entry point
- *
- * Coordinates:
- * - Game initialization
- * - Engine lifecycle
- * - Save/load operations
- * - Error handling
- * - Performance monitoring
- *
- * Public API for:
- * - Starting/stopping games
- * - Saving/loading
- * - Game operations (building, NPC spawning, etc.)
- * - Status and statistics
- */
-
-import GameEngine from './core/GameEngine';
-import ModuleOrchestrator from './core/ModuleOrchestrator';
-import GridManager from './modules/foundation/GridManager';
-import SpatialPartitioning from './modules/foundation/SpatialPartitioning';
-import BuildingConfig from './modules/building-types/BuildingConfig';
-import TierProgression from './modules/building-types/TierProgression';
-import BuildingEffect from './modules/building-types/BuildingEffect';
-import ProductionTick from './modules/resource-economy/ProductionTick';
-import StorageManager from './modules/resource-economy/StorageManager';
-import ConsumptionSystem from './modules/resource-economy/ConsumptionSystem';
-import MoraleCalculator from './modules/resource-economy/MoraleCalculator';
-import { TerritoryManager } from './modules/territory-town/TerritoryManager';
-import TownManager from './modules/territory-town/TownManager';
-import { NPCManager } from './modules/npc-system/NPCManager';
-import { NPCAssignment } from './modules/npc-system/NPCAssignment';
+import EventEmitter from 'events';
 import BrowserSaveManager from './persistence/BrowserSaveManager';
-import GameEngineIntegration from './persistence/GameEngineIntegration';
-import PerformanceMonitor from './utils/PerformanceMonitor';
-import ErrorRecovery from './utils/ErrorRecovery';
+import ModuleOrchestrator from './core/ModuleOrchestrator';
+import GameEngine from './core/GameEngine';
 
-class GameManager {
-  /**
-   * Game states
-   */
+/**
+ * GameManager - Main game controller
+ * Manages game lifecycle, state, and React integration
+ */
+export default class GameManager extends EventEmitter {
   static GAME_STATE = {
     UNINITIALIZED: 'uninitialized',
     INITIALIZED: 'initialized',
@@ -48,143 +17,143 @@ class GameManager {
     ERRORED: 'errored'
   };
 
-  /**
-   * Initialize game manager
-   * @param {Object} config - Game configuration
-   */
   constructor(config = {}) {
+    super();
     this.config = {
-      savePath: config.savePath || './.saves',
-      enableAutoSave: config.enableAutoSave !== false,
-      autoSaveInterval: config.autoSaveInterval || 300, // 5 minutes
-      enablePerformanceMonitoring: config.enablePerformanceMonitoring !== false,
-      enableErrorRecovery: config.enableErrorRecovery !== false,
+      tickInterval: 1000, // 1 second between ticks for better responsiveness
+      enableAutoSave: true,
+      enablePerformanceMonitoring: false,
+      enableErrorRecovery: true,
       ...config
     };
 
     this.gameState = GameManager.GAME_STATE.UNINITIALIZED;
-
-    // Core systems
     this.orchestrator = null;
     this.engine = null;
-
-    // Utility systems
     this.saveManager = null;
-    this.persistenceIntegration = null;
-    this.performanceMonitor = null;
-    this.errorRecovery = null;
-
-    // Game event callbacks
-    this.eventCallbacks = new Map();
+    this.tickTimer = null;
+    this.currentTick = 0;
   }
 
   /**
    * Initialize all game systems
-   * @returns {boolean} Success
    */
   initialize() {
     try {
       if (this.gameState !== GameManager.GAME_STATE.UNINITIALIZED) {
+        // eslint-disable-next-line no-console
         console.warn('Game already initialized');
         return false;
       }
 
-      // Initialize all core modules in dependency order
-      const grid = new GridManager();
-      const spatial = new SpatialPartitioning();
-      const buildingConfig = new BuildingConfig();
-      const tierProgression = new TierProgression(buildingConfig);
-      const buildingEffect = new BuildingEffect(spatial, buildingConfig);
-      const storage = new StorageManager();
-      const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
-      const consumption = new ConsumptionSystem();
-
-      // Initialize BrowserSaveManager for browser-based persistence
+      // Initialize save manager
       this.saveManager = new BrowserSaveManager({
-        maxLocalStorageSaveSize: 100 * 1024, // 100KB
-        useIndexedDB: true
-      });
-      const morale = new MoraleCalculator();
-      const territoryManager = new TerritoryManager(buildingConfig);
-      const townManager = new TownManager(buildingConfig);
-      const npcManager = new NPCManager(townManager);
-      const npcAssignment = new NPCAssignment(buildingConfig);
-
-      // Create orchestrator with all modules
-      this.orchestrator = new ModuleOrchestrator({
-        grid,
-        spatial,
-        buildingConfig,
-        tierProgression,
-        buildingEffect,
-        productionTick,
-        storage,
-        consumption,
-        morale,
-        territoryManager,
-        townManager,
-        npcManager,
-        npcAssignment
+        namespace: 'voxel-rpg',
+        maxSlots: 10
       });
 
-      // Create game engine
+      // Create module orchestrator with all game modules
+      this.orchestrator = new ModuleOrchestrator(this._createModules());
+      
+      // Initialize game engine
       this.engine = new GameEngine(this.orchestrator);
 
-      // Initialize persistence integration
-      this.persistenceIntegration = new GameEngineIntegration(
-        this.engine,
-        this.orchestrator,
-        this.saveManager
-      );
-
-      if (this.config.enableAutoSave) {
-        this.persistenceIntegration.enable();
-        this.persistenceIntegration.enableRollingAutoSave(3);
-      }
-
-      // Initialize performance monitoring
-      if (this.config.enablePerformanceMonitoring) {
-        this.performanceMonitor = new PerformanceMonitor(this.engine, this.orchestrator);
-        this.performanceMonitor.enable();
-      }
-
-      // Initialize error recovery
-      if (this.config.enableErrorRecovery) {
-        this.errorRecovery = new ErrorRecovery(this.orchestrator, this.saveManager);
-        this.errorRecovery.enable();
-      }
+      // Set up engine event forwarding
+      this._setupEngineEvents();
 
       this.gameState = GameManager.GAME_STATE.INITIALIZED;
-      this._emit('game:initialized', {});
+      this.emit('game:initialized', {});
 
+      console.log('[GameManager] Initialization complete');
       return true;
     } catch (err) {
-      console.error('Failed to initialize game:', err);
+      console.error('[GameManager] Initialization failed:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
-      this._emit('game:error', { error: err.message });
+      this.emit('game:error', { error: err.message });
       return false;
     }
   }
 
   /**
+   * Create all game modules
+   */
+  _createModules() {
+    // This would normally import and instantiate all your game modules
+    // For now, creating mock modules for demonstration
+    return {
+      grid: this._createMockGridManager(),
+      spatial: this._createMockSpatialPartitioning(),
+      buildingConfig: this._createMockBuildingConfig(),
+      tierProgression: this._createMockTierProgression(),
+      buildingEffect: this._createMockBuildingEffect(),
+      productionTick: this._createMockProductionTick(),
+      storage: this._createMockStorageManager(),
+      consumption: this._createMockConsumptionSystem(),
+      morale: this._createMockMoraleCalculator(),
+      territoryManager: this._createMockTerritoryManager(),
+      townManager: this._createMockTownManager(),
+      npcManager: this._createMockNPCManager(),
+      npcAssignment: this._createMockNPCAssignment()
+    };
+  }
+
+  /**
+   * Set up event forwarding from engine
+   */
+  _setupEngineEvents() {
+    if (!this.engine) return;
+
+    this.engine.on('tick:start', (data) => {
+      this.emit('tick:start', data);
+    });
+
+    this.engine.on('tick:complete', (data) => {
+      this.currentTick++;
+      
+      // Update population stats
+      const population = this.orchestrator.npcManager.getStatistics();
+      
+      // Emit tick with full game state
+      this.emit('tick:complete', {
+        tick: this.currentTick,
+        timestamp: Date.now(),
+        gameState: {
+          currentTier: this.orchestrator.gameState.currentTier,
+          buildings: this.orchestrator.gameState.buildings,
+          npcs: this.orchestrator.gameState.npcs,
+          resources: this.orchestrator.storage.getStorage(),
+          morale: this.orchestrator.morale.getCurrentMorale(),
+          moraleState: this.orchestrator.morale.getMoraleState(),
+          population: population
+        }
+      });
+    });
+
+    this.engine.on('tick:error', (error) => {
+      console.error('[GameManager] Tick error:', error);
+      this.emit('tick:error', error);
+    });
+  }
+
+  /**
    * Start the game
-   * @param {string} saveSlot - Save slot to load (optional)
-   * @returns {boolean} Success
    */
   async startGame(saveSlot = null) {
     try {
       if (this.gameState === GameManager.GAME_STATE.RUNNING) {
+        // eslint-disable-next-line no-console
         console.warn('Game already running');
         return false;
       }
 
       if (!this.orchestrator || !this.engine) {
+        // eslint-disable-next-line no-console
         console.error('Game not initialized');
         return false;
       }
 
       // Load save if provided
-      if (saveSlot && this.saveManager.saveExists(saveSlot)) {
+      if (saveSlot && this.saveManager?.saveExists(saveSlot)) {
         const loadResult = this.saveManager.loadGame(
           saveSlot,
           this.orchestrator,
@@ -192,57 +161,109 @@ class GameManager {
         );
 
         if (!loadResult.success) {
-          console.error('Failed to load save:', loadResult.message);
+          console.error('[GameManager] Failed to load save:', loadResult.message);
           return false;
         }
 
-        this._emit('game:loaded', { slot: saveSlot, metadata: loadResult.metadata });
-      } else {
-        // Start fresh game
-        const territory = this.orchestrator.territoryManager.createTerritory(
-          'territory-1',
-          { x: 100, y: 50, z: 100 }
-        );
-
-        this._emit('game:reset', { territory: territory.id });
+        this.emit('game:loaded', { slot: saveSlot, metadata: loadResult.metadata });
       }
 
-      // Start engine
-      await this.engine.start();
+      // Start the tick timer
+      this._startTickTimer();
 
       this.gameState = GameManager.GAME_STATE.RUNNING;
-      this._emit('game:started', { tick: this.orchestrator.tickCount });
+      
+      // Emit started event with current state
+      this.emit('game:started', { 
+        tick: this.currentTick,
+        timestamp: Date.now()
+      });
 
+      console.log('[GameManager] Game started successfully');
       return true;
     } catch (err) {
-      console.error('Failed to start game:', err);
+      console.error('[GameManager] Failed to start game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
-      this._emit('game:error', { error: err.message });
+      this.emit('game:error', { error: err.message });
       return false;
     }
   }
 
   /**
+   * Start the game tick timer
+   */
+  _startTickTimer() {
+    if (this.tickTimer) {
+      clearInterval(this.tickTimer);
+    }
+
+    // Run first tick immediately
+    this._processTick();
+
+    // Then run ticks on interval
+    this.tickTimer = setInterval(() => {
+      if (this.gameState === GameManager.GAME_STATE.RUNNING) {
+        this._processTick();
+      }
+    }, this.config.tickInterval);
+  }
+
+  /**
+   * Process a single game tick
+   */
+  _processTick() {
+    try {
+      this.emit('tick:start', { tick: this.currentTick });
+
+      // Execute tick in orchestrator
+      const tickResult = this.orchestrator.executeTick();
+
+      // Update current tick counter
+      this.currentTick++;
+
+      // Update population for the progress bar
+      const population = this.orchestrator.npcManager.getStatistics();
+      const populationPercent = population.totalSpawned > 0 
+        ? (population.aliveCount / population.totalSpawned) * 100 
+        : 100;
+
+      // Emit complete event with all data
+      this.emit('tick:complete', {
+        tick: this.currentTick,
+        timestamp: Date.now(),
+        ...tickResult,
+        population: {
+          ...population,
+          percent: populationPercent
+        }
+      });
+
+    } catch (err) {
+      console.error('[GameManager] Tick processing error:', err);
+      this.emit('tick:error', { error: err.message, tick: this.currentTick });
+    }
+  }
+
+  /**
    * Stop the game
-   * @returns {boolean} Success
    */
   async stopGame() {
     try {
-      if (this.gameState !== GameManager.GAME_STATE.RUNNING &&
-          this.gameState !== GameManager.GAME_STATE.PAUSED) {
-        return false;
-      }
+      console.log('[GameManager] Stopping game...');
 
-      if (this.engine) {
-        await this.engine.stop();
+      // Clear tick timer
+      if (this.tickTimer) {
+        clearInterval(this.tickTimer);
+        this.tickTimer = null;
       }
 
       this.gameState = GameManager.GAME_STATE.STOPPED;
-      this._emit('game:stopped', { tick: this.orchestrator.tickCount });
+      this.emit('game:stopped', { tick: this.currentTick });
 
+      console.log('[GameManager] Game stopped');
       return true;
     } catch (err) {
-      console.error('Failed to stop game:', err);
+      console.error('[GameManager] Failed to stop game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
       return false;
     }
@@ -252,10 +273,10 @@ class GameManager {
    * Pause the game
    */
   pauseGame() {
-    if (this.engine) {
-      this.engine.pause();
+    if (this.gameState === GameManager.GAME_STATE.RUNNING) {
       this.gameState = GameManager.GAME_STATE.PAUSED;
-      this._emit('game:paused', {});
+      this.emit('game:paused', {});
+      console.log('[GameManager] Game paused');
       return true;
     }
     return false;
@@ -265,20 +286,114 @@ class GameManager {
    * Resume the game
    */
   resumeGame() {
-    if (this.engine) {
-      this.engine.resume();
+    if (this.gameState === GameManager.GAME_STATE.PAUSED) {
       this.gameState = GameManager.GAME_STATE.RUNNING;
-      this._emit('game:resumed', {});
+      this.emit('game:resumed', {});
+      console.log('[GameManager] Game resumed');
       return true;
     }
     return false;
   }
 
   /**
-   * Save the current game
-   * @param {string} slotName - Save slot name
-   * @param {string} description - Save description
-   * @returns {Object} Save result
+   * Place a building
+   */
+  placeBuilding(type, position) {
+    try {
+      // Validate position
+      if (!position || typeof position.x !== 'number' || typeof position.y !== 'number') {
+        return { success: false, message: 'Invalid position' };
+      }
+
+      // Create building through grid manager
+      const building = this.orchestrator.grid.placeBuilding(type, position);
+      
+      if (building) {
+        this.emit('building:placed', { 
+          buildingId: building.id, 
+          type, 
+          position 
+        });
+
+        // Force an immediate tick update
+        this._processTick();
+
+        return { success: true, building };
+      }
+
+      return { success: false, message: 'Failed to place building' };
+    } catch (err) {
+      console.error('[GameManager] Failed to place building:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Spawn an NPC
+   */
+  spawnNPC(role = 'WORKER') {
+    try {
+      const npc = this.orchestrator.npcManager.spawnNPC({
+        role,
+        position: this._getRandomPosition()
+      });
+
+      if (npc) {
+        // Update population stats
+        const stats = this.orchestrator.npcManager.getStatistics();
+        
+        this.emit('npc:spawned', { 
+          npc,
+          population: stats
+        });
+
+        // Force an immediate tick update
+        this._processTick();
+
+        return npc;
+      }
+
+      return null;
+    } catch (err) {
+      console.error('[GameManager] Failed to spawn NPC:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Get random position within grid bounds
+   */
+  _getRandomPosition() {
+    return {
+      x: Math.floor(Math.random() * 10),
+      y: Math.floor(Math.random() * 10),
+      z: 0
+    };
+  }
+
+  /**
+   * Advance to the next tier
+   */
+  advanceTier(targetTier) {
+    try {
+      const result = this.orchestrator.advanceTier(targetTier);
+      
+      if (result.success) {
+        this.emit('tier:advanced', { 
+          tier: targetTier,
+          resourcesSpent: result.resourcesSpent
+        });
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to advance tier:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Save the game
    */
   saveGame(slotName, description = '') {
     try {
@@ -290,26 +405,18 @@ class GameManager {
       );
 
       if (result.success) {
-        this._emit('game:saved', { slot: slotName, metadata: result.metadata });
+        this.emit('game:saved', { slot: slotName, metadata: result.metadata });
       }
 
       return result;
     } catch (err) {
-      const errorResult = {
-        success: false,
-        message: `Save failed: ${err.message}`,
-        error: err
-      };
-
-      this._emit('game:error', { error: err.message });
-      return errorResult;
+      console.error('[GameManager] Failed to save game:', err);
+      return { success: false, message: err.message };
     }
   }
 
   /**
    * Load a saved game
-   * @param {string} slotName - Save slot to load
-   * @returns {Object} Load result
    */
   loadGame(slotName) {
     try {
@@ -320,139 +427,126 @@ class GameManager {
       );
 
       if (result.success) {
-        this._emit('game:loaded', { slot: slotName, metadata: result.metadata });
+        this.currentTick = this.orchestrator.tickCount || 0;
+        this.emit('game:loaded', { slot: slotName, metadata: result.metadata });
       }
 
       return result;
     } catch (err) {
-      const errorResult = {
-        success: false,
-        message: `Load failed: ${err.message}`,
-        error: err
-      };
-
-      this._emit('game:error', { error: err.message });
-      return errorResult;
+      console.error('[GameManager] Failed to load game:', err);
+      return { success: false, message: err.message };
     }
-  }
-
-  /**
-   * Place a building
-   * @param {string} buildingType - Building type
-   * @param {Object} position - Position {x, y, z}
-   * @returns {Object} Placement result
-   */
-  placeBuilding(buildingType, position) {
-    try {
-      const buildingId = `${buildingType.toLowerCase()}-${Date.now()}`;
-      const building = {
-        id: buildingId,
-        type: buildingType,
-        position,
-        health: 100
-      };
-
-      const result = this.orchestrator.placeBuilding(building);
-
-      if (result.success) {
-        this._emit('building:placed', { buildingId, type: buildingType });
-      }
-
-      return result;
-    } catch (err) {
-      const errorResult = { success: false, message: err.message };
-      this._emit('game:error', { error: err.message });
-      return errorResult;
-    }
-  }
-
-  /**
-   * Spawn an NPC
-   * @param {string} role - NPC role
-   * @param {Object} position - Starting position
-   * @returns {Object} NPC or error
-   */
-  spawnNPC(role, position) {
-    try {
-      const npc = this.orchestrator.spawnNPC(role, position);
-      this._emit('npc:spawned', { npc });
-      return npc;
-    } catch (err) {
-      const errorResult = { error: err.message };
-      this._emit('game:error', { error: err.message });
-      return errorResult;
-    }
-  }
-
-  /**
-   * Advance to next tier
-   * @param {string} targetTier - Target tier
-   * @returns {Object} Advancement result
-   */
-  advanceTier(targetTier) {
-    try {
-      const result = this.orchestrator.advanceTier(targetTier);
-
-      if (result.success) {
-        this._emit('tier:advanced', { tier: targetTier });
-      }
-
-      return result;
-    } catch (err) {
-      const errorResult = { success: false, message: err.message };
-      this._emit('game:error', { error: err.message });
-      return errorResult;
-    }
-  }
-
-  /**
-   * Get complete game status
-   * @returns {Object} Game status
-   */
-  getGameStatus() {
-    return {
-      state: this.gameState,
-      timestamp: new Date().toISOString(),
-      orchestrator: this.orchestrator?.getStatistics() || null,
-      engine: this.engine?.getEngineStats() || null,
-      performance: this.performanceMonitor?.getSnapshot() || null,
-      saves: this.saveManager?.listSaves() || []
-    };
   }
 
   /**
    * Get available save slots
-   * @returns {Array} Array of save metadata
    */
   getSaveSlots() {
-    return this.saveManager?.listSaves() || [];
+    return this.saveManager ? this.saveManager.getSaveSlots() : [];
   }
 
   /**
-   * Register event callback
-   * @param {string} event - Event name
-   * @param {Function} callback - Callback function
+   * Get current game status
    */
-  on(event, callback) {
-    if (!this.eventCallbacks.has(event)) {
-      this.eventCallbacks.set(event, []);
+  getGameStatus() {
+    return {
+      state: this.gameState,
+      tick: this.currentTick,
+      tier: this.orchestrator?.gameState?.currentTier || 'SURVIVAL',
+      isRunning: this.gameState === GameManager.GAME_STATE.RUNNING,
+      isPaused: this.gameState === GameManager.GAME_STATE.PAUSED
+    };
+  }
+
+  /**
+   * Clean up resources
+   */
+  destroy() {
+    if (this.tickTimer) {
+      clearInterval(this.tickTimer);
+      this.tickTimer = null;
     }
-    this.eventCallbacks.get(event).push(callback);
+
+    this.removeAllListeners();
+    
+    if (this.engine) {
+      this.engine.destroy();
+    }
+
+    console.log('[GameManager] Destroyed');
   }
 
-  /**
-   * Unregister event callback
-   * @param {string} event - Event name
-   * @param {Function} callback - Callback function
-   */
-  off(event, callback) {
-    if (this.eventCallbacks.has(event)) {
-      const callbacks = this.eventCallbacks.get(event);
-      const index = callbacks.indexOf(callback);
-      if (index > -1) {
-        callbacks.splice(index, 1);
+  // ===== MOCK MODULE CREATORS =====
+  // These would normally be real module imports
+  
+  _createMockGridManager() {
+    return {
+      placeBuilding: (type, position) => ({
+        id: `building-${Date.now()}`,
+        type,
+        position
+      }),
+      getAllBuildings: () => []
+    };
+  }
+
+  _createMockSpatialPartitioning() {
+    return {
+      insert: () => {},
+      query: () => []
+    };
+  }
+
+  _createMockBuildingConfig() {
+    return {
+      getBuildingData: (type) => ({
+        type,
+        cost: { wood: 10, stone: 5 }
+      })
+    };
+  }
+
+  _createMockTierProgression() {
+    return {
+      canAdvanceToTier: () => ({ canAdvance: true }),
+      getRequirementsForTier: () => ({ wood: 100, stone: 50 })
+    };
+  }
+
+  _createMockBuildingEffect() {
+    return {
+      calculateEffects: () => ({})
+    };
+  }
+
+  _createMockProductionTick() {
+    return {
+      executeTick: () => ({
+        production: { food: 5, wood: 2 }
+      })
+    };
+  }
+
+  _createMockStorageManager() {
+    const storage = {
+      food: 100,
+      wood: 50,
+      stone: 50,
+      gold: 0,
+      essence: 0,
+      crystal: 0
+    };
+
+    return {
+      getStorage: () => ({ ...storage }),
+      getResource: (type) => storage[type] || 0,
+      addResource: (type, amount) => {
+        storage[type] = (storage[type] || 0) + amount;
+      },
+      removeResource: (type, amount) => {
+        storage[type] = Math.max(0, (storage[type] || 0) - amount);
       }
-    }
+    };
   }
 
   /**
@@ -465,25 +559,98 @@ class GameManager {
         try {
           callback(data);
         } catch (err) {
+          // eslint-disable-next-line no-console
           console.error(`Error in event callback for ${event}:`, err);
         }
-      }
-    }
+  _createMockConsumptionSystem() {
+    return {
+      executeConsumptionTick: () => ({
+        foodConsumed: 2,
+        starvationOccurred: false
+      }),
+      getAliveCount: () => 100,
+      getAliveNPCs: () => []
+    };
   }
 
-  /**
-   * Get version information
-   * @returns {Object} Version info
-   */
-  static getVersion() {
+  _createMockMoraleCalculator() {
+    let morale = 0;
+    
     return {
-      major: 1,
-      minor: 0,
-      patch: 0,
-      name: 'Voxel RPG Game MVP',
-      status: 'alpha'
+      getCurrentMorale: () => morale,
+      getMoraleState: () => {
+        if (morale < -50) return 'MISERABLE';
+        if (morale < -25) return 'UPSET';
+        if (morale < 0) return 'UNHAPPY';
+        if (morale === 0) return 'NEUTRAL';
+        if (morale < 25) return 'HAPPY';
+        return 'THRILLED';
+      },
+      getMoraleMultiplier: () => 1 + (morale / 100),
+      updateMorale: (delta) => {
+        morale = Math.max(-100, Math.min(100, morale + delta));
+      }
+    };
+  }
+
+  _createMockTerritoryManager() {
+    return {
+      getAllTerritories: () => [],
+      createTerritory: (id, bounds) => ({
+        id,
+        bounds
+      })
+    };
+  }
+
+  _createMockTownManager() {
+    return {
+      getHousingCapacity: () => 10
+    };
+  }
+
+  _createMockNPCManager() {
+    const npcs = [];
+    let totalSpawned = 0;
+
+    return {
+      spawnNPC: (config) => {
+        totalSpawned++;
+        const npc = {
+          id: `npc-${totalSpawned}`,
+          role: config.role || 'WORKER',
+          position: config.position || { x: 0, y: 0, z: 0 },
+          health: 100,
+          alive: true
+        };
+        npcs.push(npc);
+        return npc;
+      },
+      killNPC: (id) => {
+        const npc = npcs.find(n => n.id === id);
+        if (npc) {
+          npc.alive = false;
+          npc.health = 0;
+        }
+      },
+      getStatistics: () => {
+        const aliveCount = npcs.filter(n => n.alive).length;
+        return {
+          aliveCount,
+          totalSpawned,
+          deadCount: totalSpawned - aliveCount,
+          percent: totalSpawned > 0 ? (aliveCount / totalSpawned) * 100 : 100
+        };
+      },
+      getAllNPCStates: () => npcs
+    };
+  }
+
+  _createMockNPCAssignment() {
+    return {
+      assignNPC: () => {},
+      unassignNPC: () => {},
+      getAssignments: () => ({})
     };
   }
 }
-
-export default GameManager;

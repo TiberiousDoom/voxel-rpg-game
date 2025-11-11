@@ -11,6 +11,26 @@
 import React, { useState, useRef } from 'react';
 import './GameViewport.css';
 
+// Grid constants
+const GRID_WIDTH = 10;
+const GRID_HEIGHT = 10;
+const TILE_SIZE = 40;
+const CANVAS_WIDTH = GRID_WIDTH * TILE_SIZE;
+const CANVAS_HEIGHT = GRID_HEIGHT * TILE_SIZE;
+
+// Color constants (moved outside component to prevent re-creation on every render)
+const BUILDING_COLORS = {
+  FARM: '#90EE90',
+  HOUSE: '#D2B48C',
+  WAREHOUSE: '#A9A9A9',
+  TOWN_CENTER: '#FFD700',
+  WATCHTOWER: '#8B4513'
+};
+
+const NPC_COLOR = '#FF6B6B';
+const GRID_COLOR = '#E0E0E0';
+const SELECTED_COLOR = '#FF4444';
+
 /**
  * GameViewport Component
  * Renders the voxel game world with buildings and NPCs
@@ -24,24 +44,8 @@ function GameViewport({
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   const canvasRef = useRef(null);
-
-  const GRID_WIDTH = 10;
-  const GRID_HEIGHT = 10;
-  const TILE_SIZE = 40;
-  const CANVAS_WIDTH = GRID_WIDTH * TILE_SIZE;
-  const CANVAS_HEIGHT = GRID_HEIGHT * TILE_SIZE;
-
-  const BUILDING_COLORS = {
-    FARM: '#90EE90',
-    HOUSE: '#D2B48C',
-    WAREHOUSE: '#A9A9A9',
-    TOWN_CENTER: '#FFD700',
-    WATCHTOWER: '#8B4513'
-  };
-
-  const NPC_COLOR = '#FF6B6B';
-  const GRID_COLOR = '#E0E0E0';
-  const SELECTED_COLOR = '#FF4444';
+  const rafRef = useRef(null); // requestAnimationFrame reference
+  const lastHoverUpdateRef = useRef(0); // Throttle hover updates
 
   /**
    * Convert world position to canvas coordinates
@@ -66,8 +70,9 @@ function GameViewport({
 
   /**
    * Draw the game world
+   * Memoized to prevent unnecessary re-renders
    */
-  const drawViewport = (ctx) => {
+  const drawViewport = React.useCallback((ctx) => {
     // Clear canvas
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -165,7 +170,7 @@ function GameViewport({
         TILE_SIZE - 4
       );
     }
-  };
+  }, [buildings, npcs, hoveredPosition, selectedBuildingType]);
 
   /**
    * Handle canvas click for placement
@@ -196,10 +201,17 @@ function GameViewport({
   };
 
   /**
-   * Handle canvas mouse move for hover
+   * Handle canvas mouse move for hover (throttled for performance)
    */
   const handleCanvasMouseMove = (e) => {
     if (!canvasRef.current) return;
+
+    // Throttle: Only update at most every 16ms (60 FPS)
+    const now = Date.now();
+    if (now - lastHoverUpdateRef.current < 16) {
+      return;
+    }
+    lastHoverUpdateRef.current = now;
 
     const rect = canvasRef.current.getBoundingClientRect();
 
@@ -212,6 +224,12 @@ function GameViewport({
 
     const position = canvasToWorld(canvasX, canvasY);
 
+    // Only update if position actually changed (avoid redundant setState)
+    const posChanged =
+      !hoveredPosition ||
+      hoveredPosition.x !== position.x ||
+      hoveredPosition.z !== position.z;
+
     // Clamp to grid bounds
     if (
       position.x >= 0 &&
@@ -219,9 +237,13 @@ function GameViewport({
       position.z >= 0 &&
       position.z < GRID_HEIGHT
     ) {
-      setHoveredPosition(position);
+      if (posChanged) {
+        setHoveredPosition(position);
+      }
     } else {
-      setHoveredPosition(null);
+      if (hoveredPosition !== null) {
+        setHoveredPosition(null);
+      }
     }
   };
 
@@ -233,9 +255,9 @@ function GameViewport({
   };
 
   /**
-   * Canvas animation loop
+   * Optimized canvas rendering using requestAnimationFrame
+   * Only renders when state changes, but caps at 60 FPS
    */
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -243,9 +265,24 @@ function GameViewport({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    drawViewport(ctx);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buildings, npcs, hoveredPosition, selectedBuildingType]);
+    // Cancel any pending animation frame
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+
+    // Schedule render on next animation frame (max 60 FPS)
+    rafRef.current = requestAnimationFrame(() => {
+      drawViewport(ctx);
+      rafRef.current = null;
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [drawViewport]);
 
   return (
     <div className="game-viewport">

@@ -411,20 +411,28 @@ class ModuleOrchestrator {
    * @returns {Object} Result object with success status
    */
   spawnNPC(role, position) {
-    const result = this.npcManager.spawnNPC(role, position);
+    try {
+      const npc = this.npcManager.spawnNPC(role, position);
 
-    if (!result.success) {
-      return result;
+      if (!npc) {
+        return { success: false, message: 'Failed to spawn NPC' };
+      }
+
+      // townManager.spawnNPC is already called by npcManager.spawnNPC
+      // so we don't need to call it again here
+      this.consumption.registerNPC(npc.id, false);
+
+      // Update game state immediately for UI reactivity
+      this._updateGameState();
+
+      return {
+        success: true,
+        npcId: npc.id,
+        npc: npc
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
     }
-
-    // townManager.spawnNPC is already called by npcManager.spawnNPC
-    // so we don't need to call it again here
-    this.consumption.registerNPC(result.npc.id, false);
-
-    // Update game state immediately for UI reactivity
-    this._updateGameState();
-
-    return result;
   }
 
   /**

@@ -78,6 +78,50 @@ function createMockOrchestrator() {
       npcs: [],
       storage: { food: 100, wood: 50, stone: 50 },
       morale: 0
+    },
+    grid: {
+      getAllBuildings: () => [
+        { id: 'building-1', type: 'FARM', position: { x: 50, y: 25, z: 50 }, health: 100 }
+      ],
+      width: 10,
+      height: 50,
+      depth: 10
+    },
+    spatial: {
+      getAllItems: () => []
+    },
+    tierProgression: {
+      currentTier: 'SURVIVAL',
+      unlockedTiers: ['SURVIVAL']
+    },
+    buildingEffect: {
+      getActiveEffects: () => []
+    },
+    storage: {
+      getStorage: () => ({ food: 100, wood: 50, stone: 50, gold: 0, essence: 0, crystal: 0 }),
+      capacity: 1000
+    },
+    consumption: {
+      foodConsumedPerTick: 2,
+      starvationCount: 0
+    },
+    morale: {
+      getCurrentMorale: () => 0,
+      getMoraleState: () => 'NEUTRAL'
+    },
+    territoryManager: {
+      getAllTerritories: () => []
+    },
+    townManager: {
+      getHousingCapacity: () => 10,
+      getPopulation: () => 0
+    },
+    npcManager: {
+      getAllNPCStates: () => [],
+      getStatistics: () => ({ aliveCount: 0, totalSpawned: 0, deadCount: 0 })
+    },
+    npcAssignment: {
+      getAllAssignments: () => []
     }
   };
 }

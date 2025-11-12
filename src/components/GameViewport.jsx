@@ -111,7 +111,8 @@ function GameViewport({
   npcs = [],
   selectedBuildingType = null,
   onPlaceBuilding = () => {},
-  onSelectTile = () => {}
+  onSelectTile = () => {},
+  onBuildingClick = () => {}
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   const canvasRef = useRef(null);
@@ -356,13 +357,25 @@ function GameViewport({
     const position = canvasToWorld(canvasX, canvasY);
 
     if (selectedBuildingType) {
+      // Building placement mode
       onPlaceBuilding(selectedBuildingType, {
         x: position.x,
         y: 25, // Fixed height (gridHeight is 50, so valid range is 0-49)
         z: position.z
       });
     } else {
-      onSelectTile(position);
+      // Check if a building was clicked
+      const clickedBuilding = buildings.find(b =>
+        b && b.position &&
+        b.position.x === position.x &&
+        b.position.z === position.z
+      );
+
+      if (clickedBuilding) {
+        onBuildingClick(clickedBuilding);
+      } else {
+        onSelectTile(position);
+      }
     }
   };
 

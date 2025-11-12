@@ -13,7 +13,7 @@ import './GameScreen.css';
  * Main container for the Voxel RPG Game
  */
 function GameScreen() {
-  const { gameState, actions, isReady, error, isInitializing } = useGame();
+  const { gameState, actions, isReady, error, isInitializing, gameManager } = useGame();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
@@ -308,12 +308,12 @@ function GameScreen() {
       )}
 
       {/* Building Info Panel */}
-      {selectedBuilding && (
+      {selectedBuilding && gameManager && (
         <BuildingInfoPanel
           building={selectedBuilding}
+          buildingConfig={gameManager.orchestrator?.buildingConfig}
           resources={gameState.resources || {}}
           onRepair={handleRepair}
-          onDamage={handleDamage}
           onClose={() => setSelectedBuilding(null)}
         />
       )}

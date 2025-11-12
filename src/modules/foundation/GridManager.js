@@ -318,6 +318,101 @@ class GridManager {
       errors: errors.length > 0 ? errors : undefined,
     };
   }
+
+  /**
+   * Damage a building (reduce health)
+   * @param {string} buildingId - Building to damage
+   * @param {number} amount - Damage amount
+   * @returns {object} {success: boolean, building?: object, error?: string}
+   */
+  damageBuilding(buildingId, amount) {
+    const building = this.buildings.get(buildingId);
+
+    if (!building) {
+      return { success: false, error: `Building ${buildingId} not found` };
+    }
+
+    // Initialize health if not present
+    if (building.health === undefined) {
+      building.health = building.maxHealth || 100;
+      building.maxHealth = building.maxHealth || 100;
+    }
+
+    // Apply damage
+    building.health = Math.max(0, building.health - amount);
+
+    // Update state based on health
+    if (building.health === 0) {
+      building.state = 'DESTROYED';
+    } else if (building.health < building.maxHealth * 0.5) {
+      building.state = 'DAMAGED';
+    } else if (building.state === 'DAMAGED' && building.health >= building.maxHealth * 0.5) {
+      building.state = 'COMPLETE';
+    }
+
+    return { success: true, building };
+  }
+
+  /**
+   * Repair a building (restore health)
+   * @param {string} buildingId - Building to repair
+   * @param {number} amount - Repair amount
+   * @returns {object} {success: boolean, building?: object, error?: string}
+   */
+  repairBuilding(buildingId, amount) {
+    const building = this.buildings.get(buildingId);
+
+    if (!building) {
+      return { success: false, error: `Building ${buildingId} not found` };
+    }
+
+    // Initialize health if not present
+    if (building.health === undefined) {
+      building.health = building.maxHealth || 100;
+      building.maxHealth = building.maxHealth || 100;
+    }
+
+    // Can't repair destroyed buildings (must rebuild)
+    if (building.state === 'DESTROYED') {
+      return { success: false, error: 'Cannot repair destroyed building' };
+    }
+
+    // Apply repair
+    building.health = Math.min(building.maxHealth, building.health + amount);
+
+    // Update state if fully repaired
+    if (building.health === building.maxHealth) {
+      building.state = 'COMPLETE';
+    }
+
+    return { success: true, building };
+  }
+
+  /**
+   * Get building health status
+   * @param {string} buildingId - Building to check
+   * @returns {object} {health: number, maxHealth: number, percentage: number, state: string}
+   */
+  getBuildingHealth(buildingId) {
+    const building = this.buildings.get(buildingId);
+
+    if (!building) {
+      return null;
+    }
+
+    // Initialize health if not present
+    if (building.health === undefined) {
+      building.health = building.maxHealth || 100;
+      building.maxHealth = building.maxHealth || 100;
+    }
+
+    return {
+      health: building.health,
+      maxHealth: building.maxHealth,
+      percentage: (building.health / building.maxHealth) * 100,
+      state: building.state || 'COMPLETE'
+    };
+  }
 }
 
 export default GridManager;

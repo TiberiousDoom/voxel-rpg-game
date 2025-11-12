@@ -699,6 +699,50 @@ class BuildingConfig {
     const effects = this.getEffects(type);
     return effects.zoneBonus !== null && effects.zoneBonus !== undefined;
   }
+
+  /**
+   * Get repair cost for a building
+   * Repair cost is 50% of the original construction cost
+   * @param {string} type - Building type
+   * @returns {Object} Repair cost {wood, food, stone, gold}
+   */
+  getRepairCost(type) {
+    const constructionCost = this.getCost(type);
+    const repairCost = {};
+
+    // Repair costs 50% of construction cost
+    for (const [resource, amount] of Object.entries(constructionCost)) {
+      repairCost[resource] = Math.ceil(amount * 0.5);
+    }
+
+    return repairCost;
+  }
+
+  /**
+   * Get repair amount (health restored per repair action)
+   * Default is 25 HP per repair
+   * @param {string} type - Building type
+   * @returns {number} Health restored
+   */
+  getRepairAmount(type) {
+    // Default repair amount is 25 HP
+    // Could be customized per building type in future
+    return 25;
+  }
+
+  /**
+   * Get building health and durability info
+   * @param {string} type - Building type
+   * @returns {Object} {health, maxHealth, decayRate}
+   */
+  getHealthConfig(type) {
+    const config = this.getConfig(type);
+    return {
+      health: config.health || 100,
+      maxHealth: config.maxHealth || 100,
+      decayRate: config.decayRate || 0
+    };
+  }
 }
 
 export default BuildingConfig;

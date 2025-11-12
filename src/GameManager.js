@@ -916,18 +916,21 @@ export default class GameManager extends EventEmitter {
       moveToWorking: (npcId) => {
         idleNPCs.delete(npcId);
         workingNPCs.add(npcId);
+        // eslint-disable-next-line no-console
         console.log(`[NPCManager] NPC ${npcId} now working`);
       },
       moveToIdle: (npcId) => {
         workingNPCs.delete(npcId);
         restingNPCs.delete(npcId);
         idleNPCs.add(npcId);
+        // eslint-disable-next-line no-console
         console.log(`[NPCManager] NPC ${npcId} now idle`);
       },
       moveToResting: (npcId) => {
         idleNPCs.delete(npcId);
         workingNPCs.delete(npcId);
         restingNPCs.add(npcId);
+        // eslint-disable-next-line no-console
         console.log(`[NPCManager] NPC ${npcId} now resting`);
       },
       getStatistics: () => {

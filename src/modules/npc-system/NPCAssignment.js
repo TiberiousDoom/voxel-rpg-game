@@ -52,6 +52,7 @@ class NPCAssignment {
 
     // 5. Unassign NPC from current building if already assigned
     if (npc.assignedBuilding) {
+      // eslint-disable-next-line no-console
       console.log(`[NPCAssignment] NPC ${npcId} already assigned to ${npc.assignedBuilding}, unassigning`);
       this.unassignNPC(npcId);
     }
@@ -64,6 +65,7 @@ class NPCAssignment {
     currentWorkers.add(npcId);
     this.assignments.set(buildingId, currentWorkers);
 
+    // eslint-disable-next-line no-console
     console.log(`[NPCAssignment] ✅ Assigned NPC ${npcId} (${npc.role}) to building ${buildingId} (${building.type})`);
     return { success: true };
   }
@@ -95,6 +97,7 @@ class NPCAssignment {
     npc.setWorking(false);
     this.npcManager.moveToIdle(npcId);
 
+    // eslint-disable-next-line no-console
     console.log(`[NPCAssignment] Unassigned NPC ${npcId} from building ${buildingId}`);
     return true;
   }
@@ -139,6 +142,7 @@ class NPCAssignment {
       }
     }
 
+    // eslint-disable-next-line no-console
     console.log(`[NPCAssignment] Auto-assigned ${assignedCount} NPCs`);
     return assignedCount;
   }
@@ -201,6 +205,7 @@ class NPCAssignment {
     }
 
     this.assignments.delete(buildingId);
+    // eslint-disable-next-line no-console
     console.log(`[NPCAssignment] Cleared all assignments for building ${buildingId}`);
   }
 }

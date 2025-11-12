@@ -21,6 +21,17 @@ function GameScreen() {
   const [showTierPanel, setShowTierPanel] = useState(false);
   const [tierProgress, setTierProgress] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [fpsStats, setFpsStats] = useState({ current: 60, min: 60, max: 60 });
+
+  // Track FPS stats
+  useEffect(() => {
+    const fps = parseFloat(gameState.fps) || 60;
+    setFpsStats(prev => ({
+      current: fps,
+      min: Math.min(prev.min, fps),
+      max: Math.max(prev.max, fps)
+    }));
+  }, [gameState.fps]);
 
   // Auto-start the game when ready (for testing)
   useEffect(() => {
@@ -234,8 +245,8 @@ function GameScreen() {
             <span className="tick-counter">
               Tick: {gameState.currentTick || 0}
             </span>
-            <span className="fps-counter" title="Frames per second">
-              FPS: {gameState.fps || 60}
+            <span className="fps-counter" title="Current FPS / Min / Max">
+              FPS: {fpsStats.current.toFixed(2)} (min: {fpsStats.min.toFixed(2)} / max: {fpsStats.max.toFixed(2)})
             </span>
           </div>
         </div>

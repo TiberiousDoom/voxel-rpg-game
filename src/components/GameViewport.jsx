@@ -190,7 +190,7 @@ function GameViewport({
     const position = canvasToWorld(canvasX, canvasY);
 
     if (selectedBuildingType) {
-      onPlaceBuilding(selectedBuildingType, {
+      onPlaceBuilding({
         x: position.x,
         y: 25, // Fixed height (gridHeight is 50, so valid range is 0-49)
         z: position.z
@@ -303,27 +303,6 @@ function GameViewport({
         onMouseMove={handleCanvasMouseMove}
         onMouseLeave={handleCanvasMouseLeave}
       />
-      <div className="viewport-footer">
-        <p className="viewport-hint">
-          {selectedBuildingType
-            ? `Click to place ${selectedBuildingType} building`
-            : 'Select a building type from the menu to start building'}
-        </p>
-        <div className="building-legend">
-          <h4>Buildings:</h4>
-          <ul>
-            {Object.entries(BUILDING_COLORS).map(([type, color]) => (
-              <li key={type}>
-                <span
-                  className="legend-color"
-                  style={{ backgroundColor: color }}
-                />
-                {type}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
     </div>
   );
 }

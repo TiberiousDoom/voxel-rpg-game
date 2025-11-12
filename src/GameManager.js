@@ -115,17 +115,20 @@ export default class GameManager extends EventEmitter {
     const grid = this._createMockGridManager();
     const npcManager = this._createMockNPCManager();
 
+    // Create BuildingConfig once and share it across modules
+    const buildingConfig = this._createMockBuildingConfig();
+
     return {
       grid: grid,
       spatial: this._createMockSpatialPartitioning(),
-      buildingConfig: this._createMockBuildingConfig(),
-      tierProgression: this._createMockTierProgression(),
+      buildingConfig: buildingConfig,
+      tierProgression: this._createMockTierProgression(buildingConfig),
       buildingEffect: this._createMockBuildingEffect(),
       productionTick: this._createMockProductionTick(),
       storage: this._createMockStorageManager(),
       consumption: this._createMockConsumptionSystem(),
       morale: this._createMockMoraleCalculator(),
-      territoryManager: this._createMockTerritoryManager(),
+      territoryManager: this._createMockTerritoryManager(buildingConfig),
       townManager: this._createMockTownManager(),
       npcManager: npcManager,
       npcAssignment: new NPCAssignment(npcManager, grid)
@@ -903,9 +906,9 @@ export default class GameManager extends EventEmitter {
     return new BuildingConfig();
   }
 
-  _createMockTierProgression() {
+  _createMockTierProgression(buildingConfig) {
     // Use real TierProgression instead of mock
-    const buildingConfig = this._createMockBuildingConfig();
+    // Accept buildingConfig parameter to avoid creating duplicate instances
     return new TierProgression(buildingConfig);
   }
 
@@ -1056,9 +1059,9 @@ export default class GameManager extends EventEmitter {
     };
   }
 
-  _createMockTerritoryManager() {
+  _createMockTerritoryManager(buildingConfig) {
     // Use real TerritoryManager instead of mock
-    const buildingConfig = this._createMockBuildingConfig();
+    // Accept buildingConfig parameter to avoid creating duplicate instances
     const territoryManager = new TerritoryManager(buildingConfig);
 
     // Create initial territory

@@ -13,7 +13,7 @@
  * const { gameManager, gameState, actions, isReady, error } = useGameManager(config);
  */
 
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import GameManager from '../GameManager';
 import BrowserSaveManager from '../persistence/BrowserSaveManager';
 
@@ -63,8 +63,8 @@ export function useGameManager(config = {}) {
   const [error, setError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Configuration with defaults
-  const options = {
+  // Memoize configuration with defaults to prevent recreation on every render
+  const options = useMemo(() => ({
     savePath: config.savePath || 'voxel-rpg-saves',
     enableAutoSave: config.enableAutoSave !== false,
     autoSaveInterval: config.autoSaveInterval || 300, // 5 minutes
@@ -72,7 +72,14 @@ export function useGameManager(config = {}) {
     enableErrorRecovery: config.enableErrorRecovery !== false,
     debounceInterval: config.debounceInterval || 500, // 500ms update throttle
     ...config
-  };
+  }), [
+    config.savePath,
+    config.enableAutoSave,
+    config.autoSaveInterval,
+    config.enablePerformanceMonitoring,
+    config.enableErrorRecovery,
+    config.debounceInterval
+  ]);
 
   /**
    * Queue a state update and debounce the actual React setState

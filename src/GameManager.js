@@ -2,6 +2,7 @@ import EventEmitter from 'events';
 import BrowserSaveManager from './persistence/BrowserSaveManager';
 import ModuleOrchestrator from './core/ModuleOrchestrator';
 import GameEngine from './core/GameEngine';
+import NPCAssignment from './modules/npc-system/NPCAssignment';
 
 /**
  * GameManager - Main game controller
@@ -108,8 +109,11 @@ export default class GameManager extends EventEmitter {
   _createModules() {
     // This would normally import and instantiate all your game modules
     // For now, creating mock modules for demonstration
+    const grid = this._createMockGridManager();
+    const npcManager = this._createMockNPCManager();
+
     return {
-      grid: this._createMockGridManager(),
+      grid: grid,
       spatial: this._createMockSpatialPartitioning(),
       buildingConfig: this._createMockBuildingConfig(),
       tierProgression: this._createMockTierProgression(),
@@ -120,8 +124,8 @@ export default class GameManager extends EventEmitter {
       morale: this._createMockMoraleCalculator(),
       territoryManager: this._createMockTerritoryManager(),
       townManager: this._createMockTownManager(),
-      npcManager: this._createMockNPCManager(),
-      npcAssignment: this._createMockNPCAssignment()
+      npcManager: npcManager,
+      npcAssignment: new NPCAssignment(npcManager, grid)
     };
   }
 
@@ -428,9 +432,9 @@ export default class GameManager extends EventEmitter {
   advanceTier(targetTier) {
     try {
       const result = this.orchestrator.advanceTier(targetTier);
-      
+
       if (result.success) {
-        this._emit('tier:advanced', { 
+        this._emit('tier:advanced', {
           tier: targetTier,
           resourcesSpent: result.resourcesSpent
         });
@@ -439,6 +443,74 @@ export default class GameManager extends EventEmitter {
       return result;
     } catch (err) {
       console.error('[GameManager] Failed to advance tier:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Assign NPC to building
+   */
+  assignNPC(npcId, buildingId) {
+    try {
+      const result = this.orchestrator.assignNPC(npcId, buildingId);
+
+      if (result.success) {
+        this._emit('npc:assigned', {
+          npcId,
+          buildingId
+        });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to assign NPC:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Unassign NPC from building
+   */
+  unassignNPC(npcId) {
+    try {
+      const result = this.orchestrator.unassignNPC(npcId);
+
+      if (result.success) {
+        this._emit('npc:unassigned', { npcId });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to unassign NPC:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Auto-assign idle NPCs to buildings
+   */
+  autoAssignNPCs() {
+    try {
+      const result = this.orchestrator.autoAssignNPCs();
+
+      if (result.success) {
+        this._emit('npc:auto-assigned', {
+          count: result.assignedCount
+        });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to auto-assign NPCs:', err);
       return { success: false, message: err.message };
     }
   }
@@ -537,10 +609,19 @@ export default class GameManager extends EventEmitter {
   _createMockGridManager() {
     const buildings = new Map();
     return {
+      buildings: buildings,
       placeBuilding: (building) => {
         // Validate required fields
         if (!building || !building.id || !building.position) {
           return { success: false, error: 'Invalid building data' };
+        }
+
+        // Add default state and properties if not present
+        if (!building.state) {
+          building.state = 'COMPLETE';
+        }
+        if (!building.properties) {
+          building.properties = { npcCapacity: 2 };
         }
 
         // Store building
@@ -790,10 +871,17 @@ export default class GameManager extends EventEmitter {
   }
 
   _createMockNPCManager() {
-    const npcs = [];
+    const npcs = new Map();
+    const idleNPCs = new Set();
+    const workingNPCs = new Set();
+    const restingNPCs = new Set();
     let totalSpawned = 0;
 
     return {
+      npcs: npcs,
+      idleNPCs: idleNPCs,
+      workingNPCs: workingNPCs,
+      restingNPCs: restingNPCs,
       spawnNPC: (role, position) => {
         totalSpawned++;
         const npc = {
@@ -801,9 +889,14 @@ export default class GameManager extends EventEmitter {
           role: role || 'WORKER',
           position: position || { x: 0, y: 0, z: 0 },
           health: 100,
-          alive: true
+          alive: true,
+          assignedBuilding: null,
+          setWorking: function(working) {
+            this.isWorking = working;
+          }
         };
-        npcs.push(npc);
+        npcs.set(npc.id, npc);
+        idleNPCs.add(npc.id);
         return {
           success: true,
           npcId: npc.id,
@@ -811,14 +904,35 @@ export default class GameManager extends EventEmitter {
         };
       },
       killNPC: (id) => {
-        const npc = npcs.find(n => n.id === id);
+        const npc = npcs.get(id);
         if (npc) {
           npc.alive = false;
           npc.health = 0;
+          idleNPCs.delete(id);
+          workingNPCs.delete(id);
+          restingNPCs.delete(id);
         }
       },
+      moveToWorking: (npcId) => {
+        idleNPCs.delete(npcId);
+        workingNPCs.add(npcId);
+        console.log(`[NPCManager] NPC ${npcId} now working`);
+      },
+      moveToIdle: (npcId) => {
+        workingNPCs.delete(npcId);
+        restingNPCs.delete(npcId);
+        idleNPCs.add(npcId);
+        console.log(`[NPCManager] NPC ${npcId} now idle`);
+      },
+      moveToResting: (npcId) => {
+        idleNPCs.delete(npcId);
+        workingNPCs.delete(npcId);
+        restingNPCs.add(npcId);
+        console.log(`[NPCManager] NPC ${npcId} now resting`);
+      },
       getStatistics: () => {
-        const aliveCount = npcs.filter(n => n.alive).length;
+        const aliveNPCs = Array.from(npcs.values()).filter(n => n.alive);
+        const aliveCount = aliveNPCs.length;
         return {
           aliveCount,
           totalSpawned,
@@ -826,7 +940,7 @@ export default class GameManager extends EventEmitter {
           percent: totalSpawned > 0 ? (aliveCount / totalSpawned) * 100 : 100
         };
       },
-      getAllNPCStates: () => npcs
+      getAllNPCStates: () => Array.from(npcs.values())
     };
   }
 

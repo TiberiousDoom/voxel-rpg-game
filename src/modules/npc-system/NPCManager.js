@@ -207,7 +207,7 @@ class NPCManager {
    * Spawn a new NPC
    * @param {string} role - NPC role (FARMER, CRAFTSMAN, GUARD, WORKER)
    * @param {Object} position - Starting position (if null, generates random position)
-   * @returns {Object} Result object with success status and npcId
+   * @returns {NPC} Created NPC object (or null if failed)
    */
   spawnNPC(role, position = null) {
     const GRID_SIZE = 10; // Must match GRID.GRID_WIDTH from config.js
@@ -235,10 +235,8 @@ class NPCManager {
     // Check population limit
     const maxPopulation = this.townManager.getMaxPopulation();
     if (this.npcs.size >= maxPopulation) {
-      return {
-        success: false,
-        error: `Cannot spawn NPC: population limit reached (${maxPopulation})`
-      };
+      console.warn(`[NPCManager] Cannot spawn NPC: population limit reached (${maxPopulation})`);
+      return null;
     }
 
     // Continue with the rest of YOUR branch's code for creating the NPC
@@ -257,11 +255,7 @@ class NPCManager {
     // Register with town system
     this.townManager.spawnNPC(role);
 
-    return {
-      success: true,
-      npcId: id,
-      npc: npc
-    };
+    return npc;
   }
 
   /**

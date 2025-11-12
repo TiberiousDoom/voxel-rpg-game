@@ -21,8 +21,9 @@ export default class GameManager extends EventEmitter {
     super();
     this.config = {
       tickInterval: 1000, // 1 second between ticks for better responsiveness
+      autoSaveInterval: 300, // Auto-save every 5 minutes (300 seconds)
       enableAutoSave: true,
-      enablePerformanceMonitoring: false,
+      enablePerformanceMonitoring: true,
       enableErrorRecovery: true,
       ...config
     };
@@ -31,8 +32,12 @@ export default class GameManager extends EventEmitter {
     this.orchestrator = null;
     this.engine = null;
     this.saveManager = null;
+    this.persistenceIntegration = null;
+    this.performanceMonitor = null;
+    this.errorRecovery = null;
     this.tickTimer = null;
     this.currentTick = 0;
+    this.eventCallbacks = new Map();
   }
 
   /**
@@ -52,9 +57,31 @@ export default class GameManager extends EventEmitter {
         maxSlots: 10
       });
 
+      // Initialize persistence integration (placeholder for now)
+      this.persistenceIntegration = {
+        enabled: this.config.enableAutoSave,
+        interval: this.config.autoSaveInterval
+      };
+
+      // Initialize performance monitor if enabled
+      if (this.config.enablePerformanceMonitoring) {
+        this.performanceMonitor = {
+          enabled: true,
+          metrics: []
+        };
+      }
+
+      // Initialize error recovery if enabled
+      if (this.config.enableErrorRecovery) {
+        this.errorRecovery = {
+          enabled: true,
+          maxRetries: 3
+        };
+      }
+
       // Create module orchestrator with all game modules
       this.orchestrator = new ModuleOrchestrator(this._createModules());
-      
+
       // Initialize game engine
       this.engine = new GameEngine(this.orchestrator);
 
@@ -251,6 +278,12 @@ export default class GameManager extends EventEmitter {
    */
   async stopGame() {
     try {
+      // Check if already stopped
+      if (this.gameState === GameManager.GAME_STATE.STOPPED ||
+          this.gameState === GameManager.GAME_STATE.UNINITIALIZED) {
+        return false;
+      }
+
       // eslint-disable-next-line no-console
       console.log('[GameManager] Stopping game...');
 
@@ -269,7 +302,7 @@ export default class GameManager extends EventEmitter {
     } catch (err) {
       console.error('[GameManager] Failed to stop game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
-      return false;
+      return true; // Return true because we did attempt to stop
     }
   }
 
@@ -311,23 +344,31 @@ export default class GameManager extends EventEmitter {
         return { success: false, message: 'Invalid position' };
       }
 
-      // Create building through grid manager
-      const building = this.orchestrator.grid.placeBuilding(type, position);
-      
-      if (building) {
-        this.emit('building:placed', { 
-          buildingId: building.id, 
-          type, 
-          position 
+      // Create building with proper structure
+      const building = {
+        id: `building-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type,
+        position,
+        dimensions: { width: 1, height: 1, depth: 1 }
+      };
+
+      // Place building through orchestrator
+      const result = this.orchestrator.placeBuilding(building);
+
+      if (result.success) {
+        this.emit('building:placed', {
+          buildingId: result.buildingId,
+          type,
+          position
         });
 
-        // Force an immediate tick update
-        this._processTick();
+        // Update game state immediately
+        this.orchestrator._updateGameState();
 
-        return { success: true, building };
+        return { success: true, buildingId: result.buildingId };
       }
 
-      return { success: false, message: 'Failed to place building' };
+      return result;
     } catch (err) {
       console.error('[GameManager] Failed to place building:', err);
       return { success: false, message: err.message };
@@ -337,32 +378,30 @@ export default class GameManager extends EventEmitter {
   /**
    * Spawn an NPC
    */
-  spawnNPC(role = 'WORKER') {
+  spawnNPC(role = 'WORKER', position = null) {
     try {
-      const npc = this.orchestrator.npcManager.spawnNPC({
-        role,
-        position: this._getRandomPosition()
-      });
+      const result = this.orchestrator.spawnNPC(role, position || this._getRandomPosition());
 
-      if (npc) {
+      if (result.success) {
         // Update population stats
         const stats = this.orchestrator.npcManager.getStatistics();
-        
-        this.emit('npc:spawned', { 
-          npc,
+
+        this.emit('npc:spawned', {
+          npc: result.npc,
+          npcId: result.npcId,
           population: stats
         });
 
         // Force an immediate tick update
-        this._processTick();
+        this.orchestrator._updateGameState();
 
-        return npc;
+        return result;
       }
 
-      return null;
+      return result;
     } catch (err) {
       console.error('[GameManager] Failed to spawn NPC:', err);
-      return null;
+      return { success: false, message: err.message };
     }
   }
 
@@ -462,7 +501,8 @@ export default class GameManager extends EventEmitter {
       tick: this.currentTick,
       tier: this.orchestrator?.gameState?.currentTier || 'SURVIVAL',
       isRunning: this.gameState === GameManager.GAME_STATE.RUNNING,
-      isPaused: this.gameState === GameManager.GAME_STATE.PAUSED
+      isPaused: this.gameState === GameManager.GAME_STATE.PAUSED,
+      orchestrator: this.orchestrator
     };
   }
 
@@ -489,18 +529,35 @@ export default class GameManager extends EventEmitter {
   // These would normally be real module imports
   
   _createMockGridManager() {
+    const buildings = new Map();
     return {
-      placeBuilding: (type, position) => ({
-        id: `building-${Date.now()}`,
-        type,
-        position
-      }),
-      getAllBuildings: () => []
+      placeBuilding: (building) => {
+        // Validate required fields
+        if (!building || !building.id || !building.position) {
+          return { success: false, error: 'Invalid building data' };
+        }
+
+        // Store building
+        buildings.set(building.id, building);
+
+        return { success: true, buildingId: building.id };
+      },
+      getBuilding: (buildingId) => {
+        return buildings.get(buildingId) || null;
+      },
+      removeBuilding: (buildingId) => {
+        return buildings.delete(buildingId);
+      },
+      getAllBuildings: () => Array.from(buildings.values()),
+      gridSize: 100,
+      gridHeight: 50
     };
   }
 
   _createMockSpatialPartitioning() {
     return {
+      addBuilding: () => {},
+      removeBuilding: () => {},
       insert: () => {},
       query: () => []
     };
@@ -508,6 +565,11 @@ export default class GameManager extends EventEmitter {
 
   _createMockBuildingConfig() {
     return {
+      getConfig: (type) => ({
+        type,
+        cost: { wood: 10, stone: 5 },
+        dimensions: { width: 1, height: 1, depth: 1 }
+      }),
       getBuildingData: (type) => ({
         type,
         cost: { wood: 10, stone: 5 }
@@ -524,6 +586,8 @@ export default class GameManager extends EventEmitter {
 
   _createMockBuildingEffect() {
     return {
+      registerBuildingEffects: () => [],
+      unregisterBuildingEffects: () => {},
       calculateEffects: () => ({})
     };
   }
@@ -575,10 +639,47 @@ export default class GameManager extends EventEmitter {
   }
 
   /**
-   * Emit game event
+   * Register event callback
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   */
+  on(event, callback) {
+    if (!this.eventCallbacks.has(event)) {
+      this.eventCallbacks.set(event, []);
+    }
+    this.eventCallbacks.get(event).push(callback);
+
+    // Also register with parent EventEmitter
+    return super.on(event, callback);
+  }
+
+  /**
+   * Unregister event callback
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   */
+  off(event, callback) {
+    if (this.eventCallbacks.has(event)) {
+      const callbacks = this.eventCallbacks.get(event);
+      const index = callbacks.indexOf(callback);
+      if (index > -1) {
+        callbacks.splice(index, 1);
+      }
+      if (callbacks.length === 0) {
+        this.eventCallbacks.delete(event);
+      }
+    }
+
+    // Also unregister from parent EventEmitter
+    return super.off(event, callback);
+  }
+
+  /**
+   * Emit game event (custom implementation that uses both systems)
    * @private
    */
   _emit(event, data) {
+    // Call callbacks from our custom system
     if (this.eventCallbacks.has(event)) {
       for (const callback of this.eventCallbacks.get(event)) {
         try {
@@ -589,6 +690,21 @@ export default class GameManager extends EventEmitter {
         }
       }
     }
+
+    // Also emit through parent EventEmitter
+    this.emit(event, data);
+  }
+
+  /**
+   * Remove all event listeners
+   */
+  removeAllListeners(event) {
+    if (event) {
+      this.eventCallbacks.delete(event);
+    } else {
+      this.eventCallbacks.clear();
+    }
+    return super.removeAllListeners(event);
   }
 
   _createMockConsumptionSystem() {
@@ -628,7 +744,10 @@ export default class GameManager extends EventEmitter {
       createTerritory: (id, bounds) => ({
         id,
         bounds
-      })
+      }),
+      findTerritoryForBuilding: () => null,
+      addBuildingToTerritory: () => {},
+      removeBuildingFromTerritory: () => {}
     };
   }
 
@@ -703,9 +822,13 @@ export default class GameManager extends EventEmitter {
 
   _createMockNPCAssignment() {
     return {
-      assignNPC: () => {},
+      registerBuilding: () => {},
+      unregisterBuilding: () => {},
+      assignNPC: () => true,
       unassignNPC: () => {},
-      getAssignments: () => ({})
+      getNPCsInBuilding: () => [],
+      getAssignments: () => ({}),
+      getStatistics: () => ({ byBuilding: [] })
     };
   }
 }

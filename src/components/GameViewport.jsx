@@ -401,7 +401,7 @@ function GameViewport({
   }, [buildings, npcs, hoveredPosition, selectedBuildingType]);
 
   /**
-   * Handle canvas click for placement
+   * Handle canvas click for placement (mouse and touch)
    */
   const handleCanvasClick = (e) => {
     if (!canvasRef.current) return;
@@ -412,8 +412,12 @@ function GameViewport({
     const scaleX = CANVAS_WIDTH / rect.width;
     const scaleY = CANVAS_HEIGHT / rect.height;
 
-    const canvasX = (e.clientX - rect.left) * scaleX;
-    const canvasY = (e.clientY - rect.top) * scaleY;
+    // Support both mouse and touch events
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const canvasX = (clientX - rect.left) * scaleX;
+    const canvasY = (clientY - rect.top) * scaleY;
 
     const position = canvasToWorld(canvasX, canvasY);
 
@@ -426,6 +430,14 @@ function GameViewport({
     } else {
       onSelectTile(position);
     }
+  };
+
+  /**
+   * Handle touch start for mobile (treat as click)
+   */
+  const handleTouchStart = (e) => {
+    e.preventDefault(); // Prevent default touch behavior
+    handleCanvasClick(e);
   };
 
   /**
@@ -528,6 +540,7 @@ function GameViewport({
         height={CANVAS_HEIGHT}
         className="viewport-canvas"
         onClick={handleCanvasClick}
+        onTouchStart={handleTouchStart}
         onMouseMove={handleCanvasMouseMove}
         onMouseLeave={handleCanvasMouseLeave}
       />

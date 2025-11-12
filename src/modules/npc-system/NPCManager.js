@@ -408,6 +408,14 @@ class NPCManager {
   }
 
   /**
+   * Update all NPCs (alias for updateAllNPCs)
+   * @param {number} tickCount - Current tick number
+   */
+  tick(tickCount) {
+    this.updateAllNPCs(tickCount);
+  }
+
+  /**
    * Kill an NPC
    * @param {number} npcId - NPC ID
    */
@@ -484,6 +492,8 @@ class NPCManager {
    */
   getStatistics() {
     const alive = this.getAliveNPCs();
+    const totalNPCs = this.npcs.size;
+    const deadCount = totalNPCs - alive.length;
     const working = this.workingNPCs.size;
     const resting = this.restingNPCs.size;
     const idle = this.idleNPCs.size;
@@ -499,7 +509,7 @@ class NPCManager {
     return {
       totalSpawned: this.stats.totalSpawned,
       aliveCount: alive.length,
-      deadCount: this.stats.totalDead,
+      deadCount: deadCount,
       workingCount: working,
       restingCount: resting,
       idleCount: idle,

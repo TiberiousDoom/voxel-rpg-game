@@ -92,78 +92,119 @@ class ConsumptionSystem {
   }
 
   /**
+   * Calculate building consumption (some buildings consume resources)
+   * @private
+   * @param {Array} buildings - All building entities
+   * @param {Object} npcAssignments - NPCAssignment instance
+   * @returns {Object} Consumption amounts by resource type
+   */
+  _calculateBuildingConsumption(buildings, npcAssignments) {
+    const consumption = {};
+
+    for (const building of buildings) {
+      // Only complete buildings consume
+      if (building.state !== 'COMPLETE' && building.state !== 'COMPLETED') continue;
+
+      // Get building config consumption data
+      const buildingConsumption = building.properties?.consumption || {};
+
+      // Only consume if building is staffed
+      const workerIds = npcAssignments.getNPCsInBuilding(building.id);
+      if (workerIds.length > 0) {
+        for (const [resource, amount] of Object.entries(buildingConsumption)) {
+          consumption[resource] = (consumption[resource] || 0) + amount;
+        }
+      }
+    }
+
+    return consumption;
+  }
+
+  /**
    * Execute consumption tick
    * Calculates total consumption and applies starvation if needed
    *
    * @param {number} foodAvailable - Food currently in storage
+   * @param {Array} buildings - All building entities (optional)
+   * @param {Object} npcAssignments - NPCAssignment instance (optional)
    * @returns {Object} {
    *   foodConsumed: amount consumed,
+   *   buildingConsumption: resources consumed by buildings,
    *   foodRemaining: amount left after consumption,
    *   aliveCount: number of alive NPCs,
    *   starvationOccurred: boolean,
-   *   npcsDied: number of NPCs that died
+   *   npcsStarving: array of NPC IDs affected by starvation
    * }
    */
-  executeConsumptionTick(foodAvailable) {
+  executeConsumptionTick(foodAvailable, buildings = [], npcAssignments = null) {
     const aliveNPCs = this.getAliveNPCs();
-    let totalConsumption = 0;
 
-    // Calculate total consumption
+    // Calculate NPC food consumption
+    let npcFoodConsumption = 0;
     for (const npc of aliveNPCs) {
-      totalConsumption += this.calculateConsumption(npc.id);
+      npcFoodConsumption += this.calculateConsumption(npc.id);
     }
 
+    // Calculate building consumption (if buildings and assignments provided)
+    let buildingConsumption = {};
+    if (buildings.length > 0 && npcAssignments) {
+      buildingConsumption = this._calculateBuildingConsumption(buildings, npcAssignments);
+    }
+
+    const totalFoodConsumption = npcFoodConsumption + (buildingConsumption.food || 0);
+
     // Apply consumption
-    const foodRemaining = foodAvailable - totalConsumption;
+    const foodRemaining = foodAvailable - totalFoodConsumption;
 
     const result = {
       tickNumber: 'consumption',
       aliveCount: aliveNPCs.length,
       workingCount: aliveNPCs.filter(n => n.isWorking).length,
       idleCount: aliveNPCs.filter(n => !n.isWorking).length,
-      consumptionPerTick: totalConsumption.toFixed(4),
-      consumptionPerMinute: (totalConsumption * 12).toFixed(4),
-      foodConsumed: totalConsumption.toFixed(2),
+      npcFoodConsumption: npcFoodConsumption.toFixed(4),
+      buildingConsumption: buildingConsumption,
+      totalFoodConsumption: totalFoodConsumption.toFixed(4),
+      consumptionPerMinute: (totalFoodConsumption * 12).toFixed(4),
       foodRemaining: Math.max(0, foodRemaining).toFixed(2),
       starvationOccurred: false,
-      npcsDied: 0
+      npcsStarving: []
     };
 
     // Check for starvation
     if (foodRemaining < 0) {
       result.starvationOccurred = true;
+      result.foodShortage = Math.abs(foodRemaining).toFixed(2);
 
-      // Calculate how many NPCs die
-      const shortage = Math.abs(foodRemaining);
-      const foodPerNPC = 0.5 / 12.0; // Assume all working (worst case)
-      let npcsToDie = Math.ceil(shortage / foodPerNPC);
-      npcsToDie = Math.min(npcsToDie, aliveNPCs.length);
+      // Apply gradual starvation damage to all NPCs (spec: happiness -10, health -5)
+      const npcsStarving = [];
+      for (const npc of aliveNPCs) {
+        npc.happiness = Math.max(0, npc.happiness - 10);
+        npc.health = Math.max(0, npc.health - 5);
+        npcsStarving.push(npc.id);
 
-      // Kill random NPCs
-      const toKill = [];
-      for (let i = 0; i < npcsToDie && aliveNPCs.length > 0; i++) {
-        const randomIdx = Math.floor(Math.random() * aliveNPCs.length);
-        const victim = aliveNPCs[randomIdx];
-        victim.alive = false;
-        toKill.push(victim.id);
-        aliveNPCs.splice(randomIdx, 1);
+        if (npc.health === 0) {
+          npc.alive = false;
+          this.consumptionStats.npcsDead++;
+          console.error(`[ConsumptionSystem] 💀 NPC ${npc.id} died from starvation`);
+        }
       }
 
-      result.npcsDied = toKill.length;
-      result.npcKilled = toKill;
+      result.npcsStarving = npcsStarving;
+      result.npcsDied = npcsStarving.filter(id => !aliveNPCs.find(n => n.id === id && n.alive)).length;
       result.foodRemaining = 0; // All food consumed
-      this.consumptionStats.npcsDead += toKill.length;
 
       const starvationEvent = {
         timestamp: new Date().toISOString(),
         tickNumber: this.consumptionStats.starvationEvents.length,
-        foodShortage: shortage.toFixed(2),
-        npcsDied: toKill.length
+        foodShortage: Math.abs(foodRemaining).toFixed(2),
+        npcsAffected: npcsStarving.length
       };
       this.consumptionStats.starvationEvents.push(starvationEvent);
+
+      console.warn(`[ConsumptionSystem] ⚠️ STARVATION: ${npcsStarving.length} NPCs starving (happiness -10, health -5)`);
     }
 
-    this.consumptionStats.totalConsumed += totalConsumption;
+    this.consumptionStats.totalConsumed += totalFoodConsumption;
     return result;
   }
 

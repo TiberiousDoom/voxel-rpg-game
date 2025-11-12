@@ -7,7 +7,7 @@
  * - Speed control (future)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './GameControlBar.css';
 
 /**
@@ -30,7 +30,7 @@ function GameControlBar({
   const [savedSlots, setSavedSlots] = useState(new Set());
 
   // Load available save slots using API
-  const refreshSaveSlots = async () => {
+  const refreshSaveSlots = useCallback(async () => {
     if (!getSaveSlots) return;
 
     try {
@@ -41,12 +41,12 @@ function GameControlBar({
     } catch (err) {
       console.error('Failed to refresh save slots:', err);
     }
-  };
+  }, [getSaveSlots]);
 
   // Load save slots on mount
   useEffect(() => {
     refreshSaveSlots();
-  }, [getSaveSlots]);
+  }, [refreshSaveSlots]);
 
   const handleSave = async () => {
     setSaveStatus('Saving...');

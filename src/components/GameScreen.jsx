@@ -303,6 +303,8 @@ function GameScreen() {
             onSelectBuilding={setSelectedBuildingType}
             onSpawnNPC={() => actions.spawnNPC('WORKER')}
             onAdvanceTier={handleOpenTierPanel}
+            currentTier={gameState.currentTier || 'SURVIVAL'}
+            buildingConfig={gameManager?.orchestrator?.buildingConfig}
           />
         </aside>
       </main>

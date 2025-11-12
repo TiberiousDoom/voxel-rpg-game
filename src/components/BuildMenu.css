@@ -44,6 +44,39 @@
   flex-shrink: 0;
 }
 
+/* Tier Group */
+.tier-group {
+  margin-bottom: 12px;
+}
+
+.tier-group:last-child {
+  margin-bottom: 0;
+}
+
+.tier-header {
+  margin-bottom: 8px;
+}
+
+.tier-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tier-badge.unlocked {
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  color: white;
+}
+
+.tier-badge.locked {
+  background: rgba(0, 0, 0, 0.1);
+  color: #999;
+}
+
 .buildings-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -62,9 +95,11 @@
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
+  position: relative;
+  min-height: 110px;
 }
 
-.building-button:hover {
+.building-button:hover:not(.locked) {
   background: rgba(0, 0, 0, 0.02);
   border-color: #999;
 }
@@ -73,6 +108,16 @@
   background: rgba(102, 126, 234, 0.1);
   border-color: #667eea;
   box-shadow: 0 0 8px rgba(102, 126, 234, 0.2);
+}
+
+.building-button.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.building-button.locked:hover {
+  border-color: #ccc;
 }
 
 .building-icon {
@@ -89,6 +134,23 @@
   font-size: 10px;
   color: #999;
   font-style: italic;
+}
+
+.building-cost {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.cost-item {
+  font-size: 9px;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  color: #666;
+  font-weight: 600;
 }
 
 /* NPC Controls */

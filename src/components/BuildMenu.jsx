@@ -5,9 +5,14 @@
  * - Select building type to place
  * - Spawn NPCs
  * - Advance tier
+ *
+ * Features:
+ * - Dynamic building loading from BuildingConfig
+ * - Tier-based building availability
+ * - Buildings grouped by tier
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import './BuildMenu.css';
 
 /**
@@ -17,45 +22,87 @@ function BuildMenu({
   selectedBuildingType = null,
   onSelectBuilding = () => {},
   onSpawnNPC = () => {},
-  onAdvanceTier = () => {}
+  onAdvanceTier = () => {},
+  currentTier = 'SURVIVAL',
+  buildingConfig = null
 }) {
-  const buildingTypes = [
-    {
-      name: 'Farm',
-      type: 'FARM',
-      description: 'Produces food',
-      icon: '🌾',
-      color: '#90EE90'
-    },
-    {
-      name: 'House',
-      type: 'HOUSE',
-      description: 'Houses NPCs',
-      icon: '🏠',
-      color: '#D2B48C'
-    },
-    {
-      name: 'Warehouse',
-      type: 'WAREHOUSE',
-      description: 'Stores resources',
-      icon: '🏭',
-      color: '#A9A9A9'
-    },
-    {
-      name: 'Town Center',
-      type: 'TOWN_CENTER',
-      description: 'Tier advancement',
-      icon: '🏛️',
-      color: '#FFD700'
-    },
-    {
-      name: 'Watchtower',
-      type: 'WATCHTOWER',
-      description: 'Defense structure',
-      icon: '🗼',
-      color: '#8B4513'
+  // Building icons map
+  const buildingIcons = {
+    CAMPFIRE: '🔥',
+    FARM: '🌾',
+    HOUSE: '🏠',
+    WAREHOUSE: '🏭',
+    TOWN_CENTER: '🏛️',
+    MARKET: '🏪',
+    WATCHTOWER: '🗼',
+    CASTLE: '🏰'
+  };
+
+  // Tier hierarchy for availability checking
+  const tierHierarchy = ['SURVIVAL', 'PERMANENT', 'TOWN', 'CASTLE'];
+
+  // Get available buildings based on current tier
+  const availableBuildings = useMemo(() => {
+    if (!buildingConfig) {
+      // Fallback to hardcoded buildings if no buildingConfig
+      return [
+        { type: 'FARM', name: 'Farm', description: 'Produces food', tier: 'SURVIVAL', icon: '🌾', unlocked: true },
+        { type: 'HOUSE', name: 'House', description: 'Houses NPCs', tier: 'PERMANENT', icon: '🏠', unlocked: false }
+      ];
     }
-  ];
+
+    const currentTierIndex = tierHierarchy.indexOf(currentTier);
+    const buildings = [];
+
+    // Get all building types from config
+    const buildingTypes = [
+      'CAMPFIRE', 'FARM', 'HOUSE', 'WAREHOUSE',
+      'TOWN_CENTER', 'MARKET', 'WATCHTOWER', 'CASTLE'
+    ];
+
+    for (const type of buildingTypes) {
+      try {
+        const config = buildingConfig.getConfig(type);
+        if (config) {
+          const buildingTierIndex = tierHierarchy.indexOf(config.tier);
+          const unlocked = buildingTierIndex <= currentTierIndex;
+
+          buildings.push({
+            type: config.type,
+            name: config.displayName || type,
+            description: config.description || '',
+            tier: config.tier,
+            icon: buildingIcons[type] || '🏗️',
+            unlocked,
+            cost: config.cost || {}
+          });
+        }
+      } catch (err) {
+        // Skip buildings that don't exist in config
+        console.warn(`Building ${type} not found in config`);
+      }
+    }
+
+    return buildings;
+  }, [buildingConfig, currentTier]);
+
+  // Group buildings by tier
+  const buildingsByTier = useMemo(() => {
+    const grouped = {
+      SURVIVAL: [],
+      PERMANENT: [],
+      TOWN: [],
+      CASTLE: []
+    };
+
+    availableBuildings.forEach(building => {
+      if (grouped[building.tier]) {
+        grouped[building.tier].push(building);
+      }
+    });
+
+    return grouped;
+  }, [availableBuildings]);
 
   return (
     <div className="build-menu">
@@ -64,29 +111,58 @@ function BuildMenu({
       {/* Building Selection */}
       <div className="buildings-section">
         <h4 className="section-title">Buildings</h4>
-        <div className="buildings-grid">
-          {buildingTypes.map((building) => (
-            <button
-              key={building.type}
-              className={`building-button ${
-                selectedBuildingType === building.type ? 'active' : ''
-              }`}
-              onClick={() =>
-                onSelectBuilding(
-                  selectedBuildingType === building.type ? null : building.type
-                )
-              }
-              style={{
-                borderColor:
-                  selectedBuildingType === building.type ? building.color : '#ccc'
-              }}
-            >
-              <div className="building-icon">{building.icon}</div>
-              <div className="building-name">{building.name}</div>
-              <div className="building-description">{building.description}</div>
-            </button>
-          ))}
-        </div>
+
+        {/* Display by tier */}
+        {tierHierarchy.map(tier => {
+          const buildings = buildingsByTier[tier];
+          if (!buildings || buildings.length === 0) return null;
+
+          const tierUnlocked = tierHierarchy.indexOf(tier) <= tierHierarchy.indexOf(currentTier);
+
+          return (
+            <div key={tier} className="tier-group">
+              <div className="tier-header">
+                <span className={`tier-badge ${tierUnlocked ? 'unlocked' : 'locked'}`}>
+                  {tier}
+                </span>
+              </div>
+              <div className="buildings-grid">
+                {buildings.map((building) => (
+                  <button
+                    key={building.type}
+                    className={`building-button ${
+                      selectedBuildingType === building.type ? 'active' : ''
+                    } ${!building.unlocked ? 'locked' : ''}`}
+                    onClick={() => {
+                      if (building.unlocked) {
+                        onSelectBuilding(
+                          selectedBuildingType === building.type ? null : building.type
+                        );
+                      }
+                    }}
+                    disabled={!building.unlocked}
+                    title={!building.unlocked ? `Requires ${building.tier} tier` : building.description}
+                  >
+                    <div className="building-icon">{building.icon}</div>
+                    <div className="building-name">{building.name}</div>
+                    <div className="building-description">
+                      {building.unlocked ? building.description : '🔒 Locked'}
+                    </div>
+                    {building.unlocked && building.cost && (
+                      <div className="building-cost">
+                        {Object.entries(building.cost).filter(([, amount]) => amount > 0).map(([resource, amount]) => (
+                          <span key={resource} className="cost-item">
+                            {amount} {resource}
+                          </span>
+                        )).slice(0, 2) /* Show max 2 resources */}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* NPC Controls */}

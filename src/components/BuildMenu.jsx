@@ -114,11 +114,11 @@ function BuildMenu({
         <h4 className="section-title">Buildings</h4>
 
         {/* Display by tier */}
-        {tierHierarchy.map(tier => {
+        {TIER_HIERARCHY.map(tier => {
           const buildings = buildingsByTier[tier];
           if (!buildings || buildings.length === 0) return null;
 
-          const tierUnlocked = tierHierarchy.indexOf(tier) <= tierHierarchy.indexOf(currentTier);
+          const tierUnlocked = TIER_HIERARCHY.indexOf(tier) <= TIER_HIERARCHY.indexOf(currentTier);
 
           return (
             <div key={tier} className="tier-group">

@@ -16,7 +16,9 @@ function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing } = useGame();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
-  
+  const [selectedSlot, setSelectedSlot] = useState('slot-1');
+  const [savedSlots, setSavedSlots] = useState(new Set());
+
   // Auto-start the game when ready (for testing)
   useEffect(() => {
     if (isReady && !gameState.isRunning && !gameState.isPaused) {
@@ -25,6 +27,18 @@ function GameScreen() {
       actions.startGame();
     }
   }, [isReady, gameState.isRunning, gameState.isPaused, actions]);
+
+  // Check localStorage for existing saves on mount
+  useEffect(() => {
+    const existing = new Set();
+    for (let i = 1; i <= 3; i++) {
+      const slotKey = `slot-${i}`;
+      if (localStorage.getItem(slotKey)) {
+        existing.add(slotKey);
+      }
+    }
+    setSavedSlots(existing);
+  }, []);
 
   // Keep selected building in sync with buildings array
   useEffect(() => {
@@ -50,6 +64,18 @@ function GameScreen() {
 
   const handleAutoAssign = () => {
     actions.autoAssignNPCs();
+  };
+
+  // Save/Load handlers
+  const handleSave = () => {
+    actions.saveGame(selectedSlot);
+    setSavedSlots(prev => new Set([...prev, selectedSlot]));
+  };
+
+  const handleLoad = () => {
+    if (savedSlots.has(selectedSlot)) {
+      actions.loadGame(selectedSlot);
+    }
   };
 
   // Show loading state
@@ -140,20 +166,70 @@ function GameScreen() {
     <div className="game-screen">
       <header className="game-header">
         <h1>Voxel RPG Game</h1>
-        <div className="header-info">
-          <span className="tier-badge">
-            Tier: {gameState.currentTier || 'SURVIVAL'}
-          </span>
-          <span className="tick-counter">
-            Tick: {gameState.currentTick || 0}
-          </span>
-          <span className={`status-indicator ${
-            gameState.isRunning ? 'running' :
-            gameState.isPaused ? 'paused' : 'stopped'
-          }`}>
-            {gameState.isRunning ? '● Running' :
-             gameState.isPaused ? '⏸ Paused' : '⬛ Stopped'}
-          </span>
+        <div className="header-controls">
+          {/* Save/Load Controls */}
+          <div className="header-save-controls">
+            <select
+              value={selectedSlot}
+              onChange={(e) => setSelectedSlot(e.target.value)}
+              className="header-slot-selector"
+              title="Select save slot"
+            >
+              <option value="slot-1">Slot 1 {savedSlots.has('slot-1') ? '💾' : ''}</option>
+              <option value="slot-2">Slot 2 {savedSlots.has('slot-2') ? '💾' : ''}</option>
+              <option value="slot-3">Slot 3 {savedSlots.has('slot-3') ? '💾' : ''}</option>
+            </select>
+            <button
+              onClick={handleSave}
+              className="header-save-btn"
+              title={`Save to ${selectedSlot}`}
+            >
+              💾 Save
+            </button>
+            <button
+              onClick={handleLoad}
+              className="header-save-btn"
+              title={`Load from ${selectedSlot}`}
+              disabled={!savedSlots.has(selectedSlot)}
+            >
+              📂 Load
+            </button>
+          </div>
+
+          {/* Game Info */}
+          <div className="header-info">
+            <span className="tier-badge">
+              Tier: {gameState.currentTier || 'SURVIVAL'}
+            </span>
+            <span className={`status-indicator ${
+              gameState.isRunning ? 'running' :
+              gameState.isPaused ? 'paused' : 'stopped'
+            }`}>
+              {gameState.isRunning ? '● Running' :
+               gameState.isPaused ? '⏸ Paused' : '⬛ Stopped'}
+            </span>
+            {gameState.isRunning && !gameState.isPaused && (
+              <button
+                onClick={() => actions.pauseGame()}
+                className="header-pause-btn"
+                title="Pause game"
+              >
+                ⏸ Pause
+              </button>
+            )}
+            {gameState.isPaused && (
+              <button
+                onClick={() => actions.resumeGame()}
+                className="header-pause-btn resume"
+                title="Resume game"
+              >
+                ▶️ Resume
+              </button>
+            )}
+            <span className="tick-counter">
+              Tick: {gameState.currentTick || 0}
+            </span>
+          </div>
         </div>
       </header>
 

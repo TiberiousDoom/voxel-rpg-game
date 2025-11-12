@@ -42,11 +42,12 @@ class ProductionTick {
   /**
    * Execute one production tick
    * @param {Array<Object>} buildings - All placed buildings with id, type, position
-   * @param {Object} npcs - NPC assignments {buildingId: [npcIds]}
+   * @param {Object} npcAssignments - NPCAssignment instance
+   * @param {Object} npcManager - NPCManager instance
    * @param {number} moraleMultiplier - Morale multiplier (0.9 to 1.1)
    * @returns {Object} Tick result with production, consumption, storage status
    */
-  executeTick(buildings, npcs, moraleMultiplier = 1.0) {
+  executeTick(buildings, npcAssignments, npcManager, moraleMultiplier = 1.0) {
     this.tickNumber++;
 
     const tickResult = {
@@ -71,10 +72,21 @@ class ProductionTick {
           continue;
         }
 
+        // Only complete buildings produce
+        if (building.state !== 'COMPLETE' && building.state !== 'COMPLETED') {
+          continue;
+        }
+
         try {
+          // Get assigned NPCs for this building
+          const workerIds = npcAssignments.getNPCsInBuilding(building.id);
+          const workers = workerIds
+            .map(id => npcManager.npcs.get(id))
+            .filter(npc => npc !== undefined && npc.alive);
+
           const result = this._calculateBuildingProduction(
             building,
-            npcs[building.id] ? npcs[building.id].length : 0,
+            workers,
             moraleMultiplier
           );
 
@@ -127,32 +139,46 @@ class ProductionTick {
   }
 
   /**
-   * Calculate production for a single building
+   * Calculate production for a single building based on NPC staffing
    * @private
    * @param {Object} building - Building with type, id, position
-   * @param {number} assignedNPCCount - Number of NPCs assigned
+   * @param {Array} assignedNPCs - Array of NPC entities assigned to this building
    * @param {number} moraleMultiplier - Global morale multiplier
    * @returns {Object} Production result
    */
-  _calculateBuildingProduction(building, assignedNPCCount, moraleMultiplier) {
+  _calculateBuildingProduction(building, assignedNPCs, moraleMultiplier) {
     const config = this.buildingConfig.getConfig(building.type);
     const baseProduction = config.production;
 
     const result = {
       buildingId: building.id,
       buildingType: building.type,
-      assignedNPCs: assignedNPCCount,
+      assignedNPCs: assignedNPCs.length,
       production: {}
     };
 
-    // Calculate multiplier
-    let multiplier = this._calculateMultiplier(
-      building,
-      assignedNPCCount,
-      moraleMultiplier
+    // Calculate staffing multiplier (0.0 to 1.0)
+    const staffingMultiplier = this._calculateStaffingMultiplier(building, assignedNPCs, config);
+
+    // Calculate skill bonus (0.0 to 1.0+)
+    const skillBonus = this._calculateSkillBonus(building, assignedNPCs);
+
+    // Apply aura bonus
+    const auraBonus = this.buildingEffect.getProductionBonusAt(
+      building.position.x,
+      building.position.y,
+      building.position.z
     );
 
+    // Final production = base × staffing × (1 + skillBonus) × aura × morale
+    let multiplier = staffingMultiplier * (1 + skillBonus) * auraBonus * moraleMultiplier;
+
+    // Hard cap at 2.0x
+    multiplier = Math.min(multiplier, 2.0);
+
     result.baseMultiplier = multiplier.toFixed(3);
+    result.staffingMultiplier = staffingMultiplier.toFixed(3);
+    result.skillBonus = skillBonus.toFixed(3);
 
     // Apply production with multiplier
     for (const [resource, baseRate] of Object.entries(baseProduction)) {
@@ -165,60 +191,67 @@ class ProductionTick {
   }
 
   /**
-   * Calculate total multiplier for building
-   * Order: NPC × Zone × Aura × Tech × Morale (hard cap 2.0x)
-   *
-   * For MVP: NPC × Aura × Morale (zones handled separately)
+   * Calculate staffing multiplier (0.0 to 1.0)
+   * 0 workers = 0% production
+   * Full capacity = 100% production
    * @private
+   * @param {Object} building - Building entity
+   * @param {Array} assignedNPCs - Array of NPC entities
+   * @param {Object} config - Building config
+   * @returns {number} Staffing multiplier (0.0 to 1.0)
    */
-  _calculateMultiplier(building, npcCount, moraleMultiplier) {
-    let multiplier = 1.0;
+  _calculateStaffingMultiplier(building, assignedNPCs, config) {
+    const capacity = config.workSlots || config.npcCapacity || 1;
+    const actual = assignedNPCs.length;
 
-    // ============================================
-    // MULTIPLIER 1: NPC SKILL (based on count)
-    // ============================================
-    if (npcCount > 0) {
-      // Simple model: each NPC adds efficiency
-      // 1 NPC: 1.0x, 2 NPCs: 1.25x, 3 NPCs: 1.5x (cap)
-      const npcBonus = Math.min(npcCount * 0.25, 0.5);
-      multiplier *= (1.0 + npcBonus);
-    } else {
-      // No NPC assigned: 50% efficiency (building still produces)
-      multiplier *= 0.5;
-    }
+    // Linear scaling: 0 workers = 0%, 1/2 workers = 50%, 2/2 workers = 100%
+    return actual / capacity;
+  }
 
-    // ============================================
-    // MULTIPLIER 2: AURA EFFECT
-    // ============================================
-    const auraBonus = this.buildingEffect.getProductionBonusAt(
-      building.position.x,
-      building.position.y,
-      building.position.z
-    );
-    multiplier *= auraBonus;
+  /**
+   * Calculate skill bonus (0.0 to 1.0+)
+   * Average skill level of workers provides bonus production
+   * @private
+   * @param {Object} building - Building entity
+   * @param {Array} assignedNPCs - Array of NPC entities
+   * @returns {number} Skill bonus (0.0 to 1.0+)
+   */
+  _calculateSkillBonus(building, assignedNPCs) {
+    if (assignedNPCs.length === 0) return 0;
 
-    // ============================================
-    // MULTIPLIER 3: ZONE BONUS (for certain building types)
-    // ============================================
-    // Zone bonuses are applied at Module 4 level (territory-wide)
-    // For now, skip zone multiplier in core production
+    const relevantSkillName = this._getRelevantSkill(building.type);
 
-    // ============================================
-    // MULTIPLIER 4: TECHNOLOGY (Module 5+)
-    // ============================================
-    // Skip for MVP
+    const totalSkill = assignedNPCs.reduce((sum, npc) => {
+      // Skills are stored as multipliers (1.0 = base, 1.5 = 150%)
+      // Convert to 0-100 scale for bonus calculation
+      const skillMultiplier = npc.skills?.[relevantSkillName] || 1.0;
+      const skillLevel = (skillMultiplier - 1.0) * 100; // 1.0 → 0, 1.5 → 50
+      return sum + skillLevel;
+    }, 0);
 
-    // ============================================
-    // MULTIPLIER 5: MORALE
-    // ============================================
-    multiplier *= moraleMultiplier;
+    const averageSkill = totalSkill / assignedNPCs.length;
 
-    // ============================================
-    // APPLY HARD CAP
-    // ============================================
-    multiplier = Math.min(multiplier, 2.0);
+    // Skill bonus: 0 skill = 0% bonus, 50 skill = 50% bonus, 100 skill = 100% bonus
+    return averageSkill / 100;
+  }
 
-    return multiplier;
+  /**
+   * Map building type to relevant skill
+   * @private
+   * @param {string} buildingType - Building type
+   * @returns {string} Skill name
+   */
+  _getRelevantSkill(buildingType) {
+    const skillMap = {
+      'CAMPFIRE': 'general',
+      'FARM': 'farming',
+      'MINE': 'general', // No mining skill yet
+      'LUMBER_MILL': 'general', // No woodcutting skill yet
+      'CRAFTING_STATION': 'crafting',
+      'MARKETPLACE': 'general' // No trading skill yet
+    };
+
+    return skillMap[buildingType] || 'general';
   }
 
   /**

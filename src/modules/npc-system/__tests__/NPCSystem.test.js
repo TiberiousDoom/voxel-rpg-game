@@ -73,9 +73,9 @@ describe('NPC System', () => {
     });
 
     test('should spawn NPC with role and position', () => {
-      const npc = npcManager.spawnNPC('FARMER', { x: 50, y: 25, z: 50 });
+      const { npc } = npcManager.spawnNPC('FARMER', { x: 5, y: 25, z: 5 });
       expect(npc.role).toBe('FARMER');
-      expect(npc.position.x).toBe(50);
+      expect(npc.position.x).toBe(5);
       expect(npc.alive).toBe(true);
     });
 
@@ -89,14 +89,14 @@ describe('NPC System', () => {
     });
 
     test('should get NPC by ID', () => {
-      const spawned = npcManager.spawnNPC('FARMER');
+      const { npc: spawned } = npcManager.spawnNPC('FARMER');
       const retrieved = npcManager.getNPC(spawned.id);
 
       expect(retrieved).toBe(spawned);
     });
 
     test('should set NPC work status', () => {
-      const npc = npcManager.spawnNPC('FARMER');
+      const { npc } = npcManager.spawnNPC('FARMER');
       npcManager.setNPCWorking(npc.id, true);
 
       expect(npc.isWorking).toBe(true);
@@ -105,16 +105,16 @@ describe('NPC System', () => {
     });
 
     test('should move NPC to new position', () => {
-      const npc = npcManager.spawnNPC('FARMER', { x: 0, y: 0, z: 0 });
-      npcManager.moveNPC(npc.id, { x: 100, y: 50, z: 100 });
+      const { npc } = npcManager.spawnNPC('FARMER', { x: 0, y: 0, z: 0 });
+      npcManager.moveNPC(npc.id, { x: 8, y: 50, z: 9 });
 
-      expect(npc.position.x).toBe(100);
+      expect(npc.position.x).toBe(8);
       expect(npc.position.y).toBe(50);
-      expect(npc.position.z).toBe(100);
+      expect(npc.position.z).toBe(9);
     });
 
     test('should assign NPC to building', () => {
-      const npc = npcManager.spawnNPC('FARMER');
+      const { npc } = npcManager.spawnNPC('FARMER');
       const assigned = npcManager.assignNPC(npc.id, 'farm1');
 
       expect(assigned).toBe(true);
@@ -122,7 +122,7 @@ describe('NPC System', () => {
     });
 
     test('should unassign NPC from building', () => {
-      const npc = npcManager.spawnNPC('FARMER');
+      const { npc } = npcManager.spawnNPC('FARMER');
       npcManager.assignNPC(npc.id, 'farm1');
       npcManager.unassignNPC(npc.id);
 
@@ -130,7 +130,7 @@ describe('NPC System', () => {
     });
 
     test('should kill NPC', () => {
-      const npc = npcManager.spawnNPC('FARMER');
+      const { npc } = npcManager.spawnNPC('FARMER');
       npcManager.killNPC(npc.id);
 
       expect(npc.alive).toBe(false);
@@ -149,7 +149,7 @@ describe('NPC System', () => {
     });
 
     test('should train NPC skills', () => {
-      const npc = npcManager.spawnNPC('FARMER');
+      const { npc } = npcManager.spawnNPC('FARMER');
       const before = npc.skills.farming;
 
       npcManager.trainNPC(npc.id, 'farming', 0.2);
@@ -312,7 +312,7 @@ describe('NPC System', () => {
       npcAssignment.registerBuilding({ id: 'farm1', type: 'FARM' });
 
       // Spawn NPC
-      const npc = npcManager.spawnNPC('FARMER', { x: 50, y: 25, z: 50 });
+      const { npc } = npcManager.spawnNPC('FARMER', { x: 5, y: 25, z: 5 });
 
       // Assign
       npcAssignment.assignNPC(npc.id, 'farm1');
@@ -335,9 +335,9 @@ describe('NPC System', () => {
       npcAssignment.registerBuilding({ id: 'warehouse1', type: 'WAREHOUSE' });
 
       // Spawn diverse workforce
-      const farmer = npcManager.spawnNPC('FARMER');
-      const craftsman = npcManager.spawnNPC('CRAFTSMAN');
-      const guard = npcManager.spawnNPC('GUARD');
+      const { npc: farmer } = npcManager.spawnNPC('FARMER');
+      const { npc: craftsman } = npcManager.spawnNPC('CRAFTSMAN');
+      const { npc: guard } = npcManager.spawnNPC('GUARD');
 
       // Assign optimally
       npcAssignment.assignNPC(farmer.id, 'farm1');
@@ -357,7 +357,7 @@ describe('NPC System', () => {
 
       // Setup
       npcAssignment.registerBuilding({ id: 'farm1', type: 'FARM' });
-      const npc = npcManager.spawnNPC('FARMER');
+      const { npc } = npcManager.spawnNPC('FARMER');
       npcAssignment.assignNPC(npc.id, 'farm1');
 
       // Verify alive and assigned

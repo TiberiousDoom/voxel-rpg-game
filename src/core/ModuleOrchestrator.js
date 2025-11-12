@@ -411,20 +411,84 @@ class ModuleOrchestrator {
    * @returns {Object} Result object with success status
    */
   spawnNPC(role, position) {
-    const result = this.npcManager.spawnNPC(role, position);
+    try {
+      const result = this.npcManager.spawnNPC(role, position);
 
-    if (!result.success) {
-      return result;
+      if (!result.success) {
+        return { success: false, message: result.error || 'Failed to spawn NPC' };
+      }
+
+      // townManager.spawnNPC is already called by npcManager.spawnNPC
+      // so we don't need to call it again here
+      this.consumption.registerNPC(result.npcId, false);
+
+      // Update game state immediately for UI reactivity
+      this._updateGameState();
+
+      return {
+        success: true,
+        npcId: result.npcId,
+        npc: result.npc
+      };
+    } catch (err) {
+      return { success: false, message: err.message };
     }
+  }
 
-    // townManager.spawnNPC is already called by npcManager.spawnNPC
-    // so we don't need to call it again here
-    this.consumption.registerNPC(result.npc.id, false);
+  /**
+   * Assign NPC to building
+   * @param {string} npcId - NPC ID
+   * @param {string} buildingId - Building ID
+   * @returns {Object} Result object with success status
+   */
+  assignNPC(npcId, buildingId) {
+    try {
+      const result = this.npcAssignment.assignNPCToBuilding(npcId, buildingId);
 
-    // Update game state immediately for UI reactivity
-    this._updateGameState();
+      if (result.success) {
+        // Update game state immediately for UI reactivity
+        this._updateGameState();
+      }
 
-    return result;
+      return result;
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Unassign NPC from building
+   * @param {string} npcId - NPC ID
+   * @returns {Object} Result object with success status
+   */
+  unassignNPC(npcId) {
+    try {
+      const wasUnassigned = this.npcAssignment.unassignNPC(npcId);
+
+      // Update game state immediately for UI reactivity
+      this._updateGameState();
+
+      return { success: wasUnassigned };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Auto-assign idle NPCs to buildings
+   * @returns {Object} Result object with success status and count
+   */
+  autoAssignNPCs() {
+    try {
+      const assignedCount = this.npcAssignment.autoAssign();
+
+      // Update game state immediately for UI reactivity
+      this._updateGameState();
+
+      return { success: true, assignedCount };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
   }
 
   /**

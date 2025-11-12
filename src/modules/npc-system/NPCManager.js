@@ -207,7 +207,7 @@ class NPCManager {
    * Spawn a new NPC
    * @param {string} role - NPC role (FARMER, CRAFTSMAN, GUARD, WORKER)
    * @param {Object} position - Starting position (if null, generates random position)
-   * @returns {Object} Result object with success status and npcId
+   * @returns {NPC} Created NPC object (or null if failed)
    */
   spawnNPC(role, position = null) {
     const GRID_SIZE = 10; // Must match GRID.GRID_WIDTH from config.js
@@ -235,6 +235,7 @@ class NPCManager {
     // Check population limit
     const maxPopulation = this.townManager.getMaxPopulation();
     if (this.npcs.size >= maxPopulation) {
+      console.warn(`[NPCManager] Cannot spawn NPC: population limit reached (${maxPopulation})`);
       return {
         success: false,
         error: `Cannot spawn NPC: population limit reached (${maxPopulation})`
@@ -526,6 +527,35 @@ class NPCManager {
     return Array.from(this.npcs.values())
       .filter(npc => npc.alive)
       .map(npc => npc.getState());
+  }
+
+  /**
+   * Move NPC from idle to working set
+   */
+  moveToWorking(npcId) {
+    this.idleNPCs.delete(npcId);
+    this.workingNPCs.add(npcId);
+    console.log(`[NPCManager] NPC ${npcId} now working`);
+  }
+
+  /**
+   * Move NPC to idle set
+   */
+  moveToIdle(npcId) {
+    this.workingNPCs.delete(npcId);
+    this.restingNPCs.delete(npcId);
+    this.idleNPCs.add(npcId);
+    console.log(`[NPCManager] NPC ${npcId} now idle`);
+  }
+
+  /**
+   * Move NPC to resting set
+   */
+  moveToResting(npcId) {
+    this.idleNPCs.delete(npcId);
+    this.workingNPCs.delete(npcId);
+    this.restingNPCs.add(npcId);
+    console.log(`[NPCManager] NPC ${npcId} now resting`);
   }
 }
 

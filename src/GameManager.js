@@ -2,6 +2,7 @@ import EventEmitter from 'events';
 import BrowserSaveManager from './persistence/BrowserSaveManager';
 import ModuleOrchestrator from './core/ModuleOrchestrator';
 import GameEngine from './core/GameEngine';
+import NPCAssignment from './modules/npc-system/NPCAssignment';
 
 /**
  * GameManager - Main game controller
@@ -21,8 +22,9 @@ export default class GameManager extends EventEmitter {
     super();
     this.config = {
       tickInterval: 1000, // 1 second between ticks for better responsiveness
+      autoSaveInterval: 300, // Auto-save every 5 minutes (300 seconds)
       enableAutoSave: true,
-      enablePerformanceMonitoring: false,
+      enablePerformanceMonitoring: true,
       enableErrorRecovery: true,
       ...config
     };
@@ -31,8 +33,12 @@ export default class GameManager extends EventEmitter {
     this.orchestrator = null;
     this.engine = null;
     this.saveManager = null;
+    this.persistenceIntegration = null;
+    this.performanceMonitor = null;
+    this.errorRecovery = null;
     this.tickTimer = null;
     this.currentTick = 0;
+    this.eventCallbacks = new Map();
   }
 
   /**
@@ -52,9 +58,31 @@ export default class GameManager extends EventEmitter {
         maxSlots: 10
       });
 
+      // Initialize persistence integration (placeholder for now)
+      this.persistenceIntegration = {
+        enabled: this.config.enableAutoSave,
+        interval: this.config.autoSaveInterval
+      };
+
+      // Initialize performance monitor if enabled
+      if (this.config.enablePerformanceMonitoring) {
+        this.performanceMonitor = {
+          enabled: true,
+          metrics: []
+        };
+      }
+
+      // Initialize error recovery if enabled
+      if (this.config.enableErrorRecovery) {
+        this.errorRecovery = {
+          enabled: true,
+          maxRetries: 3
+        };
+      }
+
       // Create module orchestrator with all game modules
       this.orchestrator = new ModuleOrchestrator(this._createModules());
-      
+
       // Initialize game engine
       this.engine = new GameEngine(this.orchestrator);
 
@@ -62,7 +90,7 @@ export default class GameManager extends EventEmitter {
       this._setupEngineEvents();
 
       this.gameState = GameManager.GAME_STATE.INITIALIZED;
-      this.emit('game:initialized', {});
+      this._emit('game:initialized', {});
 
       // eslint-disable-next-line no-console
       console.log('[GameManager] Initialization complete');
@@ -70,7 +98,7 @@ export default class GameManager extends EventEmitter {
     } catch (err) {
       console.error('[GameManager] Initialization failed:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
-      this.emit('game:error', { error: err.message });
+      this._emit('game:error', { error: err.message });
       return false;
     }
   }
@@ -81,8 +109,11 @@ export default class GameManager extends EventEmitter {
   _createModules() {
     // This would normally import and instantiate all your game modules
     // For now, creating mock modules for demonstration
+    const grid = this._createMockGridManager();
+    const npcManager = this._createMockNPCManager();
+
     return {
-      grid: this._createMockGridManager(),
+      grid: grid,
       spatial: this._createMockSpatialPartitioning(),
       buildingConfig: this._createMockBuildingConfig(),
       tierProgression: this._createMockTierProgression(),
@@ -93,8 +124,8 @@ export default class GameManager extends EventEmitter {
       morale: this._createMockMoraleCalculator(),
       territoryManager: this._createMockTerritoryManager(),
       townManager: this._createMockTownManager(),
-      npcManager: this._createMockNPCManager(),
-      npcAssignment: this._createMockNPCAssignment()
+      npcManager: npcManager,
+      npcAssignment: new NPCAssignment(npcManager, grid)
     };
   }
 
@@ -105,7 +136,7 @@ export default class GameManager extends EventEmitter {
     if (!this.engine) return;
 
     this.engine.on('tick:start', (data) => {
-      this.emit('tick:start', data);
+      this._emit('tick:start', data);
     });
 
     this.engine.on('tick:complete', (data) => {
@@ -115,7 +146,7 @@ export default class GameManager extends EventEmitter {
       const population = this.orchestrator.npcManager.getStatistics();
       
       // Emit tick with full game state
-      this.emit('tick:complete', {
+      this._emit('tick:complete', {
         tick: this.currentTick,
         timestamp: Date.now(),
         gameState: {
@@ -132,7 +163,7 @@ export default class GameManager extends EventEmitter {
 
     this.engine.on('tick:error', (error) => {
       console.error('[GameManager] Tick error:', error);
-      this.emit('tick:error', error);
+      this._emit('tick:error', error);
     });
   }
 
@@ -166,8 +197,11 @@ export default class GameManager extends EventEmitter {
           return false;
         }
 
-        this.emit('game:loaded', { slot: saveSlot, metadata: loadResult.metadata });
+        this._emit('game:loaded', { slot: saveSlot, metadata: loadResult.metadata });
       }
+
+      // Start the game engine
+      await this.engine.start();
 
       // Start the tick timer
       this._startTickTimer();
@@ -175,7 +209,7 @@ export default class GameManager extends EventEmitter {
       this.gameState = GameManager.GAME_STATE.RUNNING;
       
       // Emit started event with current state
-      this.emit('game:started', {
+      this._emit('game:started', {
         tick: this.currentTick,
         timestamp: Date.now()
       });
@@ -186,7 +220,7 @@ export default class GameManager extends EventEmitter {
     } catch (err) {
       console.error('[GameManager] Failed to start game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
-      this.emit('game:error', { error: err.message });
+      this._emit('game:error', { error: err.message });
       return false;
     }
   }
@@ -215,7 +249,7 @@ export default class GameManager extends EventEmitter {
    */
   _processTick() {
     try {
-      this.emit('tick:start', { tick: this.currentTick });
+      this._emit('tick:start', { tick: this.currentTick });
 
       // Execute tick in orchestrator
       const tickResult = this.orchestrator.executeTick();
@@ -230,7 +264,7 @@ export default class GameManager extends EventEmitter {
         : 100;
 
       // Emit complete event with all data
-      this.emit('tick:complete', {
+      this._emit('tick:complete', {
         tick: this.currentTick,
         timestamp: Date.now(),
         ...tickResult,
@@ -242,7 +276,7 @@ export default class GameManager extends EventEmitter {
 
     } catch (err) {
       console.error('[GameManager] Tick processing error:', err);
-      this.emit('tick:error', { error: err.message, tick: this.currentTick });
+      this._emit('tick:error', { error: err.message, tick: this.currentTick });
     }
   }
 
@@ -251,8 +285,17 @@ export default class GameManager extends EventEmitter {
    */
   async stopGame() {
     try {
+      // Check if already stopped
+      if (this.gameState === GameManager.GAME_STATE.STOPPED ||
+          this.gameState === GameManager.GAME_STATE.UNINITIALIZED) {
+        return false;
+      }
+
       // eslint-disable-next-line no-console
       console.log('[GameManager] Stopping game...');
+
+      // Stop the game engine
+      await this.engine.stop();
 
       // Clear tick timer
       if (this.tickTimer) {
@@ -261,7 +304,7 @@ export default class GameManager extends EventEmitter {
       }
 
       this.gameState = GameManager.GAME_STATE.STOPPED;
-      this.emit('game:stopped', { tick: this.currentTick });
+      this._emit('game:stopped', { tick: this.currentTick });
 
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game stopped');
@@ -279,7 +322,13 @@ export default class GameManager extends EventEmitter {
   pauseGame() {
     if (this.gameState === GameManager.GAME_STATE.RUNNING) {
       this.gameState = GameManager.GAME_STATE.PAUSED;
-      this.emit('game:paused', {});
+
+      // Pause the orchestrator
+      if (this.orchestrator) {
+        this.orchestrator.pause();
+      }
+
+      this._emit('game:paused', {});
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game paused');
       return true;
@@ -293,7 +342,13 @@ export default class GameManager extends EventEmitter {
   resumeGame() {
     if (this.gameState === GameManager.GAME_STATE.PAUSED) {
       this.gameState = GameManager.GAME_STATE.RUNNING;
-      this.emit('game:resumed', {});
+
+      // Resume the orchestrator
+      if (this.orchestrator) {
+        this.orchestrator.resume();
+      }
+
+      this._emit('game:resumed', {});
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game resumed');
       return true;
@@ -311,23 +366,31 @@ export default class GameManager extends EventEmitter {
         return { success: false, message: 'Invalid position' };
       }
 
-      // Create building through grid manager
-      const building = this.orchestrator.grid.placeBuilding(type, position);
-      
-      if (building) {
-        this.emit('building:placed', { 
-          buildingId: building.id, 
-          type, 
-          position 
+      // Create building with proper structure
+      const building = {
+        id: `building-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type,
+        position,
+        dimensions: { width: 1, height: 1, depth: 1 }
+      };
+
+      // Place building through orchestrator
+      const result = this.orchestrator.placeBuilding(building);
+
+      if (result.success) {
+        this._emit('building:placed', {
+          buildingId: result.buildingId,
+          type,
+          position
         });
 
-        // Force an immediate tick update
-        this._processTick();
+        // Update game state immediately
+        this.orchestrator._updateGameState();
 
-        return { success: true, building };
+        return { success: true, buildingId: result.buildingId };
       }
 
-      return { success: false, message: 'Failed to place building' };
+      return result;
     } catch (err) {
       console.error('[GameManager] Failed to place building:', err);
       return { success: false, message: err.message };
@@ -337,32 +400,30 @@ export default class GameManager extends EventEmitter {
   /**
    * Spawn an NPC
    */
-  spawnNPC(role = 'WORKER') {
+  spawnNPC(role = 'WORKER', position = null) {
     try {
-      const npc = this.orchestrator.npcManager.spawnNPC({
-        role,
-        position: this._getRandomPosition()
-      });
+      const result = this.orchestrator.spawnNPC(role, position || this._getRandomPosition());
 
-      if (npc) {
+      if (result.success) {
         // Update population stats
         const stats = this.orchestrator.npcManager.getStatistics();
-        
-        this.emit('npc:spawned', { 
-          npc,
+
+        this._emit('npc:spawned', {
+          npc: result.npc,
+          npcId: result.npcId,
           population: stats
         });
 
         // Force an immediate tick update
-        this._processTick();
+        this.orchestrator._updateGameState();
 
-        return npc;
+        return result;
       }
 
-      return null;
+      return result;
     } catch (err) {
       console.error('[GameManager] Failed to spawn NPC:', err);
-      return null;
+      return { success: false, message: err.message };
     }
   }
 
@@ -383,9 +444,9 @@ export default class GameManager extends EventEmitter {
   advanceTier(targetTier) {
     try {
       const result = this.orchestrator.advanceTier(targetTier);
-      
+
       if (result.success) {
-        this.emit('tier:advanced', { 
+        this._emit('tier:advanced', {
           tier: targetTier,
           resourcesSpent: result.resourcesSpent
         });
@@ -394,6 +455,154 @@ export default class GameManager extends EventEmitter {
       return result;
     } catch (err) {
       console.error('[GameManager] Failed to advance tier:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Assign NPC to building
+   */
+  assignNPC(npcId, buildingId) {
+    try {
+      const result = this.orchestrator.assignNPC(npcId, buildingId);
+
+      if (result.success) {
+        this._emit('npc:assigned', {
+          npcId,
+          buildingId
+        });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to assign NPC:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Unassign NPC from building
+   */
+  unassignNPC(npcId) {
+    try {
+      const result = this.orchestrator.unassignNPC(npcId);
+
+      if (result.success) {
+        this._emit('npc:unassigned', { npcId });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to unassign NPC:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Auto-assign idle NPCs to buildings
+   */
+  autoAssignNPCs() {
+    try {
+      const result = this.orchestrator.autoAssignNPCs();
+
+      if (result.success) {
+        this._emit('npc:auto-assigned', {
+          count: result.assignedCount
+        });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to auto-assign NPCs:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Damage a building
+   * @param {string} buildingId - Building ID
+   * @param {number} damage - Amount of damage to apply
+   * @returns {object} Result of damage operation
+   */
+  damageBuilding(buildingId, damage) {
+    try {
+      const result = this.orchestrator.grid.damageBuilding(buildingId, damage);
+
+      if (result.success) {
+        this._emit('building:damaged', {
+          buildingId,
+          damage,
+          newHealth: result.newHealth,
+          destroyed: result.destroyed,
+          state: result.state
+        });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to damage building:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Repair a building
+   * @param {string} buildingId - Building ID
+   * @param {number} repairAmount - Amount of health to restore
+   * @returns {object} Result of repair operation
+   */
+  repairBuilding(buildingId, repairAmount = 100) {
+    try {
+      const building = this.orchestrator.grid.getBuilding(buildingId);
+      if (!building) {
+        return { success: false, message: 'Building not found' };
+      }
+
+      // Get repair cost from building config
+      const repairCost = this.orchestrator.buildingConfig.getRepairCost(building.type);
+      const currentResources = this.orchestrator.storage.getStorage();
+
+      // Attempt repair
+      const result = this.orchestrator.grid.repairBuilding(
+        buildingId,
+        repairAmount,
+        currentResources,
+        repairCost
+      );
+
+      if (result.success) {
+        // Deduct resources
+        for (const [resource, amount] of Object.entries(result.resourcesUsed)) {
+          this.orchestrator.storage.removeResource(resource, amount);
+        }
+
+        this._emit('building:repaired', {
+          buildingId,
+          healthRestored: result.healthRestored,
+          newHealth: result.newHealth,
+          resourcesUsed: result.resourcesUsed,
+          state: result.state
+        });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to repair building:', err);
       return { success: false, message: err.message };
     }
   }
@@ -411,7 +620,7 @@ export default class GameManager extends EventEmitter {
       );
 
       if (result.success) {
-        this.emit('game:saved', { slot: slotName, metadata: result.metadata });
+        this._emit('game:saved', { slot: slotName, metadata: result.metadata });
       }
 
       return result;
@@ -435,7 +644,7 @@ export default class GameManager extends EventEmitter {
 
       if (result.success) {
         this.currentTick = this.orchestrator.tickCount || 0;
-        this.emit('game:loaded', { slot: slotName, metadata: result.metadata });
+        this._emit('game:loaded', { slot: slotName, metadata: result.metadata });
       }
 
       return result;
@@ -462,7 +671,8 @@ export default class GameManager extends EventEmitter {
       tick: this.currentTick,
       tier: this.orchestrator?.gameState?.currentTier || 'SURVIVAL',
       isRunning: this.gameState === GameManager.GAME_STATE.RUNNING,
-      isPaused: this.gameState === GameManager.GAME_STATE.PAUSED
+      isPaused: this.gameState === GameManager.GAME_STATE.PAUSED,
+      orchestrator: this.orchestrator
     };
   }
 
@@ -489,18 +699,44 @@ export default class GameManager extends EventEmitter {
   // These would normally be real module imports
   
   _createMockGridManager() {
+    const buildings = new Map();
     return {
-      placeBuilding: (type, position) => ({
-        id: `building-${Date.now()}`,
-        type,
-        position
-      }),
-      getAllBuildings: () => []
+      buildings: buildings,
+      placeBuilding: (building) => {
+        // Validate required fields
+        if (!building || !building.id || !building.position) {
+          return { success: false, error: 'Invalid building data' };
+        }
+
+        // Add default state and properties if not present
+        if (!building.state) {
+          building.state = 'COMPLETE';
+        }
+        if (!building.properties) {
+          building.properties = { npcCapacity: 2 };
+        }
+
+        // Store building
+        buildings.set(building.id, building);
+
+        return { success: true, buildingId: building.id };
+      },
+      getBuilding: (buildingId) => {
+        return buildings.get(buildingId) || null;
+      },
+      removeBuilding: (buildingId) => {
+        return buildings.delete(buildingId);
+      },
+      getAllBuildings: () => Array.from(buildings.values()),
+      gridSize: 100,
+      gridHeight: 50
     };
   }
 
   _createMockSpatialPartitioning() {
     return {
+      addBuilding: () => {},
+      removeBuilding: () => {},
       insert: () => {},
       query: () => []
     };
@@ -508,6 +744,11 @@ export default class GameManager extends EventEmitter {
 
   _createMockBuildingConfig() {
     return {
+      getConfig: (type) => ({
+        type,
+        cost: { wood: 10, stone: 5 },
+        dimensions: { width: 1, height: 1, depth: 1 }
+      }),
       getBuildingData: (type) => ({
         type,
         cost: { wood: 10, stone: 5 }
@@ -524,6 +765,8 @@ export default class GameManager extends EventEmitter {
 
   _createMockBuildingEffect() {
     return {
+      registerBuildingEffects: () => [],
+      unregisterBuildingEffects: () => {},
       calculateEffects: () => ({})
     };
   }
@@ -575,10 +818,43 @@ export default class GameManager extends EventEmitter {
   }
 
   /**
-   * Emit game event
+   * Register event callback
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   */
+  on(event, callback) {
+    if (!this.eventCallbacks.has(event)) {
+      this.eventCallbacks.set(event, []);
+    }
+    this.eventCallbacks.get(event).push(callback);
+    return this;
+  }
+
+  /**
+   * Unregister event callback
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   */
+  off(event, callback) {
+    if (this.eventCallbacks.has(event)) {
+      const callbacks = this.eventCallbacks.get(event);
+      const index = callbacks.indexOf(callback);
+      if (index > -1) {
+        callbacks.splice(index, 1);
+      }
+      if (callbacks.length === 0) {
+        this.eventCallbacks.delete(event);
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Emit game event (custom implementation that uses both systems)
    * @private
    */
   _emit(event, data) {
+    // Call callbacks from our custom system
     if (this.eventCallbacks.has(event)) {
       for (const callback of this.eventCallbacks.get(event)) {
         try {
@@ -589,6 +865,18 @@ export default class GameManager extends EventEmitter {
         }
       }
     }
+  }
+
+  /**
+   * Remove all event listeners
+   */
+  removeAllListeners(event) {
+    if (event) {
+      this.eventCallbacks.delete(event);
+    } else {
+      this.eventCallbacks.clear();
+    }
+    return super.removeAllListeners(event);
   }
 
   _createMockConsumptionSystem() {
@@ -628,13 +916,23 @@ export default class GameManager extends EventEmitter {
       createTerritory: (id, bounds) => ({
         id,
         bounds
-      })
+      }),
+      findTerritoryForBuilding: () => null,
+      addBuildingToTerritory: () => {},
+      removeBuildingFromTerritory: () => {}
     };
   }
 
   _createMockTownManager() {
     return {
       getHousingCapacity: () => 10,
+      getMaxPopulation: () => 100,
+      spawnNPC: () => {},
+      updateNPCHappiness: () => {},
+      assignNPC: () => true,
+      unassignNPC: () => {},
+      killNPC: () => {},
+      removeNPC: () => {},
       getStatistics: (buildings = []) => {
         return {
           population: {
@@ -665,31 +963,71 @@ export default class GameManager extends EventEmitter {
   }
 
   _createMockNPCManager() {
-    const npcs = [];
+    const npcs = new Map();
+    const idleNPCs = new Set();
+    const workingNPCs = new Set();
+    const restingNPCs = new Set();
     let totalSpawned = 0;
 
     return {
-      spawnNPC: (config) => {
+      npcs: npcs,
+      idleNPCs: idleNPCs,
+      workingNPCs: workingNPCs,
+      restingNPCs: restingNPCs,
+      spawnNPC: (role, position) => {
         totalSpawned++;
         const npc = {
-          id: `npc-${totalSpawned}`,
-          role: config.role || 'WORKER',
-          position: config.position || { x: 0, y: 0, z: 0 },
+          id: totalSpawned,
+          role: role || 'WORKER',
+          position: position || { x: 0, y: 0, z: 0 },
           health: 100,
-          alive: true
+          alive: true,
+          assignedBuilding: null,
+          setWorking: function(working) {
+            this.isWorking = working;
+          }
         };
-        npcs.push(npc);
-        return npc;
+        npcs.set(npc.id, npc);
+        idleNPCs.add(npc.id);
+        return {
+          success: true,
+          npcId: npc.id,
+          npc: npc
+        };
       },
       killNPC: (id) => {
-        const npc = npcs.find(n => n.id === id);
+        const npc = npcs.get(id);
         if (npc) {
           npc.alive = false;
           npc.health = 0;
+          idleNPCs.delete(id);
+          workingNPCs.delete(id);
+          restingNPCs.delete(id);
         }
       },
+      moveToWorking: (npcId) => {
+        idleNPCs.delete(npcId);
+        workingNPCs.add(npcId);
+        // eslint-disable-next-line no-console
+        console.log(`[NPCManager] NPC ${npcId} now working`);
+      },
+      moveToIdle: (npcId) => {
+        workingNPCs.delete(npcId);
+        restingNPCs.delete(npcId);
+        idleNPCs.add(npcId);
+        // eslint-disable-next-line no-console
+        console.log(`[NPCManager] NPC ${npcId} now idle`);
+      },
+      moveToResting: (npcId) => {
+        idleNPCs.delete(npcId);
+        workingNPCs.delete(npcId);
+        restingNPCs.add(npcId);
+        // eslint-disable-next-line no-console
+        console.log(`[NPCManager] NPC ${npcId} now resting`);
+      },
       getStatistics: () => {
-        const aliveCount = npcs.filter(n => n.alive).length;
+        const aliveNPCs = Array.from(npcs.values()).filter(n => n.alive);
+        const aliveCount = aliveNPCs.length;
         return {
           aliveCount,
           totalSpawned,
@@ -697,15 +1035,19 @@ export default class GameManager extends EventEmitter {
           percent: totalSpawned > 0 ? (aliveCount / totalSpawned) * 100 : 100
         };
       },
-      getAllNPCStates: () => npcs
+      getAllNPCStates: () => Array.from(npcs.values())
     };
   }
 
   _createMockNPCAssignment() {
     return {
-      assignNPC: () => {},
+      registerBuilding: () => {},
+      unregisterBuilding: () => {},
+      assignNPC: () => true,
       unassignNPC: () => {},
-      getAssignments: () => ({})
+      getNPCsInBuilding: () => [],
+      getAssignments: () => ({}),
+      getStatistics: () => ({ byBuilding: [] })
     };
   }
 }

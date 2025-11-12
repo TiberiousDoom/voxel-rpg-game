@@ -5,6 +5,7 @@ import ResourcePanel from './ResourcePanel';
 import NPCPanel from './NPCPanel';
 import BuildMenu from './BuildMenu';
 import GameControlBar from './GameControlBar';
+import BuildingInfoPanel from './BuildingInfoPanel';
 import './GameScreen.css';
 
 /**
@@ -14,7 +15,10 @@ import './GameScreen.css';
 function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing } = useGame();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
-  
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState('slot-1');
+  const [savedSlots, setSavedSlots] = useState(new Set());
+
   // Auto-start the game when ready (for testing)
   useEffect(() => {
     if (isReady && !gameState.isRunning && !gameState.isPaused) {
@@ -23,6 +27,56 @@ function GameScreen() {
       actions.startGame();
     }
   }, [isReady, gameState.isRunning, gameState.isPaused, actions]);
+
+  // Check localStorage for existing saves on mount
+  useEffect(() => {
+    const existing = new Set();
+    for (let i = 1; i <= 3; i++) {
+      const slotKey = `slot-${i}`;
+      if (localStorage.getItem(slotKey)) {
+        existing.add(slotKey);
+      }
+    }
+    setSavedSlots(existing);
+  }, []);
+
+  // Keep selected building in sync with buildings array
+  useEffect(() => {
+    if (selectedBuilding) {
+      const updatedBuilding = gameState.buildings.find(b => b.id === selectedBuilding.id);
+      if (updatedBuilding) {
+        setSelectedBuilding(updatedBuilding);
+      } else {
+        // Building was removed
+        setSelectedBuilding(null);
+      }
+    }
+  }, [gameState.buildings, selectedBuilding]);
+
+  // NPC Assignment handlers
+  const handleAssignNPC = (npcId, buildingId) => {
+    actions.assignNPC(npcId, buildingId);
+  };
+
+  const handleUnassignNPC = (npcId) => {
+    actions.unassignNPC(npcId);
+  };
+
+  const handleAutoAssign = () => {
+    actions.autoAssignNPCs();
+  };
+
+  // Save/Load handlers
+  const handleSave = () => {
+    actions.saveGame(selectedSlot);
+    setSavedSlots(prev => new Set([...prev, selectedSlot]));
+  };
+
+  const handleLoad = () => {
+    if (savedSlots.has(selectedSlot)) {
+      actions.loadGame(selectedSlot);
+    }
+  };
 
   // Show loading state
   if (isInitializing) {
@@ -68,24 +122,114 @@ function GameScreen() {
   // Game is not running reminder
   const showPlayReminder = !gameState.isRunning && !gameState.isPaused;
 
+  // Handle building selection
+  const handleBuildingClick = (building) => {
+    setSelectedBuilding(building);
+    setSelectedBuildingType(null); // Clear build mode when selecting a building
+  };
+
+  // Handle repair
+  const handleRepair = (buildingId) => {
+    const result = actions.repairBuilding(buildingId);
+    if (result.success) {
+      // eslint-disable-next-line no-console
+      console.log('[BuildingHealth] Repair successful:', result);
+      // Update selected building with new health
+      const updatedBuilding = gameState.buildings.find(b => b.id === buildingId);
+      if (updatedBuilding) {
+        setSelectedBuilding(updatedBuilding);
+      }
+    } else {
+      // eslint-disable-next-line no-console
+      console.error('[BuildingHealth] Repair failed:', result.error);
+    }
+  };
+
+  // Handle damage
+  const handleDamage = (buildingId, damage) => {
+    const result = actions.damageBuilding(buildingId, damage);
+    if (result.success) {
+      // eslint-disable-next-line no-console
+      console.log('[BuildingHealth] Damage applied:', result);
+      // Update selected building with new health
+      const updatedBuilding = gameState.buildings.find(b => b.id === buildingId);
+      if (updatedBuilding) {
+        setSelectedBuilding(updatedBuilding);
+      }
+    } else {
+      // eslint-disable-next-line no-console
+      console.error('[BuildingHealth] Damage failed:', result.error);
+    }
+  };
+
   return (
     <div className="game-screen">
       <header className="game-header">
         <h1>Voxel RPG Game</h1>
-        <div className="header-info">
-          <span className="tier-badge">
-            Tier: {gameState.currentTier || 'SURVIVAL'}
-          </span>
-          <span className="tick-counter">
-            Tick: {gameState.currentTick || 0}
-          </span>
-          <span className={`status-indicator ${
-            gameState.isRunning ? 'running' : 
-            gameState.isPaused ? 'paused' : 'stopped'
-          }`}>
-            {gameState.isRunning ? '● Running' : 
-             gameState.isPaused ? '⏸ Paused' : '⬛ Stopped'}
-          </span>
+        <div className="header-controls">
+          {/* Save/Load Controls */}
+          <div className="header-save-controls">
+            <select
+              value={selectedSlot}
+              onChange={(e) => setSelectedSlot(e.target.value)}
+              className="header-slot-selector"
+              title="Select save slot"
+            >
+              <option value="slot-1">Slot 1 {savedSlots.has('slot-1') ? '💾' : ''}</option>
+              <option value="slot-2">Slot 2 {savedSlots.has('slot-2') ? '💾' : ''}</option>
+              <option value="slot-3">Slot 3 {savedSlots.has('slot-3') ? '💾' : ''}</option>
+            </select>
+            <button
+              onClick={handleSave}
+              className="header-save-btn"
+              title={`Save to ${selectedSlot}`}
+            >
+              💾 Save
+            </button>
+            <button
+              onClick={handleLoad}
+              className="header-save-btn"
+              title={`Load from ${selectedSlot}`}
+              disabled={!savedSlots.has(selectedSlot)}
+            >
+              📂 Load
+            </button>
+          </div>
+
+          {/* Game Info */}
+          <div className="header-info">
+            <span className="tier-badge">
+              Tier: {gameState.currentTier || 'SURVIVAL'}
+            </span>
+            <span className={`status-indicator ${
+              gameState.isRunning ? 'running' :
+              gameState.isPaused ? 'paused' : 'stopped'
+            }`}>
+              {gameState.isRunning ? '● Running' :
+               gameState.isPaused ? '⏸ Paused' : '⬛ Stopped'}
+            </span>
+            {gameState.isRunning && !gameState.isPaused && (
+              <button
+                onClick={() => actions.pauseGame()}
+                className="header-pause-btn"
+                title="Pause game"
+              >
+                ⏸ Pause
+              </button>
+            )}
+            {gameState.isPaused && (
+              <button
+                onClick={() => actions.resumeGame()}
+                className="header-pause-btn resume"
+                title="Resume game"
+              >
+                ▶️ Resume
+              </button>
+            )}
+            <span className="tick-counter">
+              Tick: {gameState.currentTick || 0}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -93,10 +237,12 @@ function GameScreen() {
         {/* Left Sidebar - Resources & NPCs */}
         <aside className="game-sidebar left-sidebar">
           <ResourcePanel resources={gameState.resources || {}} />
-          <NPCPanel 
-            population={gameState.population || {}}
-            morale={gameState.morale || 0}
-            moraleState={gameState.moraleState || 'NEUTRAL'}
+          <NPCPanel
+            npcs={gameState.npcs || []}
+            buildings={gameState.buildings || []}
+            onAssignNPC={handleAssignNPC}
+            onUnassignNPC={handleUnassignNPC}
+            onAutoAssign={handleAutoAssign}
           />
         </aside>
 
@@ -117,12 +263,13 @@ function GameScreen() {
             buildings={gameState.buildings || []}
             npcs={gameState.npcs || []}
             selectedBuildingType={selectedBuildingType}
-            onBuildingPlace={(position) => {
+            onPlaceBuilding={(position) => {
               if (selectedBuildingType) {
                 actions.placeBuilding(selectedBuildingType, position);
                 setSelectedBuildingType(null);
               }
             }}
+            onBuildingClick={handleBuildingClick}
           />
         </div>
 
@@ -130,7 +277,7 @@ function GameScreen() {
         <aside className="game-sidebar right-sidebar">
           <BuildMenu
             selectedBuildingType={selectedBuildingType}
-            onBuildingSelect={setSelectedBuildingType}
+            onSelectBuilding={setSelectedBuildingType}
             onSpawnNPC={() => actions.spawnNPC('WORKER')}
             onAdvanceTier={() => actions.advanceTier('SETTLEMENT')}
           />
@@ -158,6 +305,17 @@ function GameScreen() {
           <span>⚠️ {error}</span>
           <button onClick={() => window.location.reload()}>Refresh</button>
         </div>
+      )}
+
+      {/* Building Info Panel */}
+      {selectedBuilding && (
+        <BuildingInfoPanel
+          building={selectedBuilding}
+          resources={gameState.resources || {}}
+          onRepair={handleRepair}
+          onDamage={handleDamage}
+          onClose={() => setSelectedBuilding(null)}
+        />
       )}
     </div>
   );

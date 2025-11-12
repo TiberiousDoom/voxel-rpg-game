@@ -1,100 +1,108 @@
-import React from 'react';
-import './NPCPanel.css';
+import React, { useState } from 'react';
 
-/**
- * NPCPanel Component
- * Displays NPC population and morale information
- */
-function NPCPanel({ population = {}, morale = 0, moraleState = 'NEUTRAL' }) {
-  // Calculate population percentage for progress bar
-  const populationPercent = population.totalSpawned > 0
-    ? Math.round((population.aliveCount || 0) / population.totalSpawned * 100)
-    : 100;
+const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign }) => {
+  const [selectedNPC, setSelectedNPC] = useState(null);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
 
-  // Determine morale emoji and label
-  const getMoraleDisplay = () => {
-    if (morale < -50) return { emoji: '😢', label: 'Miserable', color: '#d32f2f' };
-    if (morale < -25) return { emoji: '😠', label: 'Upset', color: '#f57c00' };
-    if (morale < 0) return { emoji: '😕', label: 'Unhappy', color: '#ffa726' };
-    if (morale === 0) return { emoji: '😐', label: 'Neutral', color: '#9e9e9e' };
-    if (morale < 25) return { emoji: '🙂', label: 'Happy', color: '#66bb6a' };
-    return { emoji: '😄', label: 'Thrilled', color: '#4caf50' };
+  const handleAssign = () => {
+    if (selectedNPC && selectedBuilding) {
+      onAssignNPC(selectedNPC.id, selectedBuilding.id);
+      setSelectedNPC(null);
+      setSelectedBuilding(null);
+    }
   };
 
-  const moraleDisplay = getMoraleDisplay();
+  const handleUnassign = (npcId) => {
+    onUnassignNPC(npcId);
+  };
 
-  // Calculate morale bar width (convert -100 to 100 range to 0 to 100%)
-  const moraleBarWidth = ((morale + 100) / 200) * 100;
+  const idleNPCs = npcs.filter(npc => !npc.assignedBuilding);
+  const workingNPCs = npcs.filter(npc => npc.assignedBuilding);
 
   return (
     <div className="npc-panel">
-      <h3>POPULATION & MORALE</h3>
-      
-      {/* Population Section */}
-      <div className="population-section">
-        <div className="section-header">
-          <span className="label">POPULATION:</span>
-          <span className="value">
-            {population.aliveCount || 0} / {population.totalSpawned || 0}
-          </span>
+      <h3>NPCs ({npcs.length})</h3>
+
+      <div className="npc-stats">
+        <div>
+          💤 Idle: {idleNPCs.length}
         </div>
-        
-        <div className="progress-bar-container">
-          <div 
-            className="progress-bar population-bar"
-            style={{ 
-              width: `${populationPercent}%`,
-              backgroundColor: populationPercent > 50 ? '#4caf50' : 
-                              populationPercent > 25 ? '#ff9800' : '#f44336'
-            }}
-          />
-        </div>
-        
-        <div className="population-status">
-          {populationPercent}% alive
-          {population.totalSpawned === 0 && (
-            <span className="hint"> - Spawn NPCs to work in your settlement</span>
-          )}
+        <div>
+          🏢 Working: {workingNPCs.length}
         </div>
       </div>
 
-      {/* Morale Section */}
-      <div className="morale-section">
-        <div className="section-header">
-          <span className="label">MORALE:</span>
-          <span className="morale-indicator">
-            <span className="morale-emoji">{moraleDisplay.emoji}</span>
-            <span className="morale-value" style={{ color: moraleDisplay.color }}>
-              {morale > 0 ? '+' : ''}{morale}
-            </span>
-          </span>
-        </div>
-        
-        <div className="morale-bar-container">
-          <div className="morale-bar-background">
-            <div className="morale-bar-center-mark" />
-            <div 
-              className="morale-bar"
-              style={{ 
-                width: `${moraleBarWidth}%`,
-                backgroundColor: moraleDisplay.color
-              }}
-            />
+      <button onClick={onAutoAssign} className="auto-assign-btn">
+        ⚡ Auto-Assign All
+      </button>
+
+      <h4>Idle NPCs</h4>
+      <div className="npc-list">
+        {idleNPCs.map(npc => (
+          <div
+            key={npc.id}
+            className={`npc-item ${selectedNPC?.id === npc.id ? 'selected' : ''}`}
+            onClick={() => setSelectedNPC(npc)}
+          >
+            <span className="npc-role">{npc.role}</span>
+            <span className="npc-health">❤️ {npc.health}</span>
           </div>
-        </div>
-        
-        <div className="morale-status">
-          <span style={{ color: moraleDisplay.color }}>
-            {moraleDisplay.label}
-          </span>
-        </div>
-        
-        <div className="morale-info">
-          Morale affects NPC efficiency and resource production.
-        </div>
+        ))}
       </div>
+
+      <h4>Working NPCs</h4>
+      <div className="npc-list">
+        {workingNPCs.map(npc => {
+          const building = buildings.find(b => b.id === npc.assignedBuilding);
+          return (
+            <div key={npc.id} className="npc-item working">
+              <span className="npc-role">{npc.role}</span>
+              <span className="npc-assignment">
+                → {building?.type || 'Unknown'}
+              </span>
+              <button
+                onClick={() => handleUnassign(npc.id)}
+                className="unassign-btn"
+              >
+                ✖️
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {selectedNPC && (
+        <div className="assignment-controls">
+          <h4>Assign {selectedNPC.role} to:</h4>
+          <select
+            onChange={(e) => setSelectedBuilding(buildings.find(b => b.id === e.target.value))}
+            value={selectedBuilding?.id || ''}
+          >
+            <option value="">Select building...</option>
+            {buildings
+              .filter(b => b.state === 'COMPLETE' && (b.properties.npcCapacity || 0) > 0)
+              .map(b => {
+                const capacity = b.properties.npcCapacity || 0;
+                const assigned = workingNPCs.filter(npc => npc.assignedBuilding === b.id).length;
+                return (
+                  <option key={b.id} value={b.id} disabled={assigned >= capacity}>
+                    {b.type} ({assigned}/{capacity})
+                  </option>
+                );
+              })}
+          </select>
+
+          <button
+            onClick={handleAssign}
+            disabled={!selectedBuilding}
+            className="assign-btn"
+          >
+            Assign to {selectedBuilding?.type || '...'}
+          </button>
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default NPCPanel;

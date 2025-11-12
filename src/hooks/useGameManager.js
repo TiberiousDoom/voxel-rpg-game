@@ -55,6 +55,7 @@ export function useGameManager(config = {}) {
   const gameManagerRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const stateUpdateQueueRef = useRef(null);
+  const eventHandlersRef = useRef([]); // Store event handlers for cleanup
 
   // State (causes re-renders when updated)
   const [gameState, setGameState] = useState(DEFAULT_GAME_STATE);
@@ -143,15 +144,20 @@ export function useGameManager(config = {}) {
         // ============================================
         // Subscribe to game events
         // ============================================
+        // Helper function to register event handlers for cleanup
+        const registerEventHandler = (eventName, handler) => {
+          gm.on(eventName, handler);
+          eventHandlersRef.current.push({ eventName, handler });
+        };
 
-        gm.on('game:initialized', () => {
+        registerEventHandler('game:initialized', () => {
           queueStateUpdate({
             isRunning: false,
             isPaused: false
           });
         });
 
-        gm.on('game:started', (data) => {
+        registerEventHandler('game:started', (data) => {
           queueStateUpdate({
             isRunning: true,
             isPaused: false,
@@ -159,27 +165,27 @@ export function useGameManager(config = {}) {
           });
         });
 
-        gm.on('game:stopped', (data) => {
+        registerEventHandler('game:stopped', (data) => {
           queueStateUpdate({
             isRunning: false,
             currentTick: data.tick || gameState.currentTick
           });
         });
 
-        gm.on('game:paused', () => {
+        registerEventHandler('game:paused', () => {
           queueStateUpdate({
             isPaused: true
           });
         });
 
-        gm.on('game:resumed', () => {
+        registerEventHandler('game:resumed', () => {
           queueStateUpdate({
             isPaused: false
           });
         });
 
         // Main game tick - update core game state
-        gm.on('tick:complete', (tickData) => {
+        const tickCompleteHandler = (tickData) => {
           const orchestrator = gm.orchestrator;
           const stats = orchestrator?.getStatistics();
 
@@ -198,9 +204,10 @@ export function useGameManager(config = {}) {
               population: orchestrator.npcManager?.getStatistics?.() || {}
             });
           }
-        });
+        };
+        registerEventHandler('tick:complete', tickCompleteHandler);
 
-        gm.on('building:placed', (data) => {
+        registerEventHandler('building:placed', (data) => {
           // eslint-disable-next-line no-console
           console.log('Building placed:', data.buildingId);
 
@@ -209,12 +216,50 @@ export function useGameManager(config = {}) {
             buildings: gm.orchestrator.gameState.buildings?.map(b => ({
               id: b.id,
               type: b.type,
-              position: b.position
+              position: b.position,
+              health: b.health,
+              maxHealth: b.maxHealth,
+              state: b.state
             })) || []
           });
         });
 
-        gm.on('npc:spawned', (data) => {
+        registerEventHandler('building:damaged', (data) => {
+          // eslint-disable-next-line no-console
+          console.log('Building damaged:', data.buildingId, 'new health:', data.newHealth);
+
+          // Update React state immediately
+          queueStateUpdate({
+            buildings: gm.orchestrator.gameState.buildings?.map(b => ({
+              id: b.id,
+              type: b.type,
+              position: b.position,
+              health: b.health,
+              maxHealth: b.maxHealth,
+              state: b.state
+            })) || []
+          });
+        });
+
+        registerEventHandler('building:repaired', (data) => {
+          // eslint-disable-next-line no-console
+          console.log('Building repaired:', data.buildingId, 'new health:', data.newHealth);
+
+          // Update React state immediately
+          queueStateUpdate({
+            buildings: gm.orchestrator.gameState.buildings?.map(b => ({
+              id: b.id,
+              type: b.type,
+              position: b.position,
+              health: b.health,
+              maxHealth: b.maxHealth,
+              state: b.state
+            })) || [],
+            resources: gm.orchestrator.storage?.getStorage?.() || {}
+          });
+        });
+
+        registerEventHandler('npc:spawned', (data) => {
           // eslint-disable-next-line no-console
           console.log('NPC spawned:', data.npc.id);
 
@@ -225,24 +270,42 @@ export function useGameManager(config = {}) {
           });
         });
 
-        gm.on('tier:advanced', (data) => {
+        registerEventHandler('tier:advanced', (data) => {
           queueStateUpdate({
             currentTier: data.tier
           });
         });
 
-        gm.on('game:saved', (data) => {
+        registerEventHandler('game:saved', (data) => {
           // eslint-disable-next-line no-console
           console.log('Game saved:', data.slot);
         });
 
-        gm.on('game:loaded', (data) => {
+        registerEventHandler('game:loaded', (data) => {
           // eslint-disable-next-line no-console
           console.log('Game loaded:', data.slot);
-          // State will be updated on next tick:complete
+
+          // Immediately update state with loaded game data
+          const orchestrator = gm.orchestrator;
+          if (orchestrator) {
+            queueStateUpdate({
+              currentTick: orchestrator.tickCount,
+              currentTier: orchestrator.gameState.currentTier,
+              buildings: orchestrator.gameState.buildings?.map(b => ({
+                id: b.id,
+                type: b.type,
+                position: b.position
+              })) || [],
+              npcs: orchestrator.gameState.npcs || [],
+              resources: orchestrator.storage?.getStorage?.() || {},
+              morale: orchestrator.morale?.getCurrentMorale?.() || 0,
+              moraleState: orchestrator.morale?.getMoraleState?.() || 'NEUTRAL',
+              population: orchestrator.npcManager?.getStatistics?.() || {}
+            });
+          }
         });
 
-        gm.on('game:error', (data) => {
+        registerEventHandler('game:error', (data) => {
           // eslint-disable-next-line no-console
           console.error('Game error:', data.error);
           setError(data.error);
@@ -250,7 +313,7 @@ export function useGameManager(config = {}) {
 
         // Performance monitoring if enabled
         if (options.enablePerformanceMonitoring && gm.performanceMonitor) {
-          gm.on('tick:complete', (tickData) => {
+          registerEventHandler('tick:complete', (tickData) => {
             const monitor = gm.performanceMonitor;
             if (monitor && tickData.tickTimeMs) {
               queueStateUpdate({
@@ -291,8 +354,20 @@ export function useGameManager(config = {}) {
 
       // Remove all event listeners
       if (gameManagerRef.current) {
-        // GameManager should clean up its own listeners
-        // but we can't explicitly remove them without exposing internal API
+        // eslint-disable-next-line no-console
+        console.log('useGameManager: Cleaning up event listeners...');
+
+        // Unsubscribe from all registered events
+        eventHandlersRef.current.forEach(({ eventName, handler }) => {
+          gameManagerRef.current.off(eventName, handler);
+        });
+
+        // Clear the handlers array
+        eventHandlersRef.current = [];
+
+        // eslint-disable-next-line no-console
+        console.log('useGameManager: Event listeners cleaned up');
+
         gameManagerRef.current = null;
       }
     };
@@ -528,7 +603,116 @@ export function useGameManager(config = {}) {
         setError(err.message);
         return null;
       }
-    }, [])
+    }, []),
+
+    /**
+     * Assign NPC to building
+     */
+    assignNPC: useCallback(
+      (npcId, buildingId) => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.assignNPC(npcId, buildingId);
+            if (!result.success) {
+              setError(result.message || 'Failed to assign NPC');
+            }
+            return result;
+          }
+          return { success: false, message: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, message: err.message };
+        }
+      },
+      []
+    ),
+
+    /**
+     * Unassign NPC from building
+     */
+    unassignNPC: useCallback(
+      (npcId) => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.unassignNPC(npcId);
+            return result;
+          }
+          return { success: false, message: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, message: err.message };
+        }
+      },
+      []
+    ),
+
+    /**
+     * Auto-assign idle NPCs to buildings
+     */
+    autoAssignNPCs: useCallback(
+      () => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.autoAssignNPCs();
+            return result;
+          }
+          return { success: false, message: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, message: err.message };
+        }
+      },
+      []
+    ),
+
+    /**
+     * Damage a building
+     */
+    damageBuilding: useCallback(
+      (buildingId, damage) => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.damageBuilding(buildingId, damage);
+            if (!result.success) {
+              setError(result.error);
+            }
+            return result;
+          }
+          return { success: false, error: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, error: err.message };
+        }
+      },
+      []
+    ),
+
+    /**
+     * Repair a building
+     */
+    repairBuilding: useCallback(
+      (buildingId, repairAmount = 100) => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.repairBuilding(buildingId, repairAmount);
+            if (!result.success) {
+              setError(result.error || result.message);
+            }
+            return result;
+          }
+          return { success: false, error: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, error: err.message };
+        }
+      },
+      []
+    )
   };
 
   return {

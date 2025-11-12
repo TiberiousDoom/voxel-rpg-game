@@ -348,9 +348,9 @@ function GameViewport({
 
     if (selectedBuildingType) {
       // Building placement mode
-      onPlaceBuilding(selectedBuildingType, {
+      onPlaceBuilding({
         x: position.x,
-        y: 25, // Fixed height (gridHeight is 50, so valid range is 0-49)
+        y: 0, // Ground level
         z: position.z
       });
     } else {

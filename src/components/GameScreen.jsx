@@ -4,7 +4,6 @@ import GameViewport from './GameViewport';
 import ResourcePanel from './ResourcePanel';
 import NPCPanel from './NPCPanel';
 import BuildMenu from './BuildMenu';
-import GameControlBar from './GameControlBar';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import TierProgressPanel from './TierProgressPanel';
 import './GameScreen.css';
@@ -21,6 +20,7 @@ function GameScreen() {
   const [savedSlots, setSavedSlots] = useState(new Set());
   const [showTierPanel, setShowTierPanel] = useState(false);
   const [tierProgress, setTierProgress] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
 
   // Auto-start the game when ready (for testing)
   useEffect(() => {
@@ -79,6 +79,12 @@ function GameScreen() {
     if (savedSlots.has(selectedSlot)) {
       actions.loadGame(selectedSlot);
     }
+  };
+
+  // Show toast notification
+  const showToast = (message, duration = 3000) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), duration);
   };
 
   // Show loading state
@@ -207,13 +213,6 @@ function GameScreen() {
             <span className="tier-badge">
               Tier: {gameState.currentTier || 'SURVIVAL'}
             </span>
-            <span className={`status-indicator ${
-              gameState.isRunning ? 'running' :
-              gameState.isPaused ? 'paused' : 'stopped'
-            }`}>
-              {gameState.isRunning ? '● Running' :
-               gameState.isPaused ? '⏸ Paused' : '⬛ Stopped'}
-            </span>
             {gameState.isRunning && !gameState.isPaused && (
               <button
                 onClick={() => actions.pauseGame()}
@@ -234,6 +233,9 @@ function GameScreen() {
             )}
             <span className="tick-counter">
               Tick: {gameState.currentTick || 0}
+            </span>
+            <span className="fps-counter" title="Frames per second">
+              FPS: {gameState.fps || 60}
             </span>
           </div>
         </div>
@@ -271,7 +273,10 @@ function GameScreen() {
             selectedBuildingType={selectedBuildingType}
             onPlaceBuilding={(position) => {
               if (selectedBuildingType) {
-                actions.placeBuilding(selectedBuildingType, position);
+                const result = actions.placeBuilding(selectedBuildingType, position);
+                if (result && !result.success) {
+                  showToast(`❌ Cannot place building: ${result.message || 'Invalid location'}`);
+                }
                 setSelectedBuildingType(null);
               }
             }}
@@ -291,21 +296,6 @@ function GameScreen() {
           />
         </aside>
       </main>
-
-      {/* Bottom Control Bar */}
-      <footer>
-        <GameControlBar
-          isRunning={gameState.isRunning}
-          isPaused={gameState.isPaused}
-          onStart={() => actions.startGame()}
-          onStop={() => actions.stopGame()}
-          onPause={() => actions.pauseGame()}
-          onResume={() => actions.resumeGame()}
-          onSave={(slotName) => actions.saveGame(slotName)}
-          onLoad={(slotName) => actions.loadGame(slotName)}
-          getSaveSlots={actions.getSaveSlots}
-        />
-      </footer>
 
       {/* Error Toast */}
       {error && (
@@ -333,6 +323,13 @@ function GameScreen() {
           onAdvance={handleAdvanceTier}
           onClose={() => setShowTierPanel(false)}
         />
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="toast-notification">
+          {toastMessage}
+        </div>
       )}
     </div>
   );

@@ -436,6 +436,62 @@ class ModuleOrchestrator {
   }
 
   /**
+   * Assign NPC to building
+   * @param {string} npcId - NPC ID
+   * @param {string} buildingId - Building ID
+   * @returns {Object} Result object with success status
+   */
+  assignNPC(npcId, buildingId) {
+    try {
+      const result = this.npcAssignment.assignNPCToBuilding(npcId, buildingId);
+
+      if (result.success) {
+        // Update game state immediately for UI reactivity
+        this._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Unassign NPC from building
+   * @param {string} npcId - NPC ID
+   * @returns {Object} Result object with success status
+   */
+  unassignNPC(npcId) {
+    try {
+      const wasUnassigned = this.npcAssignment.unassignNPC(npcId);
+
+      // Update game state immediately for UI reactivity
+      this._updateGameState();
+
+      return { success: wasUnassigned };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Auto-assign idle NPCs to buildings
+   * @returns {Object} Result object with success status and count
+   */
+  autoAssignNPCs() {
+    try {
+      const assignedCount = this.npcAssignment.autoAssign();
+
+      // Update game state immediately for UI reactivity
+      this._updateGameState();
+
+      return { success: true, assignedCount };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
    * Pause game
    */
   pause() {

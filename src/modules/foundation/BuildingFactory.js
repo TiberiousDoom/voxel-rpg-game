@@ -206,4 +206,3 @@ class BuildingFactory {
 }
 
 export default BuildingFactory;
-

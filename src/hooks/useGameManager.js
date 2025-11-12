@@ -505,6 +505,33 @@ export function useGameManager(config = {}) {
     ),
 
     /**
+     * Get tier progression status
+     */
+    getTierProgress: useCallback(() => {
+      try {
+        setError(null);
+        if (gameManagerRef.current) {
+          return gameManagerRef.current.getTierProgress();
+        }
+        return {
+          currentTier: 'SURVIVAL',
+          nextTier: null,
+          maxTierReached: false,
+          canAdvance: false
+        };
+      } catch (err) {
+        setError(err.message);
+        return {
+          currentTier: 'SURVIVAL',
+          nextTier: null,
+          maxTierReached: false,
+          canAdvance: false,
+          error: err.message
+        };
+      }
+    }, []),
+
+    /**
      * Advance to next tier
      */
     advanceTier: useCallback(

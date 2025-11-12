@@ -6,6 +6,7 @@ import NPCPanel from './NPCPanel';
 import BuildMenu from './BuildMenu';
 import GameControlBar from './GameControlBar';
 import BuildingInfoPanel from './BuildingInfoPanel';
+import TierProgressPanel from './TierProgressPanel';
 import './GameScreen.css';
 
 /**
@@ -18,6 +19,8 @@ function GameScreen() {
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
   const [savedSlots, setSavedSlots] = useState(new Set());
+  const [showTierPanel, setShowTierPanel] = useState(false);
+  const [tierProgress, setTierProgress] = useState(null);
 
   // Auto-start the game when ready (for testing)
   useEffect(() => {
@@ -162,6 +165,26 @@ function GameScreen() {
     }
   };
 
+  const handleOpenTierPanel = () => {
+    const progress = actions.getTierProgress();
+    setTierProgress(progress);
+    setShowTierPanel(true);
+  };
+
+  const handleAdvanceTier = (targetTier) => {
+    const result = actions.advanceTier(targetTier);
+    if (result.success) {
+      // eslint-disable-next-line no-console
+      console.log('[TierProgression] Advanced to tier:', targetTier);
+      // Refresh tier progress
+      const progress = actions.getTierProgress();
+      setTierProgress(progress);
+    } else {
+      // eslint-disable-next-line no-console
+      console.error('[TierProgression] Advance failed:', result.reason);
+    }
+  };
+
   return (
     <div className="game-screen">
       <header className="game-header">
@@ -279,7 +302,7 @@ function GameScreen() {
             selectedBuildingType={selectedBuildingType}
             onSelectBuilding={setSelectedBuildingType}
             onSpawnNPC={() => actions.spawnNPC('WORKER')}
-            onAdvanceTier={() => actions.advanceTier('SETTLEMENT')}
+            onAdvanceTier={handleOpenTierPanel}
           />
         </aside>
       </main>
@@ -315,6 +338,15 @@ function GameScreen() {
           resources={gameState.resources || {}}
           onRepair={handleRepair}
           onClose={() => setSelectedBuilding(null)}
+        />
+      )}
+
+      {/* Tier Progress Panel */}
+      {showTierPanel && tierProgress && (
+        <TierProgressPanel
+          tierProgress={tierProgress}
+          onAdvance={handleAdvanceTier}
+          onClose={() => setShowTierPanel(false)}
         />
       )}
     </div>

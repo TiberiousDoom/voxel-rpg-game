@@ -5,16 +5,29 @@ import { CRAFTING_RECIPES, ITEM_TYPES, canCraft, consumeMaterials } from '../dat
 
 /**
  * CraftingUI component - Main crafting interface
+ * Mobile-compatible with responsive layout
  */
 const CraftingUI = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [craftingAnimation, setCraftingAnimation] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileView, setMobileView] = useState('categories'); // 'categories' | 'recipes' | 'details'
 
   const inventory = useGameStore((state) => state.inventory);
   const player = useGameStore((state) => state.player);
   const craftItem = useGameStore((state) => state.craftItem);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -66,6 +79,29 @@ const CraftingUI = () => {
     }, 1000);
   };
 
+  // Mobile navigation helpers
+  const handleSelectCategory = (catId) => {
+    setSelectedCategory(catId);
+    if (isMobile) {
+      setMobileView('recipes');
+    }
+  };
+
+  const handleSelectRecipe = (recipe) => {
+    setSelectedRecipe(recipe);
+    if (isMobile) {
+      setMobileView('details');
+    }
+  };
+
+  const handleMobileBack = () => {
+    if (mobileView === 'details') {
+      setMobileView('recipes');
+    } else if (mobileView === 'recipes') {
+      setMobileView('categories');
+    }
+  };
+
   const getMaterialColor = (material, required, available) => {
     if (available >= required) return '#51cf66';
     return '#ff6b6b';
@@ -82,23 +118,24 @@ const CraftingUI = () => {
         background: 'rgba(0, 0, 0, 0.85)',
         zIndex: 2000,
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'stretch' : 'center',
         justifyContent: 'center',
-        padding: '20px',
+        padding: isMobile ? '0' : '20px',
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) setIsOpen(false);
+        if (!isMobile && e.target === e.currentTarget) setIsOpen(false);
       }}
     >
       <div
         style={{
           background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-          borderRadius: '20px',
-          maxWidth: '1200px',
+          borderRadius: isMobile ? '0' : '20px',
+          maxWidth: isMobile ? '100%' : '1200px',
           width: '100%',
-          maxHeight: '90vh',
+          maxHeight: isMobile ? '100%' : '90vh',
+          height: isMobile ? '100%' : 'auto',
           overflow: 'hidden',
-          border: '2px solid #4a5568',
+          border: isMobile ? 'none' : '2px solid #4a5568',
           boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
           display: 'flex',
           flexDirection: 'column',
@@ -107,7 +144,7 @@ const CraftingUI = () => {
         {/* Header */}
         <div
           style={{
-            padding: '20px 30px',
+            padding: isMobile ? '15px 20px' : '20px 30px',
             borderBottom: '2px solid #4a5568',
             display: 'flex',
             justifyContent: 'space-between',
@@ -115,9 +152,33 @@ const CraftingUI = () => {
             background: 'linear-gradient(90deg, #2d3748, #1a202c)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <Hammer size={32} color="#ffd700" />
-            <h2 style={{ margin: 0, color: '#ffd700', fontSize: '2rem' }}>Crafting Station</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '15px' }}>
+            {isMobile && mobileView !== 'categories' && (
+              <button
+                onClick={handleMobileBack}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontSize: '1.2rem',
+                  minWidth: '44px',
+                  minHeight: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  touchAction: 'manipulation',
+                }}
+              >
+                ←
+              </button>
+            )}
+            <Hammer size={isMobile ? 24 : 32} color="#ffd700" />
+            <h2 style={{ margin: 0, color: '#ffd700', fontSize: isMobile ? '1.3rem' : '2rem' }}>
+              {isMobile && mobileView === 'recipes' ? selectedCategory === 'all' ? 'All' : categories.find(c => c.id === selectedCategory)?.name : 'Crafting'}
+            </h2>
           </div>
           <button
             onClick={() => setIsOpen(false)}
@@ -128,36 +189,44 @@ const CraftingUI = () => {
               padding: '8px',
               borderRadius: '8px',
               transition: 'background 0.2s',
+              minWidth: '44px',
+              minHeight: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              touchAction: 'manipulation',
             }}
             onMouseEnter={(e) => (e.target.style.background = 'rgba(255, 255, 255, 0.1)')}
             onMouseLeave={(e) => (e.target.style.background = 'transparent')}
           >
-            <X size={24} color="#fff" />
+            <X size={isMobile ? 20 : 24} color="#fff" />
           </button>
         </div>
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Sidebar - Categories */}
+          {(!isMobile || mobileView === 'categories') && (
           <div
             style={{
-              width: '200px',
-              borderRight: '2px solid #4a5568',
-              padding: '20px',
+              width: isMobile ? '100%' : '200px',
+              borderRight: isMobile ? 'none' : '2px solid #4a5568',
+              padding: isMobile ? '15px' : '20px',
               background: '#1a202c',
               overflowY: 'auto',
             }}
           >
-            <h3 style={{ color: '#fff', marginTop: 0, marginBottom: '15px' }}>Categories</h3>
+            <h3 style={{ color: '#fff', marginTop: 0, marginBottom: '15px', fontSize: isMobile ? '1.1rem' : '1rem' }}>Categories</h3>
             {categories.map((cat) => {
               const Icon = cat.icon;
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => handleSelectCategory(cat.id)}
                   style={{
                     width: '100%',
-                    padding: '12px',
+                    padding: isMobile ? '16px' : '12px',
                     marginBottom: '8px',
+                    minHeight: isMobile ? '50px' : 'auto',
                     background: selectedCategory === cat.id ? '#4a5568' : 'transparent',
                     border: selectedCategory === cat.id ? '2px solid #ffd700' : '2px solid #4a5568',
                     borderRadius: '8px',
@@ -167,7 +236,8 @@ const CraftingUI = () => {
                     alignItems: 'center',
                     gap: '10px',
                     transition: 'all 0.2s',
-                    fontSize: '1rem',
+                    fontSize: isMobile ? '1.1rem' : '1rem',
+                    touchAction: 'manipulation',
                   }}
                   onMouseEnter={(e) => {
                     if (selectedCategory !== cat.id) {
@@ -180,24 +250,26 @@ const CraftingUI = () => {
                     }
                   }}
                 >
-                  <Icon size={20} />
+                  <Icon size={isMobile ? 24 : 20} />
                   {cat.name}
                 </button>
               );
             })}
           </div>
+          )}
 
           {/* Recipe List */}
+          {(!isMobile || mobileView === 'recipes') && (
           <div
             style={{
-              width: '350px',
-              borderRight: '2px solid #4a5568',
+              width: isMobile ? '100%' : '350px',
+              borderRight: isMobile ? 'none' : '2px solid #4a5568',
               overflowY: 'auto',
               background: '#2d3748',
             }}
           >
-            <div style={{ padding: '20px' }}>
-              <h3 style={{ color: '#fff', marginTop: 0, marginBottom: '15px' }}>
+            <div style={{ padding: isMobile ? '15px' : '20px' }}>
+              <h3 style={{ color: '#fff', marginTop: 0, marginBottom: '15px', fontSize: isMobile ? '1.1rem' : '1rem' }}>
                 Recipes ({filteredRecipes.length})
               </h3>
               {filteredRecipes.map((recipe) => {
@@ -205,16 +277,18 @@ const CraftingUI = () => {
                 return (
                   <div
                     key={recipe.id}
-                    onClick={() => setSelectedRecipe(recipe)}
+                    onClick={() => handleSelectRecipe(recipe)}
                     style={{
-                      padding: '15px',
+                      padding: isMobile ? '16px' : '15px',
                       marginBottom: '10px',
+                      minHeight: isMobile ? '60px' : 'auto',
                       background: selectedRecipe?.id === recipe.id ? '#4a5568' : '#1a202c',
                       border: `2px solid ${selectedRecipe?.id === recipe.id ? recipe.rarity.color : '#4a5568'}`,
                       borderRadius: '10px',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       opacity: craftable ? 1 : 0.6,
+                      touchAction: 'manipulation',
                     }}
                     onMouseEnter={(e) => {
                       if (selectedRecipe?.id !== recipe.id) {

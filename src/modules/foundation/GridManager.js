@@ -163,17 +163,6 @@ class GridManager {
     // Generate ID if not provided
     const buildingId = building.id || this.generateBuildingId();
 
-    // Initialize health properties if not set
-    if (!building.health || !building.maxHealth) {
-      building.health = building.maxHealth || 100;
-      building.maxHealth = building.maxHealth || 100;
-    }
-
-    // Initialize state if not set
-    if (!building.state) {
-      building.state = 'BLUEPRINT';
-    }
-
     // Mark cells as occupied
     for (let bx = x; bx < x + width; bx++) {
       for (let by = y; by < y + height; by++) {
@@ -192,8 +181,6 @@ class GridManager {
     // Update statistics
     this.stats.totalBuildings = this.buildings.size;
     this.stats.totalOccupiedCells = this.occupiedCells.size;
-
-    console.log(`[BuildingHealth] Building ${buildingId} placed with health ${building.health}/${building.maxHealth}`);
 
     return { success: true, buildingId };
   }
@@ -333,124 +320,97 @@ class GridManager {
   }
 
   /**
-   * Damage a building by a specified amount
-   * @param {string} buildingId - Building ID
-   * @param {number} damage - Amount of damage to apply
-   * @returns {object} {success: boolean, newHealth?: number, destroyed?: boolean, error?: string}
+   * Damage a building (reduce health)
+   * @param {string} buildingId - Building to damage
+   * @param {number} amount - Damage amount
+   * @returns {object} {success: boolean, building?: object, error?: string}
    */
-  damageBuilding(buildingId, damage) {
+  damageBuilding(buildingId, amount) {
     const building = this.buildings.get(buildingId);
 
     if (!building) {
-      console.error(`[BuildingHealth] Building ${buildingId} not found`);
-      return { success: false, error: 'BUILDING_NOT_FOUND' };
+      return { success: false, error: `Building ${buildingId} not found` };
     }
 
-    // Validate damage amount
-    if (typeof damage !== 'number' || damage < 0) {
-      console.error(`[BuildingHealth] Invalid damage amount: ${damage}`);
-      return { success: false, error: 'INVALID_DAMAGE_AMOUNT' };
+    // Initialize health if not present
+    if (building.health === undefined) {
+      building.health = building.maxHealth || 100;
+      building.maxHealth = building.maxHealth || 100;
     }
 
     // Apply damage
-    const oldHealth = building.health;
-    building.health = Math.max(0, building.health - damage);
+    building.health = Math.max(0, building.health - amount);
 
-    // Update building state based on health
-    let destroyed = false;
+    // Update state based on health
     if (building.health === 0) {
       building.state = 'DESTROYED';
-      destroyed = true;
-      console.warn(`[BuildingHealth] Building ${buildingId} destroyed! (${oldHealth} → 0)`);
-    } else if (building.health < building.maxHealth * 0.5 && building.state === 'COMPLETE') {
+    } else if (building.health < building.maxHealth * 0.5) {
       building.state = 'DAMAGED';
-      console.log(`[BuildingHealth] Building ${buildingId} damaged! (${oldHealth} → ${building.health})`);
+    } else if (building.state === 'DAMAGED' && building.health >= building.maxHealth * 0.5) {
+      building.state = 'COMPLETE';
     }
 
-    return {
-      success: true,
-      newHealth: building.health,
-      destroyed,
-      state: building.state
-    };
+    return { success: true, building };
   }
 
   /**
-   * Repair a building using resources
-   * @param {string} buildingId - Building ID
-   * @param {number} repairAmount - Amount of health to restore
-   * @param {object} resources - Available resources {wood, stone, gold, etc.}
-   * @param {object} repairCost - Cost per health point {wood: 0.5, stone: 0.2, etc.}
-   * @returns {object} {success: boolean, newHealth?: number, resourcesUsed?: object, error?: string}
+   * Repair a building (restore health)
+   * @param {string} buildingId - Building to repair
+   * @param {number} amount - Repair amount
+   * @returns {object} {success: boolean, building?: object, error?: string}
    */
-  repairBuilding(buildingId, repairAmount, resources, repairCost) {
+  repairBuilding(buildingId, amount) {
     const building = this.buildings.get(buildingId);
 
     if (!building) {
-      console.error(`[BuildingHealth] Building ${buildingId} not found`);
-      return { success: false, error: 'BUILDING_NOT_FOUND' };
+      return { success: false, error: `Building ${buildingId} not found` };
     }
 
-    // Cannot repair destroyed buildings
+    // Initialize health if not present
+    if (building.health === undefined) {
+      building.health = building.maxHealth || 100;
+      building.maxHealth = building.maxHealth || 100;
+    }
+
+    // Can't repair destroyed buildings (must rebuild)
     if (building.state === 'DESTROYED') {
-      console.warn(`[BuildingHealth] Cannot repair destroyed building ${buildingId}`);
-      return { success: false, error: 'BUILDING_DESTROYED' };
-    }
-
-    // Calculate how much health can be repaired
-    const maxRepair = building.maxHealth - building.health;
-    const actualRepair = Math.min(repairAmount, maxRepair);
-
-    if (actualRepair <= 0) {
-      console.log(`[BuildingHealth] Building ${buildingId} already at full health`);
-      return { success: false, error: 'ALREADY_FULL_HEALTH' };
-    }
-
-    // Calculate total resource cost
-    const resourcesNeeded = {};
-    const resourcesUsed = {};
-
-    for (const [resource, costPerPoint] of Object.entries(repairCost)) {
-      resourcesNeeded[resource] = Math.ceil(actualRepair * costPerPoint);
-    }
-
-    // Validate resources are available
-    for (const [resource, needed] of Object.entries(resourcesNeeded)) {
-      const available = resources[resource] || 0;
-      if (available < needed) {
-        console.warn(`[BuildingHealth] Insufficient ${resource} for repair (need ${needed}, have ${available})`);
-        return {
-          success: false,
-          error: 'INSUFFICIENT_RESOURCES',
-          resourcesNeeded,
-          resourcesAvailable: resources
-        };
-      }
+      return { success: false, error: 'Cannot repair destroyed building' };
     }
 
     // Apply repair
-    const oldHealth = building.health;
-    building.health = Math.min(building.maxHealth, building.health + actualRepair);
+    building.health = Math.min(building.maxHealth, building.health + amount);
 
-    // Update building state
+    // Update state if fully repaired
     if (building.health === building.maxHealth) {
       building.state = 'COMPLETE';
     }
 
-    // Track resources used
-    for (const [resource, needed] of Object.entries(resourcesNeeded)) {
-      resourcesUsed[resource] = needed;
+    return { success: true, building };
+  }
+
+  /**
+   * Get building health status
+   * @param {string} buildingId - Building to check
+   * @returns {object} {health: number, maxHealth: number, percentage: number, state: string}
+   */
+  getBuildingHealth(buildingId) {
+    const building = this.buildings.get(buildingId);
+
+    if (!building) {
+      return null;
     }
 
-    console.log(`[BuildingHealth] Building ${buildingId} repaired! (${oldHealth} → ${building.health})`);
-    console.log(`[BuildingHealth] Resources used:`, resourcesUsed);
+    // Initialize health if not present
+    if (building.health === undefined) {
+      building.health = building.maxHealth || 100;
+      building.maxHealth = building.maxHealth || 100;
+    }
 
     return {
-      success: true,
-      newHealth: building.health,
-      healthRestored: actualRepair,
-      resourcesUsed,
-      state: building.state
+      health: building.health,
+      maxHealth: building.maxHealth,
+      percentage: (building.health / building.maxHealth) * 100,
+      state: building.state || 'COMPLETE'
     };
   }
 }

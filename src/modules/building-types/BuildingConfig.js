@@ -701,55 +701,46 @@ class BuildingConfig {
   }
 
   /**
-   * Get repair cost per health point for a building type
-   * Repair costs are calculated as a percentage of the initial building cost
+   * Get repair cost for a building
+   * Repair cost is 50% of the original construction cost
    * @param {string} type - Building type
-   * @returns {Object} Repair cost per health point {wood, food, stone}
+   * @returns {Object} Repair cost {wood, food, stone, gold}
    */
   getRepairCost(type) {
-    const config = this.getConfig(type);
-    const repairCostPerPoint = {};
+    const constructionCost = this.getCost(type);
+    const repairCost = {};
 
-    // Repair cost is 50% of original cost, divided by max health
-    // This makes repairing more cost-effective than rebuilding
-    for (const [resource, amount] of Object.entries(config.cost)) {
-      if (amount > 0) {
-        repairCostPerPoint[resource] = (amount * 0.5) / config.maxHealth;
-      }
+    // Repair costs 50% of construction cost
+    for (const [resource, amount] of Object.entries(constructionCost)) {
+      repairCost[resource] = Math.ceil(amount * 0.5);
     }
 
-    return repairCostPerPoint;
+    return repairCost;
   }
 
   /**
-   * Get total repair cost to fully repair a building
+   * Get repair amount (health restored per repair action)
+   * Default is 25 HP per repair
    * @param {string} type - Building type
-   * @param {number} currentHealth - Current health of building
-   * @returns {Object} Total repair cost {wood, food, stone}
+   * @returns {number} Health restored
    */
-  getTotalRepairCost(type, currentHealth) {
-    const config = this.getConfig(type);
-    const repairCostPerPoint = this.getRepairCost(type);
-    const healthDeficit = config.maxHealth - currentHealth;
-
-    const totalCost = {};
-    for (const [resource, costPerPoint] of Object.entries(repairCostPerPoint)) {
-      totalCost[resource] = Math.ceil(healthDeficit * costPerPoint);
-    }
-
-    return totalCost;
+  getRepairAmount(type) {
+    // Default repair amount is 25 HP
+    // Could be customized per building type in future
+    return 25;
   }
 
   /**
-   * Get health information for a building type
+   * Get building health and durability info
    * @param {string} type - Building type
-   * @returns {Object} Health info {health, maxHealth}
+   * @returns {Object} {health, maxHealth, decayRate}
    */
-  getHealthInfo(type) {
+  getHealthConfig(type) {
     const config = this.getConfig(type);
     return {
-      health: config.health,
-      maxHealth: config.maxHealth
+      health: config.health || 100,
+      maxHealth: config.maxHealth || 100,
+      decayRate: config.decayRate || 0
     };
   }
 }

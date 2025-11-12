@@ -461,6 +461,9 @@ class ModuleOrchestrator {
       const result = this.npcAssignment.assignNPCToBuilding(npcId, buildingId);
 
       if (result.success) {
+        // Update ConsumptionSystem to mark NPC as working
+        this.consumption.setNPCWorking(npcId, true);
+
         // Update game state immediately for UI reactivity
         this._updateGameState();
       }
@@ -479,6 +482,9 @@ class ModuleOrchestrator {
   unassignNPC(npcId) {
     try {
       const wasUnassigned = this.npcAssignment.unassignNPC(npcId);
+
+      // Update ConsumptionSystem to mark NPC as idle
+      this.consumption.setNPCWorking(npcId, false);
 
       // Update game state immediately for UI reactivity
       this._updateGameState();

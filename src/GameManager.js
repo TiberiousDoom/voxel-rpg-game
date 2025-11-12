@@ -7,6 +7,11 @@ import TierProgression from './modules/building-types/TierProgression';
 import BuildingConfig from './modules/building-types/BuildingConfig';
 import { TerritoryManager } from './modules/territory-town/TerritoryManager';
 import GridManager from './modules/foundation/GridManager';
+import SpatialPartitioning from './modules/foundation/SpatialPartitioning';
+import StorageManager from './modules/resource-economy/StorageManager';
+import ConsumptionSystem from './modules/resource-economy/ConsumptionSystem';
+import TownManager from './modules/territory-town/TownManager';
+import { NPCManager } from './modules/npc-system/NPCManager';
 
 /**
  * GameManager - Main game controller
@@ -111,32 +116,50 @@ export default class GameManager extends EventEmitter {
    * Create all game modules
    */
   _createModules() {
-    // Create real GridManager instead of mock
+    // Create real GridManager
     const grid = new GridManager({
       gridSize: 100,
       gridHeight: 50
     });
-    const npcManager = this._createMockNPCManager();
 
-    // Create BuildingConfig once and share it across modules
+    // Create BuildingConfig once and share it across all modules
     const buildingConfig = new BuildingConfig();
 
     // Create TerritoryManager and initialize with starting territory
     const territoryManager = new TerritoryManager(buildingConfig);
     territoryManager.createTerritory({ x: 50, y: 0, z: 50 });
 
+    // Create TownManager
+    const townManager = new TownManager(buildingConfig);
+
+    // Create NPCManager (requires TownManager)
+    const npcManager = new NPCManager(townManager);
+
+    // Create real SpatialPartitioning
+    const spatial = new SpatialPartitioning(100, 50, 10);
+
+    // Create real StorageManager with initial capacity
+    const storage = new StorageManager(1000);
+    // Set initial resources
+    storage.addResource('food', 100);
+    storage.addResource('wood', 50);
+    storage.addResource('stone', 50);
+
+    // Create real ConsumptionSystem
+    const consumption = new ConsumptionSystem();
+
     return {
       grid: grid,
-      spatial: this._createMockSpatialPartitioning(),
+      spatial: spatial,
       buildingConfig: buildingConfig,
       tierProgression: new TierProgression(buildingConfig),
       buildingEffect: this._createMockBuildingEffect(),
       productionTick: this._createMockProductionTick(),
-      storage: this._createMockStorageManager(),
-      consumption: this._createMockConsumptionSystem(),
+      storage: storage,
+      consumption: consumption,
       morale: this._createMockMoraleCalculator(),
       territoryManager: territoryManager,
-      townManager: this._createMockTownManager(),
+      townManager: townManager,
       npcManager: npcManager,
       npcAssignment: new NPCAssignment(npcManager, grid)
     };

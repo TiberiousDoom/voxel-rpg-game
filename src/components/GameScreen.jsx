@@ -89,15 +89,33 @@ function GameScreen() {
           <span className="tier-badge">
             Tier: {gameState.currentTier || 'SURVIVAL'}
           </span>
-          <span className="tick-counter">
-            Tick: {gameState.currentTick || 0}
-          </span>
           <span className={`status-indicator ${
-            gameState.isRunning ? 'running' : 
+            gameState.isRunning ? 'running' :
             gameState.isPaused ? 'paused' : 'stopped'
           }`}>
-            {gameState.isRunning ? '● Running' : 
+            {gameState.isRunning ? '● Running' :
              gameState.isPaused ? '⏸ Paused' : '⬛ Stopped'}
+          </span>
+          {gameState.isRunning && !gameState.isPaused && (
+            <button
+              onClick={() => actions.pauseGame()}
+              className="header-pause-btn"
+              title="Pause game"
+            >
+              ⏸ Pause
+            </button>
+          )}
+          {gameState.isPaused && (
+            <button
+              onClick={() => actions.resumeGame()}
+              className="header-pause-btn resume"
+              title="Resume game"
+            >
+              ▶️ Resume
+            </button>
+          )}
+          <span className="tick-counter">
+            Tick: {gameState.currentTick || 0}
           </span>
         </div>
       </header>

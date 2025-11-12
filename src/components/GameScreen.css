@@ -125,6 +125,43 @@
   border-color: rgba(244, 67, 54, 0.5);
 }
 
+/* Header Pause Button */
+.header-pause-btn {
+  background: rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.5);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.header-pause-btn:hover {
+  background: rgba(255, 193, 7, 0.5);
+  border-color: rgba(255, 193, 7, 0.7);
+  transform: translateY(-1px);
+}
+
+.header-pause-btn:active {
+  transform: translateY(0);
+}
+
+.header-pause-btn.resume {
+  background: rgba(76, 175, 80, 0.3);
+  color: #4caf50;
+  border-color: rgba(76, 175, 80, 0.5);
+}
+
+.header-pause-btn.resume:hover {
+  background: rgba(76, 175, 80, 0.5);
+  border-color: rgba(76, 175, 80, 0.7);
+}
+
 /* Main Layout */
 .game-layout {
   display: flex;

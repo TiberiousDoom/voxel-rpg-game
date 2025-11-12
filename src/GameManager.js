@@ -322,6 +322,12 @@ export default class GameManager extends EventEmitter {
   pauseGame() {
     if (this.gameState === GameManager.GAME_STATE.RUNNING) {
       this.gameState = GameManager.GAME_STATE.PAUSED;
+
+      // Pause the orchestrator
+      if (this.orchestrator) {
+        this.orchestrator.pause();
+      }
+
       this._emit('game:paused', {});
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game paused');
@@ -336,6 +342,12 @@ export default class GameManager extends EventEmitter {
   resumeGame() {
     if (this.gameState === GameManager.GAME_STATE.PAUSED) {
       this.gameState = GameManager.GAME_STATE.RUNNING;
+
+      // Resume the orchestrator
+      if (this.orchestrator) {
+        this.orchestrator.resume();
+      }
+
       this._emit('game:resumed', {});
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game resumed');

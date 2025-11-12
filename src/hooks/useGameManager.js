@@ -547,7 +547,70 @@ export function useGameManager(config = {}) {
         setError(err.message);
         return null;
       }
-    }, [])
+    }, []),
+
+    /**
+     * Assign NPC to building
+     */
+    assignNPC: useCallback(
+      (npcId, buildingId) => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.assignNPC(npcId, buildingId);
+            if (!result.success) {
+              setError(result.message || 'Failed to assign NPC');
+            }
+            return result;
+          }
+          return { success: false, message: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, message: err.message };
+        }
+      },
+      []
+    ),
+
+    /**
+     * Unassign NPC from building
+     */
+    unassignNPC: useCallback(
+      (npcId) => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.unassignNPC(npcId);
+            return result;
+          }
+          return { success: false, message: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, message: err.message };
+        }
+      },
+      []
+    ),
+
+    /**
+     * Auto-assign idle NPCs to buildings
+     */
+    autoAssignNPCs: useCallback(
+      () => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.autoAssignNPCs();
+            return result;
+          }
+          return { success: false, message: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, message: err.message };
+        }
+      },
+      []
+    )
   };
 
   return {

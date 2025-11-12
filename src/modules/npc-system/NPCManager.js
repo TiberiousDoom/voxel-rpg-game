@@ -528,6 +528,35 @@ class NPCManager {
       .filter(npc => npc.alive)
       .map(npc => npc.getState());
   }
+
+  /**
+   * Move NPC from idle to working set
+   */
+  moveToWorking(npcId) {
+    this.idleNPCs.delete(npcId);
+    this.workingNPCs.add(npcId);
+    console.log(`[NPCManager] NPC ${npcId} now working`);
+  }
+
+  /**
+   * Move NPC to idle set
+   */
+  moveToIdle(npcId) {
+    this.workingNPCs.delete(npcId);
+    this.restingNPCs.delete(npcId);
+    this.idleNPCs.add(npcId);
+    console.log(`[NPCManager] NPC ${npcId} now idle`);
+  }
+
+  /**
+   * Move NPC to resting set
+   */
+  moveToResting(npcId) {
+    this.idleNPCs.delete(npcId);
+    this.workingNPCs.delete(npcId);
+    this.restingNPCs.add(npcId);
+    console.log(`[NPCManager] NPC ${npcId} now resting`);
+  }
 }
 
 export { NPCManager, NPC };

@@ -24,6 +24,19 @@ function GameScreen() {
     }
   }, [isReady, gameState.isRunning, gameState.isPaused, actions]);
 
+  // NPC Assignment handlers
+  const handleAssignNPC = (npcId, buildingId) => {
+    actions.assignNPC(npcId, buildingId);
+  };
+
+  const handleUnassignNPC = (npcId) => {
+    actions.unassignNPC(npcId);
+  };
+
+  const handleAutoAssign = () => {
+    actions.autoAssignNPCs();
+  };
+
   // Show loading state
   if (isInitializing) {
     return (
@@ -93,10 +106,12 @@ function GameScreen() {
         {/* Left Sidebar - Resources & NPCs */}
         <aside className="game-sidebar left-sidebar">
           <ResourcePanel resources={gameState.resources || {}} />
-          <NPCPanel 
-            population={gameState.population || {}}
-            morale={gameState.morale || 0}
-            moraleState={gameState.moraleState || 'NEUTRAL'}
+          <NPCPanel
+            npcs={gameState.npcs || []}
+            buildings={gameState.buildings || []}
+            onAssignNPC={handleAssignNPC}
+            onUnassignNPC={handleUnassignNPC}
+            onAutoAssign={handleAutoAssign}
           />
         </aside>
 

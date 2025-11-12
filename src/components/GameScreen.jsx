@@ -187,7 +187,7 @@ function GameScreen() {
             buildings={gameState.buildings || []}
             npcs={gameState.npcs || []}
             selectedBuildingType={selectedBuildingType}
-            onBuildingPlace={(position) => {
+            onPlaceBuilding={(position) => {
               if (selectedBuildingType) {
                 actions.placeBuilding(selectedBuildingType, position);
                 setSelectedBuildingType(null);
@@ -201,7 +201,7 @@ function GameScreen() {
         <aside className="game-sidebar right-sidebar">
           <BuildMenu
             selectedBuildingType={selectedBuildingType}
-            onBuildingSelect={setSelectedBuildingType}
+            onSelectBuilding={setSelectedBuildingType}
             onSpawnNPC={() => actions.spawnNPC('WORKER')}
             onAdvanceTier={() => actions.advanceTier('SETTLEMENT')}
           />

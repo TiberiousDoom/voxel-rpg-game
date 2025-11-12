@@ -24,12 +24,83 @@ const BUILDING_COLORS = {
   HOUSE: '#D2B48C',
   WAREHOUSE: '#A9A9A9',
   TOWN_CENTER: '#FFD700',
-  WATCHTOWER: '#8B4513'
+  WATCHTOWER: '#8B4513',
+  CAMPFIRE: '#FF8C00'
 };
 
-const NPC_COLOR = '#FF6B6B';
+// NPC color based on status
+const NPC_STATUS_COLORS = {
+  WORKING: '#4CAF50',    // Green
+  IDLE: '#FFC107',       // Yellow/Amber
+  LOW_HEALTH: '#F44336', // Red
+  DEFAULT: '#FF6B6B'     // Pink
+};
+
+// Building state colors
+const STATE_COLORS = {
+  BLUEPRINT: 'rgba(150, 150, 150, 0.5)',
+  UNDER_CONSTRUCTION: 'rgba(33, 150, 243, 0.7)',
+  COMPLETE: null, // Use building-type color
+  COMPLETED: null, // Use building-type color
+  DAMAGED: null, // Use darkened building-type color
+  DESTROYED: '#000000'
+};
+
 const GRID_COLOR = '#E0E0E0';
 const SELECTED_COLOR = '#FF4444';
+
+/**
+ * Helper: Convert hex color to RGBA
+ */
+const hexToRGBA = (hex, alpha) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+/**
+ * Helper: Darken a hex color
+ */
+const darkenColor = (hex, factor = 0.6) => {
+  const r = Math.floor(parseInt(hex.slice(1, 3), 16) * factor);
+  const g = Math.floor(parseInt(hex.slice(3, 5), 16) * factor);
+  const b = Math.floor(parseInt(hex.slice(5, 7), 16) * factor);
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
+/**
+ * Helper: Get NPC color based on status
+ */
+const getNPCColor = (npc) => {
+  const health = npc.health || 100;
+  const isWorking = npc.status === 'WORKING' || npc.isWorking;
+
+  if (health < 30) return NPC_STATUS_COLORS.LOW_HEALTH;
+  if (isWorking) return NPC_STATUS_COLORS.WORKING;
+  return NPC_STATUS_COLORS.IDLE;
+};
+
+/**
+ * Helper: Get building color based on state
+ */
+const getBuildingColor = (building) => {
+  const state = building.state || 'COMPLETE';
+  const baseColor = BUILDING_COLORS[building.type] || '#CCCCCC';
+
+  // Special states override base color
+  if (STATE_COLORS[state]) {
+    return STATE_COLORS[state];
+  }
+
+  // Damaged buildings use darkened color
+  if (state === 'DAMAGED') {
+    return darkenColor(baseColor);
+  }
+
+  // Default to base color
+  return baseColor;
+};
 
 /**
  * GameViewport Component
@@ -97,8 +168,10 @@ function GameViewport({
     buildings.forEach((building) => {
       if (!building || !building.position) return;
       const canvas = worldToCanvas(building.position.x, building.position.z);
-      const color = BUILDING_COLORS[building.type] || '#CCCCCC';
+      const color = getBuildingColor(building);
+      const state = building.state || 'COMPLETE';
 
+      // Draw building rectangle
       ctx.fillStyle = color;
       ctx.fillRect(
         canvas.x + 2,
@@ -108,18 +181,76 @@ function GameViewport({
       );
 
       // Draw border
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = state === 'BLUEPRINT' ? '#666666' : '#000000';
+      ctx.lineWidth = state === 'BLUEPRINT' ? 1 : 2;
+      if (state === 'BLUEPRINT') {
+        ctx.setLineDash([5, 3]);
+      }
       ctx.strokeRect(
         canvas.x + 2,
         canvas.y + 2,
         TILE_SIZE - 4,
         TILE_SIZE - 4
       );
+      ctx.setLineDash([]); // Reset dash
 
-      // Draw building type label
-      ctx.fillStyle = '#000000';
-      ctx.font = '10px Arial';
+      // Draw health bar for damaged buildings
+      const health = building.health || 100;
+      const maxHealth = building.maxHealth || 100;
+      if (health < maxHealth && state !== 'DESTROYED') {
+        const healthPercent = health / maxHealth;
+        const barWidth = TILE_SIZE - 8;
+        const barHeight = 4;
+        const barX = canvas.x + 4;
+        const barY = canvas.y + TILE_SIZE - 8;
+
+        // Health bar background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+
+        // Health bar fill
+        const healthColor = healthPercent > 0.5 ? '#4CAF50' : healthPercent > 0.25 ? '#FF9800' : '#F44336';
+        ctx.fillStyle = healthColor;
+        ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+      }
+
+      // Draw build progress bar for under construction
+      if (state === 'UNDER_CONSTRUCTION') {
+        const progress = building.constructionProgress || 0;
+        const constructionTime = building.constructionTime || 100;
+        const progressPercent = Math.min(progress / constructionTime, 1);
+        const barWidth = TILE_SIZE - 8;
+        const barHeight = 4;
+        const barX = canvas.x + 4;
+        const barY = canvas.y + 4;
+
+        // Progress bar background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+
+        // Progress bar fill
+        ctx.fillStyle = '#2196F3';
+        ctx.fillRect(barX, barY, barWidth * progressPercent, barHeight);
+      }
+
+      // Draw worker count indicator
+      const workerCount = building.workerCount || 0;
+      if (workerCount > 0 && state === 'COMPLETE') {
+        ctx.fillStyle = '#4CAF50';
+        ctx.beginPath();
+        ctx.arc(canvas.x + TILE_SIZE - 8, canvas.y + 8, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 9px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(workerCount, canvas.x + TILE_SIZE - 8, canvas.y + 8);
+      }
+
+      // Draw building type label (center)
+      ctx.fillStyle = state === 'DESTROYED' ? '#FFFFFF' : '#000000';
+      ctx.font = 'bold 12px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(
@@ -133,17 +264,52 @@ function GameViewport({
     npcs.forEach((npc) => {
       if (!npc || !npc.position) return;
       const canvas = worldToCanvas(npc.position.x, npc.position.z);
+      const npcColor = getNPCColor(npc);
+      const health = npc.health || 100;
+      const maxHealth = npc.maxHealth || 100;
 
       // Draw NPC as circle
-      ctx.fillStyle = NPC_COLOR;
+      ctx.fillStyle = npcColor;
       ctx.beginPath();
-      ctx.arc(canvas.x + TILE_SIZE / 2, canvas.y + TILE_SIZE / 2, 5, 0, Math.PI * 2);
+      ctx.arc(canvas.x + TILE_SIZE / 2, canvas.y + TILE_SIZE / 2, 8, 0, Math.PI * 2);
       ctx.fill();
 
       // Draw circle outline
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(canvas.x + TILE_SIZE / 2, canvas.y + TILE_SIZE / 2, 8, 0, Math.PI * 2);
       ctx.stroke();
+
+      // Draw role indicator (first letter)
+      const role = npc.role || 'W';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 10px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(
+        role[0],
+        canvas.x + TILE_SIZE / 2,
+        canvas.y + TILE_SIZE / 2
+      );
+
+      // Draw health bar if damaged
+      if (health < maxHealth) {
+        const healthPercent = health / maxHealth;
+        const barWidth = 16;
+        const barHeight = 3;
+        const barX = canvas.x + TILE_SIZE / 2 - barWidth / 2;
+        const barY = canvas.y + TILE_SIZE / 2 + 12;
+
+        // Health bar background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+
+        // Health bar fill
+        const healthColor = healthPercent > 0.5 ? '#4CAF50' : healthPercent > 0.25 ? '#FF9800' : '#F44336';
+        ctx.fillStyle = healthColor;
+        ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+      }
     });
 
     // Draw hover preview

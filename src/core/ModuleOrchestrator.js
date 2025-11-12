@@ -412,23 +412,23 @@ class ModuleOrchestrator {
    */
   spawnNPC(role, position) {
     try {
-      const npc = this.npcManager.spawnNPC(role, position);
+      const result = this.npcManager.spawnNPC(role, position);
 
-      if (!npc) {
-        return { success: false, message: 'Failed to spawn NPC' };
+      if (!result.success) {
+        return { success: false, message: result.error || 'Failed to spawn NPC' };
       }
 
       // townManager.spawnNPC is already called by npcManager.spawnNPC
       // so we don't need to call it again here
-      this.consumption.registerNPC(npc.id, false);
+      this.consumption.registerNPC(result.npcId, false);
 
       // Update game state immediately for UI reactivity
       this._updateGameState();
 
       return {
         success: true,
-        npcId: npc.id,
-        npc: npc
+        npcId: result.npcId,
+        npc: result.npc
       };
     } catch (err) {
       return { success: false, message: err.message };

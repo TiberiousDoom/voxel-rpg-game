@@ -148,23 +148,6 @@ function GameScreen() {
     }
   };
 
-  // Handle damage
-  const handleDamage = (buildingId, damage) => {
-    const result = actions.damageBuilding(buildingId, damage);
-    if (result.success) {
-      // eslint-disable-next-line no-console
-      console.log('[BuildingHealth] Damage applied:', result);
-      // Update selected building with new health
-      const updatedBuilding = gameState.buildings.find(b => b.id === buildingId);
-      if (updatedBuilding) {
-        setSelectedBuilding(updatedBuilding);
-      }
-    } else {
-      // eslint-disable-next-line no-console
-      console.error('[BuildingHealth] Damage failed:', result.error);
-    }
-  };
-
   const handleOpenTierPanel = () => {
     const progress = actions.getTierProgress();
     setTierProgress(progress);

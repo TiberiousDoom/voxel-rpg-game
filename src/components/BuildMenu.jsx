@@ -15,6 +15,21 @@
 import React, { useMemo } from 'react';
 import './BuildMenu.css';
 
+// Building icons map (constant)
+const BUILDING_ICONS = {
+  CAMPFIRE: '🔥',
+  FARM: '🌾',
+  HOUSE: '🏠',
+  WAREHOUSE: '🏭',
+  TOWN_CENTER: '🏛️',
+  MARKET: '🏪',
+  WATCHTOWER: '🗼',
+  CASTLE: '🏰'
+};
+
+// Tier hierarchy for availability checking (constant)
+const TIER_HIERARCHY = ['SURVIVAL', 'PERMANENT', 'TOWN', 'CASTLE'];
+
 /**
  * Build menu component
  */
@@ -26,20 +41,6 @@ function BuildMenu({
   currentTier = 'SURVIVAL',
   buildingConfig = null
 }) {
-  // Building icons map
-  const buildingIcons = {
-    CAMPFIRE: '🔥',
-    FARM: '🌾',
-    HOUSE: '🏠',
-    WAREHOUSE: '🏭',
-    TOWN_CENTER: '🏛️',
-    MARKET: '🏪',
-    WATCHTOWER: '🗼',
-    CASTLE: '🏰'
-  };
-
-  // Tier hierarchy for availability checking
-  const tierHierarchy = ['SURVIVAL', 'PERMANENT', 'TOWN', 'CASTLE'];
 
   // Get available buildings based on current tier
   const availableBuildings = useMemo(() => {
@@ -51,7 +52,7 @@ function BuildMenu({
       ];
     }
 
-    const currentTierIndex = tierHierarchy.indexOf(currentTier);
+    const currentTierIndex = TIER_HIERARCHY.indexOf(currentTier);
     const buildings = [];
 
     // Get all building types from config
@@ -64,7 +65,7 @@ function BuildMenu({
       try {
         const config = buildingConfig.getConfig(type);
         if (config) {
-          const buildingTierIndex = tierHierarchy.indexOf(config.tier);
+          const buildingTierIndex = TIER_HIERARCHY.indexOf(config.tier);
           const unlocked = buildingTierIndex <= currentTierIndex;
 
           buildings.push({
@@ -72,7 +73,7 @@ function BuildMenu({
             name: config.displayName || type,
             description: config.description || '',
             tier: config.tier,
-            icon: buildingIcons[type] || '🏗️',
+            icon: BUILDING_ICONS[type] || '🏗️',
             unlocked,
             cost: config.cost || {}
           });

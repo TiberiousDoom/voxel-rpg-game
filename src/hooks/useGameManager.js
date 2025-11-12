@@ -64,6 +64,7 @@ export function useGameManager(config = {}) {
   const [isInitializing, setIsInitializing] = useState(true);
 
   // Memoize configuration with defaults to prevent recreation on every render
+  // We spread the entire config object, so we need to include it in dependencies
   const options = useMemo(() => ({
     savePath: config.savePath || 'voxel-rpg-saves',
     enableAutoSave: config.enableAutoSave !== false,
@@ -72,14 +73,7 @@ export function useGameManager(config = {}) {
     enableErrorRecovery: config.enableErrorRecovery !== false,
     debounceInterval: config.debounceInterval || 500, // 500ms update throttle
     ...config
-  }), [
-    config.savePath,
-    config.enableAutoSave,
-    config.autoSaveInterval,
-    config.enablePerformanceMonitoring,
-    config.enableErrorRecovery,
-    config.debounceInterval
-  ]);
+  }), [config]);
 
   /**
    * Queue a state update and debounce the actual React setState

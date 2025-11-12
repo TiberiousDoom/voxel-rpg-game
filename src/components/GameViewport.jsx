@@ -50,16 +50,6 @@ const GRID_COLOR = '#E0E0E0';
 const SELECTED_COLOR = '#FF4444';
 
 /**
- * Helper: Convert hex color to RGBA
- */
-const hexToRGBA = (hex, alpha) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-/**
  * Helper: Darken a hex color
  */
 const darkenColor = (hex, factor = 0.6) => {

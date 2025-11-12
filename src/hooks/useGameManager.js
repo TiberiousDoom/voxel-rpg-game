@@ -505,6 +505,33 @@ export function useGameManager(config = {}) {
     ),
 
     /**
+     * Get tier progression status
+     */
+    getTierProgress: useCallback(() => {
+      try {
+        setError(null);
+        if (gameManagerRef.current) {
+          return gameManagerRef.current.getTierProgress();
+        }
+        return {
+          currentTier: 'SURVIVAL',
+          nextTier: null,
+          maxTierReached: false,
+          canAdvance: false
+        };
+      } catch (err) {
+        setError(err.message);
+        return {
+          currentTier: 'SURVIVAL',
+          nextTier: null,
+          maxTierReached: false,
+          canAdvance: false,
+          error: err.message
+        };
+      }
+    }, []),
+
+    /**
      * Advance to next tier
      */
     advanceTier: useCallback(
@@ -531,11 +558,11 @@ export function useGameManager(config = {}) {
      * Save the game
      */
     saveGame: useCallback(
-      (slotName = 'autosave', description = '') => {
+      async (slotName = 'autosave', description = '') => {
         try {
           setError(null);
           if (gameManagerRef.current) {
-            const result = gameManagerRef.current.saveGame(slotName, description);
+            const result = await gameManagerRef.current.saveGame(slotName, description);
             if (!result.success) {
               setError(result.message);
             }
@@ -554,11 +581,11 @@ export function useGameManager(config = {}) {
      * Load a saved game
      */
     loadGame: useCallback(
-      (slotName) => {
+      async (slotName) => {
         try {
           setError(null);
           if (gameManagerRef.current) {
-            const result = gameManagerRef.current.loadGame(slotName);
+            const result = await gameManagerRef.current.loadGame(slotName);
             if (!result.success) {
               setError(result.message);
             }
@@ -576,11 +603,11 @@ export function useGameManager(config = {}) {
     /**
      * Get available save slots
      */
-    getSaveSlots: useCallback(() => {
+    getSaveSlots: useCallback(async () => {
       try {
         setError(null);
         if (gameManagerRef.current) {
-          return gameManagerRef.current.getSaveSlots();
+          return await gameManagerRef.current.getSaveSlots();
         }
         return [];
       } catch (err) {

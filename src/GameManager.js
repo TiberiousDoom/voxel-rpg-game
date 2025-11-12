@@ -3,6 +3,8 @@ import BrowserSaveManager from './persistence/BrowserSaveManager';
 import ModuleOrchestrator from './core/ModuleOrchestrator';
 import GameEngine from './core/GameEngine';
 import NPCAssignment from './modules/npc-system/NPCAssignment';
+import TierProgression from './modules/building-types/TierProgression';
+import BuildingConfig from './modules/building-types/BuildingConfig';
 
 /**
  * GameManager - Main game controller
@@ -186,7 +188,7 @@ export default class GameManager extends EventEmitter {
 
       // Load save if provided
       if (saveSlot && this.saveManager?.saveExists(saveSlot)) {
-        const loadResult = this.saveManager.loadGame(
+        const loadResult = await this.saveManager.loadGame(
           saveSlot,
           this.orchestrator,
           this.engine
@@ -439,6 +441,53 @@ export default class GameManager extends EventEmitter {
   }
 
   /**
+   * Get current tier progression status
+   */
+  getTierProgress() {
+    try {
+      const currentTier = this.orchestrator.gameState.currentTier || 'SURVIVAL';
+      const nextTier = this.orchestrator.tierProgression.getNextTier(currentTier);
+
+      if (!nextTier) {
+        return {
+          currentTier,
+          nextTier: null,
+          maxTierReached: true,
+          canAdvance: false,
+          progress: null
+        };
+      }
+
+      const buildings = this.orchestrator.gameState.buildings || [];
+      const resources = this.orchestrator.storage.getStorage();
+
+      const progress = this.orchestrator.tierProgression.canAdvanceToTier(
+        nextTier,
+        buildings,
+        resources,
+        currentTier
+      );
+
+      return {
+        currentTier,
+        nextTier,
+        maxTierReached: false,
+        canAdvance: progress.canAdvance,
+        progress
+      };
+    } catch (err) {
+      console.error('[GameManager] Failed to get tier progress:', err);
+      return {
+        currentTier: 'SURVIVAL',
+        nextTier: null,
+        maxTierReached: false,
+        canAdvance: false,
+        error: err.message
+      };
+    }
+  }
+
+  /**
    * Advance to the next tier
    */
   advanceTier(targetTier) {
@@ -610,9 +659,9 @@ export default class GameManager extends EventEmitter {
   /**
    * Save the game
    */
-  saveGame(slotName, description = '') {
+  async saveGame(slotName, description = '') {
     try {
-      const result = this.saveManager.saveGame(
+      const result = await this.saveManager.saveGame(
         this.orchestrator,
         this.engine,
         slotName,
@@ -634,9 +683,9 @@ export default class GameManager extends EventEmitter {
   /**
    * Load a saved game
    */
-  loadGame(slotName) {
+  async loadGame(slotName) {
     try {
-      const result = this.saveManager.loadGame(
+      const result = await this.saveManager.loadGame(
         slotName,
         this.orchestrator,
         this.engine
@@ -658,8 +707,16 @@ export default class GameManager extends EventEmitter {
   /**
    * Get available save slots
    */
-  getSaveSlots() {
-    return this.saveManager ? this.saveManager.getSaveSlots() : [];
+  async getSaveSlots() {
+    if (!this.saveManager) {
+      return [];
+    }
+    try {
+      return await this.saveManager.listSaves();
+    } catch (err) {
+      console.error('[GameManager] Failed to get save slots:', err);
+      return [];
+    }
   }
 
   /**
@@ -743,24 +800,14 @@ export default class GameManager extends EventEmitter {
   }
 
   _createMockBuildingConfig() {
-    return {
-      getConfig: (type) => ({
-        type,
-        cost: { wood: 10, stone: 5 },
-        dimensions: { width: 1, height: 1, depth: 1 }
-      }),
-      getBuildingData: (type) => ({
-        type,
-        cost: { wood: 10, stone: 5 }
-      })
-    };
+    // Use real BuildingConfig instead of mock
+    return new BuildingConfig();
   }
 
   _createMockTierProgression() {
-    return {
-      canAdvanceToTier: () => ({ canAdvance: true }),
-      getRequirementsForTier: () => ({ wood: 100, stone: 50 })
-    };
+    // Use real TierProgression instead of mock
+    const buildingConfig = this._createMockBuildingConfig();
+    return new TierProgression(buildingConfig);
   }
 
   _createMockBuildingEffect() {

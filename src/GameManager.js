@@ -89,7 +89,7 @@ export default class GameManager extends EventEmitter {
       this._setupEngineEvents();
 
       this.gameState = GameManager.GAME_STATE.INITIALIZED;
-      this.emit('game:initialized', {});
+      this._emit('game:initialized', {});
 
       // eslint-disable-next-line no-console
       console.log('[GameManager] Initialization complete');
@@ -97,7 +97,7 @@ export default class GameManager extends EventEmitter {
     } catch (err) {
       console.error('[GameManager] Initialization failed:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
-      this.emit('game:error', { error: err.message });
+      this._emit('game:error', { error: err.message });
       return false;
     }
   }
@@ -132,7 +132,7 @@ export default class GameManager extends EventEmitter {
     if (!this.engine) return;
 
     this.engine.on('tick:start', (data) => {
-      this.emit('tick:start', data);
+      this._emit('tick:start', data);
     });
 
     this.engine.on('tick:complete', (data) => {
@@ -142,7 +142,7 @@ export default class GameManager extends EventEmitter {
       const population = this.orchestrator.npcManager.getStatistics();
       
       // Emit tick with full game state
-      this.emit('tick:complete', {
+      this._emit('tick:complete', {
         tick: this.currentTick,
         timestamp: Date.now(),
         gameState: {
@@ -159,7 +159,7 @@ export default class GameManager extends EventEmitter {
 
     this.engine.on('tick:error', (error) => {
       console.error('[GameManager] Tick error:', error);
-      this.emit('tick:error', error);
+      this._emit('tick:error', error);
     });
   }
 
@@ -193,8 +193,11 @@ export default class GameManager extends EventEmitter {
           return false;
         }
 
-        this.emit('game:loaded', { slot: saveSlot, metadata: loadResult.metadata });
+        this._emit('game:loaded', { slot: saveSlot, metadata: loadResult.metadata });
       }
+
+      // Start the game engine
+      await this.engine.start();
 
       // Start the tick timer
       this._startTickTimer();
@@ -202,7 +205,7 @@ export default class GameManager extends EventEmitter {
       this.gameState = GameManager.GAME_STATE.RUNNING;
       
       // Emit started event with current state
-      this.emit('game:started', {
+      this._emit('game:started', {
         tick: this.currentTick,
         timestamp: Date.now()
       });
@@ -213,7 +216,7 @@ export default class GameManager extends EventEmitter {
     } catch (err) {
       console.error('[GameManager] Failed to start game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
-      this.emit('game:error', { error: err.message });
+      this._emit('game:error', { error: err.message });
       return false;
     }
   }
@@ -242,7 +245,7 @@ export default class GameManager extends EventEmitter {
    */
   _processTick() {
     try {
-      this.emit('tick:start', { tick: this.currentTick });
+      this._emit('tick:start', { tick: this.currentTick });
 
       // Execute tick in orchestrator
       const tickResult = this.orchestrator.executeTick();
@@ -257,7 +260,7 @@ export default class GameManager extends EventEmitter {
         : 100;
 
       // Emit complete event with all data
-      this.emit('tick:complete', {
+      this._emit('tick:complete', {
         tick: this.currentTick,
         timestamp: Date.now(),
         ...tickResult,
@@ -269,7 +272,7 @@ export default class GameManager extends EventEmitter {
 
     } catch (err) {
       console.error('[GameManager] Tick processing error:', err);
-      this.emit('tick:error', { error: err.message, tick: this.currentTick });
+      this._emit('tick:error', { error: err.message, tick: this.currentTick });
     }
   }
 
@@ -287,6 +290,9 @@ export default class GameManager extends EventEmitter {
       // eslint-disable-next-line no-console
       console.log('[GameManager] Stopping game...');
 
+      // Stop the game engine
+      await this.engine.stop();
+
       // Clear tick timer
       if (this.tickTimer) {
         clearInterval(this.tickTimer);
@@ -294,7 +300,7 @@ export default class GameManager extends EventEmitter {
       }
 
       this.gameState = GameManager.GAME_STATE.STOPPED;
-      this.emit('game:stopped', { tick: this.currentTick });
+      this._emit('game:stopped', { tick: this.currentTick });
 
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game stopped');
@@ -302,7 +308,7 @@ export default class GameManager extends EventEmitter {
     } catch (err) {
       console.error('[GameManager] Failed to stop game:', err);
       this.gameState = GameManager.GAME_STATE.ERRORED;
-      return true; // Return true because we did attempt to stop
+      return false;
     }
   }
 
@@ -312,7 +318,7 @@ export default class GameManager extends EventEmitter {
   pauseGame() {
     if (this.gameState === GameManager.GAME_STATE.RUNNING) {
       this.gameState = GameManager.GAME_STATE.PAUSED;
-      this.emit('game:paused', {});
+      this._emit('game:paused', {});
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game paused');
       return true;
@@ -326,7 +332,7 @@ export default class GameManager extends EventEmitter {
   resumeGame() {
     if (this.gameState === GameManager.GAME_STATE.PAUSED) {
       this.gameState = GameManager.GAME_STATE.RUNNING;
-      this.emit('game:resumed', {});
+      this._emit('game:resumed', {});
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game resumed');
       return true;
@@ -356,7 +362,7 @@ export default class GameManager extends EventEmitter {
       const result = this.orchestrator.placeBuilding(building);
 
       if (result.success) {
-        this.emit('building:placed', {
+        this._emit('building:placed', {
           buildingId: result.buildingId,
           type,
           position
@@ -386,7 +392,7 @@ export default class GameManager extends EventEmitter {
         // Update population stats
         const stats = this.orchestrator.npcManager.getStatistics();
 
-        this.emit('npc:spawned', {
+        this._emit('npc:spawned', {
           npc: result.npc,
           npcId: result.npcId,
           population: stats
@@ -424,7 +430,7 @@ export default class GameManager extends EventEmitter {
       const result = this.orchestrator.advanceTier(targetTier);
       
       if (result.success) {
-        this.emit('tier:advanced', { 
+        this._emit('tier:advanced', { 
           tier: targetTier,
           resourcesSpent: result.resourcesSpent
         });
@@ -450,7 +456,7 @@ export default class GameManager extends EventEmitter {
       );
 
       if (result.success) {
-        this.emit('game:saved', { slot: slotName, metadata: result.metadata });
+        this._emit('game:saved', { slot: slotName, metadata: result.metadata });
       }
 
       return result;
@@ -474,7 +480,7 @@ export default class GameManager extends EventEmitter {
 
       if (result.success) {
         this.currentTick = this.orchestrator.tickCount || 0;
-        this.emit('game:loaded', { slot: slotName, metadata: result.metadata });
+        this._emit('game:loaded', { slot: slotName, metadata: result.metadata });
       }
 
       return result;
@@ -648,9 +654,7 @@ export default class GameManager extends EventEmitter {
       this.eventCallbacks.set(event, []);
     }
     this.eventCallbacks.get(event).push(callback);
-
-    // Also register with parent EventEmitter
-    return super.on(event, callback);
+    return this;
   }
 
   /**
@@ -669,9 +673,7 @@ export default class GameManager extends EventEmitter {
         this.eventCallbacks.delete(event);
       }
     }
-
-    // Also unregister from parent EventEmitter
-    return super.off(event, callback);
+    return this;
   }
 
   /**
@@ -690,9 +692,6 @@ export default class GameManager extends EventEmitter {
         }
       }
     }
-
-    // Also emit through parent EventEmitter
-    this.emit(event, data);
   }
 
   /**
@@ -754,6 +753,13 @@ export default class GameManager extends EventEmitter {
   _createMockTownManager() {
     return {
       getHousingCapacity: () => 10,
+      getMaxPopulation: () => 100,
+      spawnNPC: () => {},
+      updateNPCHappiness: () => {},
+      assignNPC: () => true,
+      unassignNPC: () => {},
+      killNPC: () => {},
+      removeNPC: () => {},
       getStatistics: (buildings = []) => {
         return {
           population: {
@@ -788,17 +794,21 @@ export default class GameManager extends EventEmitter {
     let totalSpawned = 0;
 
     return {
-      spawnNPC: (config) => {
+      spawnNPC: (role, position) => {
         totalSpawned++;
         const npc = {
-          id: `npc-${totalSpawned}`,
-          role: config.role || 'WORKER',
-          position: config.position || { x: 0, y: 0, z: 0 },
+          id: totalSpawned,
+          role: role || 'WORKER',
+          position: position || { x: 0, y: 0, z: 0 },
           health: 100,
           alive: true
         };
         npcs.push(npc);
-        return npc;
+        return {
+          success: true,
+          npcId: npc.id,
+          npc: npc
+        };
       },
       killNPC: (id) => {
         const npc = npcs.find(n => n.id === id);

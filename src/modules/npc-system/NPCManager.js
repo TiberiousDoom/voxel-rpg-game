@@ -236,7 +236,10 @@ class NPCManager {
     const maxPopulation = this.townManager.getMaxPopulation();
     if (this.npcs.size >= maxPopulation) {
       console.warn(`[NPCManager] Cannot spawn NPC: population limit reached (${maxPopulation})`);
-      return null;
+      return {
+        success: false,
+        error: `Cannot spawn NPC: population limit reached (${maxPopulation})`
+      };
     }
 
     // Continue with the rest of YOUR branch's code for creating the NPC
@@ -255,7 +258,11 @@ class NPCManager {
     // Register with town system
     this.townManager.spawnNPC(role);
 
-    return npc;
+    return {
+      success: true,
+      npcId: id,
+      npc: npc
+    };
   }
 
   /**

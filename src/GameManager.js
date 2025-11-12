@@ -186,7 +186,7 @@ export default class GameManager extends EventEmitter {
 
       // Load save if provided
       if (saveSlot && this.saveManager?.saveExists(saveSlot)) {
-        const loadResult = this.saveManager.loadGame(
+        const loadResult = await this.saveManager.loadGame(
           saveSlot,
           this.orchestrator,
           this.engine
@@ -610,9 +610,9 @@ export default class GameManager extends EventEmitter {
   /**
    * Save the game
    */
-  saveGame(slotName, description = '') {
+  async saveGame(slotName, description = '') {
     try {
-      const result = this.saveManager.saveGame(
+      const result = await this.saveManager.saveGame(
         this.orchestrator,
         this.engine,
         slotName,
@@ -634,9 +634,9 @@ export default class GameManager extends EventEmitter {
   /**
    * Load a saved game
    */
-  loadGame(slotName) {
+  async loadGame(slotName) {
     try {
-      const result = this.saveManager.loadGame(
+      const result = await this.saveManager.loadGame(
         slotName,
         this.orchestrator,
         this.engine
@@ -658,8 +658,16 @@ export default class GameManager extends EventEmitter {
   /**
    * Get available save slots
    */
-  getSaveSlots() {
-    return this.saveManager ? this.saveManager.getSaveSlots() : [];
+  async getSaveSlots() {
+    if (!this.saveManager) {
+      return [];
+    }
+    try {
+      return await this.saveManager.listSaves();
+    } catch (err) {
+      console.error('[GameManager] Failed to get save slots:', err);
+      return [];
+    }
   }
 
   /**

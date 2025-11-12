@@ -21,37 +21,54 @@ function GameControlBar({
   onPause = () => {},
   onResume = () => {},
   onSave = () => {},
-  onLoad = () => {}
+  onLoad = () => {},
+  getSaveSlots = null
 }) {
   const [saveStatus, setSaveStatus] = useState('');
   const [loadStatus, setLoadStatus] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
   const [savedSlots, setSavedSlots] = useState(new Set());
 
-  // Check localStorage for existing saves on mount
-  useEffect(() => {
-    const existing = new Set();
-    for (let i = 1; i <= 3; i++) {
-      const slotKey = `slot-${i}`;
-      if (localStorage.getItem(slotKey)) {
-        existing.add(slotKey);
-      }
-    }
-    setSavedSlots(existing);
-  }, []);
+  // Load available save slots using API
+  const refreshSaveSlots = async () => {
+    if (!getSaveSlots) return;
 
-  const handleSave = () => {
-    setSaveStatus('Saving...');
-    onSave(selectedSlot);  // Pass slot ID to save action
-    setTimeout(() => {
-      setSaveStatus(`✓ Saved to ${selectedSlot}`);
-      // Update saved slots set
-      setSavedSlots(prev => new Set([...prev, selectedSlot]));
-      setTimeout(() => setSaveStatus(''), 2000);
-    }, 500);
+    try {
+      const saves = await getSaveSlots();
+      // Extract slot names from save metadata
+      const slotSet = new Set(saves.map(s => s.slotName));
+      setSavedSlots(slotSet);
+    } catch (err) {
+      console.error('Failed to refresh save slots:', err);
+    }
   };
 
-  const handleLoad = () => {
+  // Load save slots on mount
+  useEffect(() => {
+    refreshSaveSlots();
+  }, [getSaveSlots]);
+
+  const handleSave = async () => {
+    setSaveStatus('Saving...');
+    try {
+      const result = await onSave(selectedSlot);
+
+      if (result && result.success) {
+        setSaveStatus(`✓ Saved to ${selectedSlot}`);
+        // Refresh save slots to update indicators
+        await refreshSaveSlots();
+      } else {
+        setSaveStatus(`❌ Error: ${result?.message || 'Unknown error'}`);
+      }
+
+      setTimeout(() => setSaveStatus(''), 2000);
+    } catch (err) {
+      setSaveStatus(`❌ Error: ${err.message}`);
+      setTimeout(() => setSaveStatus(''), 2000);
+    }
+  };
+
+  const handleLoad = async () => {
     if (!savedSlots.has(selectedSlot)) {
       setLoadStatus(`❌ No save in ${selectedSlot}`);
       setTimeout(() => setLoadStatus(''), 2000);
@@ -59,11 +76,20 @@ function GameControlBar({
     }
 
     setLoadStatus('Loading...');
-    onLoad(selectedSlot);  // Pass slot ID to load action
-    setTimeout(() => {
-      setLoadStatus(`✓ Loaded from ${selectedSlot}`);
+    try {
+      const result = await onLoad(selectedSlot);
+
+      if (result && result.success) {
+        setLoadStatus(`✓ Loaded from ${selectedSlot}`);
+      } else {
+        setLoadStatus(`❌ Error: ${result?.message || 'Unknown error'}`);
+      }
+
       setTimeout(() => setLoadStatus(''), 2000);
-    }, 500);
+    } catch (err) {
+      setLoadStatus(`❌ Error: ${err.message}`);
+      setTimeout(() => setLoadStatus(''), 2000);
+    }
   };
 
   return (

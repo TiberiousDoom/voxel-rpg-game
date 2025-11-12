@@ -216,8 +216,46 @@ export function useGameManager(config = {}) {
             buildings: gm.orchestrator.gameState.buildings?.map(b => ({
               id: b.id,
               type: b.type,
-              position: b.position
+              position: b.position,
+              health: b.health,
+              maxHealth: b.maxHealth,
+              state: b.state
             })) || []
+          });
+        });
+
+        registerEventHandler('building:damaged', (data) => {
+          // eslint-disable-next-line no-console
+          console.log('Building damaged:', data.buildingId, 'new health:', data.newHealth);
+
+          // Update React state immediately
+          queueStateUpdate({
+            buildings: gm.orchestrator.gameState.buildings?.map(b => ({
+              id: b.id,
+              type: b.type,
+              position: b.position,
+              health: b.health,
+              maxHealth: b.maxHealth,
+              state: b.state
+            })) || []
+          });
+        });
+
+        registerEventHandler('building:repaired', (data) => {
+          // eslint-disable-next-line no-console
+          console.log('Building repaired:', data.buildingId, 'new health:', data.newHealth);
+
+          // Update React state immediately
+          queueStateUpdate({
+            buildings: gm.orchestrator.gameState.buildings?.map(b => ({
+              id: b.id,
+              type: b.type,
+              position: b.position,
+              health: b.health,
+              maxHealth: b.maxHealth,
+              state: b.state
+            })) || [],
+            resources: gm.orchestrator.storage?.getStorage?.() || {}
           });
         });
 
@@ -246,7 +284,25 @@ export function useGameManager(config = {}) {
         registerEventHandler('game:loaded', (data) => {
           // eslint-disable-next-line no-console
           console.log('Game loaded:', data.slot);
-          // State will be updated on next tick:complete
+
+          // Immediately update state with loaded game data
+          const orchestrator = gm.orchestrator;
+          if (orchestrator) {
+            queueStateUpdate({
+              currentTick: orchestrator.tickCount,
+              currentTier: orchestrator.gameState.currentTier,
+              buildings: orchestrator.gameState.buildings?.map(b => ({
+                id: b.id,
+                type: b.type,
+                position: b.position
+              })) || [],
+              npcs: orchestrator.gameState.npcs || [],
+              resources: orchestrator.storage?.getStorage?.() || {},
+              morale: orchestrator.morale?.getCurrentMorale?.() || 0,
+              moraleState: orchestrator.morale?.getMoraleState?.() || 'NEUTRAL',
+              population: orchestrator.npcManager?.getStatistics?.() || {}
+            });
+          }
         });
 
         registerEventHandler('game:error', (data) => {
@@ -607,6 +663,52 @@ export function useGameManager(config = {}) {
         } catch (err) {
           setError(err.message);
           return { success: false, message: err.message };
+        }
+      },
+      []
+    ),
+
+    /**
+     * Damage a building
+     */
+    damageBuilding: useCallback(
+      (buildingId, damage) => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.damageBuilding(buildingId, damage);
+            if (!result.success) {
+              setError(result.error);
+            }
+            return result;
+          }
+          return { success: false, error: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, error: err.message };
+        }
+      },
+      []
+    ),
+
+    /**
+     * Repair a building
+     */
+    repairBuilding: useCallback(
+      (buildingId, repairAmount = 100) => {
+        try {
+          setError(null);
+          if (gameManagerRef.current) {
+            const result = gameManagerRef.current.repairBuilding(buildingId, repairAmount);
+            if (!result.success) {
+              setError(result.error || result.message);
+            }
+            return result;
+          }
+          return { success: false, error: 'Game not initialized' };
+        } catch (err) {
+          setError(err.message);
+          return { success: false, error: err.message };
         }
       },
       []

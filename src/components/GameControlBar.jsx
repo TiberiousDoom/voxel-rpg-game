@@ -101,35 +101,6 @@ function GameControlBar({
               <span className="btn-text">Pause</span>
             </button>
           )}
-
-          <button
-            className="control-btn stop-btn"
-            onClick={onStop}
-            title="Stop the game"
-            disabled={!isRunning && !isPaused}
-          >
-            <span className="btn-icon">⏹️</span>
-            <span className="btn-text">Stop</span>
-          </button>
-        </div>
-
-        {/* Game Status */}
-        <div className="game-status">
-          {isRunning && !isPaused && (
-            <span className="status-indicator running">
-              <span className="pulse-dot" /> Playing
-            </span>
-          )}
-          {isPaused && (
-            <span className="status-indicator paused">
-              <span className="pulse-dot" /> Paused
-            </span>
-          )}
-          {!isRunning && (
-            <span className="status-indicator stopped">
-              <span className="pulse-dot" /> Stopped
-            </span>
-          )}
         </div>
       </div>
 
@@ -188,18 +159,6 @@ function GameControlBar({
         )}
       </div>
 
-      {/* Speed Control (Future) */}
-      <div className="control-group speed-control">
-        <h4 className="group-title">Speed (1x)</h4>
-        <p className="speed-note">Speed control coming soon...</p>
-      </div>
-
-      {/* Help Text */}
-      <div className="control-info">
-        <p className="info-text">
-          💡 <strong>Tip:</strong> The game runs in real-time. Click Play to start!
-        </p>
-      </div>
     </div>
   );
 }

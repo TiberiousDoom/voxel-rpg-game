@@ -135,8 +135,11 @@ class ModuleOrchestrator {
       const foodBefore = this.storage.getResource('food');
       const consumptionResult = this.consumption.executeConsumptionTick(foodBefore);
 
-      const foodConsumed = parseFloat(consumptionResult.foodConsumed);
-      this.storage.removeResource('food', foodConsumed);
+      const foodConsumed = parseFloat(consumptionResult.foodConsumed) || 0;
+      // Only remove food if there's actual consumption
+      if (foodConsumed > 0) {
+        this.storage.removeResource('food', foodConsumed);
+      }
       result.consumption = foodConsumed;
 
       // Check for starvation
@@ -334,9 +337,21 @@ class ModuleOrchestrator {
    * @returns {Object} Placement result
    */
   placeBuilding(building) {
+    // Validate building has required fields
+    if (!building || !building.type) {
+      return { success: false, message: 'Building missing type' };
+    }
+
     // Validate with BuildingConfig
-    // eslint-disable-next-line no-unused-vars
-    const config = this.buildingConfig.getConfig(building.type);
+    try {
+      // eslint-disable-next-line no-unused-vars
+      const config = this.buildingConfig.getConfig(building.type);
+      if (!config) {
+        return { success: false, message: `Unknown building type: ${building.type}` };
+      }
+    } catch (err) {
+      return { success: false, message: `BuildingConfig error: ${err.message}` };
+    }
 
     // Place on grid
     const gridResult = this.grid.placeBuilding(building);

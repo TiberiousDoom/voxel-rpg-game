@@ -327,3 +327,4 @@ class NPCAssignment {
 }
 
 export { NPCAssignment, BuildingSlot };
+export default NPCAssignment;  // Add default export for compatibility

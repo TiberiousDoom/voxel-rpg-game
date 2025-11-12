@@ -161,6 +161,8 @@ class ConsumptionSystem {
       aliveCount: aliveNPCs.length,
       workingCount: aliveNPCs.filter(n => n.isWorking).length,
       idleCount: aliveNPCs.filter(n => !n.isWorking).length,
+      foodConsumed: totalFoodConsumption,  // Add for test compatibility (as number)
+      npcsDied: 0,  // Always initialize, will be overridden if starvation occurs
       npcFoodConsumption: npcFoodConsumption.toFixed(4),
       buildingConsumption: buildingConsumption,
       totalFoodConsumption: totalFoodConsumption.toFixed(4),

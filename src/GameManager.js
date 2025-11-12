@@ -6,6 +6,7 @@ import NPCAssignment from './modules/npc-system/NPCAssignment';
 import TierProgression from './modules/building-types/TierProgression';
 import BuildingConfig from './modules/building-types/BuildingConfig';
 import { TerritoryManager } from './modules/territory-town/TerritoryManager';
+import GridManager from './modules/foundation/GridManager';
 
 /**
  * GameManager - Main game controller
@@ -110,25 +111,31 @@ export default class GameManager extends EventEmitter {
    * Create all game modules
    */
   _createModules() {
-    // This would normally import and instantiate all your game modules
-    // For now, creating mock modules for demonstration
-    const grid = this._createMockGridManager();
+    // Create real GridManager instead of mock
+    const grid = new GridManager({
+      gridSize: 100,
+      gridHeight: 50
+    });
     const npcManager = this._createMockNPCManager();
 
     // Create BuildingConfig once and share it across modules
-    const buildingConfig = this._createMockBuildingConfig();
+    const buildingConfig = new BuildingConfig();
+
+    // Create TerritoryManager and initialize with starting territory
+    const territoryManager = new TerritoryManager(buildingConfig);
+    territoryManager.createTerritory({ x: 50, y: 0, z: 50 });
 
     return {
       grid: grid,
       spatial: this._createMockSpatialPartitioning(),
       buildingConfig: buildingConfig,
-      tierProgression: this._createMockTierProgression(buildingConfig),
+      tierProgression: new TierProgression(buildingConfig),
       buildingEffect: this._createMockBuildingEffect(),
       productionTick: this._createMockProductionTick(),
       storage: this._createMockStorageManager(),
       consumption: this._createMockConsumptionSystem(),
       morale: this._createMockMoraleCalculator(),
-      territoryManager: this._createMockTerritoryManager(buildingConfig),
+      territoryManager: territoryManager,
       townManager: this._createMockTownManager(),
       npcManager: npcManager,
       npcAssignment: new NPCAssignment(npcManager, grid)
@@ -894,6 +901,9 @@ export default class GameManager extends EventEmitter {
 
   _createMockSpatialPartitioning() {
     return {
+      chunkSize: 10,
+      chunks: new Map(),
+      buildingChunks: new Map(),
       addBuilding: () => {},
       removeBuilding: () => {},
       insert: () => {},

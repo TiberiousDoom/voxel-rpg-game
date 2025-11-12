@@ -428,9 +428,9 @@ export default class GameManager extends EventEmitter {
   advanceTier(targetTier) {
     try {
       const result = this.orchestrator.advanceTier(targetTier);
-      
+
       if (result.success) {
-        this._emit('tier:advanced', { 
+        this._emit('tier:advanced', {
           tier: targetTier,
           resourcesSpent: result.resourcesSpent
         });
@@ -439,6 +439,86 @@ export default class GameManager extends EventEmitter {
       return result;
     } catch (err) {
       console.error('[GameManager] Failed to advance tier:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Damage a building
+   * @param {string} buildingId - Building ID
+   * @param {number} damage - Amount of damage to apply
+   * @returns {object} Result of damage operation
+   */
+  damageBuilding(buildingId, damage) {
+    try {
+      const result = this.orchestrator.grid.damageBuilding(buildingId, damage);
+
+      if (result.success) {
+        this._emit('building:damaged', {
+          buildingId,
+          damage,
+          newHealth: result.newHealth,
+          destroyed: result.destroyed,
+          state: result.state
+        });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to damage building:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Repair a building
+   * @param {string} buildingId - Building ID
+   * @param {number} repairAmount - Amount of health to restore
+   * @returns {object} Result of repair operation
+   */
+  repairBuilding(buildingId, repairAmount = 100) {
+    try {
+      const building = this.orchestrator.grid.getBuilding(buildingId);
+      if (!building) {
+        return { success: false, message: 'Building not found' };
+      }
+
+      // Get repair cost from building config
+      const repairCost = this.orchestrator.buildingConfig.getRepairCost(building.type);
+      const currentResources = this.orchestrator.storage.getStorage();
+
+      // Attempt repair
+      const result = this.orchestrator.grid.repairBuilding(
+        buildingId,
+        repairAmount,
+        currentResources,
+        repairCost
+      );
+
+      if (result.success) {
+        // Deduct resources
+        for (const [resource, amount] of Object.entries(result.resourcesUsed)) {
+          this.orchestrator.storage.removeResource(resource, amount);
+        }
+
+        this._emit('building:repaired', {
+          buildingId,
+          healthRestored: result.healthRestored,
+          newHealth: result.newHealth,
+          resourcesUsed: result.resourcesUsed,
+          state: result.state
+        });
+
+        // Update game state immediately
+        this.orchestrator._updateGameState();
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to repair building:', err);
       return { success: false, message: err.message };
     }
   }

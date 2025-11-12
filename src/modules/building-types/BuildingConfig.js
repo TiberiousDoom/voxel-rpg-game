@@ -699,6 +699,59 @@ class BuildingConfig {
     const effects = this.getEffects(type);
     return effects.zoneBonus !== null && effects.zoneBonus !== undefined;
   }
+
+  /**
+   * Get repair cost per health point for a building type
+   * Repair costs are calculated as a percentage of the initial building cost
+   * @param {string} type - Building type
+   * @returns {Object} Repair cost per health point {wood, food, stone}
+   */
+  getRepairCost(type) {
+    const config = this.getConfig(type);
+    const repairCostPerPoint = {};
+
+    // Repair cost is 50% of original cost, divided by max health
+    // This makes repairing more cost-effective than rebuilding
+    for (const [resource, amount] of Object.entries(config.cost)) {
+      if (amount > 0) {
+        repairCostPerPoint[resource] = (amount * 0.5) / config.maxHealth;
+      }
+    }
+
+    return repairCostPerPoint;
+  }
+
+  /**
+   * Get total repair cost to fully repair a building
+   * @param {string} type - Building type
+   * @param {number} currentHealth - Current health of building
+   * @returns {Object} Total repair cost {wood, food, stone}
+   */
+  getTotalRepairCost(type, currentHealth) {
+    const config = this.getConfig(type);
+    const repairCostPerPoint = this.getRepairCost(type);
+    const healthDeficit = config.maxHealth - currentHealth;
+
+    const totalCost = {};
+    for (const [resource, costPerPoint] of Object.entries(repairCostPerPoint)) {
+      totalCost[resource] = Math.ceil(healthDeficit * costPerPoint);
+    }
+
+    return totalCost;
+  }
+
+  /**
+   * Get health information for a building type
+   * @param {string} type - Building type
+   * @returns {Object} Health info {health, maxHealth}
+   */
+  getHealthInfo(type) {
+    const config = this.getConfig(type);
+    return {
+      health: config.health,
+      maxHealth: config.maxHealth
+    };
+  }
 }
 
 export default BuildingConfig;

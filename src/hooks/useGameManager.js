@@ -532,6 +532,42 @@ export function useGameManager(config = {}) {
     }, []),
 
     /**
+     * Get territory status
+     */
+    getTerritoryStatus: useCallback(() => {
+      try {
+        setError(null);
+        if (gameManagerRef.current) {
+          return gameManagerRef.current.getTerritoryStatus();
+        }
+        return { hasTerritory: false, currentSize: 0, canExpand: false };
+      } catch (err) {
+        setError(err.message);
+        return { hasTerritory: false, error: err.message };
+      }
+    }, []),
+
+    /**
+     * Expand territory
+     */
+    expandTerritory: useCallback((territoryId) => {
+      try {
+        setError(null);
+        if (gameManagerRef.current) {
+          const result = gameManagerRef.current.expandTerritory(territoryId);
+          if (!result.success) {
+            setError(result.message);
+          }
+          return result;
+        }
+        return { success: false, message: 'Game not initialized' };
+      } catch (err) {
+        setError(err.message);
+        return { success: false, message: err.message };
+      }
+    }, []),
+
+    /**
      * Advance to next tier
      */
     advanceTier: useCallback(

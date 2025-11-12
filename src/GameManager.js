@@ -5,6 +5,7 @@ import GameEngine from './core/GameEngine';
 import NPCAssignment from './modules/npc-system/NPCAssignment';
 import TierProgression from './modules/building-types/TierProgression';
 import BuildingConfig from './modules/building-types/BuildingConfig';
+import { TerritoryManager } from './modules/territory-town/TerritoryManager';
 
 /**
  * GameManager - Main game controller
@@ -509,6 +510,104 @@ export default class GameManager extends EventEmitter {
   }
 
   /**
+   * Get territory status
+   */
+  getTerritoryStatus() {
+    try {
+      const territories = this.orchestrator.territoryManager.getAllTerritories();
+      const mainTerritory = territories[0]; // Get primary territory
+
+      if (!mainTerritory) {
+        return {
+          hasTerritory: false,
+          currentSize: 0,
+          nextSize: null,
+          canExpand: false
+        };
+      }
+
+      // Get expansion requirements for next tier
+      const currentTier = mainTerritory.tier;
+      const tierHierarchy = ['SURVIVAL', 'PERMANENT', 'TOWN', 'CASTLE'];
+      const currentIndex = tierHierarchy.indexOf(currentTier);
+      const nextTier = currentIndex < tierHierarchy.length - 1 ? tierHierarchy[currentIndex + 1] : null;
+
+      if (!nextTier) {
+        return {
+          hasTerritory: true,
+          currentSize: mainTerritory.dimension,
+          currentTier,
+          nextSize: null,
+          maxSizeReached: true,
+          canExpand: false
+        };
+      }
+
+      // Check if can expand
+      const resources = this.orchestrator.storage.getStorage();
+      const buildings = this.orchestrator.gameState.buildings || [];
+
+      const expansionResult = this.orchestrator.territoryManager.canExpandTerritory(
+        mainTerritory.id,
+        resources,
+        buildings
+      );
+
+      return {
+        hasTerritory: true,
+        territoryId: mainTerritory.id,
+        currentSize: mainTerritory.dimension,
+        currentTier,
+        nextSize: this._getTerritorySize(nextTier),
+        nextTier,
+        maxSizeReached: false,
+        canExpand: expansionResult.canExpand,
+        expansionResult
+      };
+    } catch (err) {
+      console.error('[GameManager] Failed to get territory status:', err);
+      return {
+        hasTerritory: false,
+        error: err.message
+      };
+    }
+  }
+
+  /**
+   * Expand territory
+   */
+  expandTerritory(territoryId) {
+    try {
+      const result = this.orchestrator.expandTerritory(territoryId);
+
+      if (result.success) {
+        this._emit('territory:expanded', {
+          territoryId,
+          newTier: result.newTier
+        });
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to expand territory:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Helper to get territory size by tier
+   */
+  _getTerritorySize(tier) {
+    const sizes = {
+      SURVIVAL: 25,
+      PERMANENT: 50,
+      TOWN: 100,
+      CASTLE: 150
+    };
+    return sizes[tier] || 25;
+  }
+
+  /**
    * Assign NPC to building
    */
   assignNPC(npcId, buildingId) {
@@ -958,16 +1057,14 @@ export default class GameManager extends EventEmitter {
   }
 
   _createMockTerritoryManager() {
-    return {
-      getAllTerritories: () => [],
-      createTerritory: (id, bounds) => ({
-        id,
-        bounds
-      }),
-      findTerritoryForBuilding: () => null,
-      addBuildingToTerritory: () => {},
-      removeBuildingFromTerritory: () => {}
-    };
+    // Use real TerritoryManager instead of mock
+    const buildingConfig = this._createMockBuildingConfig();
+    const territoryManager = new TerritoryManager(buildingConfig);
+
+    // Create initial territory
+    territoryManager.createTerritory({ x: 50, y: 0, z: 50 });
+
+    return territoryManager;
   }
 
   _createMockTownManager() {

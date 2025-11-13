@@ -18,6 +18,9 @@ import { NPCManager } from './modules/npc-system/NPCManager';
 import IdleTaskManager from './modules/npc-system/IdleTaskManager';
 import NPCNeedsTracker from './modules/npc-system/NPCNeedsTracker';
 import AutonomousDecision from './modules/npc-system/AutonomousDecision';
+// Phase 3C: Achievement System
+import AchievementSystem from './modules/achievement-system/AchievementSystem';
+import achievementDefinitions from './modules/achievement-system/achievementDefinitions';
 // Phase 3B: Event System
 import { createEventSystem } from './modules/event-system';
 
@@ -161,6 +164,9 @@ export default class GameManager extends EventEmitter {
     const npcNeedsTracker = new NPCNeedsTracker();
     const autonomousDecision = new AutonomousDecision(npcNeedsTracker, idleTaskManager);
 
+    // Phase 3C: Achievement System
+    const achievementSystem = new AchievementSystem(achievementDefinitions);
+
     // Create real BuildingEffect
     const buildingEffect = new BuildingEffect(spatial, buildingConfig);
 
@@ -188,6 +194,8 @@ export default class GameManager extends EventEmitter {
       idleTaskManager: idleTaskManager,
       npcNeedsTracker: npcNeedsTracker,
       autonomousDecision: autonomousDecision,
+      // Phase 3C modules
+      achievementSystem: achievementSystem
       // Phase 3B modules
       eventSystem: eventSystem
     };

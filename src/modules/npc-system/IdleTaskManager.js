@@ -376,6 +376,47 @@ class IdleTaskManager {
   }
 
   /**
+   * Remove NPC from task system (cleanup when NPC is removed/dies)
+   * @param {string} npcId - NPC ID to remove
+   * @returns {boolean} True if NPC was removed
+   */
+  removeNPC(npcId) {
+    if (!npcId) {
+      return false;
+    }
+
+    let removed = false;
+
+    // Cancel and remove active task
+    if (this.activeTasks.has(npcId)) {
+      const task = this.activeTasks.get(npcId);
+      task.cancel();
+      this.activeTasks.delete(npcId);
+      removed = true;
+    }
+
+    // Remove from task queue (if implemented in future)
+    if (this.taskQueue.has(npcId)) {
+      this.taskQueue.delete(npcId);
+      removed = true;
+    }
+
+    return removed;
+  }
+
+  /**
+   * Clear old task history entries to prevent memory bloat
+   * @param {number} maxAge - Max age in milliseconds (default: 1 hour)
+   */
+  cleanupHistory(maxAge = 3600000) {
+    const cutoffTime = Date.now() - maxAge;
+
+    this.taskHistory = this.taskHistory.filter(entry => {
+      return entry.completedAt >= cutoffTime;
+    });
+  }
+
+  /**
    * Clear all tasks
    */
   clearAllTasks() {
@@ -383,6 +424,7 @@ class IdleTaskManager {
       task.cancel();
     }
     this.activeTasks.clear();
+    this.taskQueue.clear();
   }
 
   /**
@@ -396,6 +438,80 @@ class IdleTaskManager {
       taskTypeCount: {}
     };
     this.taskHistory = [];
+  }
+
+  /**
+   * Get memory usage info (for debugging)
+   * @returns {Object} Memory usage statistics
+   */
+  getMemoryInfo() {
+    return {
+      activeTasksCount: this.activeTasks.size,
+      taskHistoryCount: this.taskHistory.length,
+      taskQueueCount: this.taskQueue.size,
+      estimatedMemoryKB: (
+        (this.activeTasks.size * 0.5) +  // ~500 bytes per active task
+        (this.taskHistory.length * 0.2) + // ~200 bytes per history entry
+        (this.taskQueue.size * 0.3)       // ~300 bytes per queued task
+      ).toFixed(2)
+    };
+  }
+
+  /**
+   * Serialize idle task manager state for saving
+   * @returns {Object} Serialized state
+   */
+  serialize() {
+    // Serialize active tasks
+    const activeTasks = [];
+    for (const [npcId, task] of this.activeTasks.entries()) {
+      activeTasks.push({
+        npcId,
+        task: task.serialize()
+      });
+    }
+
+    return {
+      activeTasks,
+      taskHistory: this.taskHistory.slice(-100), // Keep only last 100 history entries
+      stats: {
+        totalTasksAssigned: this.stats.totalTasksAssigned,
+        totalTasksCompleted: this.stats.totalTasksCompleted,
+        totalTasksCancelled: this.stats.totalTasksCancelled,
+        taskTypeCount: { ...this.stats.taskTypeCount }
+      }
+    };
+  }
+
+  /**
+   * Deserialize idle task manager state from save
+   * @param {Object} data - Saved state
+   */
+  deserialize(data) {
+    if (!data) return;
+
+    // Restore active tasks
+    if (data.activeTasks) {
+      this.activeTasks.clear();
+      for (const entry of data.activeTasks) {
+        const task = new IdleTask(entry.task.type, entry.task.data);
+        task.deserialize(entry.task);
+        this.activeTasks.set(entry.npcId, task);
+      }
+    }
+
+    // Restore task history
+    if (data.taskHistory) {
+      this.taskHistory = data.taskHistory;
+    }
+
+    // Restore statistics
+    if (data.stats) {
+      this.stats.totalTasksAssigned = data.stats.totalTasksAssigned || 0;
+      this.stats.totalTasksCompleted = data.stats.totalTasksCompleted || 0;
+      this.stats.totalTasksCancelled = data.stats.totalTasksCancelled || 0;
+      this.stats.taskTypeCount = data.stats.taskTypeCount || {};
+    }
   }
 }
 

@@ -202,8 +202,27 @@ export default class EventSystem {
   cancelEvent(eventId) {
     const event = this.getEventById(eventId);
     if (event) {
+      // Clean up event effects before cancelling if the event is active
+      if (event.state === 'ACTIVE' && this.orchestrator) {
+        const gameState = {
+          ...this.orchestrator.gameState,
+          gridManager: this.orchestrator.grid,
+          storageManager: this.orchestrator.storage,
+          townManager: this.orchestrator.townManager,
+          npcManager: this.orchestrator.npcManager,
+          buildingConfig: this.orchestrator.buildingConfig,
+          territoryManager: this.orchestrator.territoryManager
+        };
+
+        try {
+          event.end(gameState);  // ✅ Proper cleanup of multipliers/effects
+        } catch (err) {
+          console.error(`Error ending cancelled event ${eventId}:`, err);
+        }
+      }
+
       event.cancel();
-      // Remove from active events
+      // Remove from active events and queue
       this.activeEvents = this.activeEvents.filter(e => e.id !== eventId);
       this.eventQueue = this.eventQueue.filter(e => e.id !== eventId);
     }

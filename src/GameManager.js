@@ -29,6 +29,14 @@ import AchievementSystem from './modules/achievement-system/AchievementSystem';
 import achievementDefinitions from './modules/achievement-system/achievementDefinitions';
 // Phase 3B: Event System
 import { createEventSystem } from './modules/event-system';
+// Phase 3D: Tutorial System
+import {
+  TutorialSystem,
+  ContextHelp,
+  FeatureUnlock,
+  createTutorialSteps,
+  getContextHelpDefinitions
+} from './modules/tutorial-system';
 
 /**
  * GameManager - Main game controller
@@ -188,6 +196,13 @@ export default class GameManager extends EventEmitter {
     // Phase 3B: Event System (pass null for now, will set orchestrator after creation)
     const eventSystem = createEventSystem(null);
 
+    // Phase 3D: Tutorial System
+    const tutorialSteps = createTutorialSteps();
+    const tutorialSystem = new TutorialSystem(tutorialSteps);
+    const contextHelpDefs = getContextHelpDefinitions();
+    const contextHelp = new ContextHelp(contextHelpDefs);
+    const featureUnlock = new FeatureUnlock();
+
     return {
       grid: grid,
       spatial: spatial,
@@ -213,7 +228,11 @@ export default class GameManager extends EventEmitter {
       // Phase 3C modules
       achievementSystem: achievementSystem,
       // Phase 3B modules
-      eventSystem: eventSystem
+      eventSystem: eventSystem,
+      // Phase 3D modules
+      tutorialSystem: tutorialSystem,
+      contextHelp: contextHelp,
+      featureUnlock: featureUnlock
     };
   }
 

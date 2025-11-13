@@ -74,6 +74,29 @@ class ModuleOrchestrator {
       this.npcManager.setOrchestrator(this);
     }
 
+    // Phase 3C: Achievement bonuses (multiplicative)
+    this.achievementBonuses = {
+      production: 1.0,
+      food: 1.0,
+      wood: 1.0,
+      stone: 1.0,
+      gold: 1.0,
+      essence: 1.0,
+      crystals: 1.0,
+      morale: 1.0,
+      storage: 1.0,
+      npcHappiness: 1.0,
+      npcHealth: 1.0,
+      buildingHealth: 1.0
+    };
+
+    // Subscribe to achievement reward events
+    if (this.achievementSystem) {
+      this.achievementSystem.on('achievement:reward', (data) => {
+        this._applyAchievementReward(data);
+      });
+    }
+
     // Game state
     this.tickCount = 0;
     this.isPaused = false;
@@ -173,6 +196,18 @@ class ModuleOrchestrator {
         this.gameState
       );
 
+      // Phase 3C: Apply achievement bonuses to production
+      for (const [resource, amount] of Object.entries(productionResult.production)) {
+        // Apply general production bonus
+        let finalAmount = amount * this.getAchievementMultiplier('production');
+
+        // Apply resource-specific bonuses
+        const resourceMultiplier = this.achievementBonuses[resource] || 1.0;
+        finalAmount *= resourceMultiplier;
+
+        productionResult.production[resource] = finalAmount;
+      }
+
       result.production = productionResult.production;
 
       // ============================================
@@ -226,12 +261,15 @@ class ModuleOrchestrator {
         }
       }
 
+      // Phase 3C: Apply achievement morale bonus to building bonuses
+      const totalMoraleBonus = buildingMoraleBonus * this.achievementBonuses.morale;
+
       this.morale.calculateTownMorale({
         npcs: aliveNPCs,
         foodAvailable: this.storage.getResource('food'),
         housingCapacity: housing,
         expansionCount: territoryCount - 1, // First territory doesn't count
-        buildingBonus: buildingMoraleBonus
+        buildingBonus: totalMoraleBonus
       });
 
       result.morale = this.morale.getCurrentMorale();
@@ -1089,6 +1127,47 @@ class ModuleOrchestrator {
   notifyAchievementUnlocked(achievementId) {
     this._achievementUnlocked = true;
     this._lastAchievementUnlocked = achievementId;
+  }
+
+  /**
+   * Apply achievement reward bonuses
+   * @private
+   * @param {Object} rewardData - Reward data from achievement system
+   */
+  _applyAchievementReward(rewardData) {
+    const { rewardType, rewardValue, achievementId, achievementName } = rewardData;
+
+    if (rewardType === 'multiplier') {
+      for (const [key, bonus] of Object.entries(rewardValue)) {
+        if (key in this.achievementBonuses) {
+          this.achievementBonuses[key] += bonus;
+          // eslint-disable-next-line no-console
+          console.log(
+            `🏆 Achievement "${achievementName}" bonus applied: ` +
+            `${key} +${(bonus * 100).toFixed(1)}% ` +
+            `(total: ${(this.achievementBonuses[key] * 100).toFixed(1)}%)`
+          );
+        }
+      }
+    }
+    // Other reward types (unlock, cosmetic) are handled by UI
+  }
+
+  /**
+   * Get total achievement multiplier for a resource or stat type
+   * @param {string} type - Resource/stat type
+   * @returns {number} Total multiplier (1.0 = no bonus)
+   */
+  getAchievementMultiplier(type) {
+    // Apply general production bonus
+    let multiplier = this.achievementBonuses.production || 1.0;
+
+    // Apply specific resource/stat bonus if exists
+    if (type && type in this.achievementBonuses) {
+      multiplier *= this.achievementBonuses[type];
+    }
+
+    return multiplier;
   }
 }
 

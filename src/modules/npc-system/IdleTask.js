@@ -251,6 +251,44 @@ export class IdleTask {
       rewards: this.rewards
     };
   }
+
+  /**
+   * Serialize task state for saving
+   * @returns {Object} Serialized state
+   */
+  serialize() {
+    return {
+      id: this.id,
+      type: this.type,
+      data: this.data,
+      startTime: this.startTime,
+      duration: this.duration,
+      completedAt: this.completedAt,
+      isActive: this.isActive,
+      isComplete: this.isComplete,
+      isCancelled: this.isCancelled,
+      priority: this.priority,
+      rewards: this.rewards
+    };
+  }
+
+  /**
+   * Deserialize task state from save
+   * @param {Object} data - Saved state
+   */
+  deserialize(data) {
+    if (!data) return;
+
+    this.id = data.id || this.id;
+    this.startTime = data.startTime || null;
+    this.duration = data.duration || this.duration;
+    this.completedAt = data.completedAt || null;
+    this.isActive = data.isActive || false;
+    this.isComplete = data.isComplete || false;
+    this.isCancelled = data.isCancelled || false;
+    this.priority = data.priority || this.priority;
+    this.rewards = data.rewards || this.rewards;
+  }
 }
 
 export default IdleTask;

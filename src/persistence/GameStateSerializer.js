@@ -456,8 +456,8 @@ class GameStateSerializer {
         assignedBuilding: npc.assignedBuilding,
         status: npc.status
       })),
-      totalSpawned: npcManager.totalSpawned,
-      nextId: npcManager.nextId
+      totalSpawned: npcManager.stats?.totalSpawned || 0,
+      nextId: npcManager.npcIdCounter || 0
     };
   }
 
@@ -484,10 +484,10 @@ class GameStateSerializer {
       }
 
       if (data.totalSpawned !== undefined) {
-        npcManager.totalSpawned = data.totalSpawned;
+        npcManager.stats.totalSpawned = data.totalSpawned;
       }
       if (data.nextId !== undefined) {
-        npcManager.nextId = data.nextId;
+        npcManager.npcIdCounter = data.nextId;
       }
     } catch (err) {
       errors.push(`NPC deserialization error: ${err.message}`);

@@ -76,7 +76,12 @@ class GameStateSerializer {
       eventSystem: orchestrator.eventSystem ? this._serializeEventSystem(orchestrator.eventSystem) : null,
 
       // Engine state
-      engineState: this._serializeEngineState(orchestrator.gameState, engine)
+      engineState: this._serializeEngineState(orchestrator.gameState, engine),
+
+      // Phase 3D: Tutorial System (optional)
+      tutorialSystem: orchestrator.tutorialSystem ? this._serializeTutorialSystem(orchestrator.tutorialSystem) : null,
+      contextHelp: orchestrator.contextHelp ? this._serializeContextHelp(orchestrator.contextHelp) : null,
+      featureUnlock: orchestrator.featureUnlock ? this._serializeFeatureUnlock(orchestrator.featureUnlock) : null
     };
 
     return state;
@@ -126,6 +131,17 @@ class GameStateSerializer {
       }
 
       this._deserializeEngineState(data.engineState, orchestrator, engine, errors);
+
+      // Phase 3D: Tutorial System (optional)
+      if (data.tutorialSystem && orchestrator.tutorialSystem) {
+        this._deserializeTutorialSystem(data.tutorialSystem, orchestrator.tutorialSystem, errors);
+      }
+      if (data.contextHelp && orchestrator.contextHelp) {
+        this._deserializeContextHelp(data.contextHelp, orchestrator.contextHelp, errors);
+      }
+      if (data.featureUnlock && orchestrator.featureUnlock) {
+        this._deserializeFeatureUnlock(data.featureUnlock, orchestrator.featureUnlock, errors);
+      }
 
       // Validate consistency
       this._validateConsistency(orchestrator, errors);
@@ -669,6 +685,82 @@ class GameStateSerializer {
       }
     } catch (err) {
       errors.push(`Consistency validation error: ${err.message}`);
+    }
+  }
+
+  // ============================================
+  // PHASE 3D: TUTORIAL SYSTEM SERIALIZATION
+  // ============================================
+
+  /**
+   * Serialize Tutorial System
+   * @private
+   */
+  static _serializeTutorialSystem(tutorialSystem) {
+    if (!tutorialSystem) return null;
+
+    return tutorialSystem.serialize();
+  }
+
+  /**
+   * Deserialize Tutorial System
+   * @private
+   */
+  static _deserializeTutorialSystem(data, tutorialSystem, errors) {
+    try {
+      if (data && tutorialSystem) {
+        tutorialSystem.deserialize(data);
+      }
+    } catch (err) {
+      errors.push(`Failed to deserialize tutorial system: ${err.message}`);
+    }
+  }
+
+  /**
+   * Serialize Context Help
+   * @private
+   */
+  static _serializeContextHelp(contextHelp) {
+    if (!contextHelp) return null;
+
+    return contextHelp.serialize();
+  }
+
+  /**
+   * Deserialize Context Help
+   * @private
+   */
+  static _deserializeContextHelp(data, contextHelp, errors) {
+    try {
+      if (data && contextHelp) {
+        contextHelp.deserialize(data);
+      }
+    } catch (err) {
+      errors.push(`Failed to deserialize context help: ${err.message}`);
+    }
+  }
+
+  /**
+   * Serialize Feature Unlock
+   * @private
+   */
+  static _serializeFeatureUnlock(featureUnlock) {
+    if (!featureUnlock) return null;
+
+    return featureUnlock.serialize();
+  }
+
+  /**
+   * Deserialize Feature Unlock
+   * @private
+   */
+  static _deserializeFeatureUnlock(data, featureUnlock, errors) {
+    try {
+      if (data && featureUnlock) {
+        featureUnlock.deserialize(data);
+      }
+    } catch (err) {
+      errors.push(`Failed to deserialize feature unlock: ${err.message}`);
     }
   }
 

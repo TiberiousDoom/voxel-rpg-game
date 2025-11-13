@@ -155,7 +155,7 @@ class BuildingConfig {
 
       HOUSE: {
         type: 'HOUSE',
-        tier: 'PERMANENT',
+        tier: 'SURVIVAL',
         displayName: 'House',
         description: 'Housing for NPCs',
         dimensions: { width: 1, height: 1, depth: 1 },

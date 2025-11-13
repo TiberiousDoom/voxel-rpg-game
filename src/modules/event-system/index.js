@@ -5,28 +5,10 @@
  * Provides disaster, seasonal, and positive random events
  */
 
-// Core system
-export { default as EventSystem } from './EventSystem.js';
-export { default as EventScheduler } from './EventScheduler.js';
-export { default as Event, EventType, EventState } from './Event.js';
-
-// Disaster events
-export { default as WildfireEvent } from './events/WildfireEvent.js';
-export { default as FloodEvent } from './events/FloodEvent.js';
-export { default as EarthquakeEvent } from './events/EarthquakeEvent.js';
-
-// Seasonal events
-export { default as HarvestFestivalEvent } from './events/HarvestFestivalEvent.js';
-export { default as WinterFreezeEvent } from './events/WinterFreezeEvent.js';
-export { default as SpringBloomEvent } from './events/SpringBloomEvent.js';
-
-// Positive events
-export { default as MerchantVisitEvent } from './events/MerchantVisitEvent.js';
-export { default as GoodWeatherEvent } from './events/GoodWeatherEvent.js';
-export { default as WandererJoinsEvent } from './events/WandererJoinsEvent.js';
-
-// Import for createEventSystem function
+// Import all modules first (ESLint import/first rule)
 import EventSystem from './EventSystem.js';
+import EventScheduler from './EventScheduler.js';
+import Event, { EventType, EventState } from './Event.js';
 import WildfireEvent from './events/WildfireEvent.js';
 import FloodEvent from './events/FloodEvent.js';
 import EarthquakeEvent from './events/EarthquakeEvent.js';
@@ -36,6 +18,18 @@ import SpringBloomEvent from './events/SpringBloomEvent.js';
 import MerchantVisitEvent from './events/MerchantVisitEvent.js';
 import GoodWeatherEvent from './events/GoodWeatherEvent.js';
 import WandererJoinsEvent from './events/WandererJoinsEvent.js';
+
+// Core system exports
+export { EventSystem, EventScheduler, Event, EventType, EventState };
+
+// Disaster events exports
+export { WildfireEvent, FloodEvent, EarthquakeEvent };
+
+// Seasonal events exports
+export { HarvestFestivalEvent, WinterFreezeEvent, SpringBloomEvent };
+
+// Positive events exports
+export { MerchantVisitEvent, GoodWeatherEvent, WandererJoinsEvent };
 
 /**
  * Create and initialize a complete event system with all event types

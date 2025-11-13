@@ -46,6 +46,16 @@ const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign })
           >
             <span className="npc-role">{npc.role}</span>
             <span className="npc-health">❤️ {npc.health}</span>
+            <div className="npc-morale">
+              <span className="morale-label">Morale:</span>
+              <div className="morale-bar">
+                <div
+                  className="morale-fill"
+                  style={{ width: `${Math.max(0, Math.min(100, npc.morale || 50))}%` }}
+                />
+              </div>
+              <span className="morale-value">{Math.round(npc.morale || 50)}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -60,6 +70,16 @@ const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign })
               <span className="npc-assignment">
                 → {building?.type || 'Unknown'}
               </span>
+              <div className="npc-morale">
+                <span className="morale-label">Morale:</span>
+                <div className="morale-bar">
+                  <div
+                    className="morale-fill"
+                    style={{ width: `${Math.max(0, Math.min(100, npc.morale || 50))}%` }}
+                  />
+                </div>
+                <span className="morale-value">{Math.round(npc.morale || 50)}</span>
+              </div>
               <button
                 onClick={() => handleUnassign(npc.id)}
                 className="unassign-btn"

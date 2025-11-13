@@ -342,10 +342,10 @@ class ModuleOrchestrator {
       return { success: false, message: 'Building missing type' };
     }
 
-    // Validate with BuildingConfig
+    // Validate with BuildingConfig and get cost
+    let config;
     try {
-      // eslint-disable-next-line no-unused-vars
-      const config = this.buildingConfig.getConfig(building.type);
+      config = this.buildingConfig.getConfig(building.type);
       if (!config) {
         return { success: false, message: `Unknown building type: ${building.type}` };
       }
@@ -353,9 +353,38 @@ class ModuleOrchestrator {
       return { success: false, message: `BuildingConfig error: ${err.message}` };
     }
 
+    // Check if player has enough resources
+    const cost = config.cost || {};
+    const currentResources = this.storage.getStorage();
+
+    for (const [resource, amount] of Object.entries(cost)) {
+      if (amount > 0) {
+        const available = currentResources[resource] || 0;
+        if (available < amount) {
+          return {
+            success: false,
+            message: `Not enough ${resource}. Need ${amount}, have ${available}`
+          };
+        }
+      }
+    }
+
+    // Consume resources
+    for (const [resource, amount] of Object.entries(cost)) {
+      if (amount > 0) {
+        this.storage.removeResource(resource, amount);
+      }
+    }
+
     // Place on grid
     const gridResult = this.grid.placeBuilding(building);
     if (!gridResult.success) {
+      // Refund resources if placement failed
+      for (const [resource, amount] of Object.entries(cost)) {
+        if (amount > 0) {
+          this.storage.addResource(resource, amount);
+        }
+      }
       return gridResult;
     }
 
@@ -501,7 +530,49 @@ class ModuleOrchestrator {
    */
   autoAssignNPCs() {
     try {
-      const assignedCount = this.npcAssignment.autoAssign();
+      let assignedCount = 0;
+
+      // Get all idle NPCs (not currently assigned)
+      const allNPCs = Array.from(this.npcManager.npcs.values());
+      const idleNPCs = allNPCs.filter(npc => {
+        const assignment = this.npcAssignment.getAssignment(npc.id);
+        return npc.alive && !assignment;
+      });
+
+      // Get buildings with available slots
+      const buildingsWithSlots = this.npcAssignment.getBuildingsWithAvailableSlots();
+
+      // Sort buildings by most available slots first (prioritize understaffed buildings)
+      buildingsWithSlots.sort((a, b) => b.availableSlots - a.availableSlots);
+
+      // Assign idle NPCs to buildings with available slots
+      for (const npc of idleNPCs) {
+        if (buildingsWithSlots.length === 0) break;
+
+        // Find the building with most available slots
+        const targetBuilding = buildingsWithSlots[0];
+
+        // Try to assign the NPC
+        const assigned = this.npcAssignment.assignNPC(npc.id, targetBuilding.buildingId);
+
+        if (assigned) {
+          assignedCount++;
+
+          // Update NPC state
+          this.npcManager.moveToWorking(npc.id);
+
+          // Update consumption system
+          this.consumption.setNPCWorking(npc.id, true);
+
+          // Update available slots count
+          targetBuilding.availableSlots--;
+
+          // Remove building from list if full
+          if (targetBuilding.availableSlots <= 0) {
+            buildingsWithSlots.shift();
+          }
+        }
+      }
 
       // Update game state immediately for UI reactivity
       this._updateGameState();

@@ -8,7 +8,7 @@
  * - Intelligent task assignment
  */
 
-import { NeedType, NeedLevel } from './NPCNeed.js';
+import { NeedType } from './NPCNeed.js';
 import { IdleTaskType } from './IdleTask.js';
 
 /**

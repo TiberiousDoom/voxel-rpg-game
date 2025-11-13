@@ -108,8 +108,11 @@ class Achievement {
     this.condition.current = currentValue;
 
     // Calculate progress percentage
-    if (this.condition.target !== undefined && this.condition.target !== null) {
+    if (this.condition.target !== undefined && this.condition.target !== null && this.condition.target > 0) {
       this.progress = Math.min(100, (currentValue / this.condition.target) * 100);
+    } else if (this.condition.target === 0) {
+      // Edge case: target is 0, consider complete if current is 0
+      this.progress = currentValue === 0 ? 100 : 0;
     } else {
       // Boolean conditions (target is implicit true)
       this.progress = currentValue ? 100 : 0;

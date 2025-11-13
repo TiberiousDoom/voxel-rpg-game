@@ -315,12 +315,22 @@ class ModuleOrchestrator {
         // Update active events (deltaTime = 1 second per tick)
         this.eventSystem.updateActiveEvents(1, eventGameState);
 
-        // Get event system stats
+        // Get event system stats and notifications
+        const activeEvents = this.eventSystem.getActiveEvents();
+        const notifications = this.eventSystem.getPendingNotifications();
+
         result.phase3b = {
-          activeEvents: this.eventSystem.getActiveEvents().length,
+          activeEvents: activeEvents.map(event => ({
+            id: event.id,
+            name: event.name,
+            type: event.type,
+            description: event.description,
+            timeRemaining: Math.max(0, event.duration - (event.elapsedTime || 0)),
+            effects: event.effects
+          })),
           queuedEvents: this.eventSystem.eventQueue.length,
           totalEventsTriggered: this.eventSystem.stats.totalEventsTriggered,
-          notifications: this.eventSystem.getPendingNotifications().length
+          notifications: notifications
         };
       }
 

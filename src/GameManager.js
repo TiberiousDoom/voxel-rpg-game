@@ -14,6 +14,10 @@ import StorageManager from './modules/resource-economy/StorageManager';
 import ConsumptionSystem from './modules/resource-economy/ConsumptionSystem';
 import TownManager from './modules/territory-town/TownManager';
 import { NPCManager } from './modules/npc-system/NPCManager';
+// Phase 3A: NPC Advanced Behaviors
+import IdleTaskManager from './modules/npc-system/IdleTaskManager';
+import NPCNeedsTracker from './modules/npc-system/NPCNeedsTracker';
+import AutonomousDecision from './modules/npc-system/AutonomousDecision';
 
 /**
  * GameManager - Main game controller
@@ -150,6 +154,10 @@ export default class GameManager extends EventEmitter {
     // Create real ConsumptionSystem
     const consumption = new ConsumptionSystem();
 
+    // Phase 3A: NPC Advanced Behaviors
+    const idleTaskManager = new IdleTaskManager(grid);
+    const npcNeedsTracker = new NPCNeedsTracker();
+    const autonomousDecision = new AutonomousDecision(npcNeedsTracker, idleTaskManager);
     // Create real BuildingEffect
     const buildingEffect = new BuildingEffect(spatial, buildingConfig);
 
@@ -169,6 +177,11 @@ export default class GameManager extends EventEmitter {
       territoryManager: territoryManager,
       townManager: townManager,
       npcManager: npcManager,
+      npcAssignment: new NPCAssignment(npcManager, grid),
+      // Phase 3A modules
+      idleTaskManager: idleTaskManager,
+      npcNeedsTracker: npcNeedsTracker,
+      autonomousDecision: autonomousDecision
       npcAssignment: new NPCAssignment(buildingConfig)
     };
   }

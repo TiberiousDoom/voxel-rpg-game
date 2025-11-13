@@ -3,12 +3,14 @@ import React, { useState } from 'react';
 const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign }) => {
   const [selectedNPC, setSelectedNPC] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
+  const [showIdleModal, setShowIdleModal] = useState(false);
 
   const handleAssign = () => {
     if (selectedNPC && selectedBuilding) {
       onAssignNPC(selectedNPC.id, selectedBuilding.id);
       setSelectedNPC(null);
       setSelectedBuilding(null);
+      setShowIdleModal(false);
     }
   };
 
@@ -36,19 +38,49 @@ const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign })
         ⚡ Auto-Assign All
       </button>
 
-      <h4>Idle NPCs</h4>
-      <div className="npc-list">
-        {idleNPCs.map(npc => (
-          <div
-            key={npc.id}
-            className={`npc-item ${selectedNPC?.id === npc.id ? 'selected' : ''}`}
-            onClick={() => setSelectedNPC(npc)}
-          >
-            <span className="npc-role">{npc.role}</span>
-            <span className="npc-health">❤️ {npc.health}</span>
+      <button onClick={() => setShowIdleModal(true)} className="view-idle-btn">
+        👀 View Idle NPCs ({idleNPCs.length})
+      </button>
+
+      {/* Idle NPCs Modal */}
+      {showIdleModal && (
+        <div className="idle-modal-backdrop" onClick={() => setShowIdleModal(false)}>
+          <div className="idle-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="idle-modal-header">
+              <h4>Idle NPCs ({idleNPCs.length})</h4>
+              <button onClick={() => setShowIdleModal(false)} className="modal-close-btn">✖️</button>
+            </div>
+            <div className="idle-modal-content">
+              {idleNPCs.length === 0 ? (
+                <p className="no-npcs">No idle NPCs</p>
+              ) : (
+                <div className="npc-list">
+                  {idleNPCs.map(npc => (
+                    <div
+                      key={npc.id}
+                      className={`npc-item ${selectedNPC?.id === npc.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedNPC(npc)}
+                    >
+                      <span className="npc-role">{npc.role}</span>
+                      <span className="npc-health">❤️ {npc.health}</span>
+                      <div className="npc-morale">
+                        <span className="morale-label">Morale:</span>
+                        <div className="morale-bar">
+                          <div
+                            className="morale-fill"
+                            style={{ width: `${Math.max(0, Math.min(100, npc.morale || 50))}%` }}
+                          />
+                        </div>
+                        <span className="morale-value">{Math.round(npc.morale || 50)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       <h4>Working NPCs</h4>
       <div className="npc-list">
@@ -60,6 +92,16 @@ const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign })
               <span className="npc-assignment">
                 → {building?.type || 'Unknown'}
               </span>
+              <div className="npc-morale">
+                <span className="morale-label">Morale:</span>
+                <div className="morale-bar">
+                  <div
+                    className="morale-fill"
+                    style={{ width: `${Math.max(0, Math.min(100, npc.morale || 50))}%` }}
+                  />
+                </div>
+                <span className="morale-value">{Math.round(npc.morale || 50)}</span>
+              </div>
               <button
                 onClick={() => handleUnassign(npc.id)}
                 className="unassign-btn"

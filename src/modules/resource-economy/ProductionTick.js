@@ -107,14 +107,29 @@ class ProductionTick {
       tickResult.buildingResults = buildingResults;
 
       // ============================================
-      // STEP 2: ADD PRODUCTION TO STORAGE
+      // STEP 2: NPC WOOD PRODUCTION
+      // ============================================
+      // NPCs generate a small amount of wood per tick
+      const aliveNPCs = Array.from(npcManager.npcs.values()).filter(npc => npc.alive);
+      const npcWoodProduction = aliveNPCs.length * 0.2; // 0.2 wood per NPC per tick
+
+      if (npcWoodProduction > 0) {
+        productionByType.wood = (productionByType.wood || 0) + npcWoodProduction;
+        tickResult.npcWoodProduction = npcWoodProduction;
+      }
+
+      // Update tickResult with combined production
+      tickResult.production = productionByType;
+
+      // ============================================
+      // STEP 3: ADD PRODUCTION TO STORAGE
       // ============================================
       for (const [resource, amount] of Object.entries(productionByType)) {
         this.storageManager.addResource(resource, amount);
       }
 
       // ============================================
-      // STEP 3: CHECK STORAGE OVERFLOW
+      // STEP 4: CHECK STORAGE OVERFLOW
       // ============================================
       const overflowResult = this.storageManager.checkAndHandleOverflow();
       if (overflowResult.overflowed) {
@@ -125,7 +140,7 @@ class ProductionTick {
       }
 
       // ============================================
-      // STEP 4: GET CURRENT STORAGE STATUS
+      // STEP 5: GET CURRENT STORAGE STATUS
       // ============================================
       tickResult.storageStatus = this.storageManager.getStatus();
 

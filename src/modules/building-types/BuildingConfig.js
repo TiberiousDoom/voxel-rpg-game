@@ -38,7 +38,7 @@ class BuildingConfig {
         type: 'CAMPFIRE',
         tier: 'SURVIVAL',
         displayName: 'Campfire',
-        description: 'Basic wood production facility',
+        description: 'Provides warmth and morale boost to nearby NPCs',
         dimensions: { width: 1, height: 1, depth: 1 },
 
         // Tier progression requirements (AND-gate logic)
@@ -56,7 +56,7 @@ class BuildingConfig {
 
         // Production rates per 5-second tick
         production: {
-          wood: 1.0,
+          wood: 0,
           food: 0,
           stone: 0
         },
@@ -87,7 +87,8 @@ class BuildingConfig {
         effects: {
           aura: null,
           zoneBonus: null,
-          multipliers: {}
+          multipliers: {},
+          moraleBonus: 5  // Provides +5 morale to all NPCs
         },
 
         // Health and durability
@@ -155,7 +156,7 @@ class BuildingConfig {
 
       HOUSE: {
         type: 'HOUSE',
-        tier: 'PERMANENT',
+        tier: 'SURVIVAL',
         displayName: 'House',
         description: 'Housing for NPCs',
         dimensions: { width: 1, height: 1, depth: 1 },

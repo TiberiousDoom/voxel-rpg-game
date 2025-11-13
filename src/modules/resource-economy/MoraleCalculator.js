@@ -123,10 +123,10 @@ class MoraleCalculator {
    * Calculate overall town morale
    *
    * Formula:
-   * morale = (happiness × 0.40) + (housing × 0.30) + (food × 0.20) + (expansion × 0.10)
+   * morale = (happiness × 0.40) + (housing × 0.30) + (food × 0.20) + (expansion × 0.10) + buildingBonus
    * Clamped to -100 to +100
    *
-   * @param {Object} params - {npcs, foodAvailable, housingCapacity, expansionCount}
+   * @param {Object} params - {npcs, foodAvailable, housingCapacity, expansionCount, buildingBonus}
    * @returns {number} Town morale (-100 to +100)
    */
   calculateTownMorale(params) {
@@ -135,7 +135,8 @@ class MoraleCalculator {
       foodAvailable = 0,
       housingCapacity = 0,
       expansionCount = 0,
-      dailyConsumptionPerNPC = 0.5
+      dailyConsumptionPerNPC = 0.5,
+      buildingBonus = 0
     } = params;
 
     if (npcs.length === 0) {
@@ -149,12 +150,13 @@ class MoraleCalculator {
     const foodFactor = this.calculateFoodFactor(foodAvailable, npcs.length, dailyConsumptionPerNPC);
     const expansionFactor = this.calculateExpansionFactor(expansionCount);
 
-    // Composite: weighted average
+    // Composite: weighted average + building bonus
     const composite =
       (happinessFactor * 0.40) +
       (housingFactor * 0.30) +
       (foodFactor * 0.20) +
-      (expansionFactor * 0.10);
+      (expansionFactor * 0.10) +
+      buildingBonus;
 
     // Clamp to -100 to +100
     this.townMorale = Math.max(Math.min(composite, 100), -100);
@@ -167,7 +169,8 @@ class MoraleCalculator {
         happiness: happinessFactor.toFixed(1),
         housing: housingFactor.toFixed(1),
         food: foodFactor.toFixed(1),
-        expansion: expansionFactor.toFixed(1)
+        expansion: expansionFactor.toFixed(1),
+        buildings: buildingBonus.toFixed(1)
       }
     });
 

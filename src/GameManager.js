@@ -18,6 +18,12 @@ import { NPCManager } from './modules/npc-system/NPCManager';
 import IdleTaskManager from './modules/npc-system/IdleTaskManager';
 import NPCNeedsTracker from './modules/npc-system/NPCNeedsTracker';
 import AutonomousDecision from './modules/npc-system/AutonomousDecision';
+// Phase 3D: Tutorial System
+import TutorialSystem from './modules/tutorial-system/TutorialSystem';
+import ContextHelp from './modules/tutorial-system/ContextHelp';
+import FeatureUnlock from './modules/tutorial-system/FeatureUnlock';
+import { createTutorialSteps } from './modules/tutorial-system/tutorialSteps';
+import { getContextHelpDefinitions } from './modules/tutorial-system/contextHelpDefinitions';
 // Phase 3C: Achievement System
 import AchievementSystem from './modules/achievement-system/AchievementSystem';
 import achievementDefinitions from './modules/achievement-system/achievementDefinitions';
@@ -173,6 +179,12 @@ export default class GameManager extends EventEmitter {
     // Create real ProductionTick
     const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
 
+    // Phase 3D: Tutorial System (optional - can be enabled/disabled)
+    const tutorialSteps = createTutorialSteps();
+    const tutorialSystem = new TutorialSystem(tutorialSteps);
+    const contextHelpDefinitions = getContextHelpDefinitions();
+    const contextHelp = new ContextHelp(contextHelpDefinitions);
+    const featureUnlock = new FeatureUnlock();
     // Phase 3B: Event System (pass null for now, will set orchestrator after creation)
     const eventSystem = createEventSystem(null);
 
@@ -194,6 +206,10 @@ export default class GameManager extends EventEmitter {
       idleTaskManager: idleTaskManager,
       npcNeedsTracker: npcNeedsTracker,
       autonomousDecision: autonomousDecision,
+      // Phase 3D modules
+      tutorialSystem: tutorialSystem,
+      contextHelp: contextHelp,
+      featureUnlock: featureUnlock
       // Phase 3C modules
       achievementSystem: achievementSystem,
       // Phase 3B modules

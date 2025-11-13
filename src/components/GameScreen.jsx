@@ -7,6 +7,8 @@ import BuildMenu from './BuildMenu';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import { Menu, X } from 'lucide-react';
 import TierProgressPanel from './TierProgressPanel';
+import TutorialOverlay from './TutorialOverlay';
+import ContextHelpTooltip from './ContextHelpTooltip';
 import AchievementPanel from './AchievementPanel';
 import AchievementNotification from './AchievementNotification';
 import './GameScreen.css';
@@ -517,6 +519,16 @@ function GameScreen() {
         <div className="toast-notification">
           {toastMessage}
         </div>
+      )}
+
+      {/* Tutorial System Overlay */}
+      {gameManager?.orchestrator?.tutorialSystem && (
+        <TutorialOverlay tutorialSystem={gameManager.orchestrator.tutorialSystem} />
+      )}
+
+      {/* Context-Sensitive Help Tooltips */}
+      {gameManager?.orchestrator?.contextHelp && (
+        <ContextHelpTooltip contextHelp={gameManager.orchestrator.contextHelp} />
       )}
     </div>
   );

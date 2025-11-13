@@ -69,6 +69,11 @@ class ModuleOrchestrator {
       this.eventSystem.orchestrator = this;
     }
 
+    // Phase 3C: Set orchestrator reference for NPC manager (achievement tracking)
+    if (this.npcManager && this.npcManager.setOrchestrator) {
+      this.npcManager.setOrchestrator(this);
+    }
+
     // Game state
     this.tickCount = 0;
     this.isPaused = false;
@@ -191,7 +196,7 @@ class ModuleOrchestrator {
       // Check for starvation
       if (consumptionResult.starvationOccurred) {
         for (const npcId of (consumptionResult.npcKilled || [])) {
-          this.npcManager.killNPC(npcId);
+          this.npcManager.killNPC(npcId, 'starvation'); // Phase 3C: Pass cause of death
           this.npcAssignment.unassignNPC(npcId);
         }
         result.starvationEvents = consumptionResult.npcKilled?.length || 0;

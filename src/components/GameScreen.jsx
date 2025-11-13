@@ -7,6 +7,8 @@ import BuildMenu from './BuildMenu';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import { Menu, X } from 'lucide-react';
 import TierProgressPanel from './TierProgressPanel';
+import AchievementPanel from './AchievementPanel';
+import AchievementNotification from './AchievementNotification';
 import './GameScreen.css';
 
 /**
@@ -27,6 +29,8 @@ function GameScreen() {
   const [tierProgress, setTierProgress] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [fpsStats, setFpsStats] = useState({ current: 60, min: 60, max: 60 });
+  const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState([]);
+  const [showAchievements, setShowAchievements] = useState(false);
 
   // Detect mobile device
   useEffect(() => {
@@ -47,6 +51,16 @@ function GameScreen() {
       max: Math.max(prev.max, fps)
     }));
   }, [gameState.fps]);
+
+  // Track newly unlocked achievements (Phase 3C)
+  useEffect(() => {
+    if (gameState.achievements && gameState.achievements.newlyUnlocked) {
+      setNewlyUnlockedAchievements(prev => [
+        ...prev,
+        ...gameState.achievements.newlyUnlocked
+      ]);
+    }
+  }, [gameState.achievements]);
 
   // Auto-start the game when ready (for testing)
   useEffect(() => {
@@ -362,6 +376,14 @@ function GameScreen() {
                 onUnassignNPC={handleUnassignNPC}
                 onAutoAssign={handleAutoAssign}
               />
+              {/* Phase 3C: Achievement Panel */}
+              {gameManager && gameManager.orchestrator && gameManager.orchestrator.achievementSystem && (
+                <div style={{ marginTop: '16px' }}>
+                  <AchievementPanel
+                    achievementSystem={gameManager.orchestrator.achievementSystem}
+                  />
+                </div>
+              )}
             </aside>
           </>
         )}
@@ -479,6 +501,14 @@ function GameScreen() {
           tierProgress={tierProgress}
           onAdvance={handleAdvanceTier}
           onClose={() => setShowTierPanel(false)}
+        />
+      )}
+
+      {/* Phase 3C: Achievement Notification */}
+      {newlyUnlockedAchievements.length > 0 && (
+        <AchievementNotification
+          achievements={newlyUnlockedAchievements}
+          onDismiss={() => setNewlyUnlockedAchievements([])}
         />
       )}
 

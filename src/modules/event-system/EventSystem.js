@@ -297,6 +297,11 @@ export default class EventSystem {
       this.eventHistory = this.eventHistory.slice(-100);
     }
 
+    // Phase 3C: Record event survived for achievement system
+    if (this.orchestrator && this.orchestrator.achievementSystem) {
+      this.orchestrator.achievementSystem.recordEventSurvived(event.type);
+    }
+
     // Add notification
     this.addNotification({
       type: 'event_ended',

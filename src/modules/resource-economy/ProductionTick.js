@@ -45,9 +45,10 @@ class ProductionTick {
    * @param {Object} npcAssignments - NPCAssignment instance
    * @param {Object} npcManager - NPCManager instance
    * @param {number} moraleMultiplier - Morale multiplier (0.9 to 1.1)
+   * @param {Object} gameState - Game state with event multipliers (optional)
    * @returns {Object} Tick result with production, consumption, storage status
    */
-  executeTick(buildings, npcAssignments, npcManager, moraleMultiplier = 1.0) {
+  executeTick(buildings, npcAssignments, npcManager, moraleMultiplier = 1.0, gameState = null) {
     this.tickNumber++;
 
     const tickResult = {
@@ -87,7 +88,8 @@ class ProductionTick {
           const result = this._calculateBuildingProduction(
             building,
             workers,
-            moraleMultiplier
+            moraleMultiplier,
+            gameState
           );
 
           buildingResults.push(result);
@@ -159,9 +161,10 @@ class ProductionTick {
    * @param {Object} building - Building with type, id, position
    * @param {Array} assignedNPCs - Array of NPC entities assigned to this building
    * @param {number} moraleMultiplier - Global morale multiplier
+   * @param {Object} gameState - Game state with event multipliers (optional)
    * @returns {Object} Production result
    */
-  _calculateBuildingProduction(building, assignedNPCs, moraleMultiplier) {
+  _calculateBuildingProduction(building, assignedNPCs, moraleMultiplier, gameState = null) {
     const config = this.buildingConfig.getConfig(building.type);
     const baseProduction = config.production;
 
@@ -198,7 +201,21 @@ class ProductionTick {
     // Apply production with multiplier
     for (const [resource, baseRate] of Object.entries(baseProduction)) {
       if (baseRate > 0) {
-        result.production[resource] = baseRate * multiplier;
+        let finalProduction = baseRate * multiplier;
+
+        // Apply event multipliers (Phase 3B)
+        if (gameState?.eventMultipliers?.[resource]) {
+          const eventMultiplier = gameState.eventMultipliers[resource];
+          finalProduction *= eventMultiplier;
+
+          // Track that event multiplier was applied
+          if (!result.eventMultipliers) {
+            result.eventMultipliers = {};
+          }
+          result.eventMultipliers[resource] = eventMultiplier;
+        }
+
+        result.production[resource] = finalProduction;
       }
     }
 

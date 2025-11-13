@@ -18,6 +18,12 @@ import { NPCManager } from './modules/npc-system/NPCManager';
 import IdleTaskManager from './modules/npc-system/IdleTaskManager';
 import NPCNeedsTracker from './modules/npc-system/NPCNeedsTracker';
 import AutonomousDecision from './modules/npc-system/AutonomousDecision';
+// Phase 3D: Tutorial System
+import TutorialSystem from './modules/tutorial-system/TutorialSystem';
+import ContextHelp from './modules/tutorial-system/ContextHelp';
+import FeatureUnlock from './modules/tutorial-system/FeatureUnlock';
+import { createTutorialSteps } from './modules/tutorial-system/tutorialSteps';
+import { getContextHelpDefinitions } from './modules/tutorial-system/contextHelpDefinitions';
 
 /**
  * GameManager - Main game controller
@@ -164,6 +170,13 @@ export default class GameManager extends EventEmitter {
     // Create real ProductionTick
     const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
 
+    // Phase 3D: Tutorial System (optional - can be enabled/disabled)
+    const tutorialSteps = createTutorialSteps();
+    const tutorialSystem = new TutorialSystem(tutorialSteps);
+    const contextHelpDefinitions = getContextHelpDefinitions();
+    const contextHelp = new ContextHelp(contextHelpDefinitions);
+    const featureUnlock = new FeatureUnlock();
+
     return {
       grid: grid,
       spatial: spatial,
@@ -181,7 +194,11 @@ export default class GameManager extends EventEmitter {
       // Phase 3A modules
       idleTaskManager: idleTaskManager,
       npcNeedsTracker: npcNeedsTracker,
-      autonomousDecision: autonomousDecision
+      autonomousDecision: autonomousDecision,
+      // Phase 3D modules
+      tutorialSystem: tutorialSystem,
+      contextHelp: contextHelp,
+      featureUnlock: featureUnlock
     };
   }
 

@@ -9,7 +9,7 @@
  * - Finding suitable tasks based on NPC state
  */
 
-import { IdleTask, IdleTaskType, TaskPriority } from './IdleTask.js';
+import { IdleTask, IdleTaskType } from './IdleTask.js';
 
 class IdleTaskManager {
   /**
@@ -141,6 +141,10 @@ class IdleTaskManager {
 
       case IdleTaskType.REST:
         // No additional data needed for REST
+        break;
+
+      default:
+        // Unknown task type - no additional data
         break;
     }
 

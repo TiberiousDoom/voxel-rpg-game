@@ -46,6 +46,11 @@ class ModuleOrchestrator {
     this.npcManager = modules.npcManager;
     this.npcAssignment = modules.npcAssignment;
 
+    // Phase 3D: Tutorial System (optional)
+    this.tutorialSystem = modules.tutorialSystem || null;
+    this.contextHelp = modules.contextHelp || null;
+    this.featureUnlock = modules.featureUnlock || null;
+
     // Game state
     this.tickCount = 0;
     this.isPaused = false;
@@ -272,6 +277,40 @@ class ModuleOrchestrator {
       // STEP 6: STATE UPDATE
       // ============================================
       this._updateGameState();
+
+      // ============================================
+      // STEP 6.5: PHASE 3D - TUTORIAL SYSTEM
+      // ============================================
+      if (this.tutorialSystem && this.tutorialSystem.flowManager.isActive) {
+        // Build tutorial-specific game state
+        const tutorialGameState = this._buildTutorialGameState();
+
+        // Update tutorial progress
+        this.tutorialSystem.update(tutorialGameState);
+
+        result.tutorialActive = true;
+        result.tutorialStep = this.tutorialSystem.flowManager.currentStepIndex;
+      }
+
+      // Check context help triggers
+      if (this.contextHelp && this.contextHelp.enabled) {
+        const helpGameState = this._buildHelpGameState();
+        const triggeredTips = this.contextHelp.checkTriggers(helpGameState);
+
+        if (triggeredTips.length > 0) {
+          result.contextHelpTriggered = triggeredTips.map(tip => tip.id);
+        }
+      }
+
+      // Check feature unlocks
+      if (this.featureUnlock && this.featureUnlock.enabled) {
+        const unlockGameState = this._buildUnlockGameState();
+        const newlyUnlocked = this.featureUnlock.checkUnlocks(unlockGameState);
+
+        if (newlyUnlocked.length > 0) {
+          result.featuresUnlocked = newlyUnlocked;
+        }
+      }
 
       // ============================================
       // STEP 7: PERFORMANCE TRACKING
@@ -709,6 +748,235 @@ class ModuleOrchestrator {
    */
   getGameState() {
     return { ...this.gameState };
+  }
+
+  // ============================================
+  // PHASE 3D: TUTORIAL SYSTEM HELPER METHODS
+  // ============================================
+
+  /**
+   * Build game state object for tutorial system
+   * @private
+   * @returns {Object} Tutorial-specific game state
+   */
+  _buildTutorialGameState() {
+    return {
+      // Track actions (set by notification methods)
+      buildingPlaced: this._lastBuildingPlaced || null,
+      buttonClicked: this._lastButtonClicked || null,
+      npcSpawned: this._lastNPCSpawned || false,
+      npcAssigned: this._lastNPCAssigned || false,
+      territoryExpanded: this._lastTerritoryExpanded || false,
+
+      // Clear one-time flags after reading
+      _clear: () => {
+        this._lastBuildingPlaced = null;
+        this._lastButtonClicked = null;
+        this._lastNPCSpawned = false;
+        this._lastNPCAssigned = false;
+        this._lastTerritoryExpanded = false;
+      }
+    };
+  }
+
+  /**
+   * Build game state object for context help system
+   * @private
+   * @returns {Object} Context help game state
+   */
+  _buildHelpGameState() {
+    const stats = this.npcManager.getStatistics();
+    const storage = this.storage.getStatus();
+
+    return {
+      // Building tracking
+      buildingPlacementFailed: this._buildingPlacementFailed || false,
+      buildingsPlaced: this.gameState.buildings.length,
+      emptyBuildings: this._getEmptyBuildingsCount(),
+      buildingDamaged: this._buildingDamaged || false,
+      buildingPlaced: this._lastBuildingPlaced || null,
+
+      // Resource tracking
+      food: this.storage.getResource('food'),
+      wood: this.storage.getResource('wood'),
+      stone: this.storage.getResource('stone'),
+      gold: this.storage.getResource('gold'),
+      essence: this.storage.getResource('essence'),
+      storagePercentage: storage.percentFull,
+
+      // NPC tracking
+      npcCount: stats.alive,
+      idleNPCCount: stats.idle || 0,
+      npcSpawnAttempted: this._npcSpawnAttempted || false,
+      housingCapacity: this.townManager.calculateHousingCapacity(this.gameState.buildings),
+      npcDied: this._npcDied || false,
+      morale: this.gameState.morale,
+
+      // Tier and progression
+      currentTier: this.gameState.currentTier,
+      tierGateCheckFailed: this._tierGateCheckFailed || false,
+      tierAdvanced: this._tierAdvanced || false,
+
+      // Territory
+      territoryExpansionAttempted: this._territoryExpansionAttempted || false,
+
+      // Events and achievements
+      disasterOccurred: this._disasterOccurred || false,
+      lastDisaster: this._lastDisaster || null,
+      eventsExperienced: this._eventsExperienced || 0,
+      achievementUnlocked: this._achievementUnlocked || false,
+
+      // Game progress
+      tickCount: this.tickCount
+    };
+  }
+
+  /**
+   * Build game state object for feature unlock system
+   * @private
+   * @returns {Object} Feature unlock game state
+   */
+  _buildUnlockGameState() {
+    return {
+      tutorialStarted: this.tutorialSystem?.flowManager.isActive || false,
+      tutorialStepCompleted: this._lastTutorialStepCompleted || null,
+      tutorialCompleted: this.tutorialSystem?.hasCompletedTutorial || false,
+      currentTier: this.gameState.currentTier,
+      achievementUnlocked: this._lastAchievementUnlocked || null,
+      buildingsPlaced: this.gameState.buildings.length
+    };
+  }
+
+  /**
+   * Get count of empty buildings (with available NPC slots)
+   * @private
+   */
+  _getEmptyBuildingsCount() {
+    const buildingsWithSlots = this.npcAssignment.getBuildingsWithAvailableSlots();
+    return buildingsWithSlots.length;
+  }
+
+  /**
+   * Notify tutorial system of building placement
+   * @param {Object} building - Placed building
+   */
+  notifyBuildingPlaced(building) {
+    this._lastBuildingPlaced = building;
+
+    if (this.tutorialSystem) {
+      this.tutorialSystem.notifyAction('buildingPlaced', building);
+    }
+  }
+
+  /**
+   * Notify tutorial system of building placement failure
+   */
+  notifyBuildingPlacementFailed() {
+    this._buildingPlacementFailed = true;
+  }
+
+  /**
+   * Notify tutorial system of button click
+   * @param {string} buttonId - Button identifier
+   */
+  notifyButtonClicked(buttonId) {
+    this._lastButtonClicked = buttonId;
+
+    if (this.tutorialSystem) {
+      this.tutorialSystem.notifyAction('buttonClicked', buttonId);
+    }
+  }
+
+  /**
+   * Notify tutorial system of NPC spawn
+   */
+  notifyNPCSpawned() {
+    this._lastNPCSpawned = true;
+    this._npcSpawnAttempted = true;
+
+    if (this.tutorialSystem) {
+      this.tutorialSystem.notifyAction('npcSpawned', true);
+    }
+  }
+
+  /**
+   * Notify tutorial system of NPC assignment
+   */
+  notifyNPCAssigned() {
+    this._lastNPCAssigned = true;
+
+    if (this.tutorialSystem) {
+      this.tutorialSystem.notifyAction('npcAssigned', true);
+    }
+  }
+
+  /**
+   * Notify tutorial system of territory expansion
+   */
+  notifyTerritoryExpanded() {
+    this._lastTerritoryExpanded = true;
+    this._territoryExpansionAttempted = true;
+
+    if (this.tutorialSystem) {
+      this.tutorialSystem.notifyAction('territoryExpanded', true);
+    }
+  }
+
+  /**
+   * Notify of tutorial step completion
+   * @param {string} stepId - Completed step ID
+   */
+  notifyTutorialStepCompleted(stepId) {
+    this._lastTutorialStepCompleted = stepId;
+  }
+
+  /**
+   * Notify of building damage
+   */
+  notifyBuildingDamaged() {
+    this._buildingDamaged = true;
+  }
+
+  /**
+   * Notify of NPC death
+   */
+  notifyNPCDied() {
+    this._npcDied = true;
+  }
+
+  /**
+   * Notify of tier gate check failure
+   */
+  notifyTierGateCheckFailed() {
+    this._tierGateCheckFailed = true;
+  }
+
+  /**
+   * Notify of tier advancement
+   * @param {string} newTier - New tier reached
+   */
+  notifyTierAdvanced(newTier) {
+    this._tierAdvanced = true;
+    this.gameState.currentTier = newTier;
+  }
+
+  /**
+   * Notify of disaster event
+   * @param {string} disasterType - Type of disaster
+   */
+  notifyDisasterOccurred(disasterType) {
+    this._disasterOccurred = true;
+    this._lastDisaster = disasterType;
+    this._eventsExperienced = (this._eventsExperienced || 0) + 1;
+  }
+
+  /**
+   * Notify of achievement unlock
+   * @param {string} achievementId - Achievement ID
+   */
+  notifyAchievementUnlocked(achievementId) {
+    this._achievementUnlocked = true;
+    this._lastAchievementUnlocked = achievementId;
   }
 }
 

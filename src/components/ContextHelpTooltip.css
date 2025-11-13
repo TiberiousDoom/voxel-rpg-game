@@ -1,0 +1,43 @@
+/* ContextHelpTooltip.css - Styles for context help tooltips */
+
+.context-help-container {
+  pointer-events: none;
+}
+
+.context-help-tip {
+  pointer-events: auto;
+  user-select: none;
+}
+
+.context-help-tip button {
+  touch-action: manipulation;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .context-help-container {
+    width: 100%;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .context-help-tip {
+    border-width: 4px !important;
+  }
+}
+
+/* Dark mode support (if needed later) */
+@media (prefers-color-scheme: dark) {
+  .context-help-tip {
+    background: #1f2937 !important;
+  }
+
+  .context-help-tip h4 {
+    color: #f9fafb !important;
+  }
+
+  .context-help-tip p {
+    color: #d1d5db !important;
+  }
+}

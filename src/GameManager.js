@@ -21,6 +21,8 @@ import AutonomousDecision from './modules/npc-system/AutonomousDecision';
 // Phase 3C: Achievement System
 import AchievementSystem from './modules/achievement-system/AchievementSystem';
 import achievementDefinitions from './modules/achievement-system/achievementDefinitions';
+// Phase 3B: Event System
+import { createEventSystem } from './modules/event-system';
 
 /**
  * GameManager - Main game controller
@@ -171,6 +173,9 @@ export default class GameManager extends EventEmitter {
     // Create real ProductionTick
     const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
 
+    // Phase 3B: Event System (pass null for now, will set orchestrator after creation)
+    const eventSystem = createEventSystem(null);
+
     return {
       grid: grid,
       spatial: spatial,
@@ -191,6 +196,8 @@ export default class GameManager extends EventEmitter {
       autonomousDecision: autonomousDecision,
       // Phase 3C modules
       achievementSystem: achievementSystem
+      // Phase 3B modules
+      eventSystem: eventSystem
     };
   }
 

@@ -53,6 +53,17 @@ class ModuleOrchestrator {
 
     // Phase 3C: Achievement System (optional)
     this.achievementSystem = modules.achievementSystem || null;
+    // Phase 3A: NPC Advanced Behaviors
+    this.idleTaskManager = modules.idleTaskManager;
+    this.npcNeedsTracker = modules.npcNeedsTracker;
+    this.autonomousDecision = modules.autonomousDecision;
+
+    // Phase 3B: Event System
+    this.eventSystem = modules.eventSystem;
+    // Set orchestrator reference for event system
+    if (this.eventSystem) {
+      this.eventSystem.orchestrator = this;
+    }
 
     // Game state
     this.tickCount = 0;
@@ -64,7 +75,10 @@ class ModuleOrchestrator {
       npcs: [],
       production: {},
       consumption: 0,
-      morale: 0
+      morale: 0,
+      // Phase 3B: Event multipliers
+      eventMultipliers: {},
+      eventConsumptionModifiers: { food: 0 }
     };
 
     // Performance tracking
@@ -87,9 +101,22 @@ class ModuleOrchestrator {
       'territoryManager', 'townManager', 'npcManager', 'npcAssignment'
     ];
 
+    // Phase 3A & 3B modules are optional for backwards compatibility
+    const optional = [
+      'idleTaskManager', 'npcNeedsTracker', 'autonomousDecision',
+      'eventSystem'
+    ];
+
     for (const module of required) {
       if (!modules[module]) {
         throw new Error(`ModuleOrchestrator missing required module: ${module}`);
+      }
+    }
+
+    // Log warnings for missing optional modules
+    for (const module of optional) {
+      if (!modules[module]) {
+        console.warn(`ModuleOrchestrator: Optional module '${module}' not provided`);
       }
     }
   }
@@ -132,7 +159,9 @@ class ModuleOrchestrator {
       const productionResult = this.productionTick.executeTick(
         this.gameState.buildings,
         npcAssignments,
-        moraleMultiplier
+        this.npcManager,
+        moraleMultiplier,
+        this.gameState
       );
 
       result.production = productionResult.production;
@@ -141,7 +170,12 @@ class ModuleOrchestrator {
       // STEP 2: CONSUMPTION PHASE
       // ============================================
       const foodBefore = this.storage.getResource('food');
-      const consumptionResult = this.consumption.executeConsumptionTick(foodBefore);
+      const consumptionResult = this.consumption.executeConsumptionTick(
+        foodBefore,
+        this.gameState.buildings,
+        this.npcAssignment,
+        this.gameState
+      );
 
       const foodConsumed = parseFloat(consumptionResult.foodConsumed) || 0;
       // Only remove food if there's actual consumption
@@ -262,6 +296,38 @@ class ModuleOrchestrator {
           criticalNeeds: this.npcNeedsTracker.getAllCriticalNPCs().length,
           tasksCompleted: completedTasks.length,
           activeTasks: this.idleTaskManager.getStatistics().activeTasks
+        };
+      }
+
+      // ============================================
+      // STEP 4.6: PHASE 3B - EVENT SYSTEM
+      // ============================================
+      if (this.eventSystem) {
+        // Check if new events should trigger
+        const eventGameState = {
+          ...this.gameState,
+          buildings: this.gameState.buildings,
+          population: this.npcManager.npcs.size,
+          gridManager: this.grid,
+          storageManager: this.storage,
+          townManager: this.townManager,
+          npcManager: this.npcManager,
+          npcAssignments: this.npcAssignment,
+          buildingConfig: this.buildingConfig,
+          territoryManager: this.territoryManager
+        };
+
+        this.eventSystem.checkEventTriggers(this.tickCount, eventGameState);
+
+        // Update active events (deltaTime = 1 second per tick)
+        this.eventSystem.updateActiveEvents(1, eventGameState);
+
+        // Get event system stats
+        result.phase3b = {
+          activeEvents: this.eventSystem.getActiveEvents().length,
+          queuedEvents: this.eventSystem.eventQueue.length,
+          totalEventsTriggered: this.eventSystem.stats.totalEventsTriggered,
+          notifications: this.eventSystem.getPendingNotifications().length
         };
       }
 

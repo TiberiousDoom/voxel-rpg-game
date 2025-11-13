@@ -334,6 +334,82 @@ class NPCNeedsTracker {
       needDistribution: {}
     };
   }
+
+  /**
+   * Serialize needs tracker state for saving
+   * @returns {Object} Serialized state
+   */
+  serialize() {
+    const npcNeedsData = [];
+
+    for (const [npcId, needs] of this.npcNeeds.entries()) {
+      const needsObj = {};
+      for (const [needType, need] of needs.entries()) {
+        needsObj[needType] = need.getSummary();
+      }
+      npcNeedsData.push({ npcId, needs: needsObj });
+    }
+
+    return {
+      npcNeeds: npcNeedsData,
+      criticalAlerts: Array.from(this.criticalAlerts.entries()),
+      config: this.config,
+      stats: {
+        totalNPCsTracked: this.stats.totalNPCsTracked,
+        totalNeedsUpdated: this.stats.totalNeedsUpdated,
+        totalCriticalEvents: this.stats.totalCriticalEvents,
+        needDistribution: { ...this.stats.needDistribution }
+      }
+    };
+  }
+
+  /**
+   * Deserialize needs tracker state from save
+   * @param {Object} data - Saved state
+   */
+  deserialize(data) {
+    if (!data) return;
+
+    // Restore NPC needs
+    if (data.npcNeeds) {
+      this.npcNeeds.clear();
+      for (const entry of data.npcNeeds) {
+        const needs = new Map();
+        for (const [needType, needData] of Object.entries(entry.needs)) {
+          const need = new NPCNeed(needType, needData.value);
+          // Restore need statistics
+          if (needData.statistics) {
+            need.totalDecay = needData.statistics.totalDecay || 0;
+            need.totalRestored = needData.statistics.totalRestored || 0;
+            need.timesBecomeCritical = needData.statistics.timesBecomeCritical || 0;
+          }
+          needs.set(needType, need);
+        }
+        this.npcNeeds.set(entry.npcId, needs);
+      }
+    }
+
+    // Restore critical alerts
+    if (data.criticalAlerts) {
+      this.criticalAlerts.clear();
+      for (const [npcId, needTypes] of data.criticalAlerts) {
+        this.criticalAlerts.set(npcId, needTypes);
+      }
+    }
+
+    // Restore config
+    if (data.config) {
+      this.config = { ...this.config, ...data.config };
+    }
+
+    // Restore statistics
+    if (data.stats) {
+      this.stats.totalNPCsTracked = data.stats.totalNPCsTracked || this.npcNeeds.size;
+      this.stats.totalNeedsUpdated = data.stats.totalNeedsUpdated || 0;
+      this.stats.totalCriticalEvents = data.stats.totalCriticalEvents || 0;
+      this.stats.needDistribution = data.stats.needDistribution || {};
+    }
+  }
 }
 
 export default NPCNeedsTracker;

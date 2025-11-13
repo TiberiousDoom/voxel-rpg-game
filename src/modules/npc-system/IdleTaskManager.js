@@ -456,6 +456,63 @@ class IdleTaskManager {
       ).toFixed(2)
     };
   }
+
+  /**
+   * Serialize idle task manager state for saving
+   * @returns {Object} Serialized state
+   */
+  serialize() {
+    // Serialize active tasks
+    const activeTasks = [];
+    for (const [npcId, task] of this.activeTasks.entries()) {
+      activeTasks.push({
+        npcId,
+        task: task.serialize()
+      });
+    }
+
+    return {
+      activeTasks,
+      taskHistory: this.taskHistory.slice(-100), // Keep only last 100 history entries
+      stats: {
+        totalTasksAssigned: this.stats.totalTasksAssigned,
+        totalTasksCompleted: this.stats.totalTasksCompleted,
+        totalTasksCancelled: this.stats.totalTasksCancelled,
+        taskTypeCount: { ...this.stats.taskTypeCount }
+      }
+    };
+  }
+
+  /**
+   * Deserialize idle task manager state from save
+   * @param {Object} data - Saved state
+   */
+  deserialize(data) {
+    if (!data) return;
+
+    // Restore active tasks
+    if (data.activeTasks) {
+      this.activeTasks.clear();
+      for (const entry of data.activeTasks) {
+        const task = new IdleTask(entry.task.type, entry.task.data);
+        task.deserialize(entry.task);
+        this.activeTasks.set(entry.npcId, task);
+      }
+    }
+
+    // Restore task history
+    if (data.taskHistory) {
+      this.taskHistory = data.taskHistory;
+    }
+
+    // Restore statistics
+    if (data.stats) {
+      this.stats.totalTasksAssigned = data.stats.totalTasksAssigned || 0;
+      this.stats.totalTasksCompleted = data.stats.totalTasksCompleted || 0;
+      this.stats.totalTasksCancelled = data.stats.totalTasksCancelled || 0;
+      this.stats.taskTypeCount = data.stats.taskTypeCount || {};
+    }
+  }
 }
 
 export default IdleTaskManager;

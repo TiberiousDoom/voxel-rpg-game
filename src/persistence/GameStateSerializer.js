@@ -585,6 +585,10 @@ class GameStateSerializer {
       achievementSystem.deserialize(data);
     } catch (err) {
       errors.push(`Achievement system deserialization error: ${err.message}`);
+    }
+  }
+
+  // ============================================
   // EVENT SYSTEM SERIALIZATION (Phase 3B)
   // ============================================
 

@@ -397,6 +397,10 @@ class ModuleOrchestrator {
 
         if (newlyUnlocked.length > 0) {
           result.featuresUnlocked = newlyUnlocked;
+        }
+      }
+
+      // ============================================
       // STEP 6.5: PHASE 3C - ACHIEVEMENT TRACKING
       // ============================================
       if (this.achievementSystem) {

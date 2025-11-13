@@ -209,7 +209,7 @@ export default class GameManager extends EventEmitter {
       // Phase 3D modules
       tutorialSystem: tutorialSystem,
       contextHelp: contextHelp,
-      featureUnlock: featureUnlock
+      featureUnlock: featureUnlock,
       // Phase 3C modules
       achievementSystem: achievementSystem,
       // Phase 3B modules

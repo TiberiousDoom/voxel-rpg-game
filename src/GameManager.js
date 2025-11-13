@@ -18,6 +18,8 @@ import { NPCManager } from './modules/npc-system/NPCManager';
 import IdleTaskManager from './modules/npc-system/IdleTaskManager';
 import NPCNeedsTracker from './modules/npc-system/NPCNeedsTracker';
 import AutonomousDecision from './modules/npc-system/AutonomousDecision';
+// Phase 3B: Event System
+import { createEventSystem } from './modules/event-system';
 
 /**
  * GameManager - Main game controller
@@ -158,11 +160,15 @@ export default class GameManager extends EventEmitter {
     const idleTaskManager = new IdleTaskManager(grid);
     const npcNeedsTracker = new NPCNeedsTracker();
     const autonomousDecision = new AutonomousDecision(npcNeedsTracker, idleTaskManager);
+
     // Create real BuildingEffect
     const buildingEffect = new BuildingEffect(spatial, buildingConfig);
 
     // Create real ProductionTick
     const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
+
+    // Phase 3B: Event System (pass null for now, will set orchestrator after creation)
+    const eventSystem = createEventSystem(null);
 
     return {
       grid: grid,
@@ -181,8 +187,9 @@ export default class GameManager extends EventEmitter {
       // Phase 3A modules
       idleTaskManager: idleTaskManager,
       npcNeedsTracker: npcNeedsTracker,
-      autonomousDecision: autonomousDecision
-      npcAssignment: new NPCAssignment(buildingConfig)
+      autonomousDecision: autonomousDecision,
+      // Phase 3B modules
+      eventSystem: eventSystem
     };
   }
 

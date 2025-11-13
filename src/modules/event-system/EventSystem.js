@@ -9,7 +9,6 @@
  */
 
 import EventScheduler from './EventScheduler.js';
-import { EventState } from './Event.js';
 
 export default class EventSystem {
   constructor(orchestrator = null) {

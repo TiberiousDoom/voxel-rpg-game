@@ -3,6 +3,15 @@ import BrowserSaveManager from './persistence/BrowserSaveManager';
 import ModuleOrchestrator from './core/ModuleOrchestrator';
 import GameEngine from './core/GameEngine';
 import NPCAssignment from './modules/npc-system/NPCAssignment';
+import TierProgression from './modules/building-types/TierProgression';
+import BuildingConfig from './modules/building-types/BuildingConfig';
+import { TerritoryManager } from './modules/territory-town/TerritoryManager';
+import GridManager from './modules/foundation/GridManager';
+import SpatialPartitioning from './modules/foundation/SpatialPartitioning';
+import StorageManager from './modules/resource-economy/StorageManager';
+import ConsumptionSystem from './modules/resource-economy/ConsumptionSystem';
+import TownManager from './modules/territory-town/TownManager';
+import { NPCManager } from './modules/npc-system/NPCManager';
 
 /**
  * GameManager - Main game controller
@@ -107,23 +116,50 @@ export default class GameManager extends EventEmitter {
    * Create all game modules
    */
   _createModules() {
-    // This would normally import and instantiate all your game modules
-    // For now, creating mock modules for demonstration
-    const grid = this._createMockGridManager();
-    const npcManager = this._createMockNPCManager();
+    // Create real GridManager
+    const grid = new GridManager({
+      gridSize: 100,
+      gridHeight: 50
+    });
+
+    // Create BuildingConfig once and share it across all modules
+    const buildingConfig = new BuildingConfig();
+
+    // Create TerritoryManager and initialize with starting territory
+    const territoryManager = new TerritoryManager(buildingConfig);
+    territoryManager.createTerritory({ x: 50, y: 0, z: 50 });
+
+    // Create TownManager
+    const townManager = new TownManager(buildingConfig);
+
+    // Create NPCManager (requires TownManager)
+    const npcManager = new NPCManager(townManager);
+
+    // Create real SpatialPartitioning
+    const spatial = new SpatialPartitioning(100, 50, 10);
+
+    // Create real StorageManager with initial capacity
+    const storage = new StorageManager(1000);
+    // Set initial resources
+    storage.addResource('food', 100);
+    storage.addResource('wood', 50);
+    storage.addResource('stone', 50);
+
+    // Create real ConsumptionSystem
+    const consumption = new ConsumptionSystem();
 
     return {
       grid: grid,
-      spatial: this._createMockSpatialPartitioning(),
-      buildingConfig: this._createMockBuildingConfig(),
-      tierProgression: this._createMockTierProgression(),
+      spatial: spatial,
+      buildingConfig: buildingConfig,
+      tierProgression: new TierProgression(buildingConfig),
       buildingEffect: this._createMockBuildingEffect(),
       productionTick: this._createMockProductionTick(),
-      storage: this._createMockStorageManager(),
-      consumption: this._createMockConsumptionSystem(),
+      storage: storage,
+      consumption: consumption,
       morale: this._createMockMoraleCalculator(),
-      territoryManager: this._createMockTerritoryManager(),
-      townManager: this._createMockTownManager(),
+      territoryManager: territoryManager,
+      townManager: townManager,
       npcManager: npcManager,
       npcAssignment: new NPCAssignment(npcManager, grid)
     };
@@ -186,7 +222,7 @@ export default class GameManager extends EventEmitter {
 
       // Load save if provided
       if (saveSlot && this.saveManager?.saveExists(saveSlot)) {
-        const loadResult = this.saveManager.loadGame(
+        const loadResult = await this.saveManager.loadGame(
           saveSlot,
           this.orchestrator,
           this.engine
@@ -439,6 +475,53 @@ export default class GameManager extends EventEmitter {
   }
 
   /**
+   * Get current tier progression status
+   */
+  getTierProgress() {
+    try {
+      const currentTier = this.orchestrator.gameState.currentTier || 'SURVIVAL';
+      const nextTier = this.orchestrator.tierProgression.getNextTier(currentTier);
+
+      if (!nextTier) {
+        return {
+          currentTier,
+          nextTier: null,
+          maxTierReached: true,
+          canAdvance: false,
+          progress: null
+        };
+      }
+
+      const buildings = this.orchestrator.gameState.buildings || [];
+      const resources = this.orchestrator.storage.getStorage();
+
+      const progress = this.orchestrator.tierProgression.canAdvanceToTier(
+        nextTier,
+        buildings,
+        resources,
+        currentTier
+      );
+
+      return {
+        currentTier,
+        nextTier,
+        maxTierReached: false,
+        canAdvance: progress.canAdvance,
+        progress
+      };
+    } catch (err) {
+      console.error('[GameManager] Failed to get tier progress:', err);
+      return {
+        currentTier: 'SURVIVAL',
+        nextTier: null,
+        maxTierReached: false,
+        canAdvance: false,
+        error: err.message
+      };
+    }
+  }
+
+  /**
    * Advance to the next tier
    */
   advanceTier(targetTier) {
@@ -457,6 +540,104 @@ export default class GameManager extends EventEmitter {
       console.error('[GameManager] Failed to advance tier:', err);
       return { success: false, message: err.message };
     }
+  }
+
+  /**
+   * Get territory status
+   */
+  getTerritoryStatus() {
+    try {
+      const territories = this.orchestrator.territoryManager.getAllTerritories();
+      const mainTerritory = territories[0]; // Get primary territory
+
+      if (!mainTerritory) {
+        return {
+          hasTerritory: false,
+          currentSize: 0,
+          nextSize: null,
+          canExpand: false
+        };
+      }
+
+      // Get expansion requirements for next tier
+      const currentTier = mainTerritory.tier;
+      const tierHierarchy = ['SURVIVAL', 'PERMANENT', 'TOWN', 'CASTLE'];
+      const currentIndex = tierHierarchy.indexOf(currentTier);
+      const nextTier = currentIndex < tierHierarchy.length - 1 ? tierHierarchy[currentIndex + 1] : null;
+
+      if (!nextTier) {
+        return {
+          hasTerritory: true,
+          currentSize: mainTerritory.dimension,
+          currentTier,
+          nextSize: null,
+          maxSizeReached: true,
+          canExpand: false
+        };
+      }
+
+      // Check if can expand
+      const resources = this.orchestrator.storage.getStorage();
+      const buildings = this.orchestrator.gameState.buildings || [];
+
+      const expansionResult = this.orchestrator.territoryManager.canExpandTerritory(
+        mainTerritory.id,
+        resources,
+        buildings
+      );
+
+      return {
+        hasTerritory: true,
+        territoryId: mainTerritory.id,
+        currentSize: mainTerritory.dimension,
+        currentTier,
+        nextSize: this._getTerritorySize(nextTier),
+        nextTier,
+        maxSizeReached: false,
+        canExpand: expansionResult.canExpand,
+        expansionResult
+      };
+    } catch (err) {
+      console.error('[GameManager] Failed to get territory status:', err);
+      return {
+        hasTerritory: false,
+        error: err.message
+      };
+    }
+  }
+
+  /**
+   * Expand territory
+   */
+  expandTerritory(territoryId) {
+    try {
+      const result = this.orchestrator.expandTerritory(territoryId);
+
+      if (result.success) {
+        this._emit('territory:expanded', {
+          territoryId,
+          newTier: result.newTier
+        });
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[GameManager] Failed to expand territory:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
+  /**
+   * Helper to get territory size by tier
+   */
+  _getTerritorySize(tier) {
+    const sizes = {
+      SURVIVAL: 25,
+      PERMANENT: 50,
+      TOWN: 100,
+      CASTLE: 150
+    };
+    return sizes[tier] || 25;
   }
 
   /**
@@ -610,9 +791,9 @@ export default class GameManager extends EventEmitter {
   /**
    * Save the game
    */
-  saveGame(slotName, description = '') {
+  async saveGame(slotName, description = '') {
     try {
-      const result = this.saveManager.saveGame(
+      const result = await this.saveManager.saveGame(
         this.orchestrator,
         this.engine,
         slotName,
@@ -634,9 +815,9 @@ export default class GameManager extends EventEmitter {
   /**
    * Load a saved game
    */
-  loadGame(slotName) {
+  async loadGame(slotName) {
     try {
-      const result = this.saveManager.loadGame(
+      const result = await this.saveManager.loadGame(
         slotName,
         this.orchestrator,
         this.engine
@@ -658,8 +839,16 @@ export default class GameManager extends EventEmitter {
   /**
    * Get available save slots
    */
-  getSaveSlots() {
-    return this.saveManager ? this.saveManager.getSaveSlots() : [];
+  async getSaveSlots() {
+    if (!this.saveManager) {
+      return [];
+    }
+    try {
+      return await this.saveManager.listSaves();
+    } catch (err) {
+      console.error('[GameManager] Failed to get save slots:', err);
+      return [];
+    }
   }
 
   /**
@@ -735,6 +924,9 @@ export default class GameManager extends EventEmitter {
 
   _createMockSpatialPartitioning() {
     return {
+      chunkSize: 10,
+      chunks: new Map(),
+      buildingChunks: new Map(),
       addBuilding: () => {},
       removeBuilding: () => {},
       insert: () => {},
@@ -743,24 +935,14 @@ export default class GameManager extends EventEmitter {
   }
 
   _createMockBuildingConfig() {
-    return {
-      getConfig: (type) => ({
-        type,
-        cost: { wood: 10, stone: 5 },
-        dimensions: { width: 1, height: 1, depth: 1 }
-      }),
-      getBuildingData: (type) => ({
-        type,
-        cost: { wood: 10, stone: 5 }
-      })
-    };
+    // Use real BuildingConfig instead of mock
+    return new BuildingConfig();
   }
 
-  _createMockTierProgression() {
-    return {
-      canAdvanceToTier: () => ({ canAdvance: true }),
-      getRequirementsForTier: () => ({ wood: 100, stone: 50 })
-    };
+  _createMockTierProgression(buildingConfig) {
+    // Use real TierProgression instead of mock
+    // Accept buildingConfig parameter to avoid creating duplicate instances
+    return new TierProgression(buildingConfig);
   }
 
   _createMockBuildingEffect() {
@@ -910,17 +1092,15 @@ export default class GameManager extends EventEmitter {
     };
   }
 
-  _createMockTerritoryManager() {
-    return {
-      getAllTerritories: () => [],
-      createTerritory: (id, bounds) => ({
-        id,
-        bounds
-      }),
-      findTerritoryForBuilding: () => null,
-      addBuildingToTerritory: () => {},
-      removeBuildingFromTerritory: () => {}
-    };
+  _createMockTerritoryManager(buildingConfig) {
+    // Use real TerritoryManager instead of mock
+    // Accept buildingConfig parameter to avoid creating duplicate instances
+    const territoryManager = new TerritoryManager(buildingConfig);
+
+    // Create initial territory
+    territoryManager.createTerritory({ x: 50, y: 0, z: 50 });
+
+    return territoryManager;
   }
 
   _createMockTownManager() {

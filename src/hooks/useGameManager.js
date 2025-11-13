@@ -13,7 +13,7 @@
  * const { gameManager, gameState, actions, isReady, error } = useGameManager(config);
  */
 
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import GameManager from '../GameManager';
 import BrowserSaveManager from '../persistence/BrowserSaveManager';
 
@@ -63,8 +63,9 @@ export function useGameManager(config = {}) {
   const [error, setError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Configuration with defaults
-  const options = {
+  // Memoize configuration with defaults to prevent recreation on every render
+  // We spread the entire config object, so we need to include it in dependencies
+  const options = useMemo(() => ({
     savePath: config.savePath || 'voxel-rpg-saves',
     enableAutoSave: config.enableAutoSave !== false,
     autoSaveInterval: config.autoSaveInterval || 300, // 5 minutes
@@ -72,7 +73,7 @@ export function useGameManager(config = {}) {
     enableErrorRecovery: config.enableErrorRecovery !== false,
     debounceInterval: config.debounceInterval || 500, // 500ms update throttle
     ...config
-  };
+  }), [config]);
 
   /**
    * Queue a state update and debounce the actual React setState
@@ -505,6 +506,69 @@ export function useGameManager(config = {}) {
     ),
 
     /**
+     * Get tier progression status
+     */
+    getTierProgress: useCallback(() => {
+      try {
+        setError(null);
+        if (gameManagerRef.current) {
+          return gameManagerRef.current.getTierProgress();
+        }
+        return {
+          currentTier: 'SURVIVAL',
+          nextTier: null,
+          maxTierReached: false,
+          canAdvance: false
+        };
+      } catch (err) {
+        setError(err.message);
+        return {
+          currentTier: 'SURVIVAL',
+          nextTier: null,
+          maxTierReached: false,
+          canAdvance: false,
+          error: err.message
+        };
+      }
+    }, []),
+
+    /**
+     * Get territory status
+     */
+    getTerritoryStatus: useCallback(() => {
+      try {
+        setError(null);
+        if (gameManagerRef.current) {
+          return gameManagerRef.current.getTerritoryStatus();
+        }
+        return { hasTerritory: false, currentSize: 0, canExpand: false };
+      } catch (err) {
+        setError(err.message);
+        return { hasTerritory: false, error: err.message };
+      }
+    }, []),
+
+    /**
+     * Expand territory
+     */
+    expandTerritory: useCallback((territoryId) => {
+      try {
+        setError(null);
+        if (gameManagerRef.current) {
+          const result = gameManagerRef.current.expandTerritory(territoryId);
+          if (!result.success) {
+            setError(result.message);
+          }
+          return result;
+        }
+        return { success: false, message: 'Game not initialized' };
+      } catch (err) {
+        setError(err.message);
+        return { success: false, message: err.message };
+      }
+    }, []),
+
+    /**
      * Advance to next tier
      */
     advanceTier: useCallback(
@@ -531,11 +595,11 @@ export function useGameManager(config = {}) {
      * Save the game
      */
     saveGame: useCallback(
-      (slotName = 'autosave', description = '') => {
+      async (slotName = 'autosave', description = '') => {
         try {
           setError(null);
           if (gameManagerRef.current) {
-            const result = gameManagerRef.current.saveGame(slotName, description);
+            const result = await gameManagerRef.current.saveGame(slotName, description);
             if (!result.success) {
               setError(result.message);
             }
@@ -554,11 +618,11 @@ export function useGameManager(config = {}) {
      * Load a saved game
      */
     loadGame: useCallback(
-      (slotName) => {
+      async (slotName) => {
         try {
           setError(null);
           if (gameManagerRef.current) {
-            const result = gameManagerRef.current.loadGame(slotName);
+            const result = await gameManagerRef.current.loadGame(slotName);
             if (!result.success) {
               setError(result.message);
             }
@@ -576,11 +640,11 @@ export function useGameManager(config = {}) {
     /**
      * Get available save slots
      */
-    getSaveSlots: useCallback(() => {
+    getSaveSlots: useCallback(async () => {
       try {
         setError(null);
         if (gameManagerRef.current) {
-          return gameManagerRef.current.getSaveSlots();
+          return await gameManagerRef.current.getSaveSlots();
         }
         return [];
       } catch (err) {

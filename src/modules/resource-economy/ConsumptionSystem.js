@@ -139,6 +139,25 @@ class ConsumptionSystem {
   executeConsumptionTick(foodAvailable, buildings = [], npcAssignments = null) {
     const aliveNPCs = this.getAliveNPCs();
 
+    // If no NPCs, don't consume anything
+    if (aliveNPCs.length === 0) {
+      return {
+        tickNumber: 'consumption',
+        aliveCount: 0,
+        workingCount: 0,
+        idleCount: 0,
+        foodConsumed: 0,
+        npcsDied: 0,
+        npcFoodConsumption: '0.0000',
+        buildingConsumption: {},
+        totalFoodConsumption: '0.0000',
+        consumptionPerMinute: '0.0000',
+        foodRemaining: foodAvailable.toFixed(2),
+        starvationOccurred: false,
+        npcsStarving: []
+      };
+    }
+
     // Calculate NPC food consumption
     let npcFoodConsumption = 0;
     for (const npc of aliveNPCs) {
@@ -161,6 +180,8 @@ class ConsumptionSystem {
       aliveCount: aliveNPCs.length,
       workingCount: aliveNPCs.filter(n => n.isWorking).length,
       idleCount: aliveNPCs.filter(n => !n.isWorking).length,
+      foodConsumed: totalFoodConsumption,  // Add for test compatibility (as number)
+      npcsDied: 0,  // Always initialize, will be overridden if starvation occurs
       npcFoodConsumption: npcFoodConsumption.toFixed(4),
       buildingConsumption: buildingConsumption,
       totalFoodConsumption: totalFoodConsumption.toFixed(4),

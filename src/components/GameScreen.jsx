@@ -4,9 +4,9 @@ import GameViewport from './GameViewport';
 import ResourcePanel from './ResourcePanel';
 import NPCPanel from './NPCPanel';
 import BuildMenu from './BuildMenu';
-import GameControlBar from './GameControlBar';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import { Menu, X } from 'lucide-react';
+import TierProgressPanel from './TierProgressPanel';
 import './GameScreen.css';
 
 /**
@@ -15,7 +15,7 @@ import './GameScreen.css';
  * Mobile-compatible with hamburger menu for sidebars
  */
 function GameScreen() {
-  const { gameState, actions, isReady, error, isInitializing } = useGame();
+  const { gameState, actions, isReady, error, isInitializing, gameManager } = useGame();
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
@@ -23,6 +23,10 @@ function GameScreen() {
   const [isMobile, setIsMobile] = useState(false);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+  const [showTierPanel, setShowTierPanel] = useState(false);
+  const [tierProgress, setTierProgress] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [fpsStats, setFpsStats] = useState({ current: 60, min: 60, max: 60 });
 
   // Detect mobile device
   useEffect(() => {
@@ -33,6 +37,16 @@ function GameScreen() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Track FPS stats
+  useEffect(() => {
+    const fps = parseFloat(gameState.fps) || 60;
+    setFpsStats(prev => ({
+      current: fps,
+      min: Math.min(prev.min, fps),
+      max: Math.max(prev.max, fps)
+    }));
+  }, [gameState.fps]);
 
   // Auto-start the game when ready (for testing)
   useEffect(() => {
@@ -91,6 +105,12 @@ function GameScreen() {
     if (savedSlots.has(selectedSlot)) {
       actions.loadGame(selectedSlot);
     }
+  };
+
+  // Show toast notification
+  const showToast = (message, duration = 3000) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), duration);
   };
 
   // Show loading state
@@ -160,20 +180,23 @@ function GameScreen() {
     }
   };
 
-  // Handle damage
-  const handleDamage = (buildingId, damage) => {
-    const result = actions.damageBuilding(buildingId, damage);
+  const handleOpenTierPanel = () => {
+    const progress = actions.getTierProgress();
+    setTierProgress(progress);
+    setShowTierPanel(true);
+  };
+
+  const handleAdvanceTier = (targetTier) => {
+    const result = actions.advanceTier(targetTier);
     if (result.success) {
       // eslint-disable-next-line no-console
-      console.log('[BuildingHealth] Damage applied:', result);
-      // Update selected building with new health
-      const updatedBuilding = gameState.buildings.find(b => b.id === buildingId);
-      if (updatedBuilding) {
-        setSelectedBuilding(updatedBuilding);
-      }
+      console.log('[TierProgression] Advanced to tier:', targetTier);
+      // Refresh tier progress
+      const progress = actions.getTierProgress();
+      setTierProgress(progress);
     } else {
       // eslint-disable-next-line no-console
-      console.error('[BuildingHealth] Damage failed:', result.error);
+      console.error('[TierProgression] Advance failed:', result.reason);
     }
   };
 
@@ -242,13 +265,6 @@ function GameScreen() {
             <span className="tier-badge">
               Tier: {gameState.currentTier || 'SURVIVAL'}
             </span>
-            <span className={`status-indicator ${
-              gameState.isRunning ? 'running' :
-              gameState.isPaused ? 'paused' : 'stopped'
-            }`}>
-              {gameState.isRunning ? '● Running' :
-               gameState.isPaused ? '⏸ Paused' : '⬛ Stopped'}
-            </span>
             {gameState.isRunning && !gameState.isPaused && (
               <button
                 onClick={() => actions.pauseGame()}
@@ -269,6 +285,9 @@ function GameScreen() {
             )}
             <span className="tick-counter">
               Tick: {gameState.currentTick || 0}
+            </span>
+            <span className="fps-counter" title="Current FPS / Min / Max">
+              FPS: {fpsStats.current.toFixed(2)} (min: {fpsStats.min.toFixed(2)} / max: {fpsStats.max.toFixed(2)})
             </span>
           </div>
         </div>
@@ -366,7 +385,10 @@ function GameScreen() {
             selectedBuildingType={selectedBuildingType}
             onPlaceBuilding={(position) => {
               if (selectedBuildingType) {
-                actions.placeBuilding(selectedBuildingType, position);
+                const result = actions.placeBuilding(selectedBuildingType, position);
+                if (result && !result.success) {
+                  showToast(`❌ Cannot place building: ${result.message || 'Invalid location'}`);
+                }
                 setSelectedBuildingType(null);
               }
             }}
@@ -413,27 +435,14 @@ function GameScreen() {
                 selectedBuildingType={selectedBuildingType}
                 onSelectBuilding={setSelectedBuildingType}
                 onSpawnNPC={() => actions.spawnNPC('WORKER')}
-                onAdvanceTier={() => actions.advanceTier('SETTLEMENT')}
+                onAdvanceTier={handleOpenTierPanel}
+                currentTier={gameState.currentTier || 'SURVIVAL'}
+                buildingConfig={gameManager?.orchestrator?.buildingConfig}
               />
             </aside>
           </>
         )}
       </main>
-
-      {/* Bottom Control Bar */}
-      <footer>
-        <GameControlBar
-          isRunning={gameState.isRunning}
-          isPaused={gameState.isPaused}
-          onStart={() => actions.startGame()}
-          onStop={() => actions.stopGame()}
-          onPause={() => actions.pauseGame()}
-          onResume={() => actions.resumeGame()}
-          onSave={(slotName) => actions.saveGame(slotName)}
-          onLoad={(slotName) => actions.loadGame(slotName)}
-          getSaveSlots={actions.getSaveSlots}
-        />
-      </footer>
 
       {/* Error Toast */}
       {error && (
@@ -444,14 +453,30 @@ function GameScreen() {
       )}
 
       {/* Building Info Panel */}
-      {selectedBuilding && (
+      {selectedBuilding && gameManager && (
         <BuildingInfoPanel
           building={selectedBuilding}
+          buildingConfig={gameManager.orchestrator?.buildingConfig}
           resources={gameState.resources || {}}
           onRepair={handleRepair}
-          onDamage={handleDamage}
           onClose={() => setSelectedBuilding(null)}
         />
+      )}
+
+      {/* Tier Progress Panel */}
+      {showTierPanel && tierProgress && (
+        <TierProgressPanel
+          tierProgress={tierProgress}
+          onAdvance={handleAdvanceTier}
+          onClose={() => setShowTierPanel(false)}
+        />
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="toast-notification">
+          {toastMessage}
+        </div>
       )}
     </div>
   );

@@ -1,213 +1,330 @@
 /**
- * Manages NPC work assignments to buildings
- * Handles capacity checking, validation, auto-assignment
+ * NPCAssignment.js - Work slot and building assignment logic
+ *
+ * Manages:
+ * - Building work slot allocation
+ * - NPC assignment priority and balancing
+ * - Building staffing levels
+ * - Assignment optimization
+ *
+ * Based on FORMULAS.md section 4: NPC ASSIGNMENT PRIORITY
  */
+
+class BuildingSlot {
+  /**
+   * Create a work slot
+   * @param {number} slotId - Slot ID within building
+   * @param {string} buildingId - Building ID
+   */
+  constructor(slotId, buildingId) {
+    this.slotId = slotId;
+    this.buildingId = buildingId;
+    this.assignedNPC = null;
+    this.createdAt = new Date().toISOString();
+  }
+
+  /**
+   * Assign NPC to slot
+   * @param {number} npcId - NPC ID
+   */
+  assignNPC(npcId) {
+    this.assignedNPC = npcId;
+  }
+
+  /**
+   * Unassign NPC from slot
+   */
+  unassignNPC() {
+    this.assignedNPC = null;
+  }
+
+  /**
+   * Check if slot is occupied
+   * @returns {boolean} True if occupied
+   */
+  isOccupied() {
+    return this.assignedNPC !== null;
+  }
+}
+
 class NPCAssignment {
-  constructor(npcManager, gridManager) {
-    this.npcManager = npcManager;
-    this.gridManager = gridManager;
-    // Map of buildingId -> Set of npcIds
-    this.assignments = new Map();
+  /**
+   * Initialize NPC assignment system
+   * @param {BuildingConfig} buildingConfig - Building configurations
+   */
+  constructor(buildingConfig) {
+    if (!buildingConfig) {
+      throw new Error('NPCAssignment requires BuildingConfig');
+    }
+
+    this.buildingConfig = buildingConfig;
+
+    // Work slots by building: buildingId -> [slots]
+    this.slots = new Map();
+
+    // NPC to slot mapping: npcId -> {buildingId, slotId}
+    this.npcAssignments = new Map();
+
+    // Statistics
+    this.stats = {
+      totalSlots: 0,
+      filledSlots: 0,
+      assignments: 0
+    };
   }
 
   /**
-   * Assign NPC to a building for work
-   * @param {string} npcId - Unique NPC identifier
-   * @param {string} buildingId - Unique building identifier
-   * @returns {{success: boolean, error?: string}}
+   * Register building with work slots
+   * @param {Object} building - Building with type
    */
-  assignNPCToBuilding(npcId, buildingId) {
-    // 1. Validate NPC exists
-    const npc = this.npcManager.npcs.get(npcId);
-    if (!npc) {
-      console.error(`[NPCAssignment] NPC ${npcId} not found`);
-      return { success: false, error: 'NPC_NOT_FOUND' };
+  registerBuilding(building) {
+    const config = this.buildingConfig.getConfig(building.type);
+    const slotCount = config.workSlots;
+
+    if (slotCount === 0) {
+      return; // Non-productive building
     }
 
-    // 2. Validate building exists
-    const building = this.gridManager.buildings.get(buildingId);
-    if (!building) {
-      console.error(`[NPCAssignment] Building ${buildingId} not found`);
-      return { success: false, error: 'BUILDING_NOT_FOUND' };
+    const buildingSlots = [];
+    for (let i = 0; i < slotCount; i++) {
+      buildingSlots.push(new BuildingSlot(i, building.id));
     }
 
-    // 3. Check building is complete (can't work in blueprint/building)
-    if (building.state !== 'COMPLETE') {
-      console.warn(`[NPCAssignment] Building ${buildingId} not complete (state: ${building.state})`);
-      return { success: false, error: 'BUILDING_NOT_COMPLETE' };
-    }
-
-    // 4. Check building capacity
-    const capacity = building.properties.npcCapacity || 0;
-    if (capacity === 0) {
-      console.warn(`[NPCAssignment] Building ${buildingId} has no NPC capacity`);
-      return { success: false, error: 'NO_CAPACITY' };
-    }
-
-    const currentWorkers = this.assignments.get(buildingId) || new Set();
-    if (currentWorkers.size >= capacity) {
-      console.warn(`[NPCAssignment] Building ${buildingId} at capacity (${capacity}/${capacity})`);
-      return { success: false, error: 'AT_CAPACITY' };
-    }
-
-    // 5. Unassign NPC from current building if already assigned
-    if (npc.assignedBuilding) {
-      // eslint-disable-next-line no-console
-      console.log(`[NPCAssignment] NPC ${npcId} already assigned to ${npc.assignedBuilding}, unassigning`);
-      this.unassignNPC(npcId);
-    }
-
-    // 6. Perform assignment
-    npc.assignedBuilding = buildingId;
-    npc.setWorking(true);
-    this.npcManager.moveToWorking(npcId);
-
-    currentWorkers.add(npcId);
-    this.assignments.set(buildingId, currentWorkers);
-
-    // eslint-disable-next-line no-console
-    console.log(`[NPCAssignment] ✅ Assigned NPC ${npcId} (${npc.role}) to building ${buildingId} (${building.type})`);
-    return { success: true };
+    this.slots.set(building.id, buildingSlots);
+    this.stats.totalSlots += slotCount;
   }
 
   /**
-   * Unassign NPC from current building
-   * @param {string} npcId - Unique NPC identifier
-   * @returns {boolean} True if unassigned, false if not assigned
+   * Unregister building (remove all slots)
+   * @param {string} buildingId - Building to remove
    */
-  unassignNPC(npcId) {
-    const npc = this.npcManager.npcs.get(npcId);
-    if (!npc || !npc.assignedBuilding) {
-      return false;
-    }
+  unregisterBuilding(buildingId) {
+    const slots = this.slots.get(buildingId);
+    if (!slots) return;
 
-    const buildingId = npc.assignedBuilding;
-    const workers = this.assignments.get(buildingId);
-
-    if (workers) {
-      workers.delete(npcId);
-      if (workers.size === 0) {
-        this.assignments.delete(buildingId);
-      } else {
-        this.assignments.set(buildingId, workers);
+    // Unassign all NPCs
+    for (const slot of slots) {
+      if (slot.assignedNPC) {
+        this.unassignNPC(slot.assignedNPC);
       }
     }
 
-    npc.assignedBuilding = null;
-    npc.setWorking(false);
-    this.npcManager.moveToIdle(npcId);
+    this.stats.totalSlots -= slots.length;
+    this.slots.delete(buildingId);
+  }
 
-    // eslint-disable-next-line no-console
-    console.log(`[NPCAssignment] Unassigned NPC ${npcId} from building ${buildingId}`);
+  /**
+   * Assign NPC to building (uses first available slot)
+   * @param {number} npcId - NPC to assign
+   * @param {string} buildingId - Building to assign to
+   * @returns {boolean} True if assigned
+   */
+  assignNPC(npcId, buildingId) {
+    // Check if NPC already assigned
+    if (this.npcAssignments.has(npcId)) {
+      this.unassignNPC(npcId);
+    }
+
+    const slots = this.slots.get(buildingId);
+    if (!slots) {
+      return false; // Building not registered or has no slots
+    }
+
+    // Find first available slot
+    for (const slot of slots) {
+      if (!slot.isOccupied()) {
+        slot.assignNPC(npcId);
+        this.npcAssignments.set(npcId, { buildingId, slotId: slot.slotId });
+        this.stats.filledSlots++;
+        this.stats.assignments++;
+        return true;
+      }
+    }
+
+    return false; // No available slots
+  }
+
+  /**
+   * Unassign NPC from current assignment
+   * @param {number} npcId - NPC to unassign
+   * @returns {boolean} True if was assigned
+   */
+  unassignNPC(npcId) {
+    const assignment = this.npcAssignments.get(npcId);
+    if (!assignment) {
+      return false;
+    }
+
+    const slots = this.slots.get(assignment.buildingId);
+    if (slots && assignment.slotId < slots.length) {
+      slots[assignment.slotId].unassignNPC();
+      this.stats.filledSlots--;
+    }
+
+    this.npcAssignments.delete(npcId);
     return true;
   }
 
   /**
-   * Auto-assign idle NPCs to understaffed buildings
-   * Uses simple greedy algorithm: fill buildings in order
+   * Get NPCs assigned to building
+   * @param {string} buildingId - Building ID
+   * @returns {Array<number>} NPC IDs
    */
-  autoAssign() {
-    const idleNPCs = Array.from(this.npcManager.idleNPCs);
-    const buildings = Array.from(this.gridManager.buildings.values());
+  getNPCsInBuilding(buildingId) {
+    const slots = this.slots.get(buildingId);
+    if (!slots) {
+      return [];
+    }
 
-    // Sort buildings by priority (farms first, then production, then others)
-    const buildingPriority = {
-      'FARM': 1,
-      'MINE': 2,
-      'LUMBER_MILL': 3,
-      'CRAFTING_STATION': 4,
-      'MARKETPLACE': 5
+    const npcs = [];
+    for (const slot of slots) {
+      if (slot.assignedNPC !== null) {
+        npcs.push(slot.assignedNPC);
+      }
+    }
+    return npcs;
+  }
+
+  /**
+   * Get assignment for NPC
+   * @param {number} npcId - NPC ID
+   * @returns {Object|null} Assignment {buildingId, slotId} or null
+   */
+  getAssignment(npcId) {
+    return this.npcAssignments.get(npcId) || null;
+  }
+
+  /**
+   * Get building for NPC
+   * @param {number} npcId - NPC ID
+   * @returns {string|null} Building ID or null
+   */
+  getBuildingForNPC(npcId) {
+    const assignment = this.npcAssignments.get(npcId);
+    return assignment ? assignment.buildingId : null;
+  }
+
+  /**
+   * Get staffing level for building
+   * @param {string} buildingId - Building ID
+   * @returns {Object} {filled, total, percentage}
+   */
+  getStaffingLevel(buildingId) {
+    const slots = this.slots.get(buildingId);
+    if (!slots) {
+      return null;
+    }
+
+    const filled = slots.filter(s => s.isOccupied()).length;
+    const total = slots.length;
+    const percentage = (filled / total) * 100;
+
+    return {
+      filled,
+      total,
+      percentage: percentage.toFixed(1)
+    };
+  }
+
+  /**
+   * Get buildings with unfilled slots
+   * @returns {Array<Object>} Buildings with available slots
+   */
+  getBuildingsWithAvailableSlots() {
+    const buildings = [];
+
+    for (const [buildingId, slots] of this.slots) {
+      const unfilled = slots.filter(s => !s.isOccupied()).length;
+      if (unfilled > 0) {
+        buildings.push({
+          buildingId,
+          availableSlots: unfilled,
+          totalSlots: slots.length
+        });
+      }
+    }
+
+    return buildings;
+  }
+
+  /**
+   * Balance NPC assignments across buildings
+   * Redistributes NPCs to improve overall staffing
+   * @param {Array<number>} npcIds - NPCs to balance
+   * @returns {Object} Assignment results
+   */
+  balanceAssignments(npcIds) {
+    const results = {
+      reassigned: 0,
+      failed: 0,
+      total: npcIds.length
     };
 
-    buildings.sort((a, b) => {
-      const priorityA = buildingPriority[a.type] || 99;
-      const priorityB = buildingPriority[b.type] || 99;
-      return priorityA - priorityB;
-    });
+    // Unassign all first
+    for (const npcId of npcIds) {
+      this.unassignNPC(npcId);
+    }
 
-    let assignedCount = 0;
+    // Get buildings sorted by need
+    const buildingsNeedingStaff = this.getBuildingsWithAvailableSlots()
+      .sort((a, b) => b.availableSlots - a.availableSlots);
 
-    for (const building of buildings) {
-      if (building.state !== 'COMPLETE') continue;
-
-      const capacity = building.properties.npcCapacity || 0;
-      const currentWorkers = this.assignments.get(building.id)?.size || 0;
-
-      if (currentWorkers < capacity && idleNPCs.length > 0) {
-        const npcId = idleNPCs.shift();
-        const result = this.assignNPCToBuilding(npcId, building.id);
-        if (result.success) {
-          assignedCount++;
+    // Reassign to buildings with most need
+    let npcIndex = 0;
+    for (const building of buildingsNeedingStaff) {
+      for (let slot = 0; slot < building.availableSlots && npcIndex < npcIds.length; slot++) {
+        const npcId = npcIds[npcIndex++];
+        if (this.assignNPC(npcId, building.buildingId)) {
+          results.reassigned++;
+        } else {
+          results.failed++;
         }
       }
     }
 
-    // eslint-disable-next-line no-console
-    console.log(`[NPCAssignment] Auto-assigned ${assignedCount} NPCs`);
-    return assignedCount;
+    return results;
   }
 
   /**
-   * Get list of workers assigned to a specific building
-   * @param {string} buildingId
-   * @returns {Array<string>} Array of NPC IDs
-   */
-  getWorkersForBuilding(buildingId) {
-    return Array.from(this.assignments.get(buildingId) || []);
-  }
-
-  /**
-   * Get building assignment info for display
-   * @param {string} buildingId
-   * @returns {{capacity: number, current: number, workers: Array}}
-   */
-  getBuildingAssignmentInfo(buildingId) {
-    const building = this.gridManager.buildings.get(buildingId);
-    if (!building) return null;
-
-    const capacity = building.properties.npcCapacity || 0;
-    const workerIds = this.getWorkersForBuilding(buildingId);
-    const workers = workerIds.map(id => this.npcManager.npcs.get(id));
-
-    return {
-      capacity,
-      current: workerIds.length,
-      workers: workers.filter(w => w !== undefined)
-    };
-  }
-
-  /**
-   * Get statistics for all assignments
+   * Get assignment statistics
+   * @returns {Object} Statistics
    */
   getStatistics() {
+    const buildingStats = [];
+
+    for (const [buildingId, slots] of this.slots) {
+      const filled = slots.filter(s => s.isOccupied()).length;
+
+      buildingStats.push({
+        buildingId,
+        filled,
+        total: slots.length,
+        percentage: slots.length > 0 ? (filled / slots.length * 100).toFixed(1) : '0'
+      });
+    }
+
     return {
-      totalAssignments: Array.from(this.assignments.values()).reduce((sum, set) => sum + set.size, 0),
-      buildingsStaffed: this.assignments.size,
-      idleNPCs: this.npcManager.idleNPCs.size
+      totalSlots: this.stats.totalSlots,
+      filledSlots: this.stats.filledSlots,
+      occupancy: this.stats.totalSlots > 0 ? ((this.stats.filledSlots / this.stats.totalSlots) * 100).toFixed(1) : '0',
+      totalAssignments: this.stats.assignments,
+      byBuilding: buildingStats
     };
   }
 
   /**
-   * Clear all assignments (used when building destroyed)
-   * @param {string} buildingId
+   * Clear all assignments (for testing)
    */
-  clearBuildingAssignments(buildingId) {
-    const workers = this.assignments.get(buildingId);
-    if (!workers) return;
-
-    for (const npcId of workers) {
-      const npc = this.npcManager.npcs.get(npcId);
-      if (npc) {
-        npc.assignedBuilding = null;
-        npc.setWorking(false);
-        this.npcManager.moveToIdle(npcId);
-      }
-    }
-
-    this.assignments.delete(buildingId);
-    // eslint-disable-next-line no-console
-    console.log(`[NPCAssignment] Cleared all assignments for building ${buildingId}`);
+  reset() {
+    this.slots.clear();
+    this.npcAssignments.clear();
+    this.stats = {
+      totalSlots: 0,
+      filledSlots: 0,
+      assignments: 0
+    };
   }
 }
 
-export default NPCAssignment;
+export { NPCAssignment, BuildingSlot };
+export default NPCAssignment;  // Add default export for compatibility

@@ -447,6 +447,16 @@ class NPCManager {
       this.orchestrator.achievementSystem.recordNPCDeath(causeOfDeath);
     }
 
+    // Phase 3A: Clean up idle tasks and needs tracking (memory cleanup)
+    if (this.orchestrator) {
+      if (this.orchestrator.idleTaskManager) {
+        this.orchestrator.idleTaskManager.removeNPC(npcId);
+      }
+      if (this.orchestrator.needsTracker) {
+        this.orchestrator.needsTracker.unregisterNPC(npcId);
+      }
+    }
+
     // Unassign and update town
     this.unassignNPC(npcId);
     this.townManager.killNPC(npcId);

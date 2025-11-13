@@ -2,10 +2,10 @@
  * DisasterEvents.test.js - Tests for natural disaster events
  */
 
-import WildfireEvent from '../events/WildfireEvent';
-import FloodEvent from '../events/FloodEvent';
-import EarthquakeEvent from '../events/EarthquakeEvent';
-import { EventType, EventState } from '../Event';
+import WildfireEvent from '../events/WildfireEvent.js';
+import FloodEvent from '../events/FloodEvent.js';
+import EarthquakeEvent from '../events/EarthquakeEvent.js';
+import { EventType, EventState } from '../Event.js';
 
 // Mock game state helper
 const createMockGameState = () => ({

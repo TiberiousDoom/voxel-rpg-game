@@ -2,9 +2,9 @@
  * EventSystem.test.js - Tests for event system framework
  */
 
-import Event, { EventType, EventState } from '../Event';
-import EventScheduler from '../EventScheduler';
-import EventSystem from '../EventSystem';
+import Event, { EventType, EventState } from '../Event.js';
+import EventScheduler from '../EventScheduler.js';
+import EventSystem from '../EventSystem.js';
 
 describe('Event', () => {
   describe('constructor', () => {

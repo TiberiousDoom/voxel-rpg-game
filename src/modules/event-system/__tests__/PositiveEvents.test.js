@@ -2,13 +2,13 @@
  * PositiveEvents.test.js - Tests for seasonal and positive events
  */
 
-import HarvestFestivalEvent from '../events/HarvestFestivalEvent';
-import WinterFreezeEvent from '../events/WinterFreezeEvent';
-import SpringBloomEvent from '../events/SpringBloomEvent';
-import MerchantVisitEvent from '../events/MerchantVisitEvent';
-import GoodWeatherEvent from '../events/GoodWeatherEvent';
-import WandererJoinsEvent from '../events/WandererJoinsEvent';
-import { EventType, EventState } from '../Event';
+import HarvestFestivalEvent from '../events/HarvestFestivalEvent.js';
+import WinterFreezeEvent from '../events/WinterFreezeEvent.js';
+import SpringBloomEvent from '../events/SpringBloomEvent.js';
+import MerchantVisitEvent from '../events/MerchantVisitEvent.js';
+import GoodWeatherEvent from '../events/GoodWeatherEvent.js';
+import WandererJoinsEvent from '../events/WandererJoinsEvent.js';
+import { EventType, EventState } from '../Event.js';
 
 // Mock game state helper
 const createMockGameState = () => ({

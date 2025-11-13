@@ -162,11 +162,25 @@ class ModuleOrchestrator {
       const housing = this.townManager.calculateHousingCapacity(this.gameState.buildings);
       const territoryCount = this.territoryManager.getAllTerritories().length;
 
+      // Calculate building morale bonuses
+      let buildingMoraleBonus = 0;
+      for (const building of this.gameState.buildings) {
+        try {
+          const config = this.buildingConfig.getConfig(building.type);
+          if (config.effects && config.effects.moraleBonus) {
+            buildingMoraleBonus += config.effects.moraleBonus;
+          }
+        } catch (err) {
+          // Building type not found, skip
+        }
+      }
+
       this.morale.calculateTownMorale({
         npcs: aliveNPCs,
         foodAvailable: this.storage.getResource('food'),
         housingCapacity: housing,
-        expansionCount: territoryCount - 1 // First territory doesn't count
+        expansionCount: territoryCount - 1, // First territory doesn't count
+        buildingBonus: buildingMoraleBonus
       });
 
       result.morale = this.morale.getCurrentMorale();

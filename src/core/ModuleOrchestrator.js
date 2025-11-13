@@ -50,6 +50,29 @@ class ModuleOrchestrator {
     this.tutorialSystem = modules.tutorialSystem || null;
     this.contextHelp = modules.contextHelp || null;
     this.featureUnlock = modules.featureUnlock || null;
+    // Phase 3A: NPC Advanced Behaviors (optional)
+    this.idleTaskManager = modules.idleTaskManager || null;
+    this.npcNeedsTracker = modules.npcNeedsTracker || null;
+    this.autonomousDecision = modules.autonomousDecision || null;
+
+    // Phase 3C: Achievement System (optional)
+    this.achievementSystem = modules.achievementSystem || null;
+    // Phase 3A: NPC Advanced Behaviors
+    this.idleTaskManager = modules.idleTaskManager;
+    this.npcNeedsTracker = modules.npcNeedsTracker;
+    this.autonomousDecision = modules.autonomousDecision;
+
+    // Phase 3B: Event System
+    this.eventSystem = modules.eventSystem;
+    // Set orchestrator reference for event system
+    if (this.eventSystem) {
+      this.eventSystem.orchestrator = this;
+    }
+
+    // Phase 3C: Set orchestrator reference for NPC manager (achievement tracking)
+    if (this.npcManager && this.npcManager.setOrchestrator) {
+      this.npcManager.setOrchestrator(this);
+    }
 
     // Game state
     this.tickCount = 0;
@@ -61,7 +84,10 @@ class ModuleOrchestrator {
       npcs: [],
       production: {},
       consumption: 0,
-      morale: 0
+      morale: 0,
+      // Phase 3B: Event multipliers
+      eventMultipliers: {},
+      eventConsumptionModifiers: { food: 0 }
     };
 
     // Performance tracking
@@ -84,9 +110,22 @@ class ModuleOrchestrator {
       'territoryManager', 'townManager', 'npcManager', 'npcAssignment'
     ];
 
+    // Phase 3A & 3B modules are optional for backwards compatibility
+    const optional = [
+      'idleTaskManager', 'npcNeedsTracker', 'autonomousDecision',
+      'eventSystem'
+    ];
+
     for (const module of required) {
       if (!modules[module]) {
         throw new Error(`ModuleOrchestrator missing required module: ${module}`);
+      }
+    }
+
+    // Log warnings for missing optional modules
+    for (const module of optional) {
+      if (!modules[module]) {
+        console.warn(`ModuleOrchestrator: Optional module '${module}' not provided`);
       }
     }
   }
@@ -129,7 +168,9 @@ class ModuleOrchestrator {
       const productionResult = this.productionTick.executeTick(
         this.gameState.buildings,
         npcAssignments,
-        moraleMultiplier
+        this.npcManager,
+        moraleMultiplier,
+        this.gameState
       );
 
       result.production = productionResult.production;
@@ -138,7 +179,12 @@ class ModuleOrchestrator {
       // STEP 2: CONSUMPTION PHASE
       // ============================================
       const foodBefore = this.storage.getResource('food');
-      const consumptionResult = this.consumption.executeConsumptionTick(foodBefore);
+      const consumptionResult = this.consumption.executeConsumptionTick(
+        foodBefore,
+        this.gameState.buildings,
+        this.npcAssignment,
+        this.gameState
+      );
 
       const foodConsumed = parseFloat(consumptionResult.foodConsumed) || 0;
       // Only remove food if there's actual consumption
@@ -150,7 +196,7 @@ class ModuleOrchestrator {
       // Check for starvation
       if (consumptionResult.starvationOccurred) {
         for (const npcId of (consumptionResult.npcKilled || [])) {
-          this.npcManager.killNPC(npcId);
+          this.npcManager.killNPC(npcId, 'starvation'); // Phase 3C: Pass cause of death
           this.npcAssignment.unassignNPC(npcId);
         }
         result.starvationEvents = consumptionResult.npcKilled?.length || 0;
@@ -263,6 +309,48 @@ class ModuleOrchestrator {
       }
 
       // ============================================
+      // STEP 4.6: PHASE 3B - EVENT SYSTEM
+      // ============================================
+      if (this.eventSystem) {
+        // Check if new events should trigger
+        const eventGameState = {
+          ...this.gameState,
+          buildings: this.gameState.buildings,
+          population: this.npcManager.npcs.size,
+          gridManager: this.grid,
+          storageManager: this.storage,
+          townManager: this.townManager,
+          npcManager: this.npcManager,
+          npcAssignments: this.npcAssignment,
+          buildingConfig: this.buildingConfig,
+          territoryManager: this.territoryManager
+        };
+
+        this.eventSystem.checkEventTriggers(this.tickCount, eventGameState);
+
+        // Update active events (deltaTime = 1 second per tick)
+        this.eventSystem.updateActiveEvents(1, eventGameState);
+
+        // Get event system stats and notifications
+        const activeEvents = this.eventSystem.getActiveEvents();
+        const notifications = this.eventSystem.getPendingNotifications();
+
+        result.phase3b = {
+          activeEvents: activeEvents.map(event => ({
+            id: event.id,
+            name: event.name,
+            type: event.type,
+            description: event.description,
+            timeRemaining: Math.max(0, event.duration - (event.elapsedTime || 0)),
+            effects: event.effects
+          })),
+          queuedEvents: this.eventSystem.eventQueue.length,
+          totalEventsTriggered: this.eventSystem.stats.totalEventsTriggered,
+          notifications: notifications
+        };
+      }
+
+      // ============================================
       // STEP 5: STORAGE OVERFLOW CHECK
       // ============================================
       const overflowResult = this.storage.checkAndHandleOverflow();
@@ -309,6 +397,18 @@ class ModuleOrchestrator {
 
         if (newlyUnlocked.length > 0) {
           result.featuresUnlocked = newlyUnlocked;
+      // STEP 6.5: PHASE 3C - ACHIEVEMENT TRACKING
+      // ============================================
+      if (this.achievementSystem) {
+        const newlyUnlocked = this.achievementSystem.checkAchievements(this.gameState);
+        if (newlyUnlocked.length > 0) {
+          result.achievements = {
+            newlyUnlocked: newlyUnlocked.map(a => ({
+              id: a.id,
+              name: a.name,
+              reward: a.reward
+            }))
+          };
         }
       }
 
@@ -354,9 +454,11 @@ class ModuleOrchestrator {
       position: b.position
     }));
     this.gameState.npcs = this.npcManager.getAllNPCStates();
-    this.gameState.storage = this.storage.getStorage();
+    this.gameState.storage = this.storage; // Full storage reference for achievement tracking
     this.gameState.morale = this.morale.getCurrentMorale();
     this.gameState.population = this.npcManager.getStatistics();
+    this.gameState.currentTier = this.gameState.currentTier || 'SURVIVAL'; // Current tier
+    this.gameState.npcManager = this.npcManager; // NPC manager reference for achievement tracking
   }
 
   /**
@@ -406,6 +508,12 @@ class ModuleOrchestrator {
       }
 
       this.gameState.currentTier = targetTier;
+
+      // Phase 3C: Record tier reached for achievements
+      if (this.achievementSystem) {
+        this.achievementSystem.recordTierReached(targetTier);
+      }
+
       return {
         success: true,
         newTier: targetTier,

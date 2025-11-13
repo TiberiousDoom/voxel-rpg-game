@@ -24,6 +24,11 @@ import ContextHelp from './modules/tutorial-system/ContextHelp';
 import FeatureUnlock from './modules/tutorial-system/FeatureUnlock';
 import { createTutorialSteps } from './modules/tutorial-system/tutorialSteps';
 import { getContextHelpDefinitions } from './modules/tutorial-system/contextHelpDefinitions';
+// Phase 3C: Achievement System
+import AchievementSystem from './modules/achievement-system/AchievementSystem';
+import achievementDefinitions from './modules/achievement-system/achievementDefinitions';
+// Phase 3B: Event System
+import { createEventSystem } from './modules/event-system';
 
 /**
  * GameManager - Main game controller
@@ -164,6 +169,10 @@ export default class GameManager extends EventEmitter {
     const idleTaskManager = new IdleTaskManager(grid);
     const npcNeedsTracker = new NPCNeedsTracker();
     const autonomousDecision = new AutonomousDecision(npcNeedsTracker, idleTaskManager);
+
+    // Phase 3C: Achievement System
+    const achievementSystem = new AchievementSystem(achievementDefinitions);
+
     // Create real BuildingEffect
     const buildingEffect = new BuildingEffect(spatial, buildingConfig);
 
@@ -176,6 +185,8 @@ export default class GameManager extends EventEmitter {
     const contextHelpDefinitions = getContextHelpDefinitions();
     const contextHelp = new ContextHelp(contextHelpDefinitions);
     const featureUnlock = new FeatureUnlock();
+    // Phase 3B: Event System (pass null for now, will set orchestrator after creation)
+    const eventSystem = createEventSystem(null);
 
     return {
       grid: grid,
@@ -199,6 +210,10 @@ export default class GameManager extends EventEmitter {
       tutorialSystem: tutorialSystem,
       contextHelp: contextHelp,
       featureUnlock: featureUnlock
+      // Phase 3C modules
+      achievementSystem: achievementSystem,
+      // Phase 3B modules
+      eventSystem: eventSystem
     };
   }
 

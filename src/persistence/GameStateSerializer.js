@@ -178,14 +178,14 @@ class GameStateSerializer {
   static _serializeSpatial(spatial) {
     return {
       chunkSize: spatial.chunkSize,
-      chunks: Array.from(spatial.chunks.entries()).map(([key, buildingIds]) => ({
+      chunks: spatial.chunks ? Array.from(spatial.chunks.entries()).map(([key, buildingIds]) => ({
         key,
         buildingIds: Array.from(buildingIds)
-      })),
-      buildingChunks: Array.from(spatial.buildingChunks.entries()).map(([buildingId, chunkKeys]) => ({
+      })) : [],
+      buildingChunks: spatial.buildingChunks ? Array.from(spatial.buildingChunks.entries()).map(([buildingId, chunkKeys]) => ({
         buildingId,
         chunkKeys: Array.from(chunkKeys)
-      }))
+      })) : []
     };
   }
 
@@ -232,12 +232,12 @@ class GameStateSerializer {
 
   static _serializeBuildingEffect(buildingEffect) {
     return {
-      activeEffects: Array.from(buildingEffect.activeEffects.entries()).map(([id, effect]) => ({
+      activeEffects: buildingEffect.activeEffects ? Array.from(buildingEffect.activeEffects.entries()).map(([id, effect]) => ({
         id,
         building: effect.building ? { id: effect.building.id, type: effect.building.type } : null,
         type: effect.type,
         strength: effect.strength
-      }))
+      })) : []
     };
   }
 
@@ -294,11 +294,11 @@ class GameStateSerializer {
 
   static _serializeConsumption(consumption) {
     return {
-      npcs: Array.from(consumption.npcs.entries()).map(([id, npc]) => ({
+      npcs: consumption.npcs ? Array.from(consumption.npcs.entries()).map(([id, npc]) => ({
         id,
         alive: npc.alive,
         status: npc.status
-      })),
+      })) : [],
       happiness: consumption.happiness,
       foodPerTick: consumption.foodPerTick
     };
@@ -401,11 +401,11 @@ class GameStateSerializer {
 
   static _serializeTown(townManager) {
     return {
-      npcs: Array.from(townManager.npcs.entries()).map(([id, count]) => ({ id, count })),
-      buildingAssignments: Array.from(townManager.buildingAssignments.entries()).map(([building, npcs]) => ({
+      npcs: townManager.npcs ? Array.from(townManager.npcs.entries()).map(([id, count]) => ({ id, count })) : [],
+      buildingAssignments: townManager.buildingAssignments ? Array.from(townManager.buildingAssignments.entries()).map(([building, npcs]) => ({
         building,
         npcs: [...npcs]
-      })),
+      })) : [],
       happiness: townManager.happiness
     };
   }
@@ -500,15 +500,15 @@ class GameStateSerializer {
 
   static _serializeNPCAssignments(npcAssignment) {
     return {
-      npcAssignments: Array.from(npcAssignment.npcAssignments.entries()).map(([id, assignment]) => ({
+      npcAssignments: npcAssignment.npcAssignments ? Array.from(npcAssignment.npcAssignments.entries()).map(([id, assignment]) => ({
         id,
-        building: assignment.building,
-        slot: assignment.slot
-      })),
-      buildingSlots: Array.from(npcAssignment.buildingSlots.entries()).map(([building, slots]) => ({
-        building,
-        slots: slots.map(s => ({ id: s.id, occupied: s.occupied, npcId: s.npcId }))
-      }))
+        buildingId: assignment.buildingId,
+        slotId: assignment.slotId
+      })) : [],
+      slots: npcAssignment.slots ? Array.from(npcAssignment.slots.entries()).map(([buildingId, slots]) => ({
+        buildingId,
+        slots: slots.map(s => ({ slotId: s.slotId, assignedNPC: s.assignedNPC }))
+      })) : []
     };
   }
 

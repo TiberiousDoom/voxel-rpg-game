@@ -202,7 +202,8 @@ export function useGameManager(config = {}) {
               resources: orchestrator.storage?.getStorage?.() || {},
               morale: orchestrator.morale?.getCurrentMorale?.() || 0,
               moraleState: orchestrator.morale?.getMoraleState?.() || 'NEUTRAL',
-              population: orchestrator.npcManager?.getStatistics?.() || {}
+              population: orchestrator.npcManager?.getStatistics?.() || {},
+              fps: gm.engine?.fps || 60
             });
           }
         };

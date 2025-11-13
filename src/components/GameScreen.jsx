@@ -379,6 +379,16 @@ function GameScreen() {
             </div>
           )}
 
+          {/* Pause Overlay */}
+          {gameState.isPaused && (
+            <div className="pause-overlay">
+              <div className="pause-content">
+                <h2>⏸️ PAUSED</h2>
+                <p>Click <strong>▶️ Resume</strong> to continue</p>
+              </div>
+            </div>
+          )}
+
           <GameViewport
             buildings={gameState.buildings || []}
             npcs={gameState.npcs || []}

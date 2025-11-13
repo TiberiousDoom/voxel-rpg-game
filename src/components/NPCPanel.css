@@ -194,6 +194,171 @@
   }
 }
 
+/* NPC List */
+.npc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.npc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.npc-item:hover {
+  background: #e8e8e8;
+}
+
+.npc-item.selected {
+  background: #d3e3fd;
+  border: 1px solid #667eea;
+}
+
+.npc-item.working {
+  background: #e8f5e9;
+}
+
+.npc-role {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+
+.npc-health {
+  font-size: 12px;
+  color: #666;
+}
+
+.npc-assignment {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.npc-morale {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.morale-label {
+  min-width: 50px;
+  font-weight: 500;
+  color: #555;
+}
+
+.npc-morale .morale-bar {
+  flex: 1;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.npc-morale .morale-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9800 0%, #4caf50 50%, #2196f3 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.npc-morale .morale-value {
+  min-width: 30px;
+  text-align: right;
+  font-weight: 600;
+  color: #333;
+  font-size: 11px;
+}
+
+.auto-assign-btn {
+  padding: 8px 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.auto-assign-btn:hover {
+  background: #5568d3;
+}
+
+.unassign-btn {
+  padding: 4px 8px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  align-self: flex-start;
+}
+
+.unassign-btn:hover {
+  background: #d32f2f;
+}
+
+.assignment-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-top: 1px solid #e0e0e0;
+}
+
+.assignment-controls select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.assign-btn {
+  padding: 8px 12px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.assign-btn:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.assign-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.npc-stats {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.npc-stats > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .stat-item {

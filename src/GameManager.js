@@ -5,6 +5,8 @@ import GameEngine from './core/GameEngine';
 import NPCAssignment from './modules/npc-system/NPCAssignment';
 import TierProgression from './modules/building-types/TierProgression';
 import BuildingConfig from './modules/building-types/BuildingConfig';
+import BuildingEffect from './modules/building-types/BuildingEffect';
+import ProductionTick from './modules/resource-economy/ProductionTick';
 import { TerritoryManager } from './modules/territory-town/TerritoryManager';
 import GridManager from './modules/foundation/GridManager';
 import SpatialPartitioning from './modules/foundation/SpatialPartitioning';
@@ -148,13 +150,19 @@ export default class GameManager extends EventEmitter {
     // Create real ConsumptionSystem
     const consumption = new ConsumptionSystem();
 
+    // Create real BuildingEffect
+    const buildingEffect = new BuildingEffect(spatial, buildingConfig);
+
+    // Create real ProductionTick
+    const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
+
     return {
       grid: grid,
       spatial: spatial,
       buildingConfig: buildingConfig,
       tierProgression: new TierProgression(buildingConfig),
-      buildingEffect: this._createMockBuildingEffect(),
-      productionTick: this._createMockProductionTick(),
+      buildingEffect: buildingEffect,
+      productionTick: productionTick,
       storage: storage,
       consumption: consumption,
       morale: this._createMockMoraleCalculator(),

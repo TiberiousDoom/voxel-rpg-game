@@ -535,6 +535,7 @@ class NPCManager {
   moveToWorking(npcId) {
     this.idleNPCs.delete(npcId);
     this.workingNPCs.add(npcId);
+    // eslint-disable-next-line no-console
     console.log(`[NPCManager] NPC ${npcId} now working`);
   }
 
@@ -545,6 +546,7 @@ class NPCManager {
     this.workingNPCs.delete(npcId);
     this.restingNPCs.delete(npcId);
     this.idleNPCs.add(npcId);
+    // eslint-disable-next-line no-console
     console.log(`[NPCManager] NPC ${npcId} now idle`);
   }
 
@@ -555,6 +557,7 @@ class NPCManager {
     this.idleNPCs.delete(npcId);
     this.workingNPCs.delete(npcId);
     this.restingNPCs.add(npcId);
+    // eslint-disable-next-line no-console
     console.log(`[NPCManager] NPC ${npcId} now resting`);
   }
 }

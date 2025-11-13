@@ -195,7 +195,7 @@ export default class GameManager extends EventEmitter {
       npcNeedsTracker: npcNeedsTracker,
       autonomousDecision: autonomousDecision,
       // Phase 3C modules
-      achievementSystem: achievementSystem
+      achievementSystem: achievementSystem,
       // Phase 3B modules
       eventSystem: eventSystem
     };

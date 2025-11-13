@@ -201,6 +201,17 @@ class NPCManager {
       totalHappy: 0,
       totalUnhappy: 0
     };
+
+    // Phase 3C: Reference to orchestrator for achievement tracking
+    this.orchestrator = null;
+  }
+
+  /**
+   * Set orchestrator reference (for achievement tracking)
+   * @param {ModuleOrchestrator} orchestrator - Module orchestrator
+   */
+  setOrchestrator(orchestrator) {
+    this.orchestrator = orchestrator;
   }
 
    /**
@@ -419,8 +430,9 @@ class NPCManager {
   /**
    * Kill an NPC
    * @param {number} npcId - NPC ID
+   * @param {string} causeOfDeath - Optional cause of death ('starvation', 'disaster', 'old_age', etc.)
    */
-  killNPC(npcId) {
+  killNPC(npcId, causeOfDeath = 'unknown') {
     const npc = this.npcs.get(npcId);
     if (!npc || !npc.alive) return;
 
@@ -429,6 +441,11 @@ class NPCManager {
     this.restingNPCs.delete(npcId);
     this.idleNPCs.delete(npcId);
     this.stats.totalDead++;
+
+    // Phase 3C: Record NPC death for achievement tracking
+    if (this.orchestrator && this.orchestrator.achievementSystem) {
+      this.orchestrator.achievementSystem.recordNPCDeath(causeOfDeath);
+    }
 
     // Unassign and update town
     this.unassignNPC(npcId);

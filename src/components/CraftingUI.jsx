@@ -337,8 +337,10 @@ const CraftingUI = () => {
               })}
             </div>
           </div>
+          )}
 
           {/* Recipe Details */}
+          {(!isMobile || mobileView === 'details') && (
           <div
             style={{
               flex: 1,
@@ -489,6 +491,7 @@ const CraftingUI = () => {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>

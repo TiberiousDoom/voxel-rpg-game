@@ -164,11 +164,6 @@ export default class GameManager extends EventEmitter {
     // Create real ProductionTick
     const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
 
-    // Phase 3A: NPC Advanced Behaviors
-    const idleTaskManager = new IdleTaskManager(grid);
-    const npcNeedsTracker = new NPCNeedsTracker();
-    const autonomousDecision = new AutonomousDecision(npcNeedsTracker, idleTaskManager);
-
     return {
       grid: grid,
       spatial: spatial,

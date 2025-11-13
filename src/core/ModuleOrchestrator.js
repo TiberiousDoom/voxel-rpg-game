@@ -152,7 +152,9 @@ class ModuleOrchestrator {
       const productionResult = this.productionTick.executeTick(
         this.gameState.buildings,
         npcAssignments,
-        moraleMultiplier
+        this.npcManager,
+        moraleMultiplier,
+        this.gameState
       );
 
       result.production = productionResult.production;
@@ -161,7 +163,12 @@ class ModuleOrchestrator {
       // STEP 2: CONSUMPTION PHASE
       // ============================================
       const foodBefore = this.storage.getResource('food');
-      const consumptionResult = this.consumption.executeConsumptionTick(foodBefore);
+      const consumptionResult = this.consumption.executeConsumptionTick(
+        foodBefore,
+        this.gameState.buildings,
+        this.npcAssignment,
+        this.gameState
+      );
 
       const foodConsumed = parseFloat(consumptionResult.foodConsumed) || 0;
       // Only remove food if there's actual consumption

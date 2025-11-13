@@ -70,6 +70,9 @@ class GameStateSerializer {
       npcs: this._serializeNPCs(orchestrator.npcManager),
       npcAssignments: this._serializeNPCAssignments(orchestrator.npcAssignment),
 
+      // Phase 3B: Event System
+      eventSystem: orchestrator.eventSystem ? this._serializeEventSystem(orchestrator.eventSystem) : null,
+
       // Engine state
       engineState: this._serializeEngineState(orchestrator.gameState, engine)
     };
@@ -113,6 +116,12 @@ class GameStateSerializer {
       this._deserializeTown(data.town, orchestrator.townManager, errors);
       this._deserializeNPCs(data.npcs, orchestrator.npcManager, errors);
       this._deserializeNPCAssignments(data.npcAssignments, orchestrator.npcAssignment, errors);
+
+      // Phase 3B: Event System
+      if (data.eventSystem && orchestrator.eventSystem) {
+        this._deserializeEventSystem(data.eventSystem, orchestrator.eventSystem, errors);
+      }
+
       this._deserializeEngineState(data.engineState, orchestrator, engine, errors);
 
       // Validate consistency
@@ -539,6 +548,47 @@ class GameStateSerializer {
       }
     } catch (err) {
       errors.push(`NPC Assignment deserialization error: ${err.message}`);
+    }
+  }
+
+  // ============================================
+  // EVENT SYSTEM SERIALIZATION (Phase 3B)
+  // ============================================
+
+  static _serializeEventSystem(eventSystem) {
+    return {
+      stats: eventSystem.stats,
+      eventHistory: eventSystem.eventHistory,
+      scheduler: eventSystem.scheduler.serialize(),
+      // Note: We don't serialize active events or queue - they will restart on load
+      activeEventCount: eventSystem.activeEvents.length,
+      queuedEventCount: eventSystem.eventQueue.length
+    };
+  }
+
+  static _deserializeEventSystem(data, eventSystem, errors) {
+    if (!data) return;
+
+    try {
+      // Restore stats
+      if (data.stats) {
+        eventSystem.stats = { ...data.stats };
+      }
+
+      // Restore event history
+      if (data.eventHistory) {
+        eventSystem.eventHistory = [...data.eventHistory];
+      }
+
+      // Restore scheduler state
+      if (data.scheduler) {
+        eventSystem.scheduler.deserialize(data.scheduler);
+      }
+
+      // Note: Active events and queue are not restored
+      // Events will naturally trigger again based on scheduler state
+    } catch (err) {
+      errors.push(`Event System deserialization error: ${err.message}`);
     }
   }
 

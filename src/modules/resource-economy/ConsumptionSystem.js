@@ -75,20 +75,32 @@ class ConsumptionSystem {
    * Idle: 0.1 food/min = 0.1/12 per tick = 0.00833
    *
    * @param {string} npcId - NPC ID
+   * @param {Object} gameState - Game state with event modifiers (optional)
    * @returns {number} Food consumption for this tick
    */
-  calculateConsumption(npcId) {
+  calculateConsumption(npcId, gameState = null) {
     const npc = this.npcConsumptionData.get(npcId);
     if (!npc || !npc.alive) {
       return 0;
     }
 
-    // 5 seconds = 1/12 minute
+    // Base consumption rates (5 seconds = 1/12 minute)
+    let baseRate;
     if (npc.isWorking) {
-      return 0.5 / 12.0; // 0.04167 food per tick
+      baseRate = 0.5 / 12.0; // 0.04167 food per tick
     } else {
-      return 0.1 / 12.0; // 0.00833 food per tick
+      baseRate = 0.1 / 12.0; // 0.00833 food per tick
     }
+
+    // Apply event consumption modifiers (Phase 3B)
+    // Modifiers are added per-NPC, not multiplied
+    let eventModifier = 0;
+    if (gameState?.eventConsumptionModifiers?.food) {
+      // Convert per-minute modifier to per-tick (divide by 12)
+      eventModifier = gameState.eventConsumptionModifiers.food / 12.0;
+    }
+
+    return baseRate + eventModifier;
   }
 
   /**
@@ -127,6 +139,7 @@ class ConsumptionSystem {
    * @param {number} foodAvailable - Food currently in storage
    * @param {Array} buildings - All building entities (optional)
    * @param {Object} npcAssignments - NPCAssignment instance (optional)
+   * @param {Object} gameState - Game state with event modifiers (optional)
    * @returns {Object} {
    *   foodConsumed: amount consumed,
    *   buildingConsumption: resources consumed by buildings,
@@ -136,7 +149,7 @@ class ConsumptionSystem {
    *   npcsStarving: array of NPC IDs affected by starvation
    * }
    */
-  executeConsumptionTick(foodAvailable, buildings = [], npcAssignments = null) {
+  executeConsumptionTick(foodAvailable, buildings = [], npcAssignments = null, gameState = null) {
     const aliveNPCs = this.getAliveNPCs();
 
     // If no NPCs, don't consume anything
@@ -161,7 +174,7 @@ class ConsumptionSystem {
     // Calculate NPC food consumption
     let npcFoodConsumption = 0;
     for (const npc of aliveNPCs) {
-      npcFoodConsumption += this.calculateConsumption(npc.id);
+      npcFoodConsumption += this.calculateConsumption(npc.id, gameState);
     }
 
     // Calculate building consumption (if buildings and assignments provided)

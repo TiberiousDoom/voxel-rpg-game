@@ -9,7 +9,7 @@
  * - Critical need alerts
  */
 
-import { NPCNeed, NeedType, NeedLevel } from './NPCNeed.js';
+import { NPCNeed, NeedType } from './NPCNeed.js';
 
 class NPCNeedsTracker {
   /**

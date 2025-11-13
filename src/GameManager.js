@@ -169,7 +169,7 @@ export default class GameManager extends EventEmitter {
       territoryManager: territoryManager,
       townManager: townManager,
       npcManager: npcManager,
-      npcAssignment: new NPCAssignment(npcManager, grid)
+      npcAssignment: new NPCAssignment(buildingConfig)
     };
   }
 

@@ -203,21 +203,97 @@
 }
 
 @media (max-width: 768px) {
-  .viewport-canvas {
-    max-width: 100%;
-    max-height: 300px;
+  .game-viewport {
+    gap: 8px;
   }
 
+  /* Mobile header - Stack or wrap */
+  .viewport-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .viewport-header h2 {
+    font-size: 16px;
+  }
+
+  .building-type-indicator {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
+  /* Canvas - Responsive sizing for mobile */
+  .viewport-canvas {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100%;
+    max-height: 400px;
+    min-height: 250px;
+    aspect-ratio: 1 / 1;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .viewport-canvas:active {
+    border-color: #667eea;
+  }
+
+  /* Legend - Stack vertically and increase touch targets */
   .building-legend ul {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .building-legend li {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+
+  .legend-color {
+    width: 24px;
+    height: 24px;
   }
 
   .viewport-legend {
     flex-direction: column;
     gap: 12px;
+    padding: 14px;
   }
 
   .legend-section {
     min-width: unset;
+  }
+
+  .legend-section h4 {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .legend-item {
+    font-size: 13px;
+    gap: 10px;
+    min-height: 32px;
+    align-items: center;
+  }
+
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+  }
+
+  .legend-square {
+    width: 18px;
+    height: 18px;
+  }
+
+  .legend-bar {
+    width: 24px;
+    height: 5px;
+  }
+
+  .legend-text {
+    font-size: 11px;
+    padding: 3px 8px;
   }
 }

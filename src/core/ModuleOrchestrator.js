@@ -178,6 +178,72 @@ class ModuleOrchestrator {
       this.npcManager.updateAllNPCs(this.tickCount);
 
       // ============================================
+      // STEP 4.5: PHASE 3A - NPC ADVANCED BEHAVIORS
+      // ============================================
+      if (this.npcNeedsTracker && this.idleTaskManager && this.autonomousDecision) {
+        // Build NPC state map for needs tracking
+        const npcStates = {};
+        for (const npc of this.npcManager.npcs.values()) {
+          npcStates[npc.id] = {
+            isWorking: npc.isWorking || this.npcAssignment.isAssigned(npc.id),
+            isResting: npc.isResting || false,
+            isSocializing: false, // Will be set by idle task
+            isInsideTerritory: this.territoryManager.isPositionInAnyTerritory(npc.position)
+          };
+        }
+
+        // Update NPC needs (decay over time)
+        const deltaTime = 1000; // 1 second per tick
+        this.npcNeedsTracker.updateAllNeeds(deltaTime, npcStates);
+
+        // Update idle tasks
+        const completedTasks = this.idleTaskManager.updateTasks(deltaTime);
+
+        // Apply task rewards to NPCs
+        for (const { npcId, task } of completedTasks) {
+          const rewards = task.rewards;
+          if (rewards) {
+            // Apply happiness change
+            if (rewards.happiness) {
+              const npc = this.npcManager.getNPC(npcId);
+              if (npc) {
+                npc.happiness = Math.min(100, npc.happiness + rewards.happiness);
+              }
+            }
+
+            // Apply need satisfaction
+            if (rewards.socialNeed) {
+              this.npcNeedsTracker.satisfyNeed(npcId, 'SOCIAL', rewards.socialNeed);
+            }
+            if (rewards.restNeed) {
+              this.npcNeedsTracker.satisfyNeed(npcId, 'REST', rewards.restNeed);
+            }
+            if (rewards.fatigue) {
+              // Reduce fatigue (negative value)
+              const npc = this.npcManager.getNPC(npcId);
+              if (npc && npc.fatigued) {
+                npc.fatigued = false; // Clear fatigue flag
+              }
+            }
+          }
+        }
+
+        // Assign idle tasks to NPCs without tasks
+        for (const npc of this.npcManager.npcs.values()) {
+          if (!npc.isWorking && !npc.assignedBuilding && !this.idleTaskManager.hasActiveTask(npc.id)) {
+            this.idleTaskManager.assignTask(npc);
+          }
+        }
+
+        result.phase3a = {
+          needsTracked: this.npcNeedsTracker.getStatistics().totalNPCsTracked,
+          criticalNeeds: this.npcNeedsTracker.getAllCriticalNPCs().length,
+          tasksCompleted: completedTasks.length,
+          activeTasks: this.idleTaskManager.getStatistics().activeTasks
+        };
+      }
+
+      // ============================================
       // STEP 5: STORAGE OVERFLOW CHECK
       // ============================================
       const overflowResult = this.storage.checkAndHandleOverflow();
@@ -436,6 +502,16 @@ class ModuleOrchestrator {
       // townManager.spawnNPC is already called by npcManager.spawnNPC
       // so we don't need to call it again here
       this.consumption.registerNPC(result.npcId, false);
+
+      // Phase 3A: Register NPC with needs tracker
+      if (this.npcNeedsTracker) {
+        this.npcNeedsTracker.registerNPC(result.npcId, {
+          food: 100,
+          rest: 100,
+          social: 50,
+          shelter: 100
+        });
+      }
 
       // Update game state immediately for UI reactivity
       this._updateGameState();

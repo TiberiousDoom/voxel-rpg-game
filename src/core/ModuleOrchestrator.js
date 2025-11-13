@@ -46,6 +46,14 @@ class ModuleOrchestrator {
     this.npcManager = modules.npcManager;
     this.npcAssignment = modules.npcAssignment;
 
+    // Phase 3A: NPC Advanced Behaviors (optional)
+    this.idleTaskManager = modules.idleTaskManager || null;
+    this.npcNeedsTracker = modules.npcNeedsTracker || null;
+    this.autonomousDecision = modules.autonomousDecision || null;
+
+    // Phase 3C: Achievement System (optional)
+    this.achievementSystem = modules.achievementSystem || null;
+
     // Game state
     this.tickCount = 0;
     this.isPaused = false;
@@ -274,6 +282,22 @@ class ModuleOrchestrator {
       this._updateGameState();
 
       // ============================================
+      // STEP 6.5: PHASE 3C - ACHIEVEMENT TRACKING
+      // ============================================
+      if (this.achievementSystem) {
+        const newlyUnlocked = this.achievementSystem.checkAchievements(this.gameState);
+        if (newlyUnlocked.length > 0) {
+          result.achievements = {
+            newlyUnlocked: newlyUnlocked.map(a => ({
+              id: a.id,
+              name: a.name,
+              reward: a.reward
+            }))
+          };
+        }
+      }
+
+      // ============================================
       // STEP 7: PERFORMANCE TRACKING
       // ============================================
       const tickTime = performance.now() - tickStart;
@@ -315,9 +339,11 @@ class ModuleOrchestrator {
       position: b.position
     }));
     this.gameState.npcs = this.npcManager.getAllNPCStates();
-    this.gameState.storage = this.storage.getStorage();
+    this.gameState.storage = this.storage; // Full storage reference for achievement tracking
     this.gameState.morale = this.morale.getCurrentMorale();
     this.gameState.population = this.npcManager.getStatistics();
+    this.gameState.currentTier = this.gameState.currentTier || 'SURVIVAL'; // Current tier
+    this.gameState.npcManager = this.npcManager; // NPC manager reference for achievement tracking
   }
 
   /**
@@ -367,6 +393,12 @@ class ModuleOrchestrator {
       }
 
       this.gameState.currentTier = targetTier;
+
+      // Phase 3C: Record tier reached for achievements
+      if (this.achievementSystem) {
+        this.achievementSystem.recordTierReached(targetTier);
+      }
+
       return {
         success: true,
         newTier: targetTier,

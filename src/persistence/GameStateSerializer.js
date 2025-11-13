@@ -70,6 +70,9 @@ class GameStateSerializer {
       npcs: this._serializeNPCs(orchestrator.npcManager),
       npcAssignments: this._serializeNPCAssignments(orchestrator.npcAssignment),
 
+      // Phase 3C: Achievement System
+      achievements: orchestrator.achievementSystem ? this._serializeAchievements(orchestrator.achievementSystem) : null,
+
       // Engine state
       engineState: this._serializeEngineState(orchestrator.gameState, engine)
     };
@@ -113,6 +116,7 @@ class GameStateSerializer {
       this._deserializeTown(data.town, orchestrator.townManager, errors);
       this._deserializeNPCs(data.npcs, orchestrator.npcManager, errors);
       this._deserializeNPCAssignments(data.npcAssignments, orchestrator.npcAssignment, errors);
+      this._deserializeAchievements(data.achievements, orchestrator.achievementSystem, errors);
       this._deserializeEngineState(data.engineState, orchestrator, engine, errors);
 
       // Validate consistency
@@ -539,6 +543,24 @@ class GameStateSerializer {
       }
     } catch (err) {
       errors.push(`NPC Assignment deserialization error: ${err.message}`);
+    }
+  }
+
+  // ============================================
+  // PHASE 3C: ACHIEVEMENT SYSTEM SERIALIZATION
+  // ============================================
+
+  static _serializeAchievements(achievementSystem) {
+    return achievementSystem.serialize();
+  }
+
+  static _deserializeAchievements(data, achievementSystem, errors) {
+    if (!data || !achievementSystem) return;
+
+    try {
+      achievementSystem.deserialize(data);
+    } catch (err) {
+      errors.push(`Achievement system deserialization error: ${err.message}`);
     }
   }
 

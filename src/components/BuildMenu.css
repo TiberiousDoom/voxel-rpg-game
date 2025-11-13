@@ -299,9 +299,96 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Responsive */
+/* Responsive - Mobile Optimization */
 @media (max-width: 768px) {
   .buildings-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* Ensure 44px minimum touch targets */
+  .building-button {
+    padding: 14px;
+    min-height: 100px;
+    gap: 8px;
+    touch-action: manipulation;
+  }
+
+  .building-icon {
+    font-size: 32px;
+  }
+
+  .building-name {
+    font-size: 14px;
+  }
+
+  .building-description {
+    font-size: 11px;
+  }
+
+  /* Control buttons with 44px+ height */
+  .control-button {
+    padding: 14px 16px;
+    min-height: 50px;
+    font-size: 14px;
+    touch-action: manipulation;
+  }
+
+  .button-icon {
+    font-size: 20px;
+  }
+
+  .button-hint {
+    font-size: 11px;
+    margin-top: 8px;
+  }
+
+  /* Cancel button touch target */
+  .cancel-button {
+    padding: 12px;
+    min-height: 44px;
+    font-size: 12px;
+    touch-action: manipulation;
+  }
+
+  /* Increase section padding on mobile */
+  .buildings-section,
+  .npc-controls,
+  .tier-controls,
+  .build-instructions,
+  .current-selection {
+    padding: 14px;
+  }
+
+  .panel-title {
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .section-title {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  /* Instructions more readable */
+  .build-instructions ol {
+    font-size: 12px;
+    line-height: 1.7;
+    padding-left: 22px;
+  }
+
+  .build-instructions li {
+    margin: 6px 0;
+  }
+
+  /* Selection text larger */
+  .selection-text {
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .selection-hint {
+    font-size: 12px;
+    margin-bottom: 10px;
   }
 }

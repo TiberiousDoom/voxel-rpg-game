@@ -5,12 +5,14 @@ import ResourcePanel from './ResourcePanel';
 import NPCPanel from './NPCPanel';
 import BuildMenu from './BuildMenu';
 import BuildingInfoPanel from './BuildingInfoPanel';
+import { Menu, X } from 'lucide-react';
 import TierProgressPanel from './TierProgressPanel';
 import './GameScreen.css';
 
 /**
  * GameScreen Component
  * Main container for the Voxel RPG Game
+ * Mobile-compatible with hamburger menu for sidebars
  */
 function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing, gameManager } = useGame();
@@ -18,10 +20,23 @@ function GameScreen() {
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
   const [savedSlots, setSavedSlots] = useState(new Set());
+  const [isMobile, setIsMobile] = useState(false);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [showTierPanel, setShowTierPanel] = useState(false);
   const [tierProgress, setTierProgress] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [fpsStats, setFpsStats] = useState({ current: 60, min: 60, max: 60 });
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Track FPS stats
   useEffect(() => {
@@ -188,7 +203,33 @@ function GameScreen() {
   return (
     <div className="game-screen">
       <header className="game-header">
+        {/* Mobile hamburger menu buttons */}
+        {isMobile && (
+          <button
+            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+            className="mobile-menu-btn"
+            aria-label="Toggle Resources Menu"
+            style={{
+              background: leftSidebarOpen ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.15)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              color: 'white',
+              padding: '8px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '44px',
+              minHeight: '44px',
+              touchAction: 'manipulation',
+            }}
+          >
+            {leftSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        )}
+
         <h1>Voxel RPG Game</h1>
+
         <div className="header-controls">
           {/* Save/Load Controls */}
           <div className="header-save-controls">
@@ -250,20 +291,80 @@ function GameScreen() {
             </span>
           </div>
         </div>
+
+        {/* Mobile right hamburger menu button */}
+        {isMobile && (
+          <button
+            onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+            className="mobile-menu-btn"
+            aria-label="Toggle Build Menu"
+            style={{
+              background: rightSidebarOpen ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.15)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              color: 'white',
+              padding: '8px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '44px',
+              minHeight: '44px',
+              touchAction: 'manipulation',
+            }}
+          >
+            {rightSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        )}
       </header>
 
       <main className="game-layout">
         {/* Left Sidebar - Resources & NPCs */}
-        <aside className="game-sidebar left-sidebar">
-          <ResourcePanel resources={gameState.resources || {}} />
-          <NPCPanel
-            npcs={gameState.npcs || []}
-            buildings={gameState.buildings || []}
-            onAssignNPC={handleAssignNPC}
-            onUnassignNPC={handleUnassignNPC}
-            onAutoAssign={handleAutoAssign}
-          />
-        </aside>
+        {/* Mobile: Overlay with backdrop | Desktop: Always visible */}
+        {(!isMobile || leftSidebarOpen) && (
+          <>
+            {/* Mobile backdrop */}
+            {isMobile && leftSidebarOpen && (
+              <div
+                className="mobile-sidebar-backdrop"
+                onClick={() => setLeftSidebarOpen(false)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  zIndex: 999,
+                  touchAction: 'manipulation',
+                }}
+              />
+            )}
+            <aside
+              className={`game-sidebar left-sidebar ${isMobile ? 'mobile-overlay' : ''} ${isMobile && leftSidebarOpen ? 'open' : ''}`}
+              style={isMobile ? {
+                position: 'fixed',
+                left: leftSidebarOpen ? '0' : '-100%',
+                top: '60px',
+                bottom: '60px',
+                width: '280px',
+                maxWidth: '80vw',
+                zIndex: 1000,
+                transition: 'left 0.3s ease',
+                overflowY: 'auto',
+              } : {}}
+            >
+              <ResourcePanel resources={gameState.resources || {}} />
+              <NPCPanel
+                npcs={gameState.npcs || []}
+                buildings={gameState.buildings || []}
+                onAssignNPC={handleAssignNPC}
+                onUnassignNPC={handleUnassignNPC}
+                onAutoAssign={handleAutoAssign}
+              />
+            </aside>
+          </>
+        )}
 
         {/* Center - Game Viewport */}
         <div className="game-viewport-container">
@@ -296,16 +397,51 @@ function GameScreen() {
         </div>
 
         {/* Right Sidebar - Build Menu */}
-        <aside className="game-sidebar right-sidebar">
-          <BuildMenu
-            selectedBuildingType={selectedBuildingType}
-            onSelectBuilding={setSelectedBuildingType}
-            onSpawnNPC={() => actions.spawnNPC('WORKER')}
-            onAdvanceTier={handleOpenTierPanel}
-            currentTier={gameState.currentTier || 'SURVIVAL'}
-            buildingConfig={gameManager?.orchestrator?.buildingConfig}
-          />
-        </aside>
+        {/* Mobile: Overlay with backdrop | Desktop: Always visible */}
+        {(!isMobile || rightSidebarOpen) && (
+          <>
+            {/* Mobile backdrop */}
+            {isMobile && rightSidebarOpen && (
+              <div
+                className="mobile-sidebar-backdrop"
+                onClick={() => setRightSidebarOpen(false)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  zIndex: 999,
+                  touchAction: 'manipulation',
+                }}
+              />
+            )}
+            <aside
+              className={`game-sidebar right-sidebar ${isMobile ? 'mobile-overlay' : ''} ${isMobile && rightSidebarOpen ? 'open' : ''}`}
+              style={isMobile ? {
+                position: 'fixed',
+                right: rightSidebarOpen ? '0' : '-100%',
+                top: '60px',
+                bottom: '60px',
+                width: '280px',
+                maxWidth: '80vw',
+                zIndex: 1000,
+                transition: 'right 0.3s ease',
+                overflowY: 'auto',
+              } : {}}
+            >
+              <BuildMenu
+                selectedBuildingType={selectedBuildingType}
+                onSelectBuilding={setSelectedBuildingType}
+                onSpawnNPC={() => actions.spawnNPC('WORKER')}
+                onAdvanceTier={handleOpenTierPanel}
+                currentTier={gameState.currentTier || 'SURVIVAL'}
+                buildingConfig={gameManager?.orchestrator?.buildingConfig}
+              />
+            </aside>
+          </>
+        )}
       </main>
 
       {/* Error Toast */}

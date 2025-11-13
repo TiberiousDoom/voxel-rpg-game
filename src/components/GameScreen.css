@@ -66,12 +66,20 @@
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .game-header h1 {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Mobile menu buttons */
+.mobile-menu-btn {
+  flex-shrink: 0;
 }
 
 .header-controls {
@@ -399,32 +407,84 @@
 }
 
 @media (max-width: 768px) {
-  .game-header h1 {
-    font-size: 18px;
+  .game-header {
+    padding: 8px 10px;
   }
-  
+
+  .game-header h1 {
+    font-size: 16px;
+    order: 2;
+    flex: 1;
+    text-align: center;
+  }
+
+  .mobile-menu-btn:first-child {
+    order: 1;
+  }
+
+  .mobile-menu-btn:last-child {
+    order: 3;
+  }
+
+  .header-controls {
+    order: 4;
+    width: 100%;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .header-save-controls {
+    gap: 6px;
+  }
+
+  .header-slot-selector {
+    font-size: 11px;
+    padding: 4px 8px;
+    min-width: 80px;
+  }
+
+  .header-save-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
   .header-info {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    justify-content: center;
   }
-  
+
   .tier-badge,
   .tick-counter,
   .status-indicator {
-    font-size: 11px;
+    font-size: 10px;
     padding: 3px 8px;
   }
-  
+
+  .header-pause-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .game-layout {
+    padding: 5px;
+  }
+
+  .game-viewport-container {
+    padding: 10px;
+  }
+
   .play-reminder-banner {
-    padding: 20px 30px;
+    padding: 15px 20px;
   }
-  
+
   .play-reminder-banner h2 {
-    font-size: 20px;
+    font-size: 18px;
   }
-  
+
   .play-reminder-banner p {
-    font-size: 14px;
+    font-size: 13px;
   }
 }
 

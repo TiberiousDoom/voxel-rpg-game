@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext';
 import GameViewport from './GameViewport';
 import ResourcePanel from './ResourcePanel';
 import NPCPanel from './NPCPanel';
+import QuickStats from './QuickStats';
 import BuildMenu from './BuildMenu';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import { Menu, X } from 'lucide-react';
@@ -369,7 +370,18 @@ function GameScreen() {
                 overflowY: 'auto',
               } : {}}
             >
+              {/* Quick Stats Dashboard */}
+              <QuickStats
+                resources={gameState.resources || {}}
+                npcs={gameState.npcs || []}
+                achievementStats={gameManager?.orchestrator?.achievementSystem?.getStatistics()}
+                currentTier={gameState.currentTier || 'SURVIVAL'}
+              />
+
+              {/* Resource Panel */}
               <ResourcePanel resources={gameState.resources || {}} />
+
+              {/* NPC Panel */}
               <NPCPanel
                 npcs={gameState.npcs || []}
                 buildings={gameState.buildings || []}
@@ -377,13 +389,12 @@ function GameScreen() {
                 onUnassignNPC={handleUnassignNPC}
                 onAutoAssign={handleAutoAssign}
               />
-              {/* Phase 3C: Achievement Panel */}
+
+              {/* Achievement Panel */}
               {gameManager && gameManager.orchestrator && gameManager.orchestrator.achievementSystem && (
-                <div style={{ marginTop: '16px' }}>
-                  <AchievementPanel
-                    achievementSystem={gameManager.orchestrator.achievementSystem}
-                  />
-                </div>
+                <AchievementPanel
+                  achievementSystem={gameManager.orchestrator.achievementSystem}
+                />
               )}
             </aside>
           </>

@@ -34,7 +34,6 @@ import {
   TutorialSystem,
   ContextHelp,
   FeatureUnlock,
-  createTutorialSteps,
   getContextHelpDefinitions
 } from './modules/tutorial-system';
 
@@ -197,8 +196,7 @@ export default class GameManager extends EventEmitter {
     const eventSystem = createEventSystem(null);
 
     // Phase 3D: Tutorial System
-    const tutorialSteps = createTutorialSteps();
-    const tutorialSystem = new TutorialSystem(tutorialSteps);
+    const tutorialSystem = new TutorialSystem();
     const contextHelpDefs = getContextHelpDefinitions();
     const contextHelp = new ContextHelp(contextHelpDefs);
     const featureUnlock = new FeatureUnlock();

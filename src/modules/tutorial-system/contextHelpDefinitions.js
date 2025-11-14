@@ -439,9 +439,11 @@ export function validateContextHelpDefinitions() {
   };
 }
 
-export default {
+const contextHelpAPI = {
   getContextHelpDefinitions,
   getHelpTipsByCategory,
   getHighPriorityTips,
   validateContextHelpDefinitions
 };
+
+export default contextHelpAPI;

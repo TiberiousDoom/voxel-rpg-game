@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, ArrowRight, X, CheckCircle } from 'lucide-react';
+import { HelpCircle, ArrowRight, X } from 'lucide-react';
 import './TutorialOverlay.css';
 
 const TutorialOverlay = ({ tutorialSystem }) => {

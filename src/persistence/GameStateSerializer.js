@@ -404,23 +404,63 @@ class GameStateSerializer {
   }
 
   static _deserializeTerritory(data, territoryManager, errors) {
-    if (!data || !data.territories) return;
+    if (!data || !data.territories) {
+      // eslint-disable-next-line no-console
+      console.warn('[GameStateSerializer] No territory data to deserialize');
+      return;
+    }
+
+    // Backup existing territories in case deserialization fails
+    const backup = new Map(territoryManager.territories);
 
     try {
       territoryManager.territories.clear();
 
+      // eslint-disable-next-line no-console
+      console.log('[GameStateSerializer] Deserializing', data.territories.length, 'territories');
+
       for (const terr of data.territories) {
-        // Create proper Territory instance using constructor
-        const territory = new Territory(terr.id, terr.center, terr.radius, terr.tier);
+        try {
+          // Validate territory data
+          if (!terr.id || !terr.center || terr.radius === undefined || !terr.tier) {
+            throw new Error(`Missing required territory fields: ${JSON.stringify(terr)}`);
+          }
 
-        // Restore additional state
-        territory.buildings = Array.isArray(terr.buildings) ? terr.buildings : [];
-        territory.expansionCount = terr.expansionCount || 0;
+          // Create proper Territory instance using constructor
+          const territory = new Territory(terr.id, terr.center, terr.radius, terr.tier);
 
-        territoryManager.territories.set(terr.id, territory);
+          // Restore additional state
+          territory.buildings = Array.isArray(terr.buildings) ? terr.buildings : [];
+          territory.expansionCount = terr.expansionCount || 0;
+
+          territoryManager.territories.set(terr.id, territory);
+
+          // eslint-disable-next-line no-console
+          console.log('[GameStateSerializer] Restored territory', terr.id, 'with', territory.buildings.length, 'buildings');
+        } catch (terrErr) {
+          const errMsg = `Failed to create territory ${terr.id}: ${terrErr.message}`;
+          errors.push(errMsg);
+          // eslint-disable-next-line no-console
+          console.error('[GameStateSerializer]', errMsg);
+          // Continue trying to load other territories
+        }
+      }
+
+      // If no territories were loaded, restore backup
+      if (territoryManager.territories.size === 0 && backup.size > 0) {
+        territoryManager.territories = backup;
+        const errMsg = 'Territory deserialization failed - restored previous territories';
+        errors.push(errMsg);
+        // eslint-disable-next-line no-console
+        console.warn('[GameStateSerializer]', errMsg);
       }
     } catch (err) {
-      errors.push(`Territory deserialization error: ${err.message}`);
+      // Restore backup on catastrophic failure
+      territoryManager.territories = backup;
+      const errMsg = `Territory deserialization error: ${err.message}`;
+      errors.push(errMsg);
+      // eslint-disable-next-line no-console
+      console.error('[GameStateSerializer]', errMsg, err.stack);
     }
   }
 

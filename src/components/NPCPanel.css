@@ -1,40 +1,254 @@
 /**
- * NPCPanel.css - NPC and morale display styles
+ * NPCPanel.css - NPC and morale display styles (COMPACT)
  */
 
-.npc-panel {
+/* Panel Content Container */
+.npc-panel-content {
   display: flex;
   flex-direction: column;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  gap: 8px;
 }
 
-.panel-title {
-  margin: 0;
-  padding: 12px;
+/* Auto-Assign Button */
+.auto-assign-btn {
+  width: 100%;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-size: 14px;
-  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-radius: 8px 8px 0 0;
 }
 
-.npc-panel > div {
-  padding: 12px;
-  border-bottom: 1px solid #e0e0e0;
+.auto-assign-btn:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
-.npc-panel > div:last-child {
-  border-bottom: none;
+.auto-assign-btn:active {
+  transform: translateY(0);
+}
+
+/* NPC Subsections (Idle/Working) */
+.npc-subsection {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.npc-subsection-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.03);
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  transition: background 0.2s ease;
+}
+
+.npc-subsection-header:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.npc-toggle {
+  font-size: 10px;
+  color: #666;
+}
+
+/* Compact NPC List */
+.npc-list-compact {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.npc-item-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.npc-item-compact:hover {
+  background: #f5f5f5;
+  border-color: rgba(0, 0, 0, 0.1);
+  transform: translateX(2px);
+}
+
+.npc-item-compact.selected {
+  background: #e7f5ff;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.npc-item-compact.working {
+  background: #f1f8f4;
+}
+
+.npc-role-compact {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
   flex: 1;
 }
 
-/* Population Section */
+.npc-indicators {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.npc-health-dot,
+.npc-morale-dot {
+  font-size: 14px;
+  cursor: help;
+}
+
+.no-npcs-compact {
+  margin: 8px 0;
+  padding: 8px;
+  text-align: center;
+  color: #999;
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* Working NPCs Grouped by Building */
+.npc-working-groups {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.npc-building-group {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  padding: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.npc-building-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 3px;
+}
+
+.unassign-btn-compact {
+  padding: 2px 6px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.unassign-btn-compact:hover {
+  background: #d32f2f;
+  transform: scale(1.1);
+}
+
+/* Assignment Controls */
+.assignment-controls-compact {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px;
+  border: 2px solid #667eea;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assignment-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.assignment-select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  cursor: pointer;
+}
+
+.assignment-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.assign-btn-compact {
+  flex: 1;
+  padding: 8px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.assign-btn-compact:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.assign-btn-compact:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.cancel-btn-compact {
+  flex: 1;
+  padding: 8px;
+  background: #999;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn-compact:hover {
+  background: #777;
+  transform: translateY(-1px);
+}
+
+/* Legacy Population Section */
 .population-section {
   display: flex;
   flex-direction: column;

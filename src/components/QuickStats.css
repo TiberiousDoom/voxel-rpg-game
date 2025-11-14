@@ -1,0 +1,101 @@
+/**
+ * QuickStats.css - Quick stats dashboard styles
+ */
+
+.quick-stats {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  margin-bottom: 12px;
+}
+
+.quick-stats-header {
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quick-stats-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.quick-stats-grid {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-stats-row {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.quick-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 10px;
+  border-radius: 6px;
+  flex: 1;
+  min-width: 0;
+  cursor: help;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quick-stat-item:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.quick-stat-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.quick-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .quick-stats-grid {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .quick-stats-row {
+    gap: 6px;
+  }
+
+  .quick-stat-item {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .quick-stat-icon {
+    font-size: 14px;
+  }
+
+  .quick-stat-value {
+    font-size: 11px;
+  }
+}

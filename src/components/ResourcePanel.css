@@ -1,17 +1,72 @@
 /**
- * ResourcePanel.css - Resource display styles
+ * ResourcePanel.css - Resource display styles (COMPACT)
  */
 
-.resource-panel {
+/* Compact Resources Container */
+.resources-compact {
   display: flex;
   flex-direction: column;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  gap: 4px;
 }
 
+/* Compact Resource Item - One line per resource (~24px height) */
+.resource-compact-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: help;
+  min-height: 24px;
+}
+
+.resource-compact-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: translateX(2px);
+}
+
+.resource-compact-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.resource-compact-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.resource-compact-bar {
+  flex: 1;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.resource-compact-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.resource-compact-percent {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Legacy styles for backward compatibility */
 .panel-title {
   margin: 0;
   padding: 12px;
@@ -24,109 +79,30 @@
   border-radius: 8px 8px 0 0;
 }
 
-.resources-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.resource-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  transition: all 0.2s;
-}
-
-.resource-item:hover {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-.resource-icon {
-  font-size: 24px;
-  flex-shrink: 0;
-  text-align: center;
-  width: 30px;
-}
-
-.resource-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex-shrink: 0;
-  min-width: 70px;
-}
-
-.resource-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.resource-amount {
-  font-size: 14px;
-  font-weight: 700;
-  color: #333;
-}
-
-.resource-bar {
-  flex: 1;
-  height: 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  min-width: 50px;
-}
-
-.resource-footer {
-  padding: 10px;
-  border-top: 1px solid #e0e0e0;
-  background: rgba(0, 0, 0, 0.01);
-}
-
-.resource-note {
-  margin: 0;
-  font-size: 11px;
-  color: #999;
-  font-style: italic;
-  text-align: center;
-}
-
-/* Scrollbar */
-.resources-grid::-webkit-scrollbar {
-  width: 6px;
-}
-
-.resources-grid::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-.resources-grid::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
-}
-
-.resources-grid::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
-  .resource-item {
-    flex-direction: column;
-    align-items: flex-start;
+  .resource-compact-item {
+    gap: 4px;
+    padding: 3px 4px;
   }
 
-  .resource-bar {
-    width: 100%;
+  .resource-compact-icon {
+    font-size: 14px;
+    width: 18px;
+  }
+
+  .resource-compact-value {
+    font-size: 11px;
+    min-width: 35px;
+  }
+
+  .resource-compact-bar {
+    min-width: 30px;
+    height: 6px;
+  }
+
+  .resource-compact-percent {
+    font-size: 10px;
+    min-width: 28px;
   }
 }

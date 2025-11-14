@@ -13,6 +13,8 @@
  * - Engine State (ModuleOrchestrator, GameEngine)
  */
 
+import { Territory } from '../modules/territory-town/TerritoryManager.js';
+
 class GameStateSerializer {
   // Current serialization format version
   static VERSION = 1;
@@ -408,14 +410,13 @@ class GameStateSerializer {
       territoryManager.territories.clear();
 
       for (const terr of data.territories) {
-        const territory = {
-          id: terr.id,
-          tier: terr.tier,
-          center: { ...terr.center },
-          radius: terr.radius,
-          buildings: new Set(terr.buildings),
-          expansionCount: terr.expansionCount
-        };
+        // Create proper Territory instance using constructor
+        const territory = new Territory(terr.id, terr.center, terr.radius, terr.tier);
+
+        // Restore additional state
+        territory.buildings = Array.isArray(terr.buildings) ? terr.buildings : [];
+        territory.expansionCount = terr.expansionCount || 0;
+
         territoryManager.territories.set(terr.id, territory);
       }
     } catch (err) {

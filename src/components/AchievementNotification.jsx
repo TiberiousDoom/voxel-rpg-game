@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Trophy, X } from 'lucide-react';
 import './AchievementNotification.css';
 
@@ -18,6 +18,16 @@ function AchievementNotification({ achievements, onDismiss }) {
     }
   }, [achievements]);
 
+  const handleDismiss = useCallback(() => {
+    setVisible(false);
+    setTimeout(() => {
+      setCurrentAchievement(null);
+      if (onDismiss) {
+        onDismiss();
+      }
+    }, 300); // Wait for fade-out animation
+  }, [onDismiss]);
+
   // Show next achievement from queue
   useEffect(() => {
     if (queue.length > 0 && !currentAchievement) {
@@ -33,17 +43,7 @@ function AchievementNotification({ achievements, onDismiss }) {
 
       return () => clearTimeout(timer);
     }
-  }, [queue, currentAchievement]);
-
-  const handleDismiss = () => {
-    setVisible(false);
-    setTimeout(() => {
-      setCurrentAchievement(null);
-      if (onDismiss) {
-        onDismiss();
-      }
-    }, 300); // Wait for fade-out animation
-  };
+  }, [queue, currentAchievement, handleDismiss]);
 
   if (!currentAchievement) {
     return null;

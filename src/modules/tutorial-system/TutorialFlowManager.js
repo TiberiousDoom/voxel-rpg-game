@@ -8,8 +8,6 @@
  * - Step skipping/navigation
  */
 
-import TutorialStep from './TutorialStep.js';
-
 class TutorialFlowManager {
   /**
    * @param {Array<TutorialStep>} steps - Array of tutorial steps

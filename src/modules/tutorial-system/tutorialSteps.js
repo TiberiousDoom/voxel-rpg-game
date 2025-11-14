@@ -223,9 +223,11 @@ export function validateTutorialSteps() {
   };
 }
 
-export default {
+const tutorialStepsAPI = {
   createTutorialSteps,
   getTutorialStepById,
   getTutorialStepIds,
   validateTutorialSteps
 };
+
+export default tutorialStepsAPI;

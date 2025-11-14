@@ -32,7 +32,6 @@ function GameScreen() {
   const [toastMessage, setToastMessage] = useState(null);
   const [fpsStats, setFpsStats] = useState({ current: 60, min: 60, max: 60 });
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState([]);
-  const [showAchievements, setShowAchievements] = useState(false);
 
   // Detect mobile device
   useEffect(() => {

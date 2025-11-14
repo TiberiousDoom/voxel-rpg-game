@@ -47,11 +47,13 @@ class TutorialSystem {
    */
   start() {
     if (!this.enabled) {
+      // eslint-disable-next-line no-console
       console.log('Tutorial is disabled');
       return;
     }
 
     if (this.hasCompletedTutorial) {
+      // eslint-disable-next-line no-console
       console.log('Tutorial already completed');
       return;
     }
@@ -276,6 +278,7 @@ class TutorialSystem {
     this._clearHighlight();
     this._notifyUIUpdate();
 
+    // eslint-disable-next-line no-console
     console.log('Tutorial completed!');
   }
 

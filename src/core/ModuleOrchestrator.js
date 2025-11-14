@@ -1135,7 +1135,7 @@ class ModuleOrchestrator {
    * @param {Object} rewardData - Reward data from achievement system
    */
   _applyAchievementReward(rewardData) {
-    const { rewardType, rewardValue, achievementId, achievementName } = rewardData;
+    const { rewardType, rewardValue, achievementName } = rewardData;
 
     if (rewardType === 'multiplier') {
       for (const [key, bonus] of Object.entries(rewardValue)) {

@@ -254,7 +254,7 @@ class NPCManager {
     }
 
     // Continue with the rest of YOUR branch's code for creating the NPC
-    const id = this.npcIdCounter++;
+    const id = String(this.npcIdCounter++); // Convert to string for save validation
     const npc = new NPC(id, {
       role: role,
       position: position,

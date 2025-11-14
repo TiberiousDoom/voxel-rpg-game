@@ -219,9 +219,10 @@ class GameStateSerializer {
     if (!data || !data.buildings) return;
 
     try {
-      // Clear existing buildings
-      grid.grid.clear();
-      grid.occupiedCells.clear();
+      // Clear existing buildings - use correct property names
+      if (grid.buildings) grid.buildings.clear();
+      if (grid.occupiedCells) grid.occupiedCells.clear();
+      if (grid.positionIndex) grid.positionIndex.clear();
 
       // Restore buildings
       for (const building of data.buildings) {
@@ -374,17 +375,28 @@ class GameStateSerializer {
     if (!data || !data.npcs) return;
 
     try {
-      consumption.npcs.clear();
+      // Use correct property name: npcConsumptionData not npcs
+      if (consumption.npcConsumptionData) {
+        consumption.npcConsumptionData.clear();
+      }
 
       for (const npc of data.npcs) {
-        consumption.npcs.set(npc.id, {
+        consumption.npcConsumptionData.set(npc.id, {
+          id: npc.id,
           alive: npc.alive,
-          status: npc.status
+          isWorking: npc.status === 'working',
+          happiness: npc.happiness || 50,
+          morale: npc.morale || 0
         });
       }
 
-      if (data.happiness !== undefined) {
-        consumption.happiness = data.happiness;
+      // Restore consumption stats
+      if (data.stats) {
+        consumption.consumptionStats = {
+          totalConsumed: data.stats.totalConsumed || 0,
+          npcsDead: data.stats.npcsDead || 0,
+          starvationEvents: data.stats.starvationEvents || []
+        };
       }
     } catch (err) {
       errors.push(`Consumption deserialization error: ${err.message}`);

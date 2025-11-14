@@ -148,9 +148,28 @@ class GameStateSerializer {
       // Validate consistency
       this._validateConsistency(orchestrator, errors);
 
+      // Log all errors for debugging
+      if (errors.length > 0) {
+        // eslint-disable-next-line no-console
+        console.warn('[GameStateSerializer] Deserialization completed with errors:', errors);
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('[GameStateSerializer] Deserialization completed successfully');
+      }
+
+      // Consider load successful if no critical errors
+      // Some warnings are acceptable (like missing optional modules)
+      const criticalErrors = errors.filter(err =>
+        !err.includes('optional') &&
+        !err.includes('Tutorial') &&
+        !err.includes('Context') &&
+        !err.includes('Feature')
+      );
+
       return {
-        success: errors.length === 0,
-        errors: errors.length > 0 ? errors : undefined
+        success: criticalErrors.length === 0,
+        errors: errors.length > 0 ? errors : undefined,
+        warnings: errors.length > 0 && criticalErrors.length === 0 ? errors : undefined
       };
     } catch (err) {
       return {

@@ -11,6 +11,8 @@
  */
 
 import React from 'react';
+import CollapsibleSection from './CollapsibleSection';
+import CompactResourceItem from './CompactResourceItem';
 import './ResourcePanel.css';
 
 /**
@@ -26,36 +28,34 @@ function ResourcePanel({ resources = {} }) {
     { name: 'Crystal', key: 'crystal', icon: '💎', color: '#00CED1' }
   ];
 
+  // Calculate total resource count for badge
+  const totalResources = resourceList.reduce(
+    (sum, resource) => sum + (resources[resource.key] || 0),
+    0
+  );
+
   return (
-    <div className="resource-panel">
-      <h3 className="panel-title">Resources</h3>
-      <div className="resources-grid">
+    <CollapsibleSection
+      title="Resources"
+      icon="💰"
+      badge={Math.floor(totalResources).toLocaleString()}
+      defaultExpanded={true}
+      className="resource-panel-collapsible"
+    >
+      <div className="compact-resources-list">
         {resourceList.map((resource) => {
           const amount = resources[resource.key] || 0;
           return (
-            <div key={resource.key} className="resource-item">
-              <div className="resource-icon">{resource.icon}</div>
-              <div className="resource-info">
-                <div className="resource-name">{resource.name}</div>
-                <div className="resource-amount">{Math.floor(amount)}</div>
-              </div>
-              <div
-                className="resource-bar"
-                style={{
-                  background: `linear-gradient(90deg, ${resource.color} ${Math.min(
-                    (amount / 1000) * 100,
-                    100
-                  )}%, #E0E0E0 ${Math.min((amount / 1000) * 100, 100)}%)`
-                }}
-              />
-            </div>
+            <CompactResourceItem
+              key={resource.key}
+              resource={resource}
+              amount={amount}
+              max={1000}
+            />
           );
         })}
       </div>
-      <div className="resource-footer">
-        <p className="resource-note">Resources are consumed by NPCs and buildings</p>
-      </div>
-    </div>
+    </CollapsibleSection>
   );
 }
 

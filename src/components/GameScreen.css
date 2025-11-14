@@ -579,3 +579,22 @@
     opacity: 1;
   }
 }
+
+/* Phase 1: Compact Sidebar Improvements */
+.game-sidebar > .collapsible-section,
+.game-sidebar .resource-panel-collapsible,
+.game-sidebar .npc-panel-collapsible,
+.game-sidebar .achievement-panel-collapsible {
+  margin-bottom: 8px;
+}
+
+.game-sidebar > .collapsible-section:last-child,
+.game-sidebar .resource-panel-collapsible:last-child,
+.game-sidebar .npc-panel-collapsible:last-child,
+.game-sidebar .achievement-panel-collapsible:last-child {
+  margin-bottom: 0;
+}
+
+.quick-stats-section {
+  margin-bottom: 12px;
+}

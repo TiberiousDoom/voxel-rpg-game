@@ -9,6 +9,8 @@ import { Menu, X } from 'lucide-react';
 import TierProgressPanel from './TierProgressPanel';
 import AchievementPanel from './AchievementPanel';
 import AchievementNotification from './AchievementNotification';
+import QuickStats from './QuickStats';
+import CollapsibleSection from './CollapsibleSection';
 import './GameScreen.css';
 
 /**
@@ -368,7 +370,30 @@ function GameScreen() {
                 overflowY: 'auto',
               } : {}}
             >
+              {/* Phase 1: Quick Stats Dashboard */}
+              <CollapsibleSection
+                title="Quick Stats"
+                icon="📊"
+                defaultExpanded={true}
+                className="quick-stats-section"
+              >
+                <QuickStats
+                  npcCount={(gameState.npcs || []).length}
+                  maxNpcs={10}
+                  buildingCount={(gameState.buildings || []).length}
+                  territorySize={gameState.territorySize || 0}
+                  activeEvents={gameManager?.orchestrator?.eventSystem?.activeEvents?.length || 0}
+                  achievementProgress={{
+                    unlocked: gameManager?.orchestrator?.achievementSystem?.getStatistics().unlockedAchievements || 0,
+                    total: gameManager?.orchestrator?.achievementSystem?.getStatistics().totalAchievements || 50
+                  }}
+                />
+              </CollapsibleSection>
+
+              {/* Phase 1: Compact Resource Panel */}
               <ResourcePanel resources={gameState.resources || {}} />
+
+              {/* Phase 1: Compact NPC Panel */}
               <NPCPanel
                 npcs={gameState.npcs || []}
                 buildings={gameState.buildings || []}
@@ -376,13 +401,12 @@ function GameScreen() {
                 onUnassignNPC={handleUnassignNPC}
                 onAutoAssign={handleAutoAssign}
               />
-              {/* Phase 3C: Achievement Panel */}
+
+              {/* Phase 1: Compact Achievement Panel */}
               {gameManager && gameManager.orchestrator && gameManager.orchestrator.achievementSystem && (
-                <div style={{ marginTop: '16px' }}>
-                  <AchievementPanel
-                    achievementSystem={gameManager.orchestrator.achievementSystem}
-                  />
-                </div>
+                <AchievementPanel
+                  achievementSystem={gameManager.orchestrator.achievementSystem}
+                />
               )}
             </aside>
           </>

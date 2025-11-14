@@ -442,6 +442,212 @@
   padding: 20px;
 }
 
+/* Compact Styles for Phase 1 */
+.npc-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.npc-stats-compact {
+  display: flex;
+  gap: 8px;
+}
+
+.stat-compact {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stat-compact .stat-icon {
+  font-size: 16px;
+}
+
+.stat-compact .stat-text {
+  color: #666;
+}
+
+.npc-actions-compact {
+  display: flex;
+  gap: 6px;
+}
+
+.compact-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.compact-btn.primary {
+  background: #667eea;
+  color: white;
+}
+
+.compact-btn.primary:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+}
+
+.compact-btn.secondary {
+  background: #4caf50;
+  color: white;
+}
+
+.compact-btn.secondary:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.compact-btn.full-width {
+  width: 100%;
+}
+
+.working-npcs-section {
+  margin-top: 8px;
+}
+
+.section-subtitle {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.npc-list-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.npc-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.npc-item-compact:hover {
+  background: rgba(0, 0, 0, 0.04);
+  transform: translateX(2px);
+}
+
+.npc-item-compact.working {
+  background: rgba(76, 175, 80, 0.08);
+}
+
+.npc-basic-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.npc-item-compact .npc-role {
+  font-size: 11px;
+  font-weight: 700;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.npc-item-compact .npc-assignment {
+  font-size: 10px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.npc-morale-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.morale-bar-small {
+  width: 40px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.morale-bar-small .morale-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9800 0%, #4caf50 50%, #2196f3 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.morale-value-small {
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  min-width: 25px;
+}
+
+.unassign-btn-small {
+  padding: 2px 6px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.unassign-btn-small:hover {
+  background: #d32f2f;
+  transform: scale(1.1);
+}
+
+.assignment-controls-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.assignment-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+}
+
+.compact-select {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 11px;
+  background: white;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .stat-item {
@@ -457,5 +663,13 @@
 
   .morale-header {
     justify-content: flex-start;
+  }
+
+  .npc-stats-compact {
+    flex-direction: column;
+  }
+
+  .npc-actions-compact {
+    flex-direction: column;
   }
 }

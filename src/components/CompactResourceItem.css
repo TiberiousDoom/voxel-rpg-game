@@ -1,0 +1,141 @@
+/**
+ * CompactResourceItem.css - Compact resource display styles
+ */
+
+.compact-resource-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.compact-resource-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+  transform: translateX(2px);
+}
+
+.compact-resource-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.compact-resource-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+  min-width: 45px;
+}
+
+.compact-resource-amount {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+  flex-shrink: 0;
+  min-width: 35px;
+  text-align: right;
+}
+
+.compact-resource-bar-container {
+  flex: 1;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 30px;
+}
+
+.compact-resource-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 2px;
+}
+
+/* Tooltip */
+.compact-resource-tooltip {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  border-radius: 6px;
+  padding: 0;
+  min-width: 180px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: tooltipFadeIn 0.15s ease;
+  pointer-events: none;
+}
+
+.tooltip-header {
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px 6px 0 0;
+}
+
+.tooltip-body {
+  padding: 8px 10px;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  margin: 4px 0;
+}
+
+.tooltip-row span {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tooltip-row strong {
+  color: white;
+  font-weight: 600;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* Mobile responsive - hide tooltip on mobile, show full info instead */
+@media (max-width: 768px) {
+  .compact-resource-tooltip {
+    display: none;
+  }
+
+  .compact-resource-item {
+    padding: 6px 10px;
+    height: 28px;
+  }
+
+  .compact-resource-name {
+    min-width: 50px;
+  }
+
+  .compact-resource-amount {
+    min-width: 40px;
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Trophy, Star, Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star } from 'lucide-react';
+import CollapsibleSection from './CollapsibleSection';
 import './AchievementPanel.css';
 
 /**
@@ -8,7 +9,6 @@ import './AchievementPanel.css';
  */
 function AchievementPanel({ achievementSystem, onClose }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isExpanded, setIsExpanded] = useState(true);
 
   if (!achievementSystem) {
     return null;
@@ -19,11 +19,11 @@ function AchievementPanel({ achievementSystem, onClose }) {
 
   // Get all achievements grouped by category
   const categories = {
-    all: 'All Achievements',
+    all: 'All',
     building: 'Building',
     resource: 'Resource',
     npc: 'NPC',
-    tier: 'Tier Progression',
+    tier: 'Tier',
     survival: 'Survival'
   };
 
@@ -32,156 +32,104 @@ function AchievementPanel({ achievementSystem, onClose }) {
     ? Array.from(achievementSystem.achievements.values())
     : achievementSystem.getAchievementsByCategory(selectedCategory);
 
-  // Get recently unlocked achievements (last 5)
-  const recentlyUnlocked = achievementSystem.getUnlockedAchievements().slice(0, 5);
+  // Get recently unlocked achievements (last 3 for compact view)
+  const recentlyUnlocked = achievementSystem.getUnlockedAchievements().slice(0, 3);
 
   return (
-    <div className="achievement-panel">
-      <div className="achievement-panel-header">
-        <div className="achievement-panel-title">
-          <Trophy size={20} />
-          <h3>Achievements</h3>
-        </div>
-        <div className="achievement-panel-stats">
-          <span className="achievement-count">
-            {stats.unlockedAchievements} / {stats.totalAchievements}
-          </span>
-          <span className="achievement-percentage">
-            ({stats.completionPercentage.toFixed(1)}%)
-          </span>
-        </div>
-        <button
-          className="achievement-panel-toggle"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-      </div>
-
-      {isExpanded && (
-        <>
-          {/* Progress Bar */}
+    <CollapsibleSection
+      title="Achievements"
+      icon="🏆"
+      badge={`${stats.unlockedAchievements}/${stats.totalAchievements}`}
+      defaultExpanded={false}
+      className="achievement-panel-collapsible"
+    >
+      <div className="achievement-panel-content">
+        {/* Compact Progress Bar */}
+        <div className="achievement-progress-compact">
           <div className="achievement-progress-bar">
             <div
               className="achievement-progress-fill"
               style={{ width: `${stats.completionPercentage}%` }}
             />
           </div>
+          <span className="achievement-progress-percentage">
+            {stats.completionPercentage.toFixed(1)}%
+          </span>
+        </div>
 
-          {/* Recently Unlocked */}
-          {recentlyUnlocked.length > 0 && (
-            <div className="achievement-recent">
-              <h4>Recently Unlocked</h4>
-              <div className="achievement-recent-list">
-                {recentlyUnlocked.map(achievement => (
-                  <div key={achievement.id} className="achievement-recent-item">
-                    <span className="achievement-icon">{achievement.icon}</span>
-                    <span className="achievement-name">{achievement.name}</span>
-                  </div>
-                ))}
-              </div>
+        {/* Recently Unlocked - Compact */}
+        {recentlyUnlocked.length > 0 && (
+          <div className="achievement-recent-compact">
+            <h4 className="section-subtitle">Recent</h4>
+            <div className="achievement-recent-list-compact">
+              {recentlyUnlocked.map(achievement => (
+                <div key={achievement.id} className="achievement-recent-item-compact">
+                  <span className="achievement-icon-small">{achievement.icon}</span>
+                  <span className="achievement-name-small">{achievement.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Category Filter - Compact */}
+        <div className="achievement-categories-compact">
+          {Object.entries(categories).map(([key, label]) => (
+            <button
+              key={key}
+              className={`achievement-category-btn-compact ${selectedCategory === key ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Achievement List - Compact */}
+        <div className="achievement-list-compact">
+          {achievements.slice(0, 5).map(achievement => (
+            <AchievementCardCompact
+              key={achievement.id}
+              achievement={achievement}
+            />
+          ))}
+          {achievements.length > 5 && (
+            <div className="achievement-more-indicator">
+              +{achievements.length - 5} more achievements
             </div>
           )}
-
-          {/* Category Filter */}
-          <div className="achievement-categories">
-            {Object.entries(categories).map(([key, label]) => (
-              <button
-                key={key}
-                className={`achievement-category-btn ${selectedCategory === key ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(key)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Achievement List */}
-          <div className="achievement-list">
-            {achievements.map(achievement => (
-              <AchievementCard
-                key={achievement.id}
-                achievement={achievement}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+        </div>
+      </div>
+    </CollapsibleSection>
   );
 }
 
 /**
- * AchievementCard Component
- * Displays a single achievement with progress
+ * AchievementCardCompact Component
+ * Compact version of achievement display
  */
-function AchievementCard({ achievement }) {
-  const [showDetails, setShowDetails] = useState(false);
-
+function AchievementCardCompact({ achievement }) {
   return (
     <div
-      className={`achievement-card ${achievement.isUnlocked ? 'unlocked' : 'locked'}`}
-      onClick={() => setShowDetails(!showDetails)}
+      className={`achievement-card-compact ${achievement.isUnlocked ? 'unlocked' : 'locked'}`}
+      title={achievement.description}
     >
-      <div className="achievement-card-header">
-        <span className="achievement-card-icon">
-          {achievement.isUnlocked ? achievement.icon : <Lock size={20} />}
-        </span>
-        <div className="achievement-card-info">
-          <h4 className="achievement-card-name">{achievement.name}</h4>
-          <p className="achievement-card-description">{achievement.description}</p>
-        </div>
-        {achievement.isUnlocked && (
-          <Star size={20} className="achievement-unlocked-star" />
-        )}
-      </div>
-
-      {/* Progress Bar for locked achievements */}
-      {!achievement.isUnlocked && (
-        <div className="achievement-card-progress">
-          <div className="achievement-progress-bar small">
+      <span className="achievement-icon-compact">
+        {achievement.isUnlocked ? achievement.icon : '🔒'}
+      </span>
+      <div className="achievement-info-compact">
+        <div className="achievement-name-compact">{achievement.name}</div>
+        {!achievement.isUnlocked && achievement.progress > 0 && (
+          <div className="achievement-progress-bar-mini">
             <div
-              className="achievement-progress-fill"
+              className="achievement-progress-fill-mini"
               style={{ width: `${achievement.progress}%` }}
             />
           </div>
-          <span className="achievement-progress-text">
-            {achievement.getProgressDescription()}
-          </span>
-        </div>
-      )}
-
-      {/* Details */}
-      {showDetails && (
-        <div className="achievement-card-details">
-          <div className="achievement-detail-row">
-            <span className="achievement-detail-label">Category:</span>
-            <span className="achievement-detail-value">{achievement.category}</span>
-          </div>
-          {achievement.reward && achievement.reward.type !== 'cosmetic' && (
-            <div className="achievement-detail-row">
-              <span className="achievement-detail-label">Reward:</span>
-              <span className="achievement-detail-value">
-                {achievement.reward.type === 'multiplier' &&
-                  Object.entries(achievement.reward.value).map(([key, val]) =>
-                    `+${(val * 100).toFixed(0)}% ${key}`
-                  ).join(', ')
-                }
-                {achievement.reward.type === 'unlock' &&
-                  `Unlock: ${achievement.reward.value.building || 'Special Feature'}`
-                }
-              </span>
-            </div>
-          )}
-          {achievement.isUnlocked && (
-            <div className="achievement-detail-row">
-              <span className="achievement-detail-label">Unlocked:</span>
-              <span className="achievement-detail-value">
-                {new Date(achievement.unlockedAt).toLocaleDateString()}
-              </span>
-            </div>
-          )}
-        </div>
+        )}
+      </div>
+      {achievement.isUnlocked && (
+        <Star size={14} className="achievement-star-compact" />
       )}
     </div>
   );

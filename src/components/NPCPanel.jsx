@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import CollapsibleSection from './CollapsibleSection';
 
 const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign }) => {
   const [selectedNPC, setSelectedNPC] = useState(null);
@@ -22,25 +23,33 @@ const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign })
   const workingNPCs = npcs.filter(npc => npc.assignedBuilding);
 
   return (
-    <div className="npc-panel">
-      <h3>NPCs ({npcs.length})</h3>
-
-      <div className="npc-stats">
-        <div>
-          💤 Idle: {idleNPCs.length}
+    <CollapsibleSection
+      title="NPCs"
+      icon="👥"
+      badge={`${npcs.length}`}
+      defaultExpanded={true}
+      className="npc-panel-collapsible"
+    >
+      <div className="npc-panel-content">
+        <div className="npc-stats-compact">
+          <div className="stat-compact">
+            <span className="stat-icon">💤</span>
+            <span className="stat-text">Idle: {idleNPCs.length}</span>
+          </div>
+          <div className="stat-compact">
+            <span className="stat-icon">🏢</span>
+            <span className="stat-text">Working: {workingNPCs.length}</span>
+          </div>
         </div>
-        <div>
-          🏢 Working: {workingNPCs.length}
+
+        <div className="npc-actions-compact">
+          <button onClick={onAutoAssign} className="compact-btn primary">
+            ⚡ Auto-Assign
+          </button>
+          <button onClick={() => setShowIdleModal(true)} className="compact-btn secondary">
+            👀 Idle ({idleNPCs.length})
+          </button>
         </div>
-      </div>
-
-      <button onClick={onAutoAssign} className="auto-assign-btn">
-        ⚡ Auto-Assign All
-      </button>
-
-      <button onClick={() => setShowIdleModal(true)} className="view-idle-btn">
-        👀 View Idle NPCs ({idleNPCs.length})
-      </button>
 
       {/* Idle NPCs Modal */}
       {showIdleModal && (
@@ -82,68 +91,74 @@ const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign })
         </div>
       )}
 
-      <h4>Working NPCs</h4>
-      <div className="npc-list">
-        {workingNPCs.map(npc => {
-          const building = buildings.find(b => b.id === npc.assignedBuilding);
-          return (
-            <div key={npc.id} className="npc-item working">
-              <span className="npc-role">{npc.role}</span>
-              <span className="npc-assignment">
-                → {building?.type || 'Unknown'}
-              </span>
-              <div className="npc-morale">
-                <span className="morale-label">Morale:</span>
-                <div className="morale-bar">
-                  <div
-                    className="morale-fill"
-                    style={{ width: `${Math.max(0, Math.min(100, npc.morale || 50))}%` }}
-                  />
-                </div>
-                <span className="morale-value">{Math.round(npc.morale || 50)}</span>
-              </div>
-              <button
-                onClick={() => handleUnassign(npc.id)}
-                className="unassign-btn"
-              >
-                ✖️
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {selectedNPC && (
-        <div className="assignment-controls">
-          <h4>Assign {selectedNPC.role} to:</h4>
-          <select
-            onChange={(e) => setSelectedBuilding(buildings.find(b => b.id === e.target.value))}
-            value={selectedBuilding?.id || ''}
-          >
-            <option value="">Select building...</option>
-            {buildings
-              .filter(b => b.state === 'COMPLETE' && (b.properties.npcCapacity || 0) > 0)
-              .map(b => {
-                const capacity = b.properties.npcCapacity || 0;
-                const assigned = workingNPCs.filter(npc => npc.assignedBuilding === b.id).length;
+        {workingNPCs.length > 0 && (
+          <div className="working-npcs-section">
+            <h4 className="section-subtitle">Working NPCs ({workingNPCs.length})</h4>
+            <div className="npc-list-compact">
+              {workingNPCs.map(npc => {
+                const building = buildings.find(b => b.id === npc.assignedBuilding);
                 return (
-                  <option key={b.id} value={b.id} disabled={assigned >= capacity}>
-                    {b.type} ({assigned}/{capacity})
-                  </option>
+                  <div key={npc.id} className="npc-item-compact working">
+                    <div className="npc-basic-info">
+                      <span className="npc-role">{npc.role}</span>
+                      <span className="npc-assignment">→ {building?.type || 'Unknown'}</span>
+                    </div>
+                    <div className="npc-morale-compact">
+                      <div className="morale-bar-small">
+                        <div
+                          className="morale-fill"
+                          style={{ width: `${Math.max(0, Math.min(100, npc.morale || 50))}%` }}
+                        />
+                      </div>
+                      <span className="morale-value-small">{Math.round(npc.morale || 50)}</span>
+                    </div>
+                    <button
+                      onClick={() => handleUnassign(npc.id)}
+                      className="unassign-btn-small"
+                      title="Unassign NPC"
+                    >
+                      ✖️
+                    </button>
+                  </div>
                 );
               })}
-          </select>
+            </div>
+          </div>
+        )}
 
-          <button
-            onClick={handleAssign}
-            disabled={!selectedBuilding}
-            className="assign-btn"
-          >
-            Assign to {selectedBuilding?.type || '...'}
-          </button>
-        </div>
-      )}
-    </div>
+        {selectedNPC && (
+          <div className="assignment-controls-compact">
+            <p className="assignment-title">Assign {selectedNPC.role} to:</p>
+            <select
+              onChange={(e) => setSelectedBuilding(buildings.find(b => b.id === e.target.value))}
+              value={selectedBuilding?.id || ''}
+              className="compact-select"
+            >
+              <option value="">Select building...</option>
+              {buildings
+                .filter(b => b.state === 'COMPLETE' && (b.properties.npcCapacity || 0) > 0)
+                .map(b => {
+                  const capacity = b.properties.npcCapacity || 0;
+                  const assigned = workingNPCs.filter(npc => npc.assignedBuilding === b.id).length;
+                  return (
+                    <option key={b.id} value={b.id} disabled={assigned >= capacity}>
+                      {b.type} ({assigned}/{capacity})
+                    </option>
+                  );
+                })}
+            </select>
+
+            <button
+              onClick={handleAssign}
+              disabled={!selectedBuilding}
+              className="compact-btn primary full-width"
+            >
+              Assign to {selectedBuilding?.type || '...'}
+            </button>
+          </div>
+        )}
+      </div>
+    </CollapsibleSection>
   );
 };
 

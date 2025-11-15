@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { useNPCRenderer, useNPCAnimation } from '../rendering/useNPCRenderer.js';
 import './GameViewport.css';
 
 // Grid constants
@@ -102,12 +103,26 @@ function GameViewport({
   selectedBuildingType = null,
   onPlaceBuilding = () => {},
   onSelectTile = () => {},
-  onBuildingClick = () => {}
+  onBuildingClick = () => {},
+  debugMode = false
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   const canvasRef = useRef(null);
   const rafRef = useRef(null); // requestAnimationFrame reference
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
+
+  // WF4: NPC Renderer integration
+  const npcRenderer = useNPCRenderer({
+    tileSize: TILE_SIZE,
+    showHealthBars: true,
+    showRoleBadges: true,
+    showStatusIndicators: true,
+    enableAnimations: true,
+    debugMode: debugMode
+  });
+
+  // WF4: Update NPC positions for smooth interpolation
+  useNPCAnimation(npcs, npcRenderer.updatePositions, true);
 
   /**
    * Convert world position to canvas coordinates
@@ -251,57 +266,14 @@ function GameViewport({
       );
     });
 
-    // Draw NPCs
-    npcs.forEach((npc) => {
-      if (!npc || !npc.position) return;
-      const canvas = worldToCanvas(npc.position.x, npc.position.z);
-      const npcColor = getNPCColor(npc);
-      const health = npc.health || 100;
-      const maxHealth = npc.maxHealth || 100;
+    // WF4: Render NPCs using NPCRenderer
+    // This uses the new rendering system with smooth interpolation and animations
+    npcRenderer.renderNPCs(ctx, npcs, worldToCanvas);
 
-      // Draw NPC as circle
-      ctx.fillStyle = npcColor;
-      ctx.beginPath();
-      ctx.arc(canvas.x + TILE_SIZE / 2, canvas.y + TILE_SIZE / 2, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Draw circle outline
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(canvas.x + TILE_SIZE / 2, canvas.y + TILE_SIZE / 2, 8, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Draw role indicator (first letter)
-      const role = npc.role || 'W';
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 10px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(
-        role[0],
-        canvas.x + TILE_SIZE / 2,
-        canvas.y + TILE_SIZE / 2
-      );
-
-      // Draw health bar if damaged
-      if (health < maxHealth) {
-        const healthPercent = health / maxHealth;
-        const barWidth = 16;
-        const barHeight = 3;
-        const barX = canvas.x + TILE_SIZE / 2 - barWidth / 2;
-        const barY = canvas.y + TILE_SIZE / 2 + 12;
-
-        // Health bar background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(barX, barY, barWidth, barHeight);
-
-        // Health bar fill
-        const healthColor = healthPercent > 0.5 ? '#4CAF50' : healthPercent > 0.25 ? '#FF9800' : '#F44336';
-        ctx.fillStyle = healthColor;
-        ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
-      }
-    });
+    // WF4: Render pathfinding visualization in debug mode
+    if (debugMode) {
+      npcRenderer.renderPaths(ctx, npcs, worldToCanvas);
+    }
 
     // Draw hover preview
     if (hoveredPosition && selectedBuildingType) {

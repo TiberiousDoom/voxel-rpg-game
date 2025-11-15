@@ -1,0 +1,54 @@
+/**
+ * NPCIndicators.css - Styles for NPC indicator components
+ */
+
+.npc-indicators {
+  user-select: none;
+  pointer-events: auto;
+}
+
+.npc-health-bar {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.npc-health-bar-fill {
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.npc-status-icon {
+  display: inline-block;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.npc-role-badge {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.npc-role-badge:hover {
+  transform: scale(1.1);
+}
+
+.npc-morale-indicator {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.5s ease;
+}
+
+/* Accessibility improvements */
+.npc-status-icon:focus,
+.npc-role-badge:focus,
+.npc-morale-indicator:focus {
+  outline: 2px solid #2196F3;
+  outline-offset: 2px;
+}

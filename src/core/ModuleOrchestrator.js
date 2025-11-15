@@ -769,6 +769,9 @@ class ModuleOrchestrator {
    */
   assignNPC(npcId, buildingId) {
     try {
+      // Update buildings map to ensure we have latest building positions
+      this.npcManager.updateBuildingsMap(this.gameState.buildings);
+
       const result = this.npcAssignment.assignNPCToBuilding(npcId, buildingId);
 
       if (result.success) {
@@ -818,6 +821,9 @@ class ModuleOrchestrator {
    */
   autoAssignNPCs() {
     try {
+      // Update buildings map first to ensure we have latest building positions
+      this.npcManager.updateBuildingsMap(this.gameState.buildings);
+
       let assignedCount = 0;
 
       // Get all idle NPCs (not currently assigned)

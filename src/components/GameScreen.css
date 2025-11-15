@@ -450,7 +450,32 @@
   }
 }
 
+/* Mobile sidebar overlays - ensure scrolling works */
 @media (max-width: 768px) {
+  .game-sidebar.mobile-overlay {
+    height: calc(100vh - 120px);
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
+  }
+
+  .game-sidebar.mobile-overlay::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .game-sidebar.mobile-overlay::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .game-sidebar.mobile-overlay::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+
+  .game-sidebar.mobile-overlay::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
   .game-header {
     padding: 8px 10px;
   }

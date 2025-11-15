@@ -12,7 +12,10 @@
  * - NPCAssignment (work assignments)
  * - GridManager (position validation)
  * - ConsumptionSystem (food needs)
+ * - PathfindingService (pathfinding and navigation)
  */
+
+import PathfindingService from './PathfindingService.js';
 
 class NPC {
   /**
@@ -44,6 +47,11 @@ class NPC {
     this.isMoving = false;
     this.isWorking = false;
     this.isResting = false;
+
+    // Pathfinding state
+    this.currentPath = null; // Array of waypoints
+    this.pathIndex = 0; // Current waypoint index
+    this.nextWaypoint = null; // Next position to move to
 
     // Inventory
     this.inventory = {
@@ -179,16 +187,26 @@ class NPCManager {
   /**
    * Initialize NPC manager
    * @param {TownManager} townManager - Town system integration
+   * @param {GridManager} gridManager - Grid system for pathfinding (optional)
    */
-  constructor(townManager) {
+  constructor(townManager, gridManager = null) {
     if (!townManager) {
       throw new Error('NPCManager requires TownManager');
     }
 
     this.townManager = townManager;
+    this.gridManager = gridManager;
     this.npcs = new Map(); // id -> NPC
     this.npcIdCounter = 0;
     this.buildingsMap = new Map(); // buildingId -> building (for NPC movement)
+
+    // Initialize pathfinding service if grid manager provided
+    this.pathfindingService = null;
+    if (gridManager) {
+      this.pathfindingService = new PathfindingService(gridManager);
+      // eslint-disable-next-line no-console
+      console.log('[NPCManager] Pathfinding service initialized');
+    }
 
     // NPC groups by status
     this.workingNPCs = new Set();
@@ -393,9 +411,82 @@ class NPCManager {
    * @private
    * @param {NPC} npc - NPC object
    * @param {number} speed - Movement speed (units per tick)
+   * @param {number} deltaTime - Time since last update (for frame-based movement)
    */
-  _updateNPCMovement(npc, speed = 0.5) {
-    if (!npc.targetPosition || !npc.isMoving) {
+  _updateNPCMovement(npc, speed = 0.5, deltaTime = 1.0) {
+    if (!npc.isMoving) {
+      return;
+    }
+
+    // Use pathfinding if available and path exists
+    if (this.pathfindingService && npc.currentPath) {
+      this._updatePathBasedMovement(npc, speed, deltaTime);
+    } else if (npc.targetPosition) {
+      // Fallback to straight-line movement
+      this._updateStraightLineMovement(npc, speed, deltaTime);
+    }
+  }
+
+  /**
+   * Update NPC movement along a calculated path
+   * @private
+   * @param {NPC} npc - NPC object
+   * @param {number} speed - Movement speed (units per tick)
+   * @param {number} deltaTime - Time multiplier
+   */
+  _updatePathBasedMovement(npc, speed, deltaTime) {
+    if (!npc.currentPath || npc.pathIndex >= npc.currentPath.length) {
+      // Path completed
+      npc.position = { ...npc.targetPosition };
+      npc.isMoving = false;
+      npc.currentPath = null;
+      npc.pathIndex = 0;
+      npc.nextWaypoint = null;
+      // eslint-disable-next-line no-console
+      console.log(`[NPCManager] NPC ${npc.id} arrived at building ${npc.assignedBuilding}`);
+      return;
+    }
+
+    // Get next waypoint
+    if (!npc.nextWaypoint && npc.pathIndex < npc.currentPath.length) {
+      npc.nextWaypoint = npc.currentPath[npc.pathIndex];
+    }
+
+    if (!npc.nextWaypoint) {
+      return;
+    }
+
+    // Calculate movement toward next waypoint
+    const dx = npc.nextWaypoint.x - npc.position.x;
+    const dy = npc.nextWaypoint.y - npc.position.y;
+    const dz = npc.nextWaypoint.z - npc.position.z;
+    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    // Check if reached waypoint
+    if (distance < 0.3) {
+      npc.pathIndex++;
+      npc.nextWaypoint = null;
+      return;
+    }
+
+    // Move towards waypoint
+    const moveAmount = Math.min(speed * deltaTime, distance);
+    const moveRatio = moveAmount / distance;
+
+    npc.position.x += dx * moveRatio;
+    npc.position.y += dy * moveRatio;
+    npc.position.z += dz * moveRatio;
+  }
+
+  /**
+   * Update NPC movement in straight line (fallback when no pathfinding)
+   * @private
+   * @param {NPC} npc - NPC object
+   * @param {number} speed - Movement speed
+   * @param {number} deltaTime - Time multiplier
+   */
+  _updateStraightLineMovement(npc, speed, deltaTime) {
+    if (!npc.targetPosition) {
       return;
     }
 
@@ -409,12 +500,12 @@ class NPCManager {
       npc.position = { ...npc.targetPosition };
       npc.isMoving = false;
       // eslint-disable-next-line no-console
-      console.log(`[NPCManager] NPC ${npc.id} arrived at building ${npc.assignedBuilding}`);
+      console.log(`[NPCManager] NPC ${npc.id} arrived at target (straight-line)`);
       return;
     }
 
     // Move towards target
-    const moveAmount = Math.min(speed, distance);
+    const moveAmount = Math.min(speed * deltaTime, distance);
     const moveRatio = moveAmount / distance;
 
     npc.position.x += dx * moveRatio;
@@ -441,8 +532,33 @@ class NPCManager {
 
     // Set the NPC's target position to the building
     npc.targetPosition = { ...building.position };
-    npc.isMoving = true;
     npc.assignedBuilding = buildingId;
+
+    // Calculate path if pathfinding is available
+    if (this.pathfindingService) {
+      const path = this.pathfindingService.findPath(npc.position, building.position, {
+        maxIterations: 500,
+        allowPartialPath: true
+      });
+
+      if (path && path.length > 0) {
+        // Smooth the path to remove unnecessary waypoints
+        npc.currentPath = this.pathfindingService.smoothPath(path);
+        npc.pathIndex = 0;
+        npc.nextWaypoint = null;
+        npc.isMoving = true;
+
+        const stats = this.pathfindingService.getPathStats(npc.currentPath);
+        // eslint-disable-next-line no-console
+        console.log(`[NPCManager] NPC ${npc.id} pathfinding to building ${buildingId}: ${stats.waypoints} waypoints, ${stats.distance} distance`);
+      } else {
+        console.warn(`[NPCManager] No path found for NPC ${npc.id}, using direct movement`);
+        npc.isMoving = true;
+      }
+    } else {
+      // No pathfinding available, use straight-line movement
+      npc.isMoving = true;
+    }
 
     // eslint-disable-next-line no-console
     console.log(`[NPCManager] Assigned NPC ${npcId} to building ${buildingId}, moving to (${building.position.x}, ${building.position.y}, ${building.position.z})`);
@@ -465,17 +581,74 @@ class NPCManager {
   }
 
   /**
+   * Update NPC movement (frame-based, called frequently)
+   * @param {number} deltaTime - Time since last update in seconds (e.g., 0.016 for 60fps)
+   */
+  updateMovement(deltaTime = 0.016) {
+    const speed = 2.0; // units per second
+
+    for (const npc of this.npcs.values()) {
+      if (npc.alive && npc.isMoving) {
+        this._updateNPCMovement(npc, speed, deltaTime);
+
+        // Apply collision avoidance
+        this._applyCollisionAvoidance(npc, deltaTime);
+      }
+    }
+  }
+
+  /**
+   * Apply collision avoidance steering to NPC
+   * @private
+   * @param {NPC} npc - NPC to apply avoidance to
+   * @param {number} deltaTime - Time delta
+   */
+  _applyCollisionAvoidance(npc, deltaTime) {
+    const avoidanceRadius = 1.0; // Distance to check for nearby NPCs
+    const avoidanceStrength = 1.5; // How strongly to avoid
+
+    let avoidanceX = 0;
+    let avoidanceZ = 0;
+    let nearbyCount = 0;
+
+    // Check all other NPCs
+    for (const otherNPC of this.npcs.values()) {
+      if (otherNPC.id === npc.id || !otherNPC.alive) {
+        continue;
+      }
+
+      const dx = otherNPC.position.x - npc.position.x;
+      const dz = otherNPC.position.z - npc.position.z;
+      const distance = Math.sqrt(dx * dx + dz * dz);
+
+      // If too close, steer away
+      if (distance < avoidanceRadius && distance > 0.01) {
+        // Calculate avoidance vector (away from other NPC)
+        const strength = (avoidanceRadius - distance) / avoidanceRadius;
+        avoidanceX -= (dx / distance) * strength;
+        avoidanceZ -= (dz / distance) * strength;
+        nearbyCount++;
+      }
+    }
+
+    // Apply avoidance if needed
+    if (nearbyCount > 0) {
+      npc.position.x += avoidanceX * avoidanceStrength * deltaTime;
+      npc.position.z += avoidanceZ * avoidanceStrength * deltaTime;
+
+      // Clamp to grid bounds
+      npc.position.x = Math.max(0, Math.min(this.gridManager?.gridSize - 1 || 10, npc.position.x));
+      npc.position.z = Math.max(0, Math.min(this.gridManager?.gridSize - 1 || 10, npc.position.z));
+    }
+  }
+
+  /**
    * Update all NPCs (called each tick)
    * @param {number} tickCount - Current tick number
    */
   updateAllNPCs(tickCount) {
     for (const npc of this.npcs.values()) {
       npc.updateState(tickCount);
-
-      // Update movement if NPC is assigned and moving
-      if (npc.assignedBuilding && npc.isMoving) {
-        this._updateNPCMovement(npc, 0.5);
-      }
 
       // Update happiness
       this.townManager.updateNPCHappiness(npc.id, {

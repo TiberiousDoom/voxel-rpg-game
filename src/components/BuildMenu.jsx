@@ -22,6 +22,7 @@ import BuildingCategoryFilter from './BuildingCategoryFilter';
 import GridDisplayToggle from './GridDisplayToggle';
 import BuildingSearch from './BuildingSearch';
 import TierProgressIndicator from './TierProgressIndicator';
+import { ARIA_LABELS } from '../accessibility/aria-labels';
 import './BuildMenu.css';
 
 // Building icons map (constant)
@@ -204,7 +205,11 @@ function BuildMenu({
   const selectedInfo = getSelectedBuildingInfo();
 
   return (
-    <div className="build-menu">
+    <div
+      className="build-menu"
+      role="region"
+      aria-label={ARIA_LABELS.BUILD_MENU.TITLE}
+    >
       {/* Quick Action Bar */}
       <QuickActionBar
         onSpawnNPC={onSpawnNPC}
@@ -243,7 +248,11 @@ function BuildMenu({
       />
 
       {/* Building Selection by Tier */}
-      <div className="buildings-section">
+      <div
+        className="buildings-section"
+        role="group"
+        aria-label="Buildings organized by tier"
+      >
         {TIER_HIERARCHY.map(tier => {
           const buildings = buildingsByTier[tier];
           if (!buildings || buildings.length === 0) return null;
@@ -251,6 +260,7 @@ function BuildMenu({
           const tierUnlocked = TIER_HIERARCHY.indexOf(tier) <= TIER_HIERARCHY.indexOf(currentTier);
           const tierMeta = TIER_METADATA[tier];
           const tierIcon = tierMeta?.icon || '🏗️';
+          const tierLabel = `${tier} tier buildings - ${tierMeta?.description || ''}`;
 
           return (
             <CollapsibleSection
@@ -260,8 +270,13 @@ function BuildMenu({
               badge={buildings.length}
               defaultExpanded={tierUnlocked && TIER_HIERARCHY.indexOf(tier) === TIER_HIERARCHY.indexOf(currentTier)}
               className={tierUnlocked ? 'tier-unlocked' : 'tier-locked'}
+              aria-label={tierLabel}
             >
-              <div className={`buildings-grid ${displayMode}`}>
+              <div
+                className={`buildings-grid ${displayMode}`}
+                role="list"
+                aria-label={`${tier} tier buildings`}
+              >
                 {buildings.map((building) => (
                   <BuildingCard
                     key={building.type}
@@ -295,8 +310,10 @@ function BuildMenu({
         className="tier-progress-toggle"
         onClick={() => setShowTierProgress(!showTierProgress)}
         title={showTierProgress ? 'Hide tier progress' : 'Show tier progress'}
+        aria-label={showTierProgress ? 'Hide tier progress details' : 'Show tier progress details'}
+        aria-expanded={showTierProgress}
       >
-        <span className="toggle-icon">📈</span>
+        <span className="toggle-icon" aria-hidden="true">📈</span>
         <span className="toggle-text">
           {showTierProgress ? 'Hide' : 'Show'} Tier Progress
         </span>
@@ -304,13 +321,18 @@ function BuildMenu({
 
       {/* Instructions Section (Collapsible) */}
       {showInstructions && (
-        <div className="instructions-section">
+        <div
+          className="instructions-section"
+          role="region"
+          aria-label="Gameplay instructions"
+        >
           <h4>How to Play:</h4>
           <ol>
             <li>Select a building from the menu above</li>
             <li>Click on the game world to place it</li>
             <li>Use the Quick Actions to spawn NPCs and advance tiers</li>
             <li>Gather resources to progress through civilization tiers</li>
+            <li>Press <kbd>?</kbd> to view keyboard shortcuts</li>
           </ol>
         </div>
       )}

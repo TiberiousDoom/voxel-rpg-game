@@ -408,6 +408,7 @@ class NPCManager {
     if (distance < 0.5) {
       npc.position = { ...npc.targetPosition };
       npc.isMoving = false;
+      // eslint-disable-next-line no-console
       console.log(`[NPCManager] NPC ${npc.id} arrived at building ${npc.assignedBuilding}`);
       return;
     }
@@ -443,6 +444,7 @@ class NPCManager {
     npc.isMoving = true;
     npc.assignedBuilding = buildingId;
 
+    // eslint-disable-next-line no-console
     console.log(`[NPCManager] Assigned NPC ${npcId} to building ${buildingId}, moving to (${building.position.x}, ${building.position.y}, ${building.position.z})`);
 
     return this.townManager.assignNPC(npcId, buildingId);

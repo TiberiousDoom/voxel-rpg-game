@@ -16,6 +16,7 @@
  */
 
 import PathfindingService from './PathfindingService.js';
+import { CommandQueue, Formation } from './NPCCommand.js';
 
 class NPC {
   /**
@@ -52,6 +53,13 @@ class NPC {
     this.currentPath = null; // Array of waypoints
     this.pathIndex = 0; // Current waypoint index
     this.nextWaypoint = null; // Next position to move to
+
+    // Phase 2: Command & Control
+    this.commandQueue = new CommandQueue(); // Command queue for player orders
+    this.formationId = null; // Formation this NPC belongs to
+    this.followTarget = null; // NPC ID being followed
+    this.patrolWaypoints = null; // Patrol waypoints
+    this.patrolIndex = 0; // Current patrol waypoint index
 
     // Inventory
     this.inventory = {
@@ -223,6 +231,9 @@ class NPCManager {
 
     // Phase 3C: Reference to orchestrator for achievement tracking
     this.orchestrator = null;
+
+    // Phase 2: Formation management
+    this.formations = new Map(); // formationId -> Formation
   }
 
   /**
@@ -587,6 +598,13 @@ class NPCManager {
   updateMovement(deltaTime = 0.016) {
     const speed = 2.0; // units per second
 
+    // Phase 2: Process commands first
+    this.processCommands(deltaTime);
+
+    // Phase 2: Update formations
+    this.updateFormations(deltaTime);
+
+    // Then update movement
     for (const npc of this.npcs.values()) {
       if (npc.alive && npc.isMoving) {
         this._updateNPCMovement(npc, speed, deltaTime);
@@ -830,6 +848,457 @@ class NPCManager {
     this.restingNPCs.add(npcId);
     // eslint-disable-next-line no-console
     console.log(`[NPCManager] NPC ${npcId} now resting`);
+  }
+
+  // ============================================================
+  // PHASE 2: COMMAND & CONTROL SYSTEM
+  // ============================================================
+
+  /**
+   * Issue a command to an NPC
+   * @param {string} npcId - NPC ID
+   * @param {Command} command - Command to issue
+   * @returns {boolean} Success
+   */
+  issueCommand(npcId, command) {
+    const npc = this.npcs.get(npcId);
+    if (!npc || !npc.alive) {
+      return false;
+    }
+
+    npc.commandQueue.addCommand(command);
+    return true;
+  }
+
+  /**
+   * Cancel NPC's current command
+   * @param {string} npcId - NPC ID
+   */
+  cancelCommand(npcId) {
+    const npc = this.npcs.get(npcId);
+    if (!npc) return;
+
+    npc.commandQueue.cancelCurrent();
+  }
+
+  /**
+   * Cancel all commands for an NPC
+   * @param {string} npcId - NPC ID
+   */
+  cancelAllCommands(npcId) {
+    const npc = this.npcs.get(npcId);
+    if (!npc) return;
+
+    npc.commandQueue.cancelAll();
+  }
+
+  /**
+   * Process commands for all NPCs
+   * Called during movement update to execute player commands
+   * @param {number} deltaTime - Time delta
+   */
+  processCommands(deltaTime) {
+    for (const npc of this.npcs.values()) {
+      if (!npc.alive) continue;
+
+      const command = npc.commandQueue.getNextCommand();
+      if (!command) continue;
+
+      this._executeCommand(npc, command, deltaTime);
+    }
+  }
+
+  /**
+   * Execute a specific command for an NPC
+   * @private
+   * @param {NPC} npc - NPC instance
+   * @param {Command} command - Command to execute
+   * @param {number} deltaTime - Time delta
+   */
+  _executeCommand(npc, command, deltaTime) {
+    const { CommandType } = require('./NPCCommand.js');
+
+    switch (command.type) {
+      case CommandType.MOVE_TO:
+        this._executeMoveToCommand(npc, command);
+        break;
+
+      case CommandType.FOLLOW:
+        this._executeFollowCommand(npc, command, deltaTime);
+        break;
+
+      case CommandType.PATROL:
+        this._executePatrolCommand(npc, command);
+        break;
+
+      case CommandType.RALLY:
+        this._executeRallyCommand(npc, command);
+        break;
+
+      case CommandType.PRIORITIZE_BUILDING:
+        this._executePrioritizeBuildingCommand(npc, command);
+        break;
+
+      case CommandType.IDLE:
+        this._executeIdleCommand(npc, command);
+        break;
+
+      default:
+        command.fail('Unknown command type');
+    }
+  }
+
+  /**
+   * Execute MOVE_TO command
+   * @private
+   */
+  _executeMoveToCommand(npc, command) {
+    const { position } = command.params;
+
+    // Set target and calculate path
+    if (!npc.targetPosition || !this._positionsEqual(npc.targetPosition, position)) {
+      npc.targetPosition = position;
+
+      // Calculate path if pathfinding available
+      if (this.pathfindingService) {
+        const path = this.pathfindingService.findPath(npc.position, position);
+        if (path) {
+          npc.currentPath = this.pathfindingService.smoothPath(path);
+          npc.pathIndex = 0;
+          npc.nextWaypoint = null;
+        }
+      }
+
+      npc.isMoving = true;
+    }
+
+    // Check if arrived
+    const distance = Math.sqrt(
+      Math.pow(position.x - npc.position.x, 2) +
+      Math.pow(position.z - npc.position.z, 2)
+    );
+
+    if (distance < 0.5) {
+      npc.isMoving = false;
+      command.complete();
+    } else {
+      // Update progress based on distance
+      const totalDistance = command.params.initialDistance || distance;
+      command.params.initialDistance = totalDistance;
+      command.updateProgress(1 - (distance / totalDistance));
+    }
+  }
+
+  /**
+   * Execute FOLLOW command
+   * @private
+   */
+  _executeFollowCommand(npc, command, deltaTime) {
+    const { targetId, distance: followDistance } = command.params;
+    const target = this.npcs.get(targetId);
+
+    if (!target || !target.alive) {
+      command.fail('Target NPC not found or dead');
+      return;
+    }
+
+    // Calculate desired position (behind target)
+    const dx = target.position.x - npc.position.x;
+    const dz = target.position.z - npc.position.z;
+    const currentDistance = Math.sqrt(dx * dx + dz * dz);
+
+    // If too far, move closer
+    if (currentDistance > followDistance + 0.5) {
+      const targetPos = {
+        x: target.position.x - (dx / currentDistance) * followDistance,
+        y: target.position.y,
+        z: target.position.z - (dz / currentDistance) * followDistance,
+      };
+
+      npc.targetPosition = targetPos;
+      npc.isMoving = true;
+
+      // Recalculate path periodically
+      if (!npc.currentPath || Math.random() < 0.1) {
+        if (this.pathfindingService) {
+          const path = this.pathfindingService.findPath(npc.position, targetPos);
+          if (path) {
+            npc.currentPath = path;
+            npc.pathIndex = 0;
+          }
+        }
+      }
+    } else if (currentDistance < followDistance - 0.5) {
+      // Too close, back away slightly
+      npc.isMoving = false;
+    } else {
+      // In good position
+      npc.isMoving = false;
+    }
+
+    // Follow commands don't complete automatically (infinite)
+    command.updateProgress(0.5); // Always 50% (active)
+  }
+
+  /**
+   * Execute PATROL command
+   * @private
+   */
+  _executePatrolCommand(npc, command) {
+    const { waypoints, loop } = command.params;
+
+    if (!waypoints || waypoints.length === 0) {
+      command.fail('No patrol waypoints');
+      return;
+    }
+
+    // Initialize patrol if needed
+    if (command.params.currentIndex === undefined) {
+      command.params.currentIndex = 0;
+    }
+
+    const currentWaypoint = waypoints[command.params.currentIndex];
+    npc.targetPosition = currentWaypoint;
+
+    // Check if reached current waypoint
+    const distance = Math.sqrt(
+      Math.pow(currentWaypoint.x - npc.position.x, 2) +
+      Math.pow(currentWaypoint.z - npc.position.z, 2)
+    );
+
+    if (distance < 0.5) {
+      // Move to next waypoint
+      command.params.currentIndex++;
+
+      if (command.params.currentIndex >= waypoints.length) {
+        if (loop) {
+          command.params.currentIndex = 0; // Loop back
+        } else {
+          command.complete(); // Patrol complete
+          npc.isMoving = false;
+          return;
+        }
+      }
+    } else {
+      // Move towards waypoint
+      if (!npc.isMoving) {
+        npc.isMoving = true;
+        if (this.pathfindingService) {
+          const path = this.pathfindingService.findPath(npc.position, currentWaypoint);
+          if (path) {
+            npc.currentPath = this.pathfindingService.smoothPath(path);
+            npc.pathIndex = 0;
+          }
+        }
+      }
+    }
+
+    // Update progress
+    const progress = command.params.currentIndex / waypoints.length;
+    command.updateProgress(progress);
+  }
+
+  /**
+   * Execute RALLY command (same as MOVE_TO but higher priority)
+   * @private
+   */
+  _executeRallyCommand(npc, command) {
+    this._executeMoveToCommand(npc, command);
+  }
+
+  /**
+   * Execute PRIORITIZE_BUILDING command
+   * @private
+   */
+  _executePrioritizeBuildingCommand(npc, command) {
+    const { buildingId } = command.params;
+
+    // Store priority preference
+    npc.priorityBuilding = buildingId;
+
+    // Try to assign to that building
+    const result = this.assignNPC(npc.id, buildingId);
+
+    if (result) {
+      command.complete();
+    } else {
+      command.fail('Could not assign to building');
+    }
+  }
+
+  /**
+   * Execute IDLE command
+   * @private
+   */
+  _executeIdleCommand(npc, command) {
+    // Unassign from work
+    if (npc.assignedBuilding) {
+      this.unassignNPC(npc.id);
+    }
+
+    npc.isMoving = false;
+    npc.isWorking = false;
+    npc.targetPosition = null;
+    npc.currentPath = null;
+
+    command.complete();
+  }
+
+  /**
+   * Check if two positions are equal
+   * @private
+   */
+  _positionsEqual(pos1, pos2) {
+    return Math.abs(pos1.x - pos2.x) < 0.1 &&
+           Math.abs(pos1.y - pos2.y) < 0.1 &&
+           Math.abs(pos1.z - pos2.z) < 0.1;
+  }
+
+  /**
+   * Get command status for an NPC
+   * @param {string} npcId - NPC ID
+   * @returns {Object|null} Command queue status
+   */
+  getCommandStatus(npcId) {
+    const npc = this.npcs.get(npcId);
+    if (!npc) return null;
+
+    return npc.commandQueue.getStatus();
+  }
+
+  // ============================================================
+  // FORMATION MANAGEMENT
+  // ============================================================
+
+  /**
+   * Create a new formation
+   * @param {string} type - Formation type (from FormationType)
+   * @param {string} leaderId - Leader NPC ID
+   * @returns {Formation} Created formation
+   */
+  createFormation(type, leaderId) {
+    const formation = new Formation(type, leaderId);
+    this.formations.set(formation.id, formation);
+
+    // Set leader's formation
+    const leader = this.npcs.get(leaderId);
+    if (leader) {
+      leader.formationId = formation.id;
+    }
+
+    return formation;
+  }
+
+  /**
+   * Add NPC to formation
+   * @param {string} formationId - Formation ID
+   * @param {string} npcId - NPC ID to add
+   * @returns {boolean} Success
+   */
+  addToFormation(formationId, npcId) {
+    const formation = this.formations.get(formationId);
+    const npc = this.npcs.get(npcId);
+
+    if (!formation || !npc) {
+      return false;
+    }
+
+    formation.addMember(npcId);
+    npc.formationId = formationId;
+
+    return true;
+  }
+
+  /**
+   * Remove NPC from formation
+   * @param {string} npcId - NPC ID
+   * @returns {boolean} Success
+   */
+  removeFromFormation(npcId) {
+    const npc = this.npcs.get(npcId);
+    if (!npc || !npc.formationId) {
+      return false;
+    }
+
+    const formation = this.formations.get(npc.formationId);
+    if (formation) {
+      formation.removeMember(npcId);
+
+      // Delete formation if empty
+      if (formation.memberIds.length === 0) {
+        this.formations.delete(formation.id);
+      }
+    }
+
+    npc.formationId = null;
+    return true;
+  }
+
+  /**
+   * Update formation positions
+   * Called during movement update to maintain formations
+   * @param {number} deltaTime - Time delta
+   */
+  updateFormations(deltaTime) {
+    for (const formation of this.formations.values()) {
+      const leader = this.npcs.get(formation.leaderId);
+      if (!leader || !leader.alive) {
+        // Remove formation if leader is gone
+        this.formations.delete(formation.id);
+        continue;
+      }
+
+      // Calculate leader direction (from movement)
+      let leaderDirection = { x: 0, z: 1 }; // Default forward
+      if (leader.targetPosition) {
+        const dx = leader.targetPosition.x - leader.position.x;
+        const dz = leader.targetPosition.z - leader.position.z;
+        const length = Math.sqrt(dx * dx + dz * dz);
+        if (length > 0.1) {
+          leaderDirection = { x: dx / length, z: dz / length };
+        }
+      }
+
+      // Calculate formation positions
+      const positions = formation.calculatePositions(leader.position, leaderDirection);
+
+      // Assign positions to formation members
+      for (const [npcId, position] of positions.entries()) {
+        const member = this.npcs.get(npcId);
+        if (!member || !member.alive) continue;
+
+        // Set target position for member
+        member.targetPosition = position;
+        member.isMoving = true;
+
+        // Calculate path if needed
+        if (this.pathfindingService && !member.currentPath) {
+          const path = this.pathfindingService.findPath(member.position, position);
+          if (path) {
+            member.currentPath = path;
+            member.pathIndex = 0;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Get formation info
+   * @param {string} formationId - Formation ID
+   * @returns {Object|null} Formation summary
+   */
+  getFormation(formationId) {
+    const formation = this.formations.get(formationId);
+    return formation ? formation.getSummary() : null;
+  }
+
+  /**
+   * Get all formations
+   * @returns {Array<Object>} All formation summaries
+   */
+  getAllFormations() {
+    return Array.from(this.formations.values()).map(f => f.getSummary());
   }
 }
 

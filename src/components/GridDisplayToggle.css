@@ -44,10 +44,13 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
   text-transform: uppercase;
   letter-spacing: 0.2px;
   touch-action: manipulation;
+  min-height: 28px;
 }
 
 .toggle-button:hover {

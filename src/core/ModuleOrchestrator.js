@@ -278,6 +278,9 @@ class ModuleOrchestrator {
       // ============================================
       // STEP 4: NPC UPDATES
       // ============================================
+      // Update buildings map for NPC movement targeting
+      this.npcManager.updateBuildingsMap(this.gameState.buildings);
+
       this.npcManager.updateAllNPCs(this.tickCount);
 
       // ============================================

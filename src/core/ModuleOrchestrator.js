@@ -80,6 +80,18 @@ class ModuleOrchestrator {
     this.sharedResources = modules.sharedResources || null;
     this.sharedInventory = modules.sharedInventory || null;
 
+    // Hybrid Game: Combat Systems (Phase 2)
+    this.npcSkillSystem = modules.npcSkillSystem || null;
+    this.npcEquipmentManager = modules.npcEquipmentManager || null;
+
+    // Hybrid Game: Expedition System (Phase 3)
+    this.expeditionManager = modules.expeditionManager || null;
+    this.dungeonCombatEngine = modules.dungeonCombatEngine || null;
+
+    // Hybrid Game: Defense System (Phase 4)
+    this.raidEventManager = modules.raidEventManager || null;
+    this.defenseCombatEngine = modules.defenseCombatEngine || null;
+
     // Phase 3C: Achievement bonuses (multiplicative)
     this.achievementBonuses = {
       production: 1.0,
@@ -210,6 +222,13 @@ class ModuleOrchestrator {
         // Apply resource-specific bonuses
         const resourceMultiplier = this.achievementBonuses[resource] || 1.0;
         finalAmount *= resourceMultiplier;
+
+        // Phase 5: Apply NPC combat bonuses to production
+        // Veterans and high-level NPCs provide production bonuses
+        if (this.npcSkillSystem) {
+          const combatBonus = this._calculateCombatProductionBonus(npcAssignments);
+          finalAmount *= (1 + combatBonus);
+        }
 
         productionResult.production[resource] = finalAmount;
       }
@@ -398,7 +417,150 @@ class ModuleOrchestrator {
       }
 
       // ============================================
-      // STEP 5: STORAGE OVERFLOW CHECK
+      // STEP 5: PHASE 5 - HYBRID GAME SYSTEMS
+      // ============================================
+      if (this.unifiedState) {
+        // Only process if we have hybrid systems enabled
+        const currentMode = this.unifiedState.getCurrentMode();
+
+        // ============================================
+        // RAID SYSTEM (Settlement Mode)
+        // ============================================
+        if (currentMode === 'settlement' && this.raidEventManager) {
+          // Check if raid should trigger
+          if (this.raidEventManager.shouldTriggerRaid()) {
+            const raidResult = this.raidEventManager.startRaid();
+
+            if (raidResult.success) {
+              result.raidTriggered = {
+                raidId: raidResult.raid.id,
+                raidType: raidResult.raid.type,
+                difficulty: raidResult.raid.difficulty
+              };
+
+              // Auto-switch to defense mode
+              if (this.modeManager) {
+                this.modeManager.switchMode('defense', {
+                  raidId: raidResult.raid.id
+                });
+              }
+            }
+          }
+
+          // Schedule next raid if not scheduled
+          if (!this.raidEventManager.nextRaidTime) {
+            this.raidEventManager.scheduleNextRaid();
+          }
+        }
+
+        // ============================================
+        // EXPEDITION SYSTEM (Expedition Mode)
+        // ============================================
+        if (currentMode === 'expedition' && this.expeditionManager) {
+          const activeExpedition = this.expeditionManager.getActiveExpedition();
+
+          if (activeExpedition) {
+            // Progress expedition (1 second per tick = 5 seconds)
+            const progressResult = this.expeditionManager.progressExpedition(5);
+
+            result.expeditionProgress = {
+              expeditionId: activeExpedition.id,
+              currentFloor: activeExpedition.currentFloor,
+              roomsExplored: progressResult.roomsExplored,
+              combatOccurred: progressResult.combatOccurred
+            };
+
+            // Check if expedition completed
+            if (progressResult.completed || progressResult.failed) {
+              result.expeditionComplete = {
+                success: progressResult.completed,
+                rewards: progressResult.rewards,
+                casualties: progressResult.casualties
+              };
+
+              // Auto-switch back to settlement mode
+              if (this.modeManager) {
+                this.modeManager.switchMode('settlement', {
+                  completed: progressResult.completed,
+                  abandoned: progressResult.failed
+                });
+              }
+            }
+          }
+        }
+
+        // ============================================
+        // DEFENSE SYSTEM (Defense Mode)
+        // ============================================
+        if (currentMode === 'defense' && this.raidEventManager && this.defenseCombatEngine) {
+          const activeRaid = this.raidEventManager.getActiveRaid();
+
+          if (activeRaid) {
+            // Spawn next wave if ready
+            if (activeRaid.currentWave < activeRaid.totalWaves) {
+              const waveResult = this.raidEventManager.spawnNextWave();
+
+              if (waveResult.success) {
+                // Get defenders
+                const defenders = this.defenseCombatEngine.getAvailableDefenders();
+
+                // Simulate wave combat
+                const combatResult = this.defenseCombatEngine.simulateWaveCombat(
+                  defenders,
+                  waveResult.enemies
+                );
+
+                // Update raid stats
+                this.raidEventManager.updateRaidStats({
+                  enemiesKilled: combatResult.enemiesKilled,
+                  defendersKilled: combatResult.defendersKilled.length,
+                  damageToSettlement: combatResult.damageToSettlement
+                });
+
+                result.waveCombat = {
+                  waveNumber: activeRaid.currentWave,
+                  victory: combatResult.victory,
+                  enemiesKilled: combatResult.enemiesKilled,
+                  defendersLost: combatResult.defendersKilled.length
+                };
+
+                // Heal defenders between waves
+                if (combatResult.victory) {
+                  this.defenseCombatEngine.healDefenders(defenders, 0.2);
+                }
+              }
+            } else {
+              // All waves complete - determine raid outcome
+              const raidComplete = activeRaid.stats.defendersKilled === 0;
+
+              if (raidComplete) {
+                const completeResult = this.raidEventManager.completeRaid();
+                result.raidComplete = {
+                  success: true,
+                  rewards: completeResult.rewards
+                };
+              } else {
+                const failResult = this.raidEventManager.failRaid();
+                result.raidFailed = {
+                  penalties: failResult.penalties
+                };
+              }
+
+              // Auto-switch back to settlement mode
+              if (this.modeManager) {
+                this.modeManager.switchMode('settlement', {
+                  defenseComplete: true
+                });
+              }
+            }
+          }
+        }
+
+        result.hybridGameMode = currentMode;
+      }
+
+      // ============================================
+      // STEP 6: STORAGE OVERFLOW CHECK
       // ============================================
       const overflowResult = this.storage.checkAndHandleOverflow();
       if (overflowResult.overflowed) {
@@ -1192,6 +1354,53 @@ class ModuleOrchestrator {
     }
 
     return multiplier;
+  }
+
+  /**
+   * Calculate production bonus from NPC combat stats
+   * Veterans and high-level NPCs provide production bonuses
+   * @private
+   * @param {Object} npcAssignments - Map of building IDs to assigned NPCs
+   * @returns {number} Production bonus multiplier (0.0 - 1.0)
+   */
+  _calculateCombatProductionBonus(npcAssignments) {
+    if (!this.npcManager || !this.npcSkillSystem) {
+      return 0;
+    }
+
+    let totalBonus = 0;
+    let npcCount = 0;
+
+    for (const npcIds of Object.values(npcAssignments)) {
+      for (const npcId of npcIds) {
+        const npc = this.npcManager.getNPC(npcId);
+        if (!npc || !npc.alive) continue;
+
+        npcCount++;
+
+        // Veteran bonus: +5% production
+        if (npc.isVeteran) {
+          totalBonus += 0.05;
+        }
+
+        // Combat level bonus: +1% per 2 levels
+        if (npc.combatLevel) {
+          totalBonus += (npc.combatLevel * 0.005);
+        }
+
+        // High skill bonus: +2% if any combat skill > 50
+        if (npc.skills_combat) {
+          const hasHighSkill = Object.values(npc.skills_combat).some(level => level > 50);
+          if (hasHighSkill) {
+            totalBonus += 0.02;
+          }
+        }
+      }
+    }
+
+    // Average bonus across all working NPCs (max 15% total)
+    const averageBonus = npcCount > 0 ? totalBonus / npcCount : 0;
+    return Math.min(0.15, averageBonus);
   }
 }
 

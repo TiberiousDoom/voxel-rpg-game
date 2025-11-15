@@ -708,7 +708,7 @@ class BuildingConfig {
    * @returns {Object} Repair cost {wood, food, stone, gold}
    */
   getRepairCost(type) {
-    const constructionCost = this.getCost(type);
+    const constructionCost = this.getBuildingCost(type);
     const repairCost = {};
 
     // Repair costs 50% of construction cost

@@ -29,6 +29,9 @@ Implementation plans, timelines, and workflow coordination.
 | File | Description | Date | Status |
 |------|-------------|------|--------|
 | `PHASE_4_WORKFLOWS.md` | Phase 4 parallel workflow breakdown | Nov 15, 2025 | Active |
+| `HYBRID_GAME_INTEGRATION_PLAN.md` | Plan to integrate action RPG with settlement management | Nov 15, 2025 | Active |
+| `HYBRID_CORE_SYSTEMS_SPEC.md` | Technical spec for hybrid game core systems | Nov 15, 2025 | Active |
+| `HYBRID_NPC_COMBAT_SPEC.md` | Technical spec for NPC combat system | Nov 15, 2025 | Active |
 
 ---
 

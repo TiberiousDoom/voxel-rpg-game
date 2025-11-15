@@ -1,39 +1,145 @@
+/**
+ * NPCPanel.jsx - Enhanced NPC management panel
+ *
+ * Features (WF2 Phase 4 Enhancements):
+ * - NPCFilter: Search and filter NPCs by role/status
+ * - NPCListView: Sortable table with pagination
+ * - NPCDetailCard: Detailed NPC information
+ * - PopulationChart: Role distribution visualization
+ * - Batch selection and assignment
+ *
+ * Accessibility (WF9 Phase 4 Enhancements):
+ * - ARIA labels for screen readers
+ * - Keyboard navigation support
+ * - Accessible controls and announcements
+ */
+
 import React, { useState } from 'react';
 import CollapsibleSection from './CollapsibleSection';
+import NPCFilter from './npc/NPCFilter';
+import NPCListView from './npc/NPCListView';
+import NPCDetailCard from './npc/NPCDetailCard';
+import PopulationChart from './npc/PopulationChart';
+import useNPCFilters from '../hooks/useNPCFilters';
 import { ARIA_LABELS } from '../accessibility/aria-labels';
 import './NPCPanel.css';
 
-const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign }) => {
+const NPCPanel = ({
+  npcs = [],
+  buildings = [],
+  onAssignNPC,
+  onUnassignNPC,
+  onAutoAssign,
+  onSpawnNPC,
+  maxPopulation = 100,
+}) => {
+  // View mode: 'list' or 'chart'
+  const [viewMode, setViewMode] = useState('list');
+
+  // Selected NPC for detail view
   const [selectedNPC, setSelectedNPC] = useState(null);
+
+  // Batch selection mode
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedNPCs, setSelectedNPCs] = useState([]);
+
+  // Building selection for assignment
   const [selectedBuilding, setSelectedBuilding] = useState(null);
-  const [showIdleList, setShowIdleList] = useState(false);
-  const [showWorkingList, setShowWorkingList] = useState(false);
 
-  const handleAssign = () => {
-    if (selectedNPC && selectedBuilding) {
-      onAssignNPC(selectedNPC.id, selectedBuilding.id);
-      setSelectedNPC(null);
-      setSelectedBuilding(null);
-    }
+  // Use NPC filters hook
+  const {
+    paginatedNPCs,
+    totalNPCs,
+    searchTerm,
+    roleFilter,
+    statusFilter,
+    sortBy,
+    sortOrder,
+    currentPage,
+    totalPages,
+    setSearchTerm,
+    setRoleFilter,
+    setStatusFilter,
+    handleSort,
+    goToPage,
+    nextPage,
+    prevPage,
+    resetFilters,
+  } = useNPCFilters(npcs, {
+    itemsPerPage: 10,
+    initialSortBy: 'name',
+    initialSortOrder: 'asc',
+  });
+
+  /**
+   * Handle NPC click (show detail)
+   */
+  const handleNPCClick = (npc) => {
+    setSelectedNPC(selectedNPC?.id === npc.id ? null : npc);
   };
 
+  /**
+   * Handle batch NPC selection
+   */
+  const handleNPCSelect = (npc) => {
+    setSelectedNPCs((prev) => {
+      const isSelected = prev.some((n) => n.id === npc.id);
+      if (isSelected) {
+        return prev.filter((n) => n.id !== npc.id);
+      } else {
+        return [...prev, npc];
+      }
+    });
+  };
+
+  /**
+   * Handle batch assign
+   */
+  const handleBatchAssign = () => {
+    if (!selectedBuilding || selectedNPCs.length === 0) return;
+
+    selectedNPCs.forEach((npc) => {
+      if (onAssignNPC) {
+        onAssignNPC(npc.id, selectedBuilding.id);
+      }
+    });
+
+    // Clear selection
+    setSelectedNPCs([]);
+    setSelectedBuilding(null);
+    setBatchMode(false);
+  };
+
+  /**
+   * Handle unassign from detail card
+   */
   const handleUnassign = (npcId) => {
-    onUnassignNPC(npcId);
+    if (onUnassignNPC) {
+      onUnassignNPC(npcId);
+    }
+    setSelectedNPC(null);
   };
 
-  const idleNPCs = npcs.filter(npc => !npc.assignedBuilding);
-  const workingNPCs = npcs.filter(npc => npc.assignedBuilding);
+  /**
+   * Handle assign from detail card
+   */
+  const handleAssignFromDetail = (npc) => {
+    setSelectedNPC(npc);
+    // User will need to select a building
+  };
 
-  // Group working NPCs by building type
-  const workingByBuilding = workingNPCs.reduce((acc, npc) => {
-    const building = buildings.find(b => b.id === npc.assignedBuilding);
-    const buildingType = building?.type || 'Unknown';
-    if (!acc[buildingType]) {
-      acc[buildingType] = [];
-    }
-    acc[buildingType].push(npc);
-    return acc;
-  }, {});
+  /**
+   * Get building for NPC
+   */
+  const getBuildingForNPC = (npc) => {
+    const buildingId = npc.assignedBuilding || npc.assignedBuildingId;
+    if (!buildingId) return null;
+    return buildings.find((b) => b.id === buildingId);
+  };
+
+  const workingNPCs = npcs.filter(
+    (npc) => npc.assignedBuilding || npc.assignedBuildingId
+  );
 
   return (
     <CollapsibleSection
@@ -44,188 +150,195 @@ const NPCPanel = ({ npcs, buildings, onAssignNPC, onUnassignNPC, onAutoAssign })
       aria-label={ARIA_LABELS.NPC_PANEL.TITLE}
     >
       <div
-        className="npc-panel-content"
+        className="npc-panel-enhanced"
         role="region"
         aria-label="NPC management controls"
       >
-        {/* Auto-Assign Button */}
-        <button
-          onClick={onAutoAssign}
-          className="auto-assign-btn"
-          aria-label="Automatically assign all idle NPCs to available buildings"
-        >
-          <span aria-hidden="true">⚡</span> Auto-Assign All
-        </button>
-
-        {/* Idle NPCs Section */}
-        <div className="npc-subsection" role="group" aria-label="Idle NPCs">
-          <button
-            className="npc-subsection-header"
-            onClick={() => setShowIdleList(!showIdleList)}
-            aria-expanded={showIdleList}
-            aria-controls="idle-npcs-list"
-            aria-label={`Idle NPCs section with ${idleNPCs.length} idle NPCs`}
-          >
-            <span><span aria-hidden="true">💤</span> Idle ({idleNPCs.length})</span>
-            <span className="npc-toggle" aria-hidden="true">{showIdleList ? '▼' : '▶'}</span>
-          </button>
-
-          {showIdleList && (
-            <div
-              id="idle-npcs-list"
-              className="npc-list-compact"
-              role="list"
-              aria-label="Idle NPCs list"
+        {/* View Mode Toggle */}
+        <div className="npc-panel-toolbar" role="group" aria-label="NPC panel controls">
+          <div className="npc-view-toggle" role="group" aria-label="View mode selection">
+            <button
+              className={`npc-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+              aria-label="Switch to list view"
+              aria-pressed={viewMode === 'list'}
             >
-              {idleNPCs.length === 0 ? (
-                <p className="no-npcs-compact" role="status">All NPCs assigned!</p>
-              ) : (
-                idleNPCs.map((npc, index) => (
-                  <div
-                    key={npc.id}
-                    role="listitem"
-                    className={`npc-item-compact ${selectedNPC?.id === npc.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedNPC(selectedNPC?.id === npc.id ? null : npc)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedNPC(selectedNPC?.id === npc.id ? null : npc);
-                      }
-                    }}
-                    tabIndex={0}
-                    aria-label={`${npc.role} - Health: ${npc.health}, Morale: ${Math.round(npc.morale || 50)}`}
-                    aria-selected={selectedNPC?.id === npc.id}
-                  >
-                    <span className="npc-role-compact">{npc.role}</span>
-                    <div className="npc-indicators" aria-hidden="true">
-                      <span className="npc-health-dot" title={`Health: ${npc.health}`}>
-                        {npc.health > 75 ? '🟢' : npc.health > 40 ? '🟡' : '🔴'}
-                      </span>
-                      <span className="npc-morale-dot" title={`Morale: ${Math.round(npc.morale || 50)}`}>
-                        {(npc.morale || 50) > 75 ? '😊' : (npc.morale || 50) > 40 ? '😐' : '😞'}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Working NPCs Section */}
-        <div className="npc-subsection" role="group" aria-label="Working NPCs">
-          <button
-            className="npc-subsection-header"
-            onClick={() => setShowWorkingList(!showWorkingList)}
-            aria-expanded={showWorkingList}
-            aria-controls="working-npcs-list"
-            aria-label={`Working NPCs section with ${workingNPCs.length} working NPCs`}
-          >
-            <span><span aria-hidden="true">💼</span> Working ({workingNPCs.length})</span>
-            <span className="npc-toggle" aria-hidden="true">{showWorkingList ? '▼' : '▶'}</span>
-          </button>
-
-          {showWorkingList && (
-            <div
-              id="working-npcs-list"
-              className="npc-working-groups"
-              role="list"
-              aria-label="Working NPCs grouped by building type"
+              <span aria-hidden="true">📋</span> List
+            </button>
+            <button
+              className={`npc-view-btn ${viewMode === 'chart' ? 'active' : ''}`}
+              onClick={() => setViewMode('chart')}
+              aria-label="Switch to chart view"
+              aria-pressed={viewMode === 'chart'}
             >
-              {Object.entries(workingByBuilding).map(([buildingType, npcList]) => (
-                <div key={buildingType} className="npc-building-group" role="listitem">
-                  <div className="npc-building-label" aria-label={`${buildingType} building with ${npcList.length} assigned NPCs`}>
-                    {buildingType} × {npcList.length}
-                  </div>
-                  {npcList.map(npc => (
-                    <div
-                      key={npc.id}
-                      className="npc-item-compact working"
-                      role="group"
-                      aria-label={`${npc.role} working at ${buildingType} - Health: ${npc.health}, Morale: ${Math.round(npc.morale || 50)}`}
-                    >
-                      <span className="npc-role-compact">{npc.role}</span>
-                      <div className="npc-indicators" aria-hidden="true">
-                        <span className="npc-health-dot" title={`Health: ${npc.health}`}>
-                          {npc.health > 75 ? '🟢' : npc.health > 40 ? '🟡' : '🔴'}
-                        </span>
-                        <span className="npc-morale-dot" title={`Morale: ${Math.round(npc.morale || 50)}`}>
-                          {(npc.morale || 50) > 75 ? '😊' : (npc.morale || 50) > 40 ? '😐' : '😞'}
-                        </span>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUnassign(npc.id);
-                        }}
-                        className="unassign-btn-compact"
-                        title="Unassign NPC"
-                        aria-label={`Unassign ${npc.role} from ${buildingType}`}
-                      >
-                        <span aria-hidden="true">✖️</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Assignment Controls */}
-        {selectedNPC && (
-          <div
-            className="assignment-controls-compact"
-            role="region"
-            aria-label={`Assignment controls for ${selectedNPC.role}`}
-          >
-            <div className="assignment-header" id="assignment-header">
-              Assign {selectedNPC.role}
-            </div>
-            <select
-              onChange={(e) => setSelectedBuilding(buildings.find(b => b.id === e.target.value))}
-              value={selectedBuilding?.id || ''}
-              className="assignment-select"
-              aria-label="Select building to assign NPC to"
-              aria-labelledby="assignment-header"
-            >
-              <option value="">Select building...</option>
-              {buildings
-                .filter(b => b.state === 'COMPLETE' && (b.properties.npcCapacity || 0) > 0)
-                .map(b => {
-                  const capacity = b.properties.npcCapacity || 0;
-                  const assigned = workingNPCs.filter(npc => npc.assignedBuilding === b.id).length;
-                  const isFull = assigned >= capacity;
-                  return (
-                    <option
-                      key={b.id}
-                      value={b.id}
-                      disabled={isFull}
-                      aria-label={`${b.type} - ${assigned} of ${capacity} slots filled${isFull ? ' (full)' : ''}`}
-                    >
-                      {b.type} ({assigned}/{capacity})
-                    </option>
-                  );
-                })}
-            </select>
-            <div className="assignment-buttons" role="group" aria-label="Assignment actions">
-              <button
-                onClick={handleAssign}
-                disabled={!selectedBuilding}
-                className="assign-btn-compact"
-                aria-label={selectedBuilding ? `Assign ${selectedNPC.role} to ${selectedBuilding.type}` : 'Select a building first'}
-              >
-                <span aria-hidden="true">✓</span> Assign
-              </button>
-              <button
-                onClick={() => setSelectedNPC(null)}
-                className="cancel-btn-compact"
-                aria-label="Cancel NPC assignment"
-              >
-                Cancel
-              </button>
-            </div>
+              <span aria-hidden="true">📊</span> Chart
+            </button>
           </div>
+
+          {/* Action Buttons */}
+          <div className="npc-panel-actions" role="group" aria-label="NPC actions">
+            {viewMode === 'list' && (
+              <button
+                className={`npc-batch-toggle-btn ${batchMode ? 'active' : ''}`}
+                onClick={() => {
+                  setBatchMode(!batchMode);
+                  setSelectedNPCs([]);
+                }}
+                aria-label={batchMode ? 'Exit batch selection mode' : 'Enter batch selection mode'}
+                aria-pressed={batchMode}
+              >
+                {batchMode ? '✓ Exit Batch' : '☑ Batch Select'}
+              </button>
+            )}
+            {onAutoAssign && (
+              <button
+                onClick={onAutoAssign}
+                className="npc-auto-assign-btn"
+                aria-label="Automatically assign all idle NPCs to available buildings"
+              >
+                <span aria-hidden="true">⚡</span> Auto-Assign
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* List View */}
+        {viewMode === 'list' && (
+          <>
+            {/* Filters */}
+            <NPCFilter
+              searchTerm={searchTerm}
+              roleFilter={roleFilter}
+              statusFilter={statusFilter}
+              onSearchChange={setSearchTerm}
+              onRoleChange={setRoleFilter}
+              onStatusChange={setStatusFilter}
+              onClearFilters={resetFilters}
+              totalNPCs={npcs.length}
+              filteredCount={totalNPCs}
+            />
+
+            {/* NPC List Table */}
+            <NPCListView
+              npcs={paginatedNPCs}
+              onNPCClick={handleNPCClick}
+              selectedNPC={selectedNPC}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              onPrevPage={prevPage}
+              onNextPage={nextPage}
+              buildings={buildings}
+              selectedNPCs={selectedNPCs}
+              onNPCSelect={handleNPCSelect}
+              batchMode={batchMode}
+            />
+
+            {/* Batch Assignment Controls */}
+            {batchMode && selectedNPCs.length > 0 && (
+              <div
+                className="npc-batch-controls"
+                role="region"
+                aria-label={`Batch assignment for ${selectedNPCs.length} selected NPCs`}
+              >
+                <div className="npc-batch-header" id="batch-header">
+                  Assign {selectedNPCs.length} NPC{selectedNPCs.length > 1 ? 's' : ''}
+                </div>
+                <select
+                  onChange={(e) =>
+                    setSelectedBuilding(
+                      buildings.find((b) => b.id === e.target.value)
+                    )
+                  }
+                  value={selectedBuilding?.id || ''}
+                  className="npc-batch-select"
+                  aria-label="Select building for batch assignment"
+                  aria-labelledby="batch-header"
+                >
+                  <option value="">Select building...</option>
+                  {buildings
+                    .filter(
+                      (b) =>
+                        b.state === 'COMPLETE' &&
+                        (b.properties?.npcCapacity || 0) > 0
+                    )
+                    .map((b) => {
+                      const capacity = b.properties?.npcCapacity || 0;
+                      const assigned = workingNPCs.filter(
+                        (npc) =>
+                          npc.assignedBuilding === b.id ||
+                          npc.assignedBuildingId === b.id
+                      ).length;
+                      const isFull = assigned >= capacity;
+                      return (
+                        <option
+                          key={b.id}
+                          value={b.id}
+                          disabled={isFull}
+                          aria-label={`${b.type} - ${assigned} of ${capacity} slots filled${isFull ? ' (full)' : ''}`}
+                        >
+                          {b.type} ({assigned}/{capacity})
+                        </option>
+                      );
+                    })}
+                </select>
+                <div className="npc-batch-buttons" role="group" aria-label="Batch assignment actions">
+                  <button
+                    onClick={handleBatchAssign}
+                    disabled={!selectedBuilding}
+                    className="npc-batch-assign-btn"
+                    aria-label={selectedBuilding ? `Assign all ${selectedNPCs.length} NPCs to ${selectedBuilding.type}` : 'Select a building first'}
+                  >
+                    <span aria-hidden="true">✓</span> Assign All
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedNPCs([]);
+                      setSelectedBuilding(null);
+                    }}
+                    className="npc-batch-cancel-btn"
+                    aria-label="Cancel batch assignment"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Detail Card Modal */}
+            {selectedNPC && !batchMode && (
+              <div className="npc-detail-modal" role="dialog" aria-modal="true" aria-labelledby="npc-detail-title">
+                <div
+                  className="npc-detail-backdrop"
+                  onClick={() => setSelectedNPC(null)}
+                  role="presentation"
+                  aria-label="Close NPC details"
+                />
+                <div className="npc-detail-wrapper">
+                  <NPCDetailCard
+                    npc={selectedNPC}
+                    building={getBuildingForNPC(selectedNPC)}
+                    onClose={() => setSelectedNPC(null)}
+                    onUnassign={handleUnassign}
+                    onAssign={handleAssignFromDetail}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Chart View */}
+        {viewMode === 'chart' && (
+          <PopulationChart
+            npcs={npcs}
+            maxPopulation={maxPopulation}
+            onSpawnNPC={onSpawnNPC}
+            showSpawnButtons={!!onSpawnNPC}
+          />
         )}
       </div>
     </CollapsibleSection>

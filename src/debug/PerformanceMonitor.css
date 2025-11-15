@@ -1,0 +1,259 @@
+/**
+ * PerformanceMonitor.css - Performance monitoring UI styles
+ */
+
+.performance-monitor {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.85);
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  padding: 0;
+  border-radius: 4px;
+  min-width: 200px;
+  max-width: 300px;
+  z-index: 10000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+/* Position variants */
+.performance-monitor--top-right {
+  top: 10px;
+  right: 10px;
+}
+
+.performance-monitor--top-left {
+  top: 10px;
+  left: 10px;
+}
+
+.performance-monitor--bottom-right {
+  bottom: 10px;
+  right: 10px;
+}
+
+.performance-monitor--bottom-left {
+  bottom: 10px;
+  left: 10px;
+}
+
+/* Header */
+.performance-monitor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+  cursor: pointer;
+  user-select: none;
+}
+
+.performance-monitor__header:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.performance-monitor__title {
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.performance-monitor__fps {
+  margin-left: auto;
+  margin-right: 8px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.performance-monitor__fps--good {
+  background: rgba(0, 255, 0, 0.2);
+  color: #00ff00;
+}
+
+.performance-monitor__fps--warning {
+  background: rgba(255, 165, 0, 0.2);
+  color: #ffa500;
+}
+
+.performance-monitor__fps--error {
+  background: rgba(255, 0, 0, 0.2);
+  color: #ff0000;
+}
+
+.performance-monitor__toggle {
+  background: none;
+  border: none;
+  color: #00ff00;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.performance-monitor__toggle:hover {
+  color: #00ff00;
+  opacity: 0.8;
+}
+
+/* Warnings */
+.performance-monitor__warnings {
+  padding: 8px 12px;
+  background: rgba(255, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 0, 0, 0.3);
+}
+
+.performance-monitor__warning {
+  padding: 4px 0;
+  font-size: 11px;
+}
+
+.performance-monitor__warning--error {
+  color: #ff0000;
+}
+
+.performance-monitor__warning--warning {
+  color: #ffa500;
+}
+
+.performance-monitor__warning--info {
+  color: #00bfff;
+}
+
+/* Body */
+.performance-monitor__body {
+  padding: 8px;
+}
+
+/* Section */
+.performance-monitor__section {
+  margin-bottom: 12px;
+}
+
+.performance-monitor__section:last-child {
+  margin-bottom: 0;
+}
+
+.performance-monitor__section-title {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+  color: #00cc00;
+}
+
+/* Stat */
+.performance-monitor__stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 4px;
+  margin-bottom: 2px;
+}
+
+.performance-monitor__stat:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.performance-monitor__stat-label {
+  color: #888;
+  font-size: 11px;
+}
+
+.performance-monitor__stat-value {
+  color: #00ff00;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.performance-monitor__stat-value--good {
+  color: #00ff00;
+}
+
+.performance-monitor__stat-value--warning {
+  color: #ffa500;
+}
+
+.performance-monitor__stat-value--error {
+  color: #ff0000;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .performance-monitor {
+    font-size: 10px;
+    min-width: 150px;
+    max-width: 200px;
+  }
+
+  .performance-monitor__header {
+    padding: 6px 8px;
+  }
+
+  .performance-monitor__body {
+    padding: 6px;
+  }
+
+  .performance-monitor__section-title {
+    font-size: 9px;
+  }
+
+  .performance-monitor__stat-label,
+  .performance-monitor__stat-value {
+    font-size: 10px;
+  }
+}
+
+/* Dark theme variant */
+.performance-monitor--dark {
+  background: rgba(0, 0, 0, 0.95);
+  color: #0f0;
+}
+
+/* Light theme variant */
+.performance-monitor--light {
+  background: rgba(255, 255, 255, 0.95);
+  color: #000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.performance-monitor--light .performance-monitor__header {
+  background: rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.performance-monitor--light .performance-monitor__section-title {
+  color: #333;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.performance-monitor--light .performance-monitor__stat-label {
+  color: #666;
+}
+
+.performance-monitor--light .performance-monitor__stat-value {
+  color: #000;
+}
+
+/* Compact mode */
+.performance-monitor--compact {
+  min-width: 120px;
+  max-width: 150px;
+}
+
+.performance-monitor--compact .performance-monitor__header {
+  padding: 4px 8px;
+}
+
+.performance-monitor--compact .performance-monitor__stat {
+  font-size: 10px;
+}

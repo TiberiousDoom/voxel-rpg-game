@@ -173,6 +173,13 @@ These documents record the completion of each development phase.
 | `PHASE_3_FINAL_SUMMARY.md` | Phase 3 final summary | Nov 2025 |
 | `PHASE_3C_REVIEW.md` | Phase 3C review | Nov 2025 |
 
+### Phase 4 Reports
+
+| File | Description | Date |
+|------|-------------|------|
+| `PLAYTESTING_REPORT.md` | WF8 Balance Analysis & Playtesting Report | Nov 15, 2025 |
+| `WF8_BALANCE_CHANGELOG.md` | WF8 Balance Changelog (v1.0.0) | Nov 15, 2025 |
+
 ### Other Reports
 
 | File | Description | Date |

@@ -16,8 +16,8 @@ export default class EventScheduler {
     this.lastCheckTime = 0;
     this.lastSeasonalCheckTime = 0;
 
-    // Check intervals
-    this.RANDOM_CHECK_INTERVAL = 3600; // Check random events every hour (3600 ticks)
+    // Check intervals (WF8 Balance: reduced from 3600 to increase event frequency)
+    this.RANDOM_CHECK_INTERVAL = 1800; // Check random events every 30 minutes (reduced from 1 hour)
     this.SEASONAL_CHECK_INTERVAL = 3600; // Check seasonal events every hour
 
     // Seasonal event tracking

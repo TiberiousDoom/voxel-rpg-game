@@ -15,6 +15,13 @@
  * - Consumption: Every game tick
  * - Morale: Every game tick
  * - Saves: Every 10 ticks (50 seconds)
+ *
+ * WF6 Performance Optimizations:
+ * - RequestAnimationFrame for smoother frame timing
+ * - Performance.now() for high-precision timing
+ * - Tick spiral prevention (max 3 ticks per frame)
+ * - Automatic tick timer reset on lag spikes
+ * - Paused state optimization (skip updates when paused)
  */
 
 class GameEngine {
@@ -116,40 +123,57 @@ class GameEngine {
   }
 
   /**
-   * Main game loop
+   * Main game loop (OPTIMIZED for WF6)
    * @private
    */
   _gameLoop() {
     if (!this.isRunning) return;
 
-    const now = Date.now();
+    const now = performance.now(); // Use performance.now() for better precision
     const deltaTime = now - this.lastFrameTime;
     this.lastFrameTime = now;
 
-    // Update timers
-    this.tickTimer += deltaTime;
-    this.autoSaveTimer += deltaTime;
+    // Skip frame if paused
+    if (!this.isPaused) {
+      // Update timers
+      this.tickTimer += deltaTime;
 
-    // Execute game ticks
-    while (this.tickTimer >= this.config.gameTick) {
-      this._executeTick();
-      this.tickTimer -= this.config.gameTick;
-      this.ticksElapsed++;
+      // Execute game ticks (limit to max 3 per frame to prevent spiral of death)
+      let ticksThisFrame = 0;
+      const maxTicksPerFrame = 3;
 
-      // Check auto-save
-      if (this.ticksElapsed % this.config.autoSaveInterval === 0) {
-        this.emit('game:autosave', this.ticksElapsed);
+      while (this.tickTimer >= this.config.gameTick && ticksThisFrame < maxTicksPerFrame) {
+        this._executeTick();
+        this.tickTimer -= this.config.gameTick;
+        this.ticksElapsed++;
+        ticksThisFrame++;
+
+        // Check auto-save
+        if (this.ticksElapsed % this.config.autoSaveInterval === 0) {
+          this.emit('game:autosave', this.ticksElapsed);
+        }
       }
+
+      // If we're falling behind, reset timer to prevent spiral
+      if (this.tickTimer > this.config.gameTick * 2) {
+        console.warn('[GameEngine] Tick spiral detected, resetting timer');
+        this.tickTimer = 0;
+      }
+
+      // Update frame metrics
+      this._updateFrameMetrics(deltaTime);
     }
 
-    // Update frame metrics
-    this._updateFrameMetrics(deltaTime);
-
-    // Schedule next frame
-    const frameTime = 1000 / this.config.targetFPS;
-    const delay = Math.max(0, frameTime - (Date.now() - now));
-
-    setTimeout(() => this._gameLoop(), delay);
+    // Schedule next frame using requestAnimationFrame for better performance
+    // Fallback to setTimeout if RAF not available
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(() => this._gameLoop());
+    } else {
+      const frameTime = 1000 / this.config.targetFPS;
+      const elapsed = performance.now() - now;
+      const delay = Math.max(0, frameTime - elapsed);
+      setTimeout(() => this._gameLoop(), delay);
+    }
   }
 
   /**

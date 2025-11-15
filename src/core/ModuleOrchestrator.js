@@ -74,6 +74,12 @@ class ModuleOrchestrator {
       this.npcManager.setOrchestrator(this);
     }
 
+    // Hybrid Game: Core Systems
+    this.unifiedState = modules.unifiedState || null;
+    this.modeManager = modules.modeManager || null;
+    this.sharedResources = modules.sharedResources || null;
+    this.sharedInventory = modules.sharedInventory || null;
+
     // Phase 3C: Achievement bonuses (multiplicative)
     this.achievementBonuses = {
       production: 1.0,

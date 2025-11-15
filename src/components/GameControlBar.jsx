@@ -8,6 +8,9 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import KeyboardShortcutsHelp from './KeyboardShortcutsHelp';
+import { ARIA_LABELS } from '../accessibility/aria-labels';
 import './GameControlBar.css';
 
 /**
@@ -28,6 +31,10 @@ function GameControlBar({
   const [loadStatus, setLoadStatus] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
   const [savedSlots, setSavedSlots] = useState(new Set());
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+
+  // Initialize keyboard shortcuts
+  const { registerShortcut, unregisterAll } = useKeyboardShortcuts();
 
   // Load available save slots using API
   const refreshSaveSlots = useCallback(async () => {
@@ -92,10 +99,43 @@ function GameControlBar({
     }
   };
 
+  // Register keyboard shortcuts
+  useEffect(() => {
+    // Pause/Resume shortcut (Space)
+    registerShortcut('PAUSE_RESUME', () => {
+      if (!isRunning) return; // Only if game is running
+      if (isPaused) {
+        onResume();
+      } else {
+        onPause();
+      }
+    });
+
+    // Save game shortcut (S)
+    registerShortcut('SAVE_GAME', () => {
+      handleSave();
+    });
+
+    // Load game shortcut (L)
+    registerShortcut('LOAD_GAME', () => {
+      handleLoad();
+    });
+
+    // Show shortcuts help (?)
+    registerShortcut('SHOW_HELP', () => {
+      setShowShortcutsHelp(true);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      unregisterAll();
+    };
+  }, [registerShortcut, unregisterAll, isRunning, isPaused, onPause, onResume, selectedSlot]);
+
   return (
-    <div className="game-control-bar">
+    <div className="game-control-bar" role="region" aria-label={ARIA_LABELS.CONTROL_BAR.TITLE}>
       {/* Game Playback Controls */}
-      <div className="control-group playback-controls">
+      <div className="control-group playback-controls" role="group" aria-label="Game playback controls">
         <h4 className="group-title">Game Control</h4>
 
         <div className="button-row">
@@ -104,26 +144,29 @@ function GameControlBar({
               className="control-btn play-btn"
               onClick={onStart}
               title="Start the game"
+              aria-label={ARIA_LABELS.GAME.START}
             >
-              <span className="btn-icon">▶️</span>
+              <span className="btn-icon" aria-hidden="true">▶️</span>
               <span className="btn-text">Play</span>
             </button>
           ) : isPaused ? (
             <button
               className="control-btn resume-btn"
               onClick={onResume}
-              title="Resume the game"
+              title="Resume the game (Space)"
+              aria-label={`${ARIA_LABELS.GAME.RESUME} - Press Space`}
             >
-              <span className="btn-icon">▶️</span>
+              <span className="btn-icon" aria-hidden="true">▶️</span>
               <span className="btn-text">Resume</span>
             </button>
           ) : (
             <button
               className="control-btn pause-btn"
               onClick={onPause}
-              title="Pause the game"
+              title="Pause the game (Space)"
+              aria-label={`${ARIA_LABELS.GAME.PAUSE} - Press Space`}
             >
-              <span className="btn-icon">⏸️</span>
+              <span className="btn-icon" aria-hidden="true">⏸️</span>
               <span className="btn-text">Pause</span>
             </button>
           )}
@@ -131,7 +174,7 @@ function GameControlBar({
       </div>
 
       {/* Save/Load Controls */}
-      <div className="control-group save-controls">
+      <div className="control-group save-controls" role="group" aria-label="Save and load game">
         <h4 className="group-title">Game Save</h4>
 
         {/* Slot Selector */}
@@ -142,14 +185,15 @@ function GameControlBar({
             value={selectedSlot}
             onChange={(e) => setSelectedSlot(e.target.value)}
             className="slot-dropdown"
+            aria-label="Select save slot"
           >
-            <option value="slot-1">
+            <option value="slot-1" aria-label={`Slot 1 ${savedSlots.has('slot-1') ? 'has saved game' : 'empty'}`}>
               Slot 1 {savedSlots.has('slot-1') ? '💾' : '⬜'}
             </option>
-            <option value="slot-2">
+            <option value="slot-2" aria-label={`Slot 2 ${savedSlots.has('slot-2') ? 'has saved game' : 'empty'}`}>
               Slot 2 {savedSlots.has('slot-2') ? '💾' : '⬜'}
             </option>
-            <option value="slot-3">
+            <option value="slot-3" aria-label={`Slot 3 ${savedSlots.has('slot-3') ? 'has saved game' : 'empty'}`}>
               Slot 3 {savedSlots.has('slot-3') ? '💾' : '⬜'}
             </option>
           </select>
@@ -159,32 +203,52 @@ function GameControlBar({
           <button
             className="control-btn save-btn"
             onClick={handleSave}
-            title={`Save current game to ${selectedSlot}`}
+            title={`Save current game to ${selectedSlot} (S)`}
+            aria-label={`${ARIA_LABELS.GAME.SAVE} to ${selectedSlot} - Press S`}
           >
-            <span className="btn-icon">💾</span>
+            <span className="btn-icon" aria-hidden="true">💾</span>
             <span className="btn-text">Save</span>
           </button>
 
           <button
             className="control-btn load-btn"
             onClick={handleLoad}
-            title={`Load saved game from ${selectedSlot}`}
+            title={`Load saved game from ${selectedSlot} (L)`}
             disabled={!savedSlots.has(selectedSlot)}
+            aria-label={`${ARIA_LABELS.GAME.LOAD} from ${selectedSlot} - Press L`}
           >
-            <span className="btn-icon">📂</span>
+            <span className="btn-icon" aria-hidden="true">📂</span>
             <span className="btn-text">Load</span>
           </button>
         </div>
 
         {/* Save Status */}
         {saveStatus && (
-          <div className="status-message save-message">{saveStatus}</div>
+          <div className="status-message save-message" role="status" aria-live="polite">{saveStatus}</div>
         )}
         {loadStatus && (
-          <div className="status-message load-message">{loadStatus}</div>
+          <div className="status-message load-message" role="status" aria-live="polite">{loadStatus}</div>
         )}
       </div>
 
+      {/* Keyboard Shortcuts Help Button */}
+      <div className="control-group shortcuts-help" role="group" aria-label="Help and shortcuts">
+        <button
+          className="control-btn help-btn"
+          onClick={() => setShowShortcutsHelp(true)}
+          title="View keyboard shortcuts (?)"
+          aria-label={ARIA_LABELS.SHORTCUTS.HELP}
+        >
+          <span className="btn-icon" aria-hidden="true">❓</span>
+          <span className="btn-text">Shortcuts</span>
+        </button>
+      </div>
+
+      {/* Keyboard Shortcuts Help Modal */}
+      <KeyboardShortcutsHelp
+        isOpen={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
+      />
     </div>
   );
 }

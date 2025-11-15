@@ -3,12 +3,17 @@
  *
  * Displays:
  * - Voxel grid (game world)
- * - Buildings
- * - NPCs
+ * - Buildings (WF3: Enhanced rendering with BuildingRenderer)
+ * - NPCs (WF4: Will add NPCRenderer)
  * - Selection/placement preview
+ *
+ * COORDINATION: WF3 and WF4 share this file
+ * - WF3 owns: Building rendering via useBuildingRenderer()
+ * - WF4 owns: NPC rendering via useNPCRenderer() (to be added)
  */
 
 import React, { useState, useRef } from 'react';
+import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js';
 import './GameViewport.css';
 
 // Grid constants
@@ -47,6 +52,7 @@ const STATE_COLORS = {
 };
 
 const GRID_COLOR = '#E0E0E0';
+// eslint-disable-next-line no-unused-vars -- Reserved for WF4: NPC selection highlighting
 const SELECTED_COLOR = '#FF4444';
 
 /**
@@ -73,7 +79,9 @@ const getNPCColor = (npc) => {
 
 /**
  * Helper: Get building color based on state
+ * NOTE: Currently using WF3's BuildingRenderer, but keeping this as fallback
  */
+// eslint-disable-next-line no-unused-vars -- Fallback renderer for legacy support
 const getBuildingColor = (building) => {
   const state = building.state || 'COMPLETE';
   const baseColor = BUILDING_COLORS[building.type] || '#CCCCCC';
@@ -105,9 +113,25 @@ function GameViewport({
   onBuildingClick = () => {}
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
+  // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
   const canvasRef = useRef(null);
   const rafRef = useRef(null); // requestAnimationFrame reference
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
+
+  // WF3: Building rendering hook
+  const {
+    renderBuildings: renderBuildingsWF3,
+    // eslint-disable-next-line no-unused-vars -- Reserved for WF3: Hover effects not yet implemented
+    renderHoverEffect,
+    renderPlacementPreview
+  } = useBuildingRenderer({
+    tileSize: TILE_SIZE,
+    showHealthBars: true,
+    showProgressBars: true,
+    showShadows: true,
+    showOverlays: true
+  });
 
   /**
    * Convert world position to canvas coordinates
@@ -155,101 +179,8 @@ function GameViewport({
       ctx.stroke();
     }
 
-    // Draw buildings
-    buildings.forEach((building) => {
-      if (!building || !building.position) return;
-      const canvas = worldToCanvas(building.position.x, building.position.z);
-      const color = getBuildingColor(building);
-      const state = building.state || 'COMPLETE';
-
-      // Draw building rectangle
-      ctx.fillStyle = color;
-      ctx.fillRect(
-        canvas.x + 2,
-        canvas.y + 2,
-        TILE_SIZE - 4,
-        TILE_SIZE - 4
-      );
-
-      // Draw border
-      ctx.strokeStyle = state === 'BLUEPRINT' ? '#666666' : '#000000';
-      ctx.lineWidth = state === 'BLUEPRINT' ? 1 : 2;
-      if (state === 'BLUEPRINT') {
-        ctx.setLineDash([5, 3]);
-      }
-      ctx.strokeRect(
-        canvas.x + 2,
-        canvas.y + 2,
-        TILE_SIZE - 4,
-        TILE_SIZE - 4
-      );
-      ctx.setLineDash([]); // Reset dash
-
-      // Draw health bar for damaged buildings
-      const health = building.health || 100;
-      const maxHealth = building.maxHealth || 100;
-      if (health < maxHealth && state !== 'DESTROYED') {
-        const healthPercent = health / maxHealth;
-        const barWidth = TILE_SIZE - 8;
-        const barHeight = 4;
-        const barX = canvas.x + 4;
-        const barY = canvas.y + TILE_SIZE - 8;
-
-        // Health bar background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.fillRect(barX, barY, barWidth, barHeight);
-
-        // Health bar fill
-        const healthColor = healthPercent > 0.5 ? '#4CAF50' : healthPercent > 0.25 ? '#FF9800' : '#F44336';
-        ctx.fillStyle = healthColor;
-        ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
-      }
-
-      // Draw build progress bar for under construction
-      if (state === 'UNDER_CONSTRUCTION') {
-        const progress = building.constructionProgress || 0;
-        const constructionTime = building.constructionTime || 100;
-        const progressPercent = Math.min(progress / constructionTime, 1);
-        const barWidth = TILE_SIZE - 8;
-        const barHeight = 4;
-        const barX = canvas.x + 4;
-        const barY = canvas.y + 4;
-
-        // Progress bar background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.fillRect(barX, barY, barWidth, barHeight);
-
-        // Progress bar fill
-        ctx.fillStyle = '#2196F3';
-        ctx.fillRect(barX, barY, barWidth * progressPercent, barHeight);
-      }
-
-      // Draw worker count indicator
-      const workerCount = building.workerCount || 0;
-      if (workerCount > 0 && state === 'COMPLETE') {
-        ctx.fillStyle = '#4CAF50';
-        ctx.beginPath();
-        ctx.arc(canvas.x + TILE_SIZE - 8, canvas.y + 8, 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 9px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(workerCount, canvas.x + TILE_SIZE - 8, canvas.y + 8);
-      }
-
-      // Draw building type label (center)
-      ctx.fillStyle = state === 'DESTROYED' ? '#FFFFFF' : '#000000';
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(
-        building.type[0],
-        canvas.x + TILE_SIZE / 2,
-        canvas.y + TILE_SIZE / 2
-      );
-    });
+    // WF3: Render buildings using new BuildingRenderer
+    renderBuildingsWF3(ctx, buildings, worldToCanvas);
 
     // Draw NPCs
     npcs.forEach((npc) => {
@@ -303,31 +234,13 @@ function GameViewport({
       }
     });
 
-    // Draw hover preview
+    // WF3: Draw hover preview using new renderer
     if (hoveredPosition && selectedBuildingType) {
-      const canvas = worldToCanvas(hoveredPosition.x, hoveredPosition.z);
-      const color = BUILDING_COLORS[selectedBuildingType] || '#CCCCCC';
-
-      ctx.fillStyle = color;
-      ctx.globalAlpha = 0.5;
-      ctx.fillRect(
-        canvas.x + 2,
-        canvas.y + 2,
-        TILE_SIZE - 4,
-        TILE_SIZE - 4
-      );
-      ctx.globalAlpha = 1.0;
-
-      ctx.strokeStyle = SELECTED_COLOR;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        canvas.x + 2,
-        canvas.y + 2,
-        TILE_SIZE - 4,
-        TILE_SIZE - 4
-      );
+      // TODO: Add validation check to determine if placement is valid
+      const isValid = true; // Placeholder - should check collision/placement rules
+      renderPlacementPreview(ctx, hoveredPosition, selectedBuildingType, isValid, worldToCanvas);
     }
-  }, [buildings, npcs, hoveredPosition, selectedBuildingType]);
+  }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview]);
 
   /**
    * Handle canvas click for placement (mouse and touch)

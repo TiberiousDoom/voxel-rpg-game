@@ -14,7 +14,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import GameManager from '../GameManager';
+import GameManager from '../../GameManager.js';
 
 // Import components (adjust paths as needed)
 // Note: Actual imports depend on component structure

@@ -181,6 +181,11 @@ class ProductionTick {
     // Calculate skill bonus (0.0 to 1.0+)
     const skillBonus = this._calculateSkillBonus(building, assignedNPCs);
 
+    // Hybrid Game: Calculate combat bonus (average of all assigned NPCs)
+    const combatBonus = assignedNPCs.length > 0
+      ? assignedNPCs.reduce((sum, npc) => sum + this._getCombatProductionBonus(npc), 0) / assignedNPCs.length
+      : 1.0;
+
     // Apply aura bonus
     const auraBonus = this.buildingEffect.getProductionBonusAt(
       building.position.x,
@@ -188,8 +193,8 @@ class ProductionTick {
       building.position.z
     );
 
-    // Final production = base × staffing × (1 + skillBonus) × aura × morale
-    let multiplier = staffingMultiplier * (1 + skillBonus) * auraBonus * moraleMultiplier;
+    // Final production = base × staffing × (1 + skillBonus) × combatBonus × aura × morale
+    let multiplier = staffingMultiplier * (1 + skillBonus) * combatBonus * auraBonus * moraleMultiplier;
 
     // Hard cap at 2.0x
     multiplier = Math.min(multiplier, 2.0);
@@ -197,6 +202,7 @@ class ProductionTick {
     result.baseMultiplier = multiplier.toFixed(3);
     result.staffingMultiplier = staffingMultiplier.toFixed(3);
     result.skillBonus = skillBonus.toFixed(3);
+    result.combatBonus = (combatBonus - 1.0).toFixed(3); // Show as bonus percentage
 
     // Apply production with multiplier
     for (const [resource, baseRate] of Object.entries(baseProduction)) {
@@ -265,6 +271,39 @@ class ProductionTick {
 
     // Skill bonus: 0 skill = 0% bonus, 50 skill = 50% bonus, 100 skill = 100% bonus
     return averageSkill / 100;
+  }
+
+  /**
+   * Calculate combat production bonus for NPC
+   * Hybrid Game: NPCs with combat experience provide production bonuses
+   * @private
+   * @param {Object} npc - NPC entity
+   * @returns {number} Multiplier (1.0 = no bonus)
+   */
+  _getCombatProductionBonus(npc) {
+    let multiplier = 1.0;
+
+    // Combat level bonus (1% per level above 1)
+    if (npc.combatLevel) {
+      multiplier += (npc.combatLevel - 1) * 0.01;
+    }
+
+    // Equipment bonus (0.5% per tier of best equipment)
+    if (npc.equipment) {
+      const bestTier = Math.max(
+        npc.equipment.weapon?.tier || 0,
+        npc.equipment.armor?.tier || 0,
+        npc.equipment.accessory?.tier || 0
+      );
+      multiplier += bestTier * 0.005;
+    }
+
+    // Veteran bonus (5% after 10 expeditions)
+    if (npc.isVeteran) {
+      multiplier += 0.05;
+    }
+
+    return multiplier;
   }
 
   /**

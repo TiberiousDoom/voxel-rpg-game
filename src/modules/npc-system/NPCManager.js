@@ -74,6 +74,65 @@ class NPC {
       items: [] // For future item system
     };
 
+    // Hybrid Game: Combat statistics
+    this.combatStats = {
+      health: {
+        current: 100,
+        max: 100
+      },
+      damage: 10,           // Base attack damage
+      defense: 0,           // Damage reduction
+      speed: 3,             // Movement speed in combat
+      critChance: 5,        // Critical hit chance (%)
+      critDamage: 150,      // Critical damage multiplier (%)
+      dodgeChance: 5        // Dodge chance (%)
+    };
+
+    // Hybrid Game: Combat progression
+    this.combatLevel = data.combatLevel || 1;
+    this.combatXP = data.combatXP || 0;
+    this.combatXPToNext = data.combatXPToNext || 100;
+
+    // Hybrid Game: Equipment slots
+    this.equipment = data.equipment || {
+      weapon: null,         // Weapon item
+      armor: null,          // Armor item
+      accessory: null       // Accessory item
+    };
+
+    // Hybrid Game: Skill points and unlocked skills
+    this.skillPoints = data.skillPoints || 0;
+    this.skills_combat = data.skills_combat || {
+      combat: {
+        powerStrike: 0,     // Level 0-5
+        criticalHit: 0,     // Level 0-5
+        deadlyBlow: 0       // Level 0-3
+      },
+      magic: {
+        manaPool: 0,        // Level 0-5
+        spellPower: 0,      // Level 0-5
+        fastCasting: 0      // Level 0-3
+      },
+      defense: {
+        ironSkin: 0,        // Level 0-5
+        vitality: 0,        // Level 0-5
+        evasion: 0          // Level 0-5
+      },
+      utility: {
+        swiftness: 0,       // Level 0-3
+        fortune: 0,         // Level 0-5
+        regeneration: 0     // Level 0-3
+      }
+    };
+
+    // Hybrid Game: Combat experience
+    this.expeditionCount = data.expeditionCount || 0;     // Number of expeditions completed
+    this.kills = data.kills || 0;                         // Total enemies killed
+    this.damageDealt = data.damageDealt || 0;             // Total damage dealt
+    this.damageTaken = data.damageTaken || 0;             // Total damage taken
+    this.isVeteran = data.isVeteran || false;             // True after 10 expeditions
+    this.onExpedition = data.onExpedition || false;       // Currently on expedition
+
     // Timers
     this.lastWorkedAt = 0;
     this.lastAteAt = 0;
@@ -1646,6 +1705,149 @@ class NPCManager {
   getNPCVisualData(npcId) {
     const visualState = this.visualFeedbackManager.getVisualState(npcId);
     return visualState ? visualState.getRenderData() : null;
+  }
+
+  // ==================== HYBRID GAME: COMBAT SYSTEM ====================
+
+  /**
+   * Calculate XP required for next combat level
+   * @param {number} currentLevel - Current combat level
+   * @returns {number} XP required for next level
+   */
+  calculateCombatXPToNext(currentLevel) {
+    return Math.floor(100 * Math.pow(1.5, currentLevel - 1));
+  }
+
+  /**
+   * Award combat XP to NPC and handle leveling
+   * @param {string} npcId - NPC ID
+   * @param {number} xp - XP to award
+   * @returns {Object} Result with levelUps array
+   */
+  awardCombatXP(npcId, xp) {
+    const npc = this.getNPC(npcId);
+    if (!npc || !npc.alive) {
+      return { success: false, error: 'NPC not found or dead' };
+    }
+
+    npc.combatXP += xp;
+    const levelUps = [];
+
+    // Process level ups
+    while (npc.combatXP >= npc.combatXPToNext) {
+      npc.combatXP -= npc.combatXPToNext;
+      this._levelUpCombat(npc);
+      levelUps.push(npc.combatLevel);
+    }
+
+    return {
+      success: true,
+      currentLevel: npc.combatLevel,
+      currentXP: npc.combatXP,
+      xpToNext: npc.combatXPToNext,
+      levelUps
+    };
+  }
+
+  /**
+   * Level up NPC combat stats
+   * @private
+   * @param {NPC} npc - NPC to level up
+   */
+  _levelUpCombat(npc) {
+    npc.combatLevel++;
+    npc.combatXPToNext = this.calculateCombatXPToNext(npc.combatLevel);
+
+    // Award skill points (2 per level)
+    npc.skillPoints += 2;
+
+    // Increase base stats
+    npc.combatStats.health.max += 20;
+    npc.combatStats.health.current = npc.combatStats.health.max; // Heal to full on level up
+    npc.combatStats.damage += 5;
+    npc.combatStats.speed += 0.1;
+
+    console.log(`[NPCManager] ${npc.name} leveled up to combat level ${npc.combatLevel}!`);
+  }
+
+  /**
+   * Check and update veteran status
+   * @param {string} npcId - NPC ID
+   */
+  checkVeteranStatus(npcId) {
+    const npc = this.getNPC(npcId);
+    if (!npc) return;
+
+    if (npc.expeditionCount >= 10 && !npc.isVeteran) {
+      npc.isVeteran = true;
+      console.log(`[NPCManager] ${npc.name} is now a veteran!`);
+    }
+  }
+
+  /**
+   * Upgrade NPC skill
+   * @param {string} npcId - NPC ID
+   * @param {string} category - Skill category (combat, magic, defense, utility)
+   * @param {string} skillName - Skill name
+   * @returns {Object} Result
+   */
+  upgradeNPCSkill(npcId, category, skillName) {
+    const npc = this.getNPC(npcId);
+    if (!npc) {
+      return { success: false, error: 'NPC not found' };
+    }
+
+    // Check if skill exists
+    if (!npc.skills_combat[category] || npc.skills_combat[category][skillName] === undefined) {
+      return { success: false, error: 'Invalid skill' };
+    }
+
+    // Check skill points
+    if (npc.skillPoints < 1) {
+      return { success: false, error: 'Not enough skill points' };
+    }
+
+    // Check max level (varies by skill)
+    const currentLevel = npc.skills_combat[category][skillName];
+    const maxLevel = skillName.includes('Blow') || skillName.includes('Casting') ||
+                     skillName.includes('swiftness') || skillName.includes('regeneration') ? 3 : 5;
+
+    if (currentLevel >= maxLevel) {
+      return { success: false, error: 'Skill already at max level' };
+    }
+
+    // Upgrade skill
+    npc.skills_combat[category][skillName]++;
+    npc.skillPoints--;
+
+    return {
+      success: true,
+      newLevel: npc.skills_combat[category][skillName],
+      skillPointsRemaining: npc.skillPoints
+    };
+  }
+
+  /**
+   * Get NPC combat summary
+   * @param {string} npcId - NPC ID
+   * @returns {Object|null} Combat summary
+   */
+  getNPCCombatSummary(npcId) {
+    const npc = this.getNPC(npcId);
+    if (!npc) return null;
+
+    return {
+      name: npc.name,
+      level: npc.combatLevel,
+      xp: npc.combatXP,
+      xpToNext: npc.combatXPToNext,
+      skillPoints: npc.skillPoints,
+      stats: { ...npc.combatStats },
+      expeditions: npc.expeditionCount,
+      kills: npc.kills,
+      isVeteran: npc.isVeteran,
+      onExpedition: npc.onExpedition
+    };
   }
 }
 

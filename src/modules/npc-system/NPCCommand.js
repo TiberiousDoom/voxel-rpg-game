@@ -341,6 +341,8 @@ export class Formation {
         const rows = Math.ceil(Math.sqrt(this.memberIds.length));
         let memberIndex = 0;
         for (let row = 1; row <= rows && memberIndex < this.memberIds.length; row++) {
+          // Future use: Can be used to calculate density or validate formation integrity
+          // eslint-disable-next-line no-unused-vars
           const npcsInRow = row * 2;
           for (let col = -row; col <= row && memberIndex < this.memberIds.length; col++) {
             if (Math.abs(col) !== row) continue; // Only edges of triangle
@@ -397,6 +399,13 @@ export class Formation {
         });
         break;
       }
+
+      default:
+        // Default to LINE formation if unknown type
+        // eslint-disable-next-line no-console
+        console.warn(`[Formation] Unknown formation type: ${this.type}, defaulting to LINE`);
+        this.type = FormationType.LINE;
+        return this.calculatePositions(leaderPosition, leaderDirection);
     }
 
     return positions;
@@ -483,7 +492,7 @@ export const CommandFactory = {
   },
 };
 
-export default {
+const NPCCommandModule = {
   CommandType,
   CommandPriority,
   CommandStatus,
@@ -493,3 +502,5 @@ export default {
   Formation,
   CommandFactory,
 };
+
+export default NPCCommandModule;

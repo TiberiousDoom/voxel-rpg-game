@@ -204,6 +204,7 @@ class NPCManager {
     this.pathfindingService = null;
     if (gridManager) {
       this.pathfindingService = new PathfindingService(gridManager);
+      // eslint-disable-next-line no-console
       console.log('[NPCManager] Pathfinding service initialized');
     }
 
@@ -441,6 +442,7 @@ class NPCManager {
       npc.currentPath = null;
       npc.pathIndex = 0;
       npc.nextWaypoint = null;
+      // eslint-disable-next-line no-console
       console.log(`[NPCManager] NPC ${npc.id} arrived at building ${npc.assignedBuilding}`);
       return;
     }
@@ -497,6 +499,7 @@ class NPCManager {
     if (distance < 0.5) {
       npc.position = { ...npc.targetPosition };
       npc.isMoving = false;
+      // eslint-disable-next-line no-console
       console.log(`[NPCManager] NPC ${npc.id} arrived at target (straight-line)`);
       return;
     }
@@ -546,6 +549,7 @@ class NPCManager {
         npc.isMoving = true;
 
         const stats = this.pathfindingService.getPathStats(npc.currentPath);
+        // eslint-disable-next-line no-console
         console.log(`[NPCManager] NPC ${npc.id} pathfinding to building ${buildingId}: ${stats.waypoints} waypoints, ${stats.distance} distance`);
       } else {
         console.warn(`[NPCManager] No path found for NPC ${npc.id}, using direct movement`);
@@ -556,6 +560,7 @@ class NPCManager {
       npc.isMoving = true;
     }
 
+    // eslint-disable-next-line no-console
     console.log(`[NPCManager] Assigned NPC ${npcId} to building ${buildingId}, moving to (${building.position.x}, ${building.position.y}, ${building.position.z})`);
 
     return this.townManager.assignNPC(npcId, buildingId);

@@ -1,0 +1,113 @@
+/**
+ * GridDisplayToggle.css - Display mode toggle styling
+ */
+
+.grid-display-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(102, 126, 234, 0.03);
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.toggle-buttons {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.toggle-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #666;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  touch-action: manipulation;
+  min-height: 28px;
+  line-height: 1.2;
+}
+
+.toggle-button:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #333;
+}
+
+.toggle-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
+}
+
+.toggle-button.active:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.toggle-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.toggle-text {
+  font-size: 10px;
+}
+
+/* Responsive - Mobile Optimization */
+@media (max-width: 768px) {
+  .grid-display-toggle {
+    padding: 10px 12px;
+  }
+
+  .toggle-label {
+    font-size: 12px;
+  }
+
+  .toggle-button {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .toggle-icon {
+    font-size: 14px;
+  }
+
+  .toggle-text {
+    font-size: 11px;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .toggle-button {
+    transition: none;
+  }
+
+  .toggle-button.active:hover {
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
+  }
+}

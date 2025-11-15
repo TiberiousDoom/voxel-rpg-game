@@ -149,8 +149,8 @@ export default class GameManager extends EventEmitter {
     // Create TownManager
     const townManager = new TownManager(buildingConfig);
 
-    // Create NPCManager (requires TownManager)
-    const npcManager = new NPCManager(townManager);
+    // Create NPCManager (requires TownManager, optional GridManager for pathfinding)
+    const npcManager = new NPCManager(townManager, grid);
 
     // Create real SpatialPartitioning
     const spatial = new SpatialPartitioning(100, 50, 10);

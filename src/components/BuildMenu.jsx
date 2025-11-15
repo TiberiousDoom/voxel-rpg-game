@@ -18,6 +18,10 @@ import CollapsibleSection from './CollapsibleSection';
 import BuildingCard from './BuildingCard';
 import QuickActionBar from './QuickActionBar';
 import CurrentSelectionBanner from './CurrentSelectionBanner';
+import BuildingCategoryFilter from './BuildingCategoryFilter';
+import GridDisplayToggle from './GridDisplayToggle';
+import BuildingSearch from './BuildingSearch';
+import TierProgressIndicator from './TierProgressIndicator';
 import './BuildMenu.css';
 
 // Building icons map (constant)
@@ -43,6 +47,18 @@ const TIER_METADATA = {
   CASTLE: { icon: '🏰', description: 'Mighty civilization' }
 };
 
+// Building to category mapping
+const BUILDING_CATEGORY_MAP = {
+  CAMPFIRE: 'UTILITY',
+  FARM: 'PRODUCTION',
+  HOUSE: 'HOUSING',
+  WAREHOUSE: 'STORAGE',
+  TOWN_CENTER: 'ADMINISTRATION',
+  MARKET: 'PRODUCTION',
+  WATCHTOWER: 'MILITARY',
+  CASTLE: 'MILITARY'
+};
+
 /**
  * Build menu component - Improved layout with collapsible sections
  */
@@ -56,6 +72,10 @@ function BuildMenu({
   placedBuildingCounts = {} // Count of placed buildings by type
 }) {
   const [showInstructions, setShowInstructions] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [displayMode, setDisplayMode] = useState('compact');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showTierProgress, setShowTierProgress] = useState(false);
 
   // Get available buildings based on current tier
   const availableBuildings = useMemo(() => {
@@ -102,7 +122,30 @@ function BuildMenu({
     return buildings;
   }, [buildingConfig, currentTier]);
 
-  // Group buildings by tier
+  // Group buildings by category
+  const buildingsByCategory = useMemo(() => {
+    const grouped = {
+      ALL: [],
+      PRODUCTION: [],
+      HOUSING: [],
+      MILITARY: [],
+      ADMINISTRATION: [],
+      STORAGE: [],
+      UTILITY: []
+    };
+
+    availableBuildings.forEach(building => {
+      grouped.ALL.push(building);
+      const category = BUILDING_CATEGORY_MAP[building.type] || 'UTILITY';
+      if (grouped[category]) {
+        grouped[category].push(building);
+      }
+    });
+
+    return grouped;
+  }, [availableBuildings]);
+
+  // Group buildings by tier with category and search filtering
   const buildingsByTier = useMemo(() => {
     const grouped = {
       SURVIVAL: [],
@@ -111,14 +154,40 @@ function BuildMenu({
       CASTLE: []
     };
 
-    availableBuildings.forEach(building => {
+    // Get the buildings to display (filtered by category)
+    let buildingsToDisplay = selectedCategory === 'ALL'
+      ? availableBuildings
+      : buildingsByCategory[selectedCategory] || [];
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      buildingsToDisplay = buildingsToDisplay.filter(building =>
+        building.name.toLowerCase().includes(lowerSearchTerm) ||
+        building.description.toLowerCase().includes(lowerSearchTerm) ||
+        building.type.toLowerCase().includes(lowerSearchTerm)
+      );
+    }
+
+    buildingsToDisplay.forEach(building => {
       if (grouped[building.tier]) {
         grouped[building.tier].push(building);
       }
     });
 
     return grouped;
-  }, [availableBuildings]);
+  }, [availableBuildings, selectedCategory, buildingsByCategory, searchTerm]);
+
+  // Count matches for search results
+  const searchMatchCount = useMemo(() => {
+    if (!searchTerm.trim()) return 0;
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return availableBuildings.filter(building =>
+      building.name.toLowerCase().includes(lowerSearchTerm) ||
+      building.description.toLowerCase().includes(lowerSearchTerm) ||
+      building.type.toLowerCase().includes(lowerSearchTerm)
+    ).length;
+  }, [availableBuildings, searchTerm]);
 
   // Get currently selected building name and icon
   const getSelectedBuildingInfo = () => {
@@ -152,6 +221,27 @@ function BuildMenu({
         onCancel={() => onSelectBuilding(null)}
       />
 
+      {/* Building Search */}
+      <BuildingSearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        matchCount={searchMatchCount}
+        totalCount={availableBuildings.length}
+      />
+
+      {/* Building Category Filter */}
+      <BuildingCategoryFilter
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        buildingsByCategory={buildingsByCategory}
+      />
+
+      {/* Grid Display Toggle */}
+      <GridDisplayToggle
+        displayMode={displayMode}
+        onDisplayModeChange={setDisplayMode}
+      />
+
       {/* Building Selection by Tier */}
       <div className="buildings-section">
         {TIER_HIERARCHY.map(tier => {
@@ -171,7 +261,7 @@ function BuildMenu({
               defaultExpanded={tierUnlocked && TIER_HIERARCHY.indexOf(tier) === TIER_HIERARCHY.indexOf(currentTier)}
               className={tierUnlocked ? 'tier-unlocked' : 'tier-locked'}
             >
-              <div className="buildings-grid">
+              <div className={`buildings-grid ${displayMode}`}>
                 {buildings.map((building) => (
                   <BuildingCard
                     key={building.type}
@@ -181,6 +271,7 @@ function BuildMenu({
                     placedCount={placedBuildingCounts?.[building.type] || 0}
                     onSelect={onSelectBuilding}
                     buildingConfig={buildingConfig}
+                    displayMode={displayMode}
                   />
                 ))}
               </div>
@@ -188,6 +279,28 @@ function BuildMenu({
           );
         })}
       </div>
+
+      {/* Tier Progress Section (Collapsible) */}
+      {showTierProgress && (
+        <TierProgressIndicator
+          currentTier={currentTier}
+          currentResources={{}}
+          tierRequirements={{}}
+          gameManager={null}
+        />
+      )}
+
+      {/* Toggle Tier Progress Button */}
+      <button
+        className="tier-progress-toggle"
+        onClick={() => setShowTierProgress(!showTierProgress)}
+        title={showTierProgress ? 'Hide tier progress' : 'Show tier progress'}
+      >
+        <span className="toggle-icon">📈</span>
+        <span className="toggle-text">
+          {showTierProgress ? 'Hide' : 'Show'} Tier Progress
+        </span>
+      </button>
 
       {/* Instructions Section (Collapsible) */}
       {showInstructions && (

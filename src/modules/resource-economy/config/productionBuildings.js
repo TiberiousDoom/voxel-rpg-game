@@ -54,8 +54,8 @@ export const PRODUCTION_BUILDINGS = {
     produces: {
       // No production
     },
-    // Each storage building adds 500 units of capacity per resource type
-    storageCapacity: 500,
+    // Each storage building adds 600 units of capacity per resource type (WF8: increased from 500, +20%)
+    storageCapacity: 600,
     description: 'Large warehouse for storing resources',
     productionType: 'storage', // Special type: storage facility
   },

@@ -16,7 +16,7 @@ export default class MerchantVisitEvent extends Event {
       description: 'A traveling merchant has arrived! Trade resources for gold.',
       type: EventType.POSITIVE,
       duration: 60, // 60 seconds
-      probability: 0.05, // 5% chance per hour
+      probability: 0.08, // 8% chance per check (WF8: increased from 5% for better pacing)
       effects: {
         morale: 15,
         resources: { gold: 50 }

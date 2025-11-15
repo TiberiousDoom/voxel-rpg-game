@@ -60,6 +60,7 @@ npm run build
 | **[CURRENT_STATUS.md](CURRENT_STATUS.md)** | Current project status, known issues, roadmap |
 | **[ARCHITECTURE.md](ARCHITECTURE.md)** | Full architecture documentation |
 | **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** | Implementation patterns, formulas, balance guidelines |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Code & documentation contribution guide |
 | **[/documentation/](documentation/)** | Historical reports, phase completions, archived docs |
 
 ---
@@ -368,24 +369,30 @@ See **[CURRENT_STATUS.md](CURRENT_STATUS.md)** for detailed issue list.
 
 ## 🤝 Contributing
 
-### Development Workflow
+We welcome contributions! Please read **[CONTRIBUTING.md](CONTRIBUTING.md)** for detailed guidelines on:
+
+- **Code contributions** - Standards, testing, review process
+- **Documentation contributions** - Where to add docs, formatting standards, organization
+- **File organization** - Root vs archive, when to update vs create
+- **Git practices** - Commit messages, branching, PRs
+
+### Quick Start
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
+3. Make your changes (follow **[CONTRIBUTING.md](CONTRIBUTING.md)**)
 4. Add tests for new features
 5. Run tests (`npm test`)
-6. Commit changes (`git commit -m 'Add amazing feature'`)
-7. Push to branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+6. Update documentation (see **[CONTRIBUTING.md](CONTRIBUTING.md#documentation-contributions)**)
+7. Commit with clear messages
+8. Push to branch and open a Pull Request
 
-### Contribution Guidelines
+### Key Principles
 
-- Follow existing code style
-- Write tests for new features
-- Update documentation
-- Keep commits atomic and well-described
-- Ensure all tests pass
+- **Code:** ES6+, JSDoc comments, 80%+ test coverage
+- **Documentation:** Update existing docs first, archive historical docs, maintain single source of truth
+- **Commits:** Clear messages, atomic changes
+- **Reviews:** All PRs reviewed before merge
 
 ---
 

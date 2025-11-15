@@ -486,10 +486,12 @@ export class RelationshipManager {
   }
 }
 
-export default {
+const NPCPersonalityModule = {
   PersonalityTrait,
   RelationshipStatus,
   Personality,
   Relationship,
   RelationshipManager,
 };
+
+export default NPCPersonalityModule;

@@ -460,10 +460,12 @@ export class NPCVisualFeedbackManager {
   }
 }
 
-export default {
+const NPCVisualFeedbackModule = {
   ThoughtType,
   ThoughtIcons,
   ThoughtBubble,
   NPCVisualState,
   NPCVisualFeedbackManager,
 };
+
+export default NPCVisualFeedbackModule;

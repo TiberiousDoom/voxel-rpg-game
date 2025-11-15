@@ -39,6 +39,49 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   width: 100%;
+  transition: grid-template-columns 0.3s ease;
+}
+
+/* Detailed mode - single column */
+.buildings-grid.detailed {
+  grid-template-columns: 1fr;
+}
+
+/* Tier Progress Toggle Button */
+.tier-progress-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid #e0e0e0;
+  background: rgba(102, 126, 234, 0.02);
+  color: #667eea;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  touch-action: manipulation;
+}
+
+.tier-progress-toggle:hover {
+  background: rgba(102, 126, 234, 0.08);
+}
+
+.tier-progress-toggle:active {
+  transform: scale(0.98);
+}
+
+.tier-progress-toggle .toggle-icon {
+  font-size: 14px;
+}
+
+.tier-progress-toggle .toggle-text {
+  font-size: 10px;
 }
 
 /* Instructions section */
@@ -116,9 +159,26 @@
     gap: 10px;
   }
 
+  .buildings-grid.detailed {
+    grid-template-columns: 1fr;
+  }
+
   .buildings-section {
     padding: 14px;
     gap: 10px;
+  }
+
+  .tier-progress-toggle {
+    padding: 12px 14px;
+    font-size: 12px;
+  }
+
+  .tier-progress-toggle .toggle-icon {
+    font-size: 16px;
+  }
+
+  .tier-progress-toggle .toggle-text {
+    font-size: 11px;
   }
 
   .instructions-section {

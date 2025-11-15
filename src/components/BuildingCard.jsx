@@ -28,7 +28,8 @@ function BuildingCard({
   isLocked = false,
   placedCount = 0,
   onSelect = () => {},
-  buildingConfig = null
+  buildingConfig = null,
+  displayMode = 'compact' // 'compact' or 'detailed'
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -88,10 +89,10 @@ function BuildingCard({
   return (
     <div className="building-card-wrapper">
       <button
-        className={`building-card ${isSelected ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+        className={`building-card ${isSelected ? 'active' : ''} ${isLocked ? 'locked' : ''} ${displayMode}`}
         onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseEnter={displayMode === 'compact' ? handleMouseEnter : undefined}
+        onMouseLeave={displayMode === 'compact' ? handleMouseLeave : undefined}
         disabled={isLocked}
         title={isLocked ? `Requires ${building.tier} tier` : ''}
       >
@@ -103,6 +104,11 @@ function BuildingCard({
             <span className="building-badge">{placedCount}</span>
           )}
         </div>
+
+        {/* Description - shown in detailed mode */}
+        {displayMode === 'detailed' && !isLocked && (
+          <p className="building-description-text">{building.description || 'No description'}</p>
+        )}
 
         {/* Cost: Resource icons */}
         {!isLocked && building.cost && Object.keys(building.cost).length > 0 && (

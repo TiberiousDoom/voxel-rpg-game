@@ -300,11 +300,13 @@ class PathfindingService {
 
     // No complete path found
     if (iterations >= maxIterations) {
+      // eslint-disable-next-line no-console
       console.warn(`[PathfindingService] Max iterations (${maxIterations}) reached`);
     }
 
     // Return partial path if allowed
     if (allowPartialPath && closestNode !== startNode) {
+      // eslint-disable-next-line no-console
       console.log(`[PathfindingService] Returning partial path (${closestDistance.toFixed(1)} from goal)`);
       return this.reconstructPath(closestNode);
     }

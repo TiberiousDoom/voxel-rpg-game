@@ -20,6 +20,8 @@ import QuickActionBar from './QuickActionBar';
 import CurrentSelectionBanner from './CurrentSelectionBanner';
 import BuildingCategoryFilter from './BuildingCategoryFilter';
 import GridDisplayToggle from './GridDisplayToggle';
+import BuildingSearch from './BuildingSearch';
+import TierProgressIndicator from './TierProgressIndicator';
 import './BuildMenu.css';
 
 // Building icons map (constant)
@@ -72,6 +74,8 @@ function BuildMenu({
   const [showInstructions, setShowInstructions] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [displayMode, setDisplayMode] = useState('compact');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showTierProgress, setShowTierProgress] = useState(false);
 
   // Get available buildings based on current tier
   const availableBuildings = useMemo(() => {
@@ -141,7 +145,7 @@ function BuildMenu({
     return grouped;
   }, [availableBuildings]);
 
-  // Group buildings by tier with category filtering
+  // Group buildings by tier with category and search filtering
   const buildingsByTier = useMemo(() => {
     const grouped = {
       SURVIVAL: [],
@@ -151,9 +155,19 @@ function BuildMenu({
     };
 
     // Get the buildings to display (filtered by category)
-    const buildingsToDisplay = selectedCategory === 'ALL'
+    let buildingsToDisplay = selectedCategory === 'ALL'
       ? availableBuildings
       : buildingsByCategory[selectedCategory] || [];
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      buildingsToDisplay = buildingsToDisplay.filter(building =>
+        building.name.toLowerCase().includes(lowerSearchTerm) ||
+        building.description.toLowerCase().includes(lowerSearchTerm) ||
+        building.type.toLowerCase().includes(lowerSearchTerm)
+      );
+    }
 
     buildingsToDisplay.forEach(building => {
       if (grouped[building.tier]) {
@@ -162,7 +176,18 @@ function BuildMenu({
     });
 
     return grouped;
-  }, [availableBuildings, selectedCategory, buildingsByCategory]);
+  }, [availableBuildings, selectedCategory, buildingsByCategory, searchTerm]);
+
+  // Count matches for search results
+  const searchMatchCount = useMemo(() => {
+    if (!searchTerm.trim()) return 0;
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return availableBuildings.filter(building =>
+      building.name.toLowerCase().includes(lowerSearchTerm) ||
+      building.description.toLowerCase().includes(lowerSearchTerm) ||
+      building.type.toLowerCase().includes(lowerSearchTerm)
+    ).length;
+  }, [availableBuildings, searchTerm]);
 
   // Get currently selected building name and icon
   const getSelectedBuildingInfo = () => {
@@ -194,6 +219,14 @@ function BuildMenu({
         buildingName={selectedInfo.name}
         buildingIcon={selectedInfo.icon}
         onCancel={() => onSelectBuilding(null)}
+      />
+
+      {/* Building Search */}
+      <BuildingSearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        matchCount={searchMatchCount}
+        totalCount={availableBuildings.length}
       />
 
       {/* Building Category Filter */}
@@ -246,6 +279,28 @@ function BuildMenu({
           );
         })}
       </div>
+
+      {/* Tier Progress Section (Collapsible) */}
+      {showTierProgress && (
+        <TierProgressIndicator
+          currentTier={currentTier}
+          currentResources={{}}
+          tierRequirements={{}}
+          gameManager={null}
+        />
+      )}
+
+      {/* Toggle Tier Progress Button */}
+      <button
+        className="tier-progress-toggle"
+        onClick={() => setShowTierProgress(!showTierProgress)}
+        title={showTierProgress ? 'Hide tier progress' : 'Show tier progress'}
+      >
+        <span className="toggle-icon">📈</span>
+        <span className="toggle-text">
+          {showTierProgress ? 'Hide' : 'Show'} Tier Progress
+        </span>
+      </button>
 
       {/* Instructions Section (Collapsible) */}
       {showInstructions && (

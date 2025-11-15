@@ -1,0 +1,144 @@
+/**
+ * ThoughtBubble.css - Styles for thought bubble components
+ */
+
+.thought-bubble {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
+.thought-bubble.position-top {
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.thought-bubble.position-top-left {
+  top: -24px;
+  left: -8px;
+}
+
+.thought-bubble.position-top-right {
+  top: -24px;
+  right: -8px;
+}
+
+.thought-bubble-icon {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  padding: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+}
+
+.thought-bubble-text {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Animation */
+.thought-bubble.animate .thought-bubble-icon {
+  animation: thoughtPulse 2s ease-in-out infinite;
+}
+
+@keyframes thoughtPulse {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1) translateY(-2px);
+    opacity: 0.9;
+  }
+}
+
+/* Fade in animation */
+.thought-bubble {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Multiple thought bubbles */
+.multiple-thought-bubbles {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
+.thought-bubble-item {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  padding: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  line-height: 1;
+  animation: fadeInBounce 0.4s ease-out;
+}
+
+@keyframes fadeInBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.thought-bubble-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.thought-bubble-item:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+/* Responsive sizing */
+@media (max-width: 768px) {
+  .thought-bubble-icon {
+    font-size: 14px;
+  }
+
+  .thought-bubble-text {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  .thought-bubble-item {
+    font-size: 11px;
+  }
+}

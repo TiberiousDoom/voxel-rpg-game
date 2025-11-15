@@ -32,10 +32,11 @@ export function useNPCRenderer(config = {}) {
       rendererRef.current = new NPCRenderer(config);
     }
 
+    // Capture current animation frame ID for cleanup (must be outside cleanup function)
+    const currentAnimationFrame = animationFrameRef.current;
+
     // Cleanup on unmount
     return () => {
-      // Capture current animation frame ID to avoid ref issues
-      const currentAnimationFrame = animationFrameRef.current;
       if (currentAnimationFrame) {
         cancelAnimationFrame(currentAnimationFrame);
       }

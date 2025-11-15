@@ -16,7 +16,7 @@ export default class WildfireEvent extends Event {
       description: 'A wildfire is spreading through your territory! Wooden buildings are at risk.',
       type: EventType.DISASTER,
       duration: 30, // 30 seconds
-      probability: 0.02, // 2% chance per hour
+      probability: 0.03, // 3% chance per check (WF8: increased from 2% for better pacing)
       effects: {
         morale: -20,
         buildings: { damage: 'fire' }

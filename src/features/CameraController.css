@@ -1,0 +1,199 @@
+/**
+ * CameraController.css - Styling for camera controls
+ */
+
+.camera-controller {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  user-select: none;
+}
+
+.camera-controller.dragging {
+  cursor: grabbing;
+}
+
+/* Camera Controls Panel */
+.camera-controls-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Control Group */
+.camera-control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Control Buttons */
+.camera-control-button {
+  background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: bold;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-control-button:hover {
+  background: linear-gradient(180deg, #5a5a5a 0%, #4a4a4a 100%);
+  border-color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+.camera-control-button:active {
+  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+  transform: scale(0.95);
+}
+
+.camera-control-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.camera-reset-button {
+  font-size: 24px;
+  width: 100%;
+}
+
+/* Zoom Display */
+.camera-zoom-display {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ffd700;
+  font-family: 'Courier New', monospace;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Position Display */
+.camera-position-display {
+  padding-top: 8px;
+  border-top: 1px solid #4a4a4a;
+  font-size: 11px;
+  color: #aaaaaa;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+}
+
+.camera-position-label {
+  display: block;
+  line-height: 1.4;
+}
+
+/* Help Text */
+.camera-help-text {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #cccccc;
+  text-align: center;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.camera-help-text p {
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
+.camera-controller:hover .camera-help-text {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .camera-controls-panel {
+    top: 60px; /* Below other UI elements */
+    right: 5px;
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .camera-control-button {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .camera-zoom-display {
+    font-size: 12px;
+    min-width: 45px;
+  }
+
+  .camera-help-text {
+    display: none; /* Hide help on mobile */
+  }
+
+  .camera-position-display {
+    font-size: 10px;
+  }
+}
+
+/* Touch indicator */
+@media (hover: none) and (pointer: coarse) {
+  .camera-controller {
+    cursor: default;
+  }
+
+  .camera-controller.dragging {
+    cursor: default;
+  }
+
+  .camera-help-text {
+    display: none;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.camera-controls-panel {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Focus styles for accessibility */
+.camera-control-button:focus {
+  outline: 2px solid #ffd700;
+  outline-offset: 2px;
+}
+
+.camera-control-button:focus:not(:focus-visible) {
+  outline: none;
+}

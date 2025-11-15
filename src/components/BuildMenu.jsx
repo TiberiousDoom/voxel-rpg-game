@@ -18,6 +18,8 @@ import CollapsibleSection from './CollapsibleSection';
 import BuildingCard from './BuildingCard';
 import QuickActionBar from './QuickActionBar';
 import CurrentSelectionBanner from './CurrentSelectionBanner';
+import BuildingCategoryFilter from './BuildingCategoryFilter';
+import GridDisplayToggle from './GridDisplayToggle';
 import './BuildMenu.css';
 
 // Building icons map (constant)
@@ -43,6 +45,18 @@ const TIER_METADATA = {
   CASTLE: { icon: '🏰', description: 'Mighty civilization' }
 };
 
+// Building to category mapping
+const BUILDING_CATEGORY_MAP = {
+  CAMPFIRE: 'UTILITY',
+  FARM: 'PRODUCTION',
+  HOUSE: 'HOUSING',
+  WAREHOUSE: 'STORAGE',
+  TOWN_CENTER: 'ADMINISTRATION',
+  MARKET: 'PRODUCTION',
+  WATCHTOWER: 'MILITARY',
+  CASTLE: 'MILITARY'
+};
+
 /**
  * Build menu component - Improved layout with collapsible sections
  */
@@ -56,6 +70,8 @@ function BuildMenu({
   placedBuildingCounts = {} // Count of placed buildings by type
 }) {
   const [showInstructions, setShowInstructions] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [displayMode, setDisplayMode] = useState('compact');
 
   // Get available buildings based on current tier
   const availableBuildings = useMemo(() => {
@@ -102,7 +118,30 @@ function BuildMenu({
     return buildings;
   }, [buildingConfig, currentTier]);
 
-  // Group buildings by tier
+  // Group buildings by category
+  const buildingsByCategory = useMemo(() => {
+    const grouped = {
+      ALL: [],
+      PRODUCTION: [],
+      HOUSING: [],
+      MILITARY: [],
+      ADMINISTRATION: [],
+      STORAGE: [],
+      UTILITY: []
+    };
+
+    availableBuildings.forEach(building => {
+      grouped.ALL.push(building);
+      const category = BUILDING_CATEGORY_MAP[building.type] || 'UTILITY';
+      if (grouped[category]) {
+        grouped[category].push(building);
+      }
+    });
+
+    return grouped;
+  }, [availableBuildings]);
+
+  // Group buildings by tier with category filtering
   const buildingsByTier = useMemo(() => {
     const grouped = {
       SURVIVAL: [],
@@ -111,14 +150,19 @@ function BuildMenu({
       CASTLE: []
     };
 
-    availableBuildings.forEach(building => {
+    // Get the buildings to display (filtered by category)
+    const buildingsToDisplay = selectedCategory === 'ALL'
+      ? availableBuildings
+      : buildingsByCategory[selectedCategory] || [];
+
+    buildingsToDisplay.forEach(building => {
       if (grouped[building.tier]) {
         grouped[building.tier].push(building);
       }
     });
 
     return grouped;
-  }, [availableBuildings]);
+  }, [availableBuildings, selectedCategory, buildingsByCategory]);
 
   // Get currently selected building name and icon
   const getSelectedBuildingInfo = () => {
@@ -152,6 +196,19 @@ function BuildMenu({
         onCancel={() => onSelectBuilding(null)}
       />
 
+      {/* Building Category Filter */}
+      <BuildingCategoryFilter
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        buildingsByCategory={buildingsByCategory}
+      />
+
+      {/* Grid Display Toggle */}
+      <GridDisplayToggle
+        displayMode={displayMode}
+        onDisplayModeChange={setDisplayMode}
+      />
+
       {/* Building Selection by Tier */}
       <div className="buildings-section">
         {TIER_HIERARCHY.map(tier => {
@@ -171,7 +228,7 @@ function BuildMenu({
               defaultExpanded={tierUnlocked && TIER_HIERARCHY.indexOf(tier) === TIER_HIERARCHY.indexOf(currentTier)}
               className={tierUnlocked ? 'tier-unlocked' : 'tier-locked'}
             >
-              <div className="buildings-grid">
+              <div className={`buildings-grid ${displayMode}`}>
                 {buildings.map((building) => (
                   <BuildingCard
                     key={building.type}
@@ -181,6 +238,7 @@ function BuildMenu({
                     placedCount={placedBuildingCounts?.[building.type] || 0}
                     onSelect={onSelectBuilding}
                     buildingConfig={buildingConfig}
+                    displayMode={displayMode}
                   />
                 ))}
               </div>

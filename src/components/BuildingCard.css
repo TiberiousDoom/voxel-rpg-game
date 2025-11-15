@@ -22,6 +22,20 @@
   position: relative;
 }
 
+/* Detailed mode - larger cards with more space */
+.building-card.detailed {
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px;
+  min-height: 140px;
+  gap: 10px;
+}
+
+.building-card.detailed .building-header {
+  width: 100%;
+  justify-content: flex-start;
+}
+
 .building-card:not(.locked):hover {
   background: #f8f9fa;
   border-color: #999;
@@ -71,6 +85,15 @@
   color: #333;
   line-height: 1.2;
   letter-spacing: 0.2px;
+}
+
+/* Description text in detailed mode */
+.building-description-text {
+  margin: 0;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+  width: 100%;
 }
 
 /* Counter badge */
@@ -234,12 +257,22 @@
     gap: 6px;
   }
 
+  .building-card.detailed {
+    padding: 14px;
+    min-height: 160px;
+    gap: 10px;
+  }
+
   .building-icon {
     font-size: 24px;
   }
 
   .building-name {
     font-size: 13px;
+  }
+
+  .building-description-text {
+    font-size: 12px;
   }
 
   .cost-item {

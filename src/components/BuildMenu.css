@@ -39,6 +39,12 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   width: 100%;
+  transition: grid-template-columns 0.3s ease;
+}
+
+/* Detailed mode - single column */
+.buildings-grid.detailed {
+  grid-template-columns: 1fr;
 }
 
 /* Instructions section */
@@ -114,6 +120,10 @@
   .buildings-grid {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .buildings-grid.detailed {
+    grid-template-columns: 1fr;
   }
 
   .buildings-section {

@@ -17,6 +17,8 @@
 
 import PathfindingService from './PathfindingService.js';
 import { CommandQueue, Formation } from './NPCCommand.js';
+import { Personality, RelationshipManager } from './NPCPersonality.js';
+import { NPCVisualFeedbackManager } from './NPCVisualFeedback.js';
 
 class NPC {
   /**
@@ -60,6 +62,11 @@ class NPC {
     this.followTarget = null; // NPC ID being followed
     this.patrolWaypoints = null; // Patrol waypoints
     this.patrolIndex = 0; // Current patrol waypoint index
+
+    // Phase 3: Personality & Variation
+    this.personality = data.personality || Personality.fromArchetype(this.role);
+    this.currentMood = 'neutral'; // Current emotional state
+    this.recentMemories = []; // Recent events/interactions
 
     // Inventory
     this.inventory = {
@@ -234,6 +241,12 @@ class NPCManager {
 
     // Phase 2: Formation management
     this.formations = new Map(); // formationId -> Formation
+
+    // Phase 3: Relationship management
+    this.relationshipManager = new RelationshipManager();
+
+    // Phase 4: Visual feedback
+    this.visualFeedbackManager = new NPCVisualFeedbackManager();
   }
 
   /**
@@ -604,6 +617,9 @@ class NPCManager {
     // Phase 2: Update formations
     this.updateFormations(deltaTime);
 
+    // Phase 3: Process NPC interactions
+    this.processInteractions(deltaTime);
+
     // Then update movement
     for (const npc of this.npcs.values()) {
       if (npc.alive && npc.isMoving) {
@@ -611,6 +627,16 @@ class NPCManager {
 
         // Apply collision avoidance
         this._applyCollisionAvoidance(npc, deltaTime);
+      }
+
+      // Phase 3: Update mood
+      if (npc.alive) {
+        this.updateNPCMood(npc.id);
+      }
+
+      // Phase 4: Update visual feedback
+      if (npc.alive) {
+        this.visualFeedbackManager.updateFromNPCState(npc);
       }
     }
   }
@@ -718,6 +744,12 @@ class NPCManager {
         this.orchestrator.needsTracker.unregisterNPC(npcId);
       }
     }
+
+    // Phase 3: Clean up relationships
+    this.relationshipManager.clearNPCRelationships(npcId);
+
+    // Phase 4: Clean up visual feedback
+    this.visualFeedbackManager.clearNPCVisualState(npcId);
 
     // Unassign and update town
     this.unassignNPC(npcId);
@@ -1299,6 +1331,321 @@ class NPCManager {
    */
   getAllFormations() {
     return Array.from(this.formations.values()).map(f => f.getSummary());
+  }
+
+  // ============================================================
+  // PHASE 3: PERSONALITY & RELATIONSHIPS
+  // ============================================================
+
+  /**
+   * Process NPC interactions (called periodically)
+   * Handles automatic social interactions between nearby NPCs
+   * @param {number} deltaTime - Time delta
+   */
+  processInteractions(deltaTime) {
+    const interactionRadius = 2.0; // NPCs within this radius can interact
+    const interactionChance = 0.01; // 1% chance per frame when near
+
+    for (const npc of this.npcs.values()) {
+      if (!npc.alive || npc.isWorking) continue;
+
+      // Find nearby NPCs
+      const nearbyNPCs = this.getNearbyNPCs(npc.id, interactionRadius);
+
+      for (const otherNPC of nearbyNPCs) {
+        if (Math.random() < interactionChance) {
+          this._performSocialInteraction(npc, otherNPC);
+        }
+      }
+    }
+  }
+
+  /**
+   * Perform social interaction between two NPCs
+   * @private
+   * @param {NPC} npc1 - First NPC
+   * @param {NPC} npc2 - Second NPC
+   */
+  _performSocialInteraction(npc1, npc2) {
+    // Calculate compatibility based on personalities
+    const compatibility = this._calculateCompatibility(npc1.personality, npc2.personality);
+
+    // Interaction impact based on compatibility and traits
+    const socialTrait1 = npc1.personality.getTraitStrength('SOCIAL');
+    const socialTrait2 = npc2.personality.getTraitStrength('SOCIAL');
+
+    const impact = compatibility * (socialTrait1 + socialTrait2) * 5; // -5 to +5
+
+    // Record interaction
+    this.relationshipManager.recordInteraction(npc1.id, npc2.id, 'social', impact);
+
+    // Add memory to NPCs
+    npc1.recentMemories.push({
+      type: 'interaction',
+      withNPC: npc2.id,
+      impact: impact,
+      timestamp: Date.now(),
+    });
+
+    // Keep only last 20 memories
+    if (npc1.recentMemories.length > 20) {
+      npc1.recentMemories.shift();
+    }
+
+    // Boost happiness slightly for social NPCs
+    if (socialTrait1 > 0.6) {
+      npc1.happiness = Math.min(100, npc1.happiness + 0.5);
+    }
+  }
+
+  /**
+   * Calculate compatibility between two personalities
+   * @private
+   * @param {Personality} p1 - First personality
+   * @param {Personality} p2 - Second personality
+   * @returns {number} Compatibility (-1 to 1)
+   */
+  _calculateCompatibility(p1, p2) {
+    let compatibility = 0;
+
+    // Similar social traits get along
+    const socialDiff = Math.abs(p1.traits.SOCIAL - p2.traits.SOCIAL);
+    compatibility += (1 - socialDiff) * 0.3;
+
+    // Optimists get along with optimists
+    const optimismDiff = Math.abs(p1.traits.OPTIMISTIC - p2.traits.OPTIMISTIC);
+    compatibility += (1 - optimismDiff) * 0.2;
+
+    // Complementary work styles (industrious + lazy can conflict)
+    const workDiff = Math.abs(p1.traits.INDUSTRIOUS - p2.traits.INDUSTRIOUS);
+    if (workDiff > 0.5) {
+      compatibility -= 0.2; // Conflict
+    }
+
+    // Random factor
+    compatibility += (Math.random() - 0.5) * 0.3;
+
+    return Math.max(-1, Math.min(1, compatibility));
+  }
+
+  /**
+   * Get NPCs near a specific NPC
+   * @param {string} npcId - NPC ID
+   * @param {number} radius - Search radius
+   * @returns {Array<NPC>} Nearby NPCs
+   */
+  getNearbyNPCs(npcId, radius = 3.0) {
+    const npc = this.npcs.get(npcId);
+    if (!npc) return [];
+
+    const nearby = [];
+
+    for (const otherNPC of this.npcs.values()) {
+      if (otherNPC.id === npcId || !otherNPC.alive) continue;
+
+      const dx = otherNPC.position.x - npc.position.x;
+      const dz = otherNPC.position.z - npc.position.z;
+      const distance = Math.sqrt(dx * dx + dz * dz);
+
+      if (distance <= radius) {
+        nearby.push(otherNPC);
+      }
+    }
+
+    return nearby;
+  }
+
+  /**
+   * Get NPC relationships
+   * @param {string} npcId - NPC ID
+   * @returns {Array<Object>} Relationships
+   */
+  getNPCRelationships(npcId) {
+    return this.relationshipManager.getNPCRelationships(npcId);
+  }
+
+  /**
+   * Get NPC friends
+   * @param {string} npcId - NPC ID
+   * @returns {Array<string>} Friend NPC IDs
+   */
+  getNPCFriends(npcId) {
+    return this.relationshipManager.getFriends(npcId);
+  }
+
+  /**
+   * Apply personality modifiers to NPC work
+   * @param {string} npcId - NPC ID
+   * @param {number} baseProductivity - Base productivity value
+   * @returns {number} Modified productivity
+   */
+  applyPersonalityToWork(npcId, baseProductivity) {
+    const npc = this.npcs.get(npcId);
+    if (!npc || !npc.personality) return baseProductivity;
+
+    // Apply work pace modifier
+    let productivity = baseProductivity * npc.personality.workPaceModifier;
+
+    // Check if working with friends (bonus)
+    const nearbyNPCs = this.getNearbyNPCs(npcId, 3.0);
+    const friends = this.getNPCFriends(npcId);
+
+    const friendsNearby = nearbyNPCs.filter(n => friends.includes(n.id)).length;
+    if (friendsNearby > 0) {
+      productivity *= 1 + (friendsNearby * 0.05); // 5% bonus per friend nearby
+    }
+
+    // Mood affects productivity
+    if (npc.currentMood === 'happy') {
+      productivity *= 1.1;
+    } else if (npc.currentMood === 'sad') {
+      productivity *= 0.9;
+    }
+
+    return productivity;
+  }
+
+  /**
+   * Update NPC mood based on circumstances
+   * @param {string} npcId - NPC ID
+   */
+  updateNPCMood(npcId) {
+    const npc = this.npcs.get(npcId);
+    if (!npc) return;
+
+    // Calculate mood from multiple factors
+    let moodScore = 0;
+
+    // Happiness contributes
+    moodScore += (npc.happiness - 50) / 50; // -1 to 1
+
+    // Recent positive interactions
+    const recentPositive = npc.recentMemories
+      .filter(m => m.type === 'interaction' && m.impact > 0)
+      .length;
+    moodScore += recentPositive * 0.1;
+
+    // Personality affects baseline mood
+    if (npc.personality) {
+      const optimism = npc.personality.getTraitStrength('OPTIMISTIC');
+      moodScore += (optimism - 0.5); // -0.5 to +0.5
+    }
+
+    // Set mood
+    if (moodScore > 0.5) {
+      npc.currentMood = 'happy';
+    } else if (moodScore < -0.5) {
+      npc.currentMood = 'sad';
+    } else {
+      npc.currentMood = 'neutral';
+    }
+  }
+
+  /**
+   * Get personality-influenced decision for NPC
+   * @param {string} npcId - NPC ID
+   * @param {string} decisionType - Type of decision
+   * @param {Object} options - Decision options
+   * @returns {*} Decision result
+   */
+  getPersonalityDecision(npcId, decisionType, options = {}) {
+    const npc = this.npcs.get(npcId);
+    if (!npc || !npc.personality) return null;
+
+    switch (decisionType) {
+      case 'shouldRest':
+        // Lazy NPCs rest more, industrious less
+        const restThreshold = npc.personality.restThreshold;
+        return npc.fatigued || (options.fatigueLevel || 0) > restThreshold;
+
+      case 'preferredTask':
+        // Choose task based on skill preferences
+        if (options.tasks) {
+          return options.tasks.sort((a, b) => {
+            const prefA = npc.personality.skillPreferences[a.skill] || 0.5;
+            const prefB = npc.personality.skillPreferences[b.skill] || 0.5;
+            return prefB - prefA;
+          })[0];
+        }
+        return null;
+
+      case 'riskTaking':
+        // Brave NPCs take more risks
+        return Math.random() < npc.personality.riskTolerance;
+
+      default:
+        return null;
+    }
+  }
+
+  // ============================================================
+  // PHASE 4: VISUAL FEEDBACK
+  // ============================================================
+
+  /**
+   * Select an NPC for UI
+   * @param {string} npcId - NPC ID (null to deselect)
+   */
+  selectNPC(npcId) {
+    this.visualFeedbackManager.selectNPC(npcId);
+  }
+
+  /**
+   * Set hovered NPC
+   * @param {string} npcId - NPC ID (null to clear)
+   */
+  setHoveredNPC(npcId) {
+    this.visualFeedbackManager.setHoveredNPC(npcId);
+  }
+
+  /**
+   * Get visual render data for all NPCs
+   * @returns {Map<string, Object>} Render data map
+   */
+  getAllVisualData() {
+    return this.visualFeedbackManager.getAllRenderData();
+  }
+
+  /**
+   * Get selection panel data for selected NPC
+   * @returns {Object|null} Selection panel data
+   */
+  getSelectionPanelData() {
+    const selectedId = this.visualFeedbackManager.getSelectedNPC();
+    if (!selectedId) return null;
+
+    const npc = this.getNPC(selectedId);
+    return this.visualFeedbackManager.getSelectionPanelData(npc);
+  }
+
+  /**
+   * Add custom thought to NPC
+   * @param {string} npcId - NPC ID
+   * @param {string} type - Thought type
+   * @param {string} message - Thought message
+   * @param {number} duration - Duration in ms
+   */
+  addNPCThought(npcId, type, message, duration = 3000) {
+    this.visualFeedbackManager.addThought(npcId, type, message, duration);
+  }
+
+  /**
+   * Update path preview for NPC
+   * @param {string} npcId - NPC ID
+   * @param {Array<Object>} path - Path waypoints
+   */
+  updatePathPreview(npcId, path) {
+    this.visualFeedbackManager.updatePathPreview(npcId, path);
+  }
+
+  /**
+   * Get visual data for specific NPC
+   * @param {string} npcId - NPC ID
+   * @returns {Object|null} Visual data
+   */
+  getNPCVisualData(npcId) {
+    const visualState = this.visualFeedbackManager.getVisualState(npcId);
+    return visualState ? visualState.getRenderData() : null;
   }
 }
 

@@ -296,7 +296,7 @@ export function calculateAnimationSpeed(npc, spriteDefinition) {
   return baseDuration / speedMultiplier;
 }
 
-export default {
+const npcAnimations = {
   lerp,
   lerpPosition,
   smoothLerp,
@@ -308,3 +308,5 @@ export default {
   NPCPositionInterpolator,
   calculateAnimationSpeed,
 };
+
+export default npcAnimations;

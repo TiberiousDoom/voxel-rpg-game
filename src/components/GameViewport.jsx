@@ -68,7 +68,10 @@ const darkenColor = (hex, factor = 0.6) => {
 
 /**
  * Helper: Get NPC color based on status
+ * NOTE: Legacy fallback - WF4's NPCRenderer uses getStatusColor from npc-sprites.js
+ * Kept for backward compatibility with non-WF4 rendering paths
  */
+// eslint-disable-next-line no-unused-vars -- Legacy fallback for non-WF4 rendering paths
 const getNPCColor = (npc) => {
   const health = npc.health || 100;
   const isWorking = npc.status === 'WORKING' || npc.isWorking;
@@ -211,7 +214,7 @@ function GameViewport({
       const isValid = true; // Placeholder - should check collision/placement rules
       renderPlacementPreview(ctx, hoveredPosition, selectedBuildingType, isValid, worldToCanvas);
     }
-  }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview]);
+  }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview, debugMode, npcRenderer]);
 
   /**
    * Handle canvas click for placement (mouse and touch)

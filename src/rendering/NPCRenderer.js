@@ -18,7 +18,7 @@ import {
 import {
   getMovementDirection,
   shouldFlipSprite,
-  getDirectionBetweenPositions,
+  getDirectionBetweenPositions, // eslint-disable-line no-unused-vars -- Reserved for future pathfinding debug features
   AnimationFrameManager,
   getAnimationFrames,
   NPCPositionInterpolator,

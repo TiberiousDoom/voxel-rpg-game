@@ -239,9 +239,38 @@ Opens at: http://localhost:3000
 
 ## Known Issues
 
-### Critical Issues 🔴
+**Last Code Integration Audit:** November 15, 2025
+**Audit Report:** [CODE_INTEGRATION_AUDIT_2025-11-15.md](documentation/reports/audits/CODE_INTEGRATION_AUDIT_2025-11-15.md)
+**Overall Integration Status:** 🟡 PARTIALLY INTEGRATED (85/100)
 
-1. **Phase 3D Tutorial System Not Connected in GameManager**
+### Critical Integration Bugs 🔴
+
+**FROM CODE AUDIT (November 15, 2025):**
+
+1. **NPCAssignment Method Name Mismatch** (`src/core/ModuleOrchestrator.js:772`)
+   - **Severity:** CRITICAL
+   - **Impact:** NPC assignment will fail at runtime - calls `assignNPCToBuilding()` but method doesn't exist
+   - **Fix:** Change to `assignNPC(npcId, buildingId)`
+   - **Fix Time:** 5 minutes
+   - **Status:** ❌ NOT FIXED
+
+2. **Missing isAssigned() Method** (`src/core/ModuleOrchestrator.js:294`)
+   - **Severity:** CRITICAL
+   - **Impact:** Phase 3A NPC needs tracking crashes every tick
+   - **Fix:** Use `getAssignment(npcId) !== null` instead of `isAssigned(npcId)`
+   - **Fix Time:** 5 minutes
+   - **Status:** ❌ NOT FIXED
+
+3. **Duplicate ModuleOrchestrator Files**
+   - **Severity:** HIGH
+   - **Impact:** Developer confusion - old version in `src/modules/` (348 lines), new in `src/core/` (1186 lines)
+   - **Fix:** Delete `src/modules/ModuleOrchestrator.js`
+   - **Fix Time:** 1 minute
+   - **Status:** ❌ NOT FIXED
+
+### Other Critical Issues 🔴
+
+4. **Phase 3D Tutorial System Not Connected in GameManager**
    - **Severity:** HIGH
    - **Impact:** Tutorial system doesn't run despite full implementation
    - **Fix Time:** 1 hour
@@ -250,19 +279,19 @@ Opens at: http://localhost:3000
 
 ### High Priority Issues ⚠️
 
-2. **Phase 3A Missing Unit Tests**
+5. **Phase 3A Missing Unit Tests**
    - **Severity:** MEDIUM
    - **Impact:** Cannot verify correctness of NPC behaviors
    - **Fix Time:** 8 hours
    - **Files:** Need `IdleTaskManager.test.js`, `NPCNeedsTracker.test.js`, `AutonomousDecision.test.js`
 
-3. **NPC Memory Cleanup Not Implemented**
+6. **NPC Memory Cleanup Not Implemented**
    - **Severity:** MEDIUM
    - **Impact:** Small memory leak when NPCs die
    - **Fix Time:** 1 hour
    - **File:** `src/modules/npc-system/IdleTaskManager.js`
 
-4. **Achievement Rewards Not Applied**
+7. **Achievement Rewards Not Applied**
    - **Severity:** MEDIUM
    - **Impact:** Achievements tracked but don't affect gameplay
    - **Fix Time:** 2 hours
@@ -270,13 +299,13 @@ Opens at: http://localhost:3000
 
 ### Low Priority Issues ℹ️
 
-5. **Missing UI Components**
+8. **Missing UI Components**
    - Event panel and notifications
    - Tutorial overlay
    - Feature highlights
    - **Fix Time:** 8 hours total
 
-6. **Event Cancellation Cleanup**
+9. **Event Cancellation Cleanup**
    - **Severity:** LOW
    - **Impact:** Minimal (event cancellation is rare)
    - **Fix Time:** 15 minutes

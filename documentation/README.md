@@ -119,6 +119,7 @@ These documents contain comprehensive audits, architecture reviews, and bug inve
 
 | File | Description | Date |
 |------|-------------|------|
+| `CODE_INTEGRATION_AUDIT_2025-11-15.md` | Code integration audit - System integration verification | Nov 15, 2025 |
 | `ARCHITECTURE_AUDIT.md` | Architecture audit | Nov 9, 2025 |
 | `ARCHITECTURE_REVIEW.md` | Comprehensive architecture review | Historical |
 | `ARCHITECTURE_REVIEW_FINDINGS.md` | Architecture review findings | Historical |
@@ -230,10 +231,10 @@ git log --follow documentation/path/to/file.md
 |----------|-----------|-------|
 | Planning | 7 files | Project plans and timelines |
 | Phase Completions | 12 files | Phase 1, 2, 3 completion reports |
-| Audits | 11 files | Architecture and phase audits |
+| Audits | 12 files | Architecture and phase audits |
 | History | 4 files | Development notes (60KB total) |
 | Migration | 2 files | Migration guides |
-| **Total** | **36 files** | Moved from root directory |
+| **Total** | **37 files** | Moved from root directory + new audits |
 
 **Root Cleanup Result:**
 - **Before:** 43 markdown files in root

@@ -32,6 +32,7 @@ Implementation plans, timelines, and workflow coordination.
 | `HYBRID_GAME_INTEGRATION_PLAN.md` | Plan to integrate action RPG with settlement management | Nov 15, 2025 | Active |
 | `HYBRID_CORE_SYSTEMS_SPEC.md` | Technical spec for hybrid game core systems | Nov 15, 2025 | Active |
 | `HYBRID_NPC_COMBAT_SPEC.md` | Technical spec for NPC combat system | Nov 15, 2025 | Active |
+| `HYBRID_IMPLEMENTATION_GUIDE.md` | Step-by-step implementation guide with verification checkpoints | Nov 15, 2025 | Active |
 
 ---
 

@@ -188,6 +188,7 @@ class NPCManager {
     this.townManager = townManager;
     this.npcs = new Map(); // id -> NPC
     this.npcIdCounter = 0;
+    this.buildingsMap = new Map(); // buildingId -> building (for NPC movement)
 
     // NPC groups by status
     this.workingNPCs = new Set();
@@ -212,6 +213,21 @@ class NPCManager {
    */
   setOrchestrator(orchestrator) {
     this.orchestrator = orchestrator;
+  }
+
+  /**
+   * Update buildings map for NPC movement targeting
+   * @param {Array} buildings - Array of building objects with id and position
+   */
+  updateBuildingsMap(buildings) {
+    this.buildingsMap.clear();
+    if (buildings && Array.isArray(buildings)) {
+      for (const building of buildings) {
+        if (building && building.id && building.position) {
+          this.buildingsMap.set(building.id, building);
+        }
+      }
+    }
   }
 
    /**
@@ -373,6 +389,39 @@ class NPCManager {
   }
 
   /**
+   * Update NPC movement towards target position
+   * @private
+   * @param {NPC} npc - NPC object
+   * @param {number} speed - Movement speed (units per tick)
+   */
+  _updateNPCMovement(npc, speed = 0.5) {
+    if (!npc.targetPosition || !npc.isMoving) {
+      return;
+    }
+
+    const dx = npc.targetPosition.x - npc.position.x;
+    const dy = npc.targetPosition.y - npc.position.y;
+    const dz = npc.targetPosition.z - npc.position.z;
+    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    // Check if reached target (within 0.5 units)
+    if (distance < 0.5) {
+      npc.position = { ...npc.targetPosition };
+      npc.isMoving = false;
+      console.log(`[NPCManager] NPC ${npc.id} arrived at building ${npc.assignedBuilding}`);
+      return;
+    }
+
+    // Move towards target
+    const moveAmount = Math.min(speed, distance);
+    const moveRatio = moveAmount / distance;
+
+    npc.position.x += dx * moveRatio;
+    npc.position.y += dy * moveRatio;
+    npc.position.z += dz * moveRatio;
+  }
+
+  /**
    * Assign NPC to building
    * @param {number} npcId - NPC ID
    * @param {string} buildingId - Building ID
@@ -382,7 +431,20 @@ class NPCManager {
     const npc = this.npcs.get(npcId);
     if (!npc || !npc.alive) return false;
 
+    // Get building to set target position
+    const building = this.buildingsMap.get(buildingId);
+    if (!building) {
+      console.warn(`[NPCManager] Cannot assign NPC ${npcId}: building ${buildingId} not found`);
+      return false;
+    }
+
+    // Set the NPC's target position to the building
+    npc.targetPosition = { ...building.position };
+    npc.isMoving = true;
     npc.assignedBuilding = buildingId;
+
+    console.log(`[NPCManager] Assigned NPC ${npcId} to building ${buildingId}, moving to (${building.position.x}, ${building.position.y}, ${building.position.z})`);
+
     return this.townManager.assignNPC(npcId, buildingId);
   }
 
@@ -395,6 +457,8 @@ class NPCManager {
     if (!npc) return;
 
     npc.assignedBuilding = null;
+    npc.targetPosition = null;
+    npc.isMoving = false;
     this.townManager.unassignNPC(npcId);
   }
 
@@ -405,6 +469,11 @@ class NPCManager {
   updateAllNPCs(tickCount) {
     for (const npc of this.npcs.values()) {
       npc.updateState(tickCount);
+
+      // Update movement if NPC is assigned and moving
+      if (npc.assignedBuilding && npc.isMoving) {
+        this._updateNPCMovement(npc, 0.5);
+      }
 
       // Update happiness
       this.townManager.updateNPCHappiness(npc.id, {

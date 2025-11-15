@@ -14,6 +14,7 @@
  */
 
 import { Territory } from '../modules/territory-town/TerritoryManager.js';
+import { NPC } from '../modules/npc-system/NPCManager.js';
 
 class GameStateSerializer {
   // Current serialization format version
@@ -147,6 +148,14 @@ class GameStateSerializer {
 
       // Validate consistency
       this._validateConsistency(orchestrator, errors);
+
+      // Update buildingsMap in NPCManager with loaded buildings
+      if (orchestrator.npcManager && orchestrator.grid) {
+        const buildings = orchestrator.grid.getAllBuildings();
+        orchestrator.npcManager.updateBuildingsMap(buildings);
+        // eslint-disable-next-line no-console
+        console.log('[GameStateSerializer] Updated NPCManager buildingsMap with', buildings.length, 'buildings');
+      }
 
       // Log all errors for debugging
       if (errors.length > 0) {
@@ -584,20 +593,46 @@ class GameStateSerializer {
     try {
       npcManager.npcs.clear();
 
-      for (const npc of data.npcs) {
-        npcManager.npcs.set(npc.id, {
-          id: npc.id,
-          name: npc.name,
-          role: npc.role,
-          alive: npc.alive,
-          health: npc.health,
-          happiness: npc.happiness,
-          morale: npc.morale,
-          position: npc.position,
-          skills: { ...npc.skills },
-          assignedBuilding: npc.assignedBuilding,
-          status: npc.status
+      for (const npcData of data.npcs) {
+        // Create a proper NPC instance instead of a plain object
+        const npc = new NPC(npcData.id, {
+          name: npcData.name,
+          role: npcData.role,
+          position: npcData.position,
+          happiness: npcData.happiness,
+          morale: npcData.morale
         });
+
+        // Restore additional state that isn't set by constructor
+        if (npcData.skills) {
+          npc.skills = { ...npcData.skills };
+        }
+        if (npcData.health !== undefined) {
+          npc.health = npcData.health;
+        }
+        if (npcData.alive !== undefined) {
+          npc.alive = npcData.alive;
+        }
+        if (npcData.assignedBuilding !== undefined) {
+          npc.assignedBuilding = npcData.assignedBuilding;
+        }
+        if (npcData.isWorking !== undefined) {
+          npc.isWorking = npcData.isWorking;
+        }
+        if (npcData.isMoving !== undefined) {
+          npc.isMoving = npcData.isMoving;
+        }
+        if (npcData.isResting !== undefined) {
+          npc.isResting = npcData.isResting;
+        }
+        if (npcData.fatigued !== undefined) {
+          npc.fatigued = npcData.fatigued;
+        }
+        if (npcData.hungry !== undefined) {
+          npc.hungry = npcData.hungry;
+        }
+
+        npcManager.npcs.set(npc.id, npc);
       }
 
       if (data.totalSpawned !== undefined) {

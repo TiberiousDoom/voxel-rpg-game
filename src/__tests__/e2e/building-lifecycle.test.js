@@ -11,8 +11,8 @@
  * - Building interconnections and dependencies
  */
 
-import GameManager from '../GameManager';
-import { waitFor } from '../test-utils';
+import GameManager from '../../GameManager.js';
+import { waitFor } from '../../test-utils.js';
 
 describe('E2E: Building Lifecycle', () => {
   let gameManager;

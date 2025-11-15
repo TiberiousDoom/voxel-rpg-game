@@ -11,8 +11,8 @@
  * - Pathfinding performance
  */
 
-import GameManager from '../GameManager';
-import { measureTime } from '../test-utils';
+import GameManager from '../../GameManager.js';
+import { measureTime } from '../../test-utils.js';
 
 describe('Integration: Performance Benchmarks', () => {
   let gameManager;

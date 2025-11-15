@@ -1,0 +1,127 @@
+/**
+ * CurrentSelectionBanner.css - Styling for selection banner
+ */
+
+.current-selection-banner {
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-top: 3px solid #667eea;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.building-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.building-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.building-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.building-label strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+/* Cancel button */
+.current-selection-banner .cancel-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: #666;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+.current-selection-banner .cancel-button:hover {
+  background: #f5f5f5;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.current-selection-banner .cancel-button:active {
+  transform: scale(0.95);
+}
+
+/* Hint text */
+.banner-hint {
+  margin: 6px 0 0 0;
+  font-size: 11px;
+  color: #999;
+  font-style: italic;
+  line-height: 1.3;
+}
+
+/* Responsive - Mobile Optimization */
+@media (max-width: 768px) {
+  .current-selection-banner {
+    padding: 12px;
+  }
+
+  .building-info {
+    gap: 10px;
+  }
+
+  .building-icon {
+    font-size: 20px;
+  }
+
+  .building-label {
+    font-size: 13px;
+  }
+
+  .current-selection-banner .cancel-button {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  .banner-hint {
+    font-size: 12px;
+    margin-top: 8px;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .current-selection-banner .cancel-button {
+    transition: none;
+  }
+
+  .current-selection-banner .cancel-button:active {
+    transform: none;
+  }
+}

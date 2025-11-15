@@ -10,9 +10,14 @@
  * - Dynamic building loading from BuildingConfig
  * - Tier-based building availability
  * - Buildings grouped by tier
+ * - Improved UI with collapsible sections and building cards
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import CollapsibleSection from './CollapsibleSection';
+import BuildingCard from './BuildingCard';
+import QuickActionBar from './QuickActionBar';
+import CurrentSelectionBanner from './CurrentSelectionBanner';
 import './BuildMenu.css';
 
 // Building icons map (constant)
@@ -30,8 +35,16 @@ const BUILDING_ICONS = {
 // Tier hierarchy for availability checking (constant)
 const TIER_HIERARCHY = ['SURVIVAL', 'PERMANENT', 'TOWN', 'CASTLE'];
 
+// Tier icons and metadata
+const TIER_METADATA = {
+  SURVIVAL: { icon: '⚡', description: 'Early settlement' },
+  PERMANENT: { icon: '🏠', description: 'Established settlement' },
+  TOWN: { icon: '🏛️', description: 'Growing town' },
+  CASTLE: { icon: '🏰', description: 'Mighty civilization' }
+};
+
 /**
- * Build menu component
+ * Build menu component - Improved layout with collapsible sections
  */
 function BuildMenu({
   selectedBuildingType = null,
@@ -39,8 +52,10 @@ function BuildMenu({
   onSpawnNPC = () => {},
   onAdvanceTier = () => {},
   currentTier = 'SURVIVAL',
-  buildingConfig = null
+  buildingConfig = null,
+  placedBuildingCounts = {} // Count of placed buildings by type
 }) {
+  const [showInstructions, setShowInstructions] = useState(false);
 
   // Get available buildings based on current tier
   const availableBuildings = useMemo(() => {
@@ -105,110 +120,85 @@ function BuildMenu({
     return grouped;
   }, [availableBuildings]);
 
+  // Get currently selected building name and icon
+  const getSelectedBuildingInfo = () => {
+    const building = availableBuildings.find(b => b.type === selectedBuildingType);
+    if (building) {
+      return {
+        name: building.name,
+        icon: building.icon
+      };
+    }
+    return { name: selectedBuildingType, icon: '🏗️' };
+  };
+
+  const selectedInfo = getSelectedBuildingInfo();
+
   return (
     <div className="build-menu">
-      <h3 className="panel-title">Build Menu</h3>
+      {/* Quick Action Bar */}
+      <QuickActionBar
+        onSpawnNPC={onSpawnNPC}
+        onAdvanceTier={onAdvanceTier}
+        onShowInfo={() => setShowInstructions(!showInstructions)}
+        currentTier={currentTier}
+      />
 
-      {/* Building Selection */}
+      {/* Current Selection Banner */}
+      <CurrentSelectionBanner
+        selectedBuildingType={selectedBuildingType}
+        buildingName={selectedInfo.name}
+        buildingIcon={selectedInfo.icon}
+        onCancel={() => onSelectBuilding(null)}
+      />
+
+      {/* Building Selection by Tier */}
       <div className="buildings-section">
-        <h4 className="section-title">Buildings</h4>
-
-        {/* Display by tier */}
         {TIER_HIERARCHY.map(tier => {
           const buildings = buildingsByTier[tier];
           if (!buildings || buildings.length === 0) return null;
 
           const tierUnlocked = TIER_HIERARCHY.indexOf(tier) <= TIER_HIERARCHY.indexOf(currentTier);
+          const tierMeta = TIER_METADATA[tier];
+          const tierIcon = tierMeta?.icon || '🏗️';
 
           return (
-            <div key={tier} className="tier-group">
-              <div className="tier-header">
-                <span className={`tier-badge ${tierUnlocked ? 'unlocked' : 'locked'}`}>
-                  {tier}
-                </span>
-              </div>
+            <CollapsibleSection
+              key={tier}
+              title={tier}
+              icon={tierIcon}
+              badge={buildings.length}
+              defaultExpanded={tierUnlocked && TIER_HIERARCHY.indexOf(tier) === TIER_HIERARCHY.indexOf(currentTier)}
+              className={tierUnlocked ? 'tier-unlocked' : 'tier-locked'}
+            >
               <div className="buildings-grid">
                 {buildings.map((building) => (
-                  <button
+                  <BuildingCard
                     key={building.type}
-                    className={`building-button ${
-                      selectedBuildingType === building.type ? 'active' : ''
-                    } ${!building.unlocked ? 'locked' : ''}`}
-                    onClick={() => {
-                      if (building.unlocked) {
-                        onSelectBuilding(
-                          selectedBuildingType === building.type ? null : building.type
-                        );
-                      }
-                    }}
-                    disabled={!building.unlocked}
-                    title={!building.unlocked ? `Requires ${building.tier} tier` : building.description}
-                  >
-                    <div className="building-icon">{building.icon}</div>
-                    <div className="building-name">{building.name}</div>
-                    <div className="building-description">
-                      {building.unlocked ? building.description : '🔒 Locked'}
-                    </div>
-                    {building.unlocked && building.cost && (
-                      <div className="building-cost">
-                        {Object.entries(building.cost).filter(([, amount]) => amount > 0).map(([resource, amount]) => (
-                          <span key={resource} className="cost-item">
-                            {amount} {resource}
-                          </span>
-                        )).slice(0, 2) /* Show max 2 resources */}
-                      </div>
-                    )}
-                  </button>
+                    building={building}
+                    isSelected={selectedBuildingType === building.type}
+                    isLocked={!building.unlocked}
+                    placedCount={placedBuildingCounts?.[building.type] || 0}
+                    onSelect={onSelectBuilding}
+                    buildingConfig={buildingConfig}
+                  />
                 ))}
               </div>
-            </div>
+            </CollapsibleSection>
           );
         })}
       </div>
 
-      {/* NPC Controls */}
-      <div className="npc-controls">
-        <h4 className="section-title">NPCs</h4>
-        <button className="control-button spawn-npc" onClick={onSpawnNPC}>
-          <span className="button-icon">👤</span>
-          <span className="button-text">Spawn NPC</span>
-        </button>
-        <p className="button-hint">Create a new NPC to work in your settlement</p>
-      </div>
-
-      {/* Tier Advancement */}
-      <div className="tier-controls">
-        <h4 className="section-title">Advancement</h4>
-        <button className="control-button advance-tier" onClick={onAdvanceTier}>
-          <span className="button-icon">📈</span>
-          <span className="button-text">Advance Tier</span>
-        </button>
-        <p className="button-hint">Progress to the next civilization tier</p>
-      </div>
-
-      {/* Build Instructions */}
-      <div className="build-instructions">
-        <h4>How to Play:</h4>
-        <ol>
-          <li>Select a building from the menu</li>
-          <li>Click on the game world to place it</li>
-          <li>Spawn NPCs to work in buildings</li>
-          <li>Gather resources to advance tiers</li>
-        </ol>
-      </div>
-
-      {selectedBuildingType && (
-        <div className="current-selection">
-          <p className="selection-text">
-            <strong>Currently Placing:</strong> {selectedBuildingType}
-          </p>
-          <p className="selection-hint">Click on the game world to place</p>
-          <button
-            className="cancel-button"
-            onClick={() => onSelectBuilding(null)}
-          >
-            Cancel Selection
-          </button>
+      {/* Instructions Section (Collapsible) */}
+      {showInstructions && (
+        <div className="instructions-section">
+          <h4>How to Play:</h4>
+          <ol>
+            <li>Select a building from the menu above</li>
+            <li>Click on the game world to place it</li>
+            <li>Use the Quick Actions to spawn NPCs and advance tiers</li>
+            <li>Gather resources to progress through civilization tiers</li>
+          </ol>
         </div>
       )}
     </div>

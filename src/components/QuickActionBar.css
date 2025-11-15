@@ -1,0 +1,209 @@
+/**
+ * QuickActionBar.css - Styling for compact horizontal action bar
+ */
+
+.quick-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+/* Action buttons container */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+/* Action button wrapper for positioning tooltip */
+.action-button-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+/* Individual action button */
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-weight: 600;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  touch-action: manipulation;
+}
+
+.action-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.action-button:active {
+  transform: translateY(0);
+}
+
+.action-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.action-label {
+  font-size: 10px;
+}
+
+/* Tooltip */
+.action-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 1001;
+  pointer-events: none;
+  margin-bottom: 8px;
+  animation: tooltipFadeIn 0.2s ease;
+}
+
+.action-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.85);
+}
+
+.tooltip-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.tooltip-description {
+  display: block;
+  font-size: 10px;
+  opacity: 0.9;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Tier display */
+.tier-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tier-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tier-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  letter-spacing: 0.2px;
+}
+
+/* Responsive - Mobile Optimization */
+@media (max-width: 768px) {
+  .quick-action-bar {
+    gap: 8px;
+    padding: 12px;
+    flex-wrap: wrap;
+  }
+
+  .action-buttons {
+    gap: 8px;
+    width: 100%;
+  }
+
+  .action-button-wrapper {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .action-button {
+    width: 100%;
+    padding: 10px 12px;
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  .action-icon {
+    font-size: 16px;
+  }
+
+  .action-label {
+    font-size: 11px;
+  }
+
+  .tier-display {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tier-label {
+    font-size: 11px;
+  }
+
+  .tier-badge {
+    font-size: 12px;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .action-button,
+  .action-tooltip {
+    transition: none;
+    animation: none;
+  }
+
+  .action-button:hover {
+    transform: none;
+  }
+}

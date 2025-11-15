@@ -1,0 +1,290 @@
+/**
+ * BuildingSprite.css - Styles for building sprite component
+ *
+ * Part of WF3: Building Rendering & Visual Effects
+ */
+
+.building-sprite {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #000000;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* State-specific styles */
+.building-sprite--blueprint {
+  border-style: dashed;
+  border-width: 1px;
+  border-color: #666666;
+}
+
+.building-sprite--under_construction {
+  animation: pulse-construction 2s ease-in-out infinite;
+}
+
+.building-sprite--complete {
+  border-color: #000000;
+}
+
+.building-sprite--damaged {
+  border-color: #cc0000;
+}
+
+.building-sprite--destroyed {
+  opacity: 0.6;
+  filter: grayscale(80%);
+}
+
+/* Size variants */
+.building-sprite--small {
+  /* Default size */
+}
+
+.building-sprite--medium {
+  border-width: 3px;
+}
+
+.building-sprite--large {
+  border-width: 3px;
+}
+
+.building-sprite--xlarge {
+  border-width: 4px;
+}
+
+/* Texture overlays */
+.building-sprite__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.building-sprite__overlay[data-state="BLUEPRINT"] {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.1) 0px,
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px,
+      transparent 5px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.1) 0px,
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px,
+      transparent 5px
+    );
+}
+
+.building-sprite__overlay[data-state="UNDER_CONSTRUCTION"],
+.building-sprite__overlay[data-state="BUILDING"] {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.1) 0px,
+    rgba(255, 255, 255, 0.1) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+}
+
+.building-sprite__overlay[data-state="DAMAGED"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M0 20 L10 10 L20 20 L30 15 M5 30 L15 25 L25 35' stroke='%23000' stroke-width='2' fill='none' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.building-sprite__overlay[data-state="DESTROYED"] {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 1px,
+    rgba(0, 0, 0, 0.4) 1px,
+    rgba(0, 0, 0, 0.4) 2px
+  );
+}
+
+/* Building icon */
+.building-sprite__icon {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.building-sprite__emoji {
+  font-size: 20px;
+  user-select: none;
+}
+
+/* Progress bar */
+.building-sprite__progress-bar {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  height: 4px;
+  z-index: 3;
+}
+
+.building-sprite__progress-bar-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+}
+
+.building-sprite__progress-bar-fill {
+  position: absolute;
+  height: 100%;
+  background-color: #2196F3;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Health bar */
+.building-sprite__health-bar {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  height: 4px;
+  z-index: 3;
+}
+
+.building-sprite__health-bar-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+}
+
+.building-sprite__health-bar-fill {
+  position: absolute;
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.building-sprite__health-bar-fill--healthy {
+  background-color: #4CAF50;
+}
+
+.building-sprite__health-bar-fill--warning {
+  background-color: #FF9800;
+}
+
+.building-sprite__health-bar-fill--critical {
+  background-color: #F44336;
+}
+
+/* Worker count indicator */
+.building-sprite__worker-indicator {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+  background-color: #4CAF50;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+
+.building-sprite__worker-count {
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+}
+
+/* Hover effect */
+.building-sprite--hovered {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.building-sprite__hover-effect {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 3px solid #FFD700;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 5;
+  animation: glow-pulse 1.5s ease-in-out infinite;
+}
+
+/* Selection effect */
+.building-sprite--selected {
+  z-index: 11;
+}
+
+.building-sprite__selection-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 3px dashed #FF4444;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 5;
+  animation: dash-rotate 1s linear infinite;
+}
+
+/* Animations */
+@keyframes pulse-construction {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px #FFD700;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 15px #FFD700;
+    opacity: 0.8;
+  }
+}
+
+@keyframes dash-rotate {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+/* Responsive sizing */
+@media (max-width: 768px) {
+  .building-sprite__emoji {
+    font-size: 16px;
+  }
+
+  .building-sprite__worker-indicator {
+    width: 10px;
+    height: 10px;
+  }
+
+  .building-sprite__worker-count {
+    font-size: 7px;
+  }
+}

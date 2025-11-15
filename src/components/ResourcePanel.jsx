@@ -1,27 +1,50 @@
 /**
- * ResourcePanel.jsx - Display current game resources (COMPACT)
+ * ResourcePanel.jsx - Display current game resources (Enhanced)
  *
  * Shows:
  * - Food, Wood, Stone, Gold, Essence, Crystal
- * Compact one-line display with mini progress bars
+ * Enhanced display with animations, trends, and tooltips
+ *
+ * Phase 4 WF1 Enhancements:
+ * - Animated resource counters with count-up/down effects
+ * - Trend indicators (↑/↓/→) showing production/consumption rates
+ * - Color-coded resource levels (red/yellow/green)
+ * - Progress bars for storage capacity
+ * - Enhanced tooltips with detailed information
+ * - Responsive design (mobile/tablet/desktop)
  */
 
 import React from 'react';
 import CollapsibleSection from './CollapsibleSection';
+import ResourceItem from './resource/ResourceItem';
 import './ResourcePanel.css';
 
 /**
- * Resource display component - Compact version
+ * Resource display component - Enhanced version
+ *
+ * @param {Object} props
+ * @param {Object} props.resources - Current resource amounts
+ * @param {Object} props.production - Production rates per second (optional)
+ * @param {Object} props.consumption - Consumption rates per second (optional)
+ * @param {Object} props.capacity - Storage capacities (optional)
  */
-function ResourcePanel({ resources = {} }) {
+function ResourcePanel({
+  resources = {},
+  production = {},
+  consumption = {},
+  capacity = {}
+}) {
   const resourceList = [
-    { name: 'Food', key: 'food', icon: '🌾', color: '#FFD700' },
-    { name: 'Wood', key: 'wood', icon: '🪵', color: '#8B4513' },
-    { name: 'Stone', key: 'stone', icon: '🪨', color: '#A9A9A9' },
-    { name: 'Gold', key: 'gold', icon: '⭐', color: '#FFD700' },
-    { name: 'Essence', key: 'essence', icon: '✨', color: '#9370DB' },
-    { name: 'Crystal', key: 'crystal', icon: '💎', color: '#00CED1' }
+    { name: 'Food', key: 'food', icon: '🌾', color: '#f59e0b' },
+    { name: 'Wood', key: 'wood', icon: '🪵', color: '#92400e' },
+    { name: 'Stone', key: 'stone', icon: '🪨', color: '#78716c' },
+    { name: 'Gold', key: 'gold', icon: '⭐', color: '#fbbf24' },
+    { name: 'Essence', key: 'essence', icon: '✨', color: '#a855f7' },
+    { name: 'Crystal', key: 'crystal', icon: '💎', color: '#06b6d4' }
   ];
+
+  // Default capacity per resource
+  const defaultCapacity = 1000;
 
   // Helper to format numbers
   const formatNumber = (num) => {
@@ -40,30 +63,26 @@ function ResourcePanel({ resources = {} }) {
       badge={formatNumber(totalResources)}
       defaultExpanded={true}
     >
-      <div className="resources-compact">
+      <div className="resources-enhanced">
         {resourceList.map((resource) => {
           const amount = resources[resource.key] || 0;
-          const percentage = Math.min((amount / 1000) * 100, 100);
+          const resourceCapacity = capacity[resource.key] || defaultCapacity;
+          const resourceProduction = production[resource.key] || 0;
+          const resourceConsumption = consumption[resource.key] || 0;
 
           return (
-            <div
+            <ResourceItem
               key={resource.key}
-              className="resource-compact-item"
-              title={`${resource.name}: ${Math.floor(amount)} (${percentage.toFixed(1)}%)`}
-            >
-              <span className="resource-compact-icon">{resource.icon}</span>
-              <span className="resource-compact-value">{formatNumber(amount)}</span>
-              <div className="resource-compact-bar">
-                <div
-                  className="resource-compact-fill"
-                  style={{
-                    width: `${percentage}%`,
-                    background: resource.color
-                  }}
-                />
-              </div>
-              <span className="resource-compact-percent">{percentage.toFixed(0)}%</span>
-            </div>
+              name={resource.name}
+              icon={resource.icon}
+              amount={amount}
+              capacity={resourceCapacity}
+              color={resource.color}
+              production={resourceProduction}
+              consumption={resourceConsumption}
+              showTrend={true}
+              showTooltip={true}
+            />
           );
         })}
       </div>

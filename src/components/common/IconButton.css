@@ -1,0 +1,179 @@
+/**
+ * IconButton.css - Icon button component styles
+ */
+
+/* Base Icon Button */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.icon-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.icon-btn:active:not(.icon-btn-disabled) {
+  transform: scale(0.95);
+}
+
+/* Icon Button Sizes */
+.icon-btn-small {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+.icon-btn-medium {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+}
+
+.icon-btn-large {
+  width: 48px;
+  height: 48px;
+  font-size: 22px;
+}
+
+/* Icon Button Variants */
+.icon-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.icon-btn-primary:hover:not(.icon-btn-disabled) {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.icon-btn-secondary {
+  background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+  color: #333;
+}
+
+.icon-btn-secondary:hover:not(.icon-btn-disabled) {
+  box-shadow: 0 4px 12px rgba(158, 158, 158, 0.4);
+  transform: translateY(-2px);
+}
+
+.icon-btn-danger {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  color: white;
+}
+
+.icon-btn-danger:hover:not(.icon-btn-disabled) {
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+  transform: translateY(-2px);
+}
+
+.icon-btn-success {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+}
+
+.icon-btn-success:hover:not(.icon-btn-disabled) {
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  transform: translateY(-2px);
+}
+
+.icon-btn-warning {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+}
+
+.icon-btn-warning:hover:not(.icon-btn-disabled) {
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.icon-btn-ghost {
+  background: transparent;
+  color: #666;
+}
+
+.icon-btn-ghost:hover:not(.icon-btn-disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+/* Icon Button States */
+.icon-btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.icon-btn-loading {
+  cursor: wait;
+}
+
+/* Icon Content */
+.icon-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Ripple Effect */
+.icon-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.icon-btn:active:not(.icon-btn-disabled)::after {
+  width: 100px;
+  height: 100px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .icon-btn-small {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
+
+  .icon-btn-medium {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .icon-btn-large {
+    width: 52px;
+    height: 52px;
+    font-size: 24px;
+  }
+}

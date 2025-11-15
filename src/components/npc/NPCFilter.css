@@ -1,0 +1,120 @@
+/**
+ * NPCFilter.css - Styles for NPC filtering component
+ */
+
+.npc-filter {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.npc-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.npc-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.npc-filter-item.npc-search {
+  flex: 2;
+  min-width: 200px;
+}
+
+.npc-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.npc-search-input,
+.npc-filter-select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  background: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.npc-search-input:focus,
+.npc-filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.npc-search-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.npc-filter-select {
+  cursor: pointer;
+}
+
+.npc-clear-filters-btn {
+  padding: 8px 12px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.npc-clear-filters-btn:hover {
+  background: #d32f2f;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+}
+
+.npc-clear-filters-btn:active {
+  transform: translateY(0);
+}
+
+.npc-filter-results {
+  padding: 4px 0;
+  text-align: right;
+}
+
+.npc-results-count {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .npc-filter-row {
+    flex-direction: column;
+  }
+
+  .npc-filter-item,
+  .npc-filter-item.npc-search {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .npc-clear-filters-btn {
+    width: 100%;
+    align-self: stretch;
+  }
+}

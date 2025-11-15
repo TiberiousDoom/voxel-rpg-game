@@ -39,6 +39,36 @@ This guide provides **complete, sequential instructions** for implementing the h
 - **Code snippets** for key implementations
 - **Testing instructions** for validation
 
+### ⚠️ CRITICAL: Full Implementation Required
+
+**This is NOT a framework or future feature setup. This is FULL IMPLEMENTATION.**
+
+You MUST implement these features completely and integrate them into the game as playable, functional systems:
+
+✅ **Players MUST be able to:**
+- Switch between Settlement, Expedition, and Defense modes
+- Create parties and send NPCs on expeditions
+- Experience action RPG combat in dungeons
+- Level up NPCs, upgrade skills, and equip items
+- Defend their settlement against raids
+- See shared resources and inventory across all modes
+
+✅ **All systems MUST be:**
+- Fully functional and playable (not scaffolding)
+- Integrated with the existing game engine
+- Accessible through the UI
+- Tested and working correctly
+- Part of the core gameplay loop
+
+❌ **DO NOT:**
+- Create placeholder functions without implementation
+- Build "frameworks for future development"
+- Leave features half-implemented
+- Make features optional or disabled by default
+- Skip verification checkpoints
+
+**Every phase must be COMPLETE and PLAYABLE before moving to the next phase.**
+
 ### Before You Start
 
 **Prerequisites:**
@@ -48,12 +78,19 @@ This guide provides **complete, sequential instructions** for implementing the h
 - ✅ Understand current codebase architecture
 - ✅ Set up development environment with tests running
 
+**Implementation Commitment:**
+- ⚡ **You are implementing a COMPLETE HYBRID GAME** - not adding optional features
+- ⚡ When complete, players will seamlessly switch between three game modes
+- ⚡ All features must be fully integrated and playable
+- ⚡ Testing is mandatory - broken features are not acceptable
+
 **Recommended Workflow:**
 1. Implement tasks in order
 2. Run verification checkpoint after each section
 3. Don't skip checkpoints - they catch issues early
 4. Commit after each successful checkpoint
 5. Move to next section only after verification passes
+6. **Test the actual gameplay experience** - not just unit tests
 
 ---
 
@@ -62,17 +99,56 @@ This guide provides **complete, sequential instructions** for implementing the h
 **Duration:** 18-22 hours
 **Goal:** Mode switching works, shared resources/inventory functional, NPCs have combat stats
 
+**🎯 COMPLETION CRITERIA - Players can:**
+- Actually switch between Settlement and Expedition modes in the UI
+- See resources shared across both modes
+- View and use the shared inventory system
+- See NPCs with combat stats (not just worker stats)
+- Observe combat levels, XP, and skill points on NPCs
+
+**⚠️ NOT COMPLETE until all features are PLAYABLE in the game.**
+
 ---
 
 ## Phase 1: Core Systems (8-10 hours)
 
-[Phase 1 implementation remains the same as previous version - see lines 1-752 of original document]
+**Goal:** Build the foundation for mode switching and cross-mode state management
+
+**⚠️ IMPLEMENTATION REQUIREMENT:**
+Phase 1 creates the backbone of the hybrid game. You MUST implement:
+- Working mode switching (players can actually switch between Settlement/Expedition/Defense)
+- Shared resources that persist across mode switches
+- Shared inventory accessible from all modes
+- All integrated into the existing game engine and UI
+
+**NOT ACCEPTABLE:** Creating classes that "could support future mode switching." The mode switching MUST WORK when Phase 1 is complete.
+
+**📋 Phase 1 detailed implementation steps are in the original HYBRID_IMPLEMENTATION_GUIDE.md.**
+
+Key deliverables:
+1. UnifiedGameState class - manages all game state
+2. ModeManager class - handles mode transitions
+3. SharedResourceManager - cross-mode resource tracking
+4. SharedInventoryManager - cross-mode item management
+5. All wired into ModuleOrchestrator
+6. UI buttons to switch modes (basic)
+7. Verification that switching modes preserves state
+
+**Completion test:** Start game → Switch to Expedition mode → Switch back to Settlement → Resources still there ✅
 
 ---
 
 ## Phase 2: NPC Combat System (10-12 hours)
 
 **Goal:** Transform NPCs from workers into combat-capable units
+
+**⚠️ IMPLEMENTATION REQUIREMENT:**
+NPCs MUST have functional combat capabilities. NOT just new data fields.
+- NPCs must visibly gain XP from activities
+- Combat level must increase when XP threshold reached
+- Skill points must be awarded and spendable
+- Equipment must be equippable and affect stats
+- All visible in the UI
 
 **Dependencies:** Phase 1 complete
 
@@ -1797,6 +1873,14 @@ You've now completed:
 ## Phase 3: Expedition System (12-15 hours)
 
 **Goal:** Build action RPG gameplay where NPC parties explore dungeons
+
+**⚠️ IMPLEMENTATION REQUIREMENT:**
+Players MUST be able to actually play expeditions, not just see expedition management screens.
+- Create party → Start expedition → Enter dungeon → Fight enemies → Collect loot → Return to settlement
+- Complete playable dungeon crawling experience
+- NPCs must gain XP during expeditions
+- Rewards must be distributed to settlement
+- All accessible through functional UI
 
 **Dependencies:** Phase 2 complete (NPC combat system, party system)
 
@@ -3771,6 +3855,16 @@ You've now completed:
 
 **Goal:** Tower defense-style settlement protection against enemy raids
 
+**⚠️ IMPLEMENTATION REQUIREMENT:**
+Players MUST be able to actually defend their settlement against raids.
+- Raids must trigger (either scheduled or manual for testing)
+- Waves of enemies must spawn and attack
+- NPCs must defend automatically
+- Settlement damage must be tracked
+- Win/lose conditions must work
+- Rewards/penalties must be applied
+- Fully playable defense gameplay
+
 **Dependencies:** Phase 2 complete (NPC combat system), Phase 3 complete (combat engine)
 
 ---
@@ -5580,6 +5674,36 @@ All 8 phases are now complete. You have successfully implemented:
 **Total Time Estimate:** 40-60 hours
 **Total Tests Added:** 100+ tests
 **Lines of Code:** ~8,000+ lines
+
+---
+
+## 🎮 What "Complete" Means
+
+**Your game now has THREE fully playable game modes:**
+
+1. **Settlement Mode** - The original settlement management gameplay
+   - Build structures, manage resources, assign NPCs
+
+2. **Expedition Mode** - Action RPG dungeon crawling
+   - Select party of NPCs, explore procedurally generated dungeons
+   - Fight enemies in turn-based combat, collect loot
+   - NPCs gain XP, level up, unlock skills
+
+3. **Defense Mode** - Tower defense settlement protection
+   - Defend against waves of enemies
+   - NPCs auto-assigned as defenders
+   - Win rewards, lose penalties
+
+**Players can switch between all three modes at will.**
+
+**ALL features are:**
+- ✅ Fully implemented (not stubs or placeholders)
+- ✅ Integrated into the game engine
+- ✅ Accessible through working UI
+- ✅ Tested and verified
+- ✅ Part of the core gameplay experience
+
+**This is a COMPLETE HYBRID GAME - not a settlement game with "future expansion potential."**
 
 ---
 

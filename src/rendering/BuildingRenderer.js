@@ -16,6 +16,7 @@ import {
   getBuildingColor,
   getTextureOverlay,
   getShadowEffect,
+  // eslint-disable-next-line no-unused-vars -- Reserved for WF3: CSS-based shadow rendering
   generateShadowCSS
 } from '../assets/building-icons.js';
 

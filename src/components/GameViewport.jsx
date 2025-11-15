@@ -52,6 +52,7 @@ const STATE_COLORS = {
 };
 
 const GRID_COLOR = '#E0E0E0';
+// eslint-disable-next-line no-unused-vars -- Reserved for WF4: NPC selection highlighting
 const SELECTED_COLOR = '#FF4444';
 
 /**
@@ -78,7 +79,9 @@ const getNPCColor = (npc) => {
 
 /**
  * Helper: Get building color based on state
+ * NOTE: Currently using WF3's BuildingRenderer, but keeping this as fallback
  */
+// eslint-disable-next-line no-unused-vars -- Fallback renderer for legacy support
 const getBuildingColor = (building) => {
   const state = building.state || 'COMPLETE';
   const baseColor = BUILDING_COLORS[building.type] || '#CCCCCC';
@@ -110,6 +113,7 @@ function GameViewport({
   onBuildingClick = () => {}
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
+  // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const canvasRef = useRef(null);
   const rafRef = useRef(null); // requestAnimationFrame reference
@@ -118,6 +122,7 @@ function GameViewport({
   // WF3: Building rendering hook
   const {
     renderBuildings: renderBuildingsWF3,
+    // eslint-disable-next-line no-unused-vars -- Reserved for WF3: Hover effects not yet implemented
     renderHoverEffect,
     renderPlacementPreview
   } = useBuildingRenderer({

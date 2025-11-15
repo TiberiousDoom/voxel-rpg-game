@@ -63,9 +63,13 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   touch-action: manipulation;
+  min-height: 36px;
 }
 
 .tier-progress-toggle:hover {

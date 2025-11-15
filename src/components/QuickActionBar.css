@@ -42,10 +42,13 @@
   font-size: 11px;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   touch-action: manipulation;
+  min-height: 32px;
 }
 
 .action-button:hover {

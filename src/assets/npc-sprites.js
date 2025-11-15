@@ -203,7 +203,7 @@ export function getAnimationState(npc) {
   return ANIMATION_STATES.IDLE;
 }
 
-export default {
+const npcSprites = {
   NPC_SPRITE_DEFINITIONS,
   NPC_STATUS_COLORS,
   HEALTH_BAR_COLORS,
@@ -215,3 +215,5 @@ export default {
   getHealthBarColor,
   getAnimationState,
 };
+
+export default npcSprites;

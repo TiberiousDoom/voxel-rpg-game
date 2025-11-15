@@ -34,14 +34,16 @@ export function useNPCRenderer(config = {}) {
 
     // Cleanup on unmount
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      // Capture current animation frame ID to avoid ref issues
+      const currentAnimationFrame = animationFrameRef.current;
+      if (currentAnimationFrame) {
+        cancelAnimationFrame(currentAnimationFrame);
       }
       if (rendererRef.current) {
         rendererRef.current.clear();
       }
     };
-  }, []);
+  }, [config]);
 
   // Update renderer config when it changes
   useEffect(() => {

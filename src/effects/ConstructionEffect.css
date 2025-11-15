@@ -1,0 +1,13 @@
+/**
+ * ConstructionEffect.css - Styles for construction effect component
+ *
+ * Part of WF3: Building Rendering & Visual Effects
+ */
+
+.construction-effect-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 100;
+}

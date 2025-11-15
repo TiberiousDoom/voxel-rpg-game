@@ -1767,7 +1767,7 @@ class NPCManager {
     npc.combatStats.damage += 5;
     npc.combatStats.speed += 0.1;
 
-    console.log(`[NPCManager] ${npc.name} leveled up to combat level ${npc.combatLevel}!`);
+    // NPC leveled up to combat level ${npc.combatLevel}
   }
 
   /**
@@ -1780,7 +1780,7 @@ class NPCManager {
 
     if (npc.expeditionCount >= 10 && !npc.isVeteran) {
       npc.isVeteran = true;
-      console.log(`[NPCManager] ${npc.name} is now a veteran!`);
+      // NPC ${npc.name} is now a veteran
     }
   }
 

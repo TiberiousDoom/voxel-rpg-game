@@ -1,8 +1,16 @@
 /**
- * ResourcePanel.css - Resource display styles (COMPACT)
+ * ResourcePanel.css - Resource display styles (Enhanced for Phase 4 WF1)
  */
 
-/* Compact Resources Container */
+/* Enhanced Resources Container */
+.resources-enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+/* Legacy Compact Resources Container (Backward Compatibility) */
 .resources-compact {
   display: flex;
   flex-direction: column;
@@ -80,7 +88,23 @@
 }
 
 /* Responsive */
+
+/* Desktop (default styles above for .resources-enhanced) */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .resources-enhanced {
+    gap: 10px;
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
+  .resources-enhanced {
+    gap: 8px;
+  }
+
+  /* Legacy compact styles */
   .resource-compact-item {
     gap: 4px;
     padding: 3px 4px;
@@ -104,5 +128,12 @@
   .resource-compact-percent {
     font-size: 10px;
     min-width: 28px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .resources-enhanced {
+    gap: 6px;
   }
 }

@@ -1,12 +1,219 @@
 /**
- * NPCPanel.css - NPC and morale display styles (COMPACT)
+ * NPCPanel.css - Enhanced NPC panel styles (Phase 4 WF2)
  */
 
-/* Panel Content Container */
+/* Enhanced Panel Container */
+.npc-panel-enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Panel Content Container (Legacy) */
 .npc-panel-content {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Toolbar */
+.npc-panel-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.npc-view-toggle {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border-radius: 6px;
+  padding: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.npc-view-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.npc-view-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+}
+
+.npc-view-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.npc-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.npc-batch-toggle-btn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.npc-batch-toggle-btn:hover {
+  background: #f5f5f5;
+  border-color: #667eea;
+}
+
+.npc-batch-toggle-btn.active {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.npc-auto-assign-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.npc-auto-assign-btn:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.npc-auto-assign-btn:active {
+  transform: translateY(0);
+}
+
+/* Batch Controls */
+.npc-batch-controls {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px;
+  border: 2px solid #667eea;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.npc-batch-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.npc-batch-select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+}
+
+.npc-batch-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.npc-batch-assign-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.npc-batch-assign-btn:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.npc-batch-assign-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.npc-batch-cancel-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #999;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.npc-batch-cancel-btn:hover {
+  background: #777;
+  transform: translateY(-1px);
+}
+
+/* Detail Modal */
+.npc-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.npc-detail-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.npc-detail-wrapper {
+  position: relative;
+  z-index: 2;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 /* Auto-Assign Button */

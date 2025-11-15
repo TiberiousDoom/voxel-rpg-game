@@ -333,8 +333,8 @@ export const TIER_PROGRESSION_REQUIREMENTS = {
         WALL: 3,
         DOOR: 1,
       },
-      totalResourcesSpent: 100,  // Arbitrary game design decision
-      timeRequired: 300000,  // 5 minutes of gameplay
+      totalResourcesSpent: 80,  // Reduced from 100 (WF8: faster early game)
+      timeRequired: 240000,  // 4 minutes (reduced from 5 minutes, WF8 balance)
       customCondition: null,
     },
   },
@@ -354,8 +354,8 @@ export const TIER_PROGRESSION_REQUIREMENTS = {
         WALL: 5,
         CHEST: 2,
       },
-      totalResourcesSpent: 500,
-      timeRequired: 1800000,  // 30 minutes
+      totalResourcesSpent: 450,  // Reduced from 500 (WF8: smoother progression)
+      timeRequired: 1200000,  // 20 minutes (reduced from 30 minutes, WF8 balance)
       customCondition: null,
     },
   },
@@ -379,8 +379,8 @@ export const TIER_PROGRESSION_REQUIREMENTS = {
         TOWER: 2,
         WALL: 10,
       },
-      totalResourcesSpent: 2000,
-      timeRequired: 5400000,  // 90 minutes
+      totalResourcesSpent: 1800,  // Reduced from 2000 (WF8: less grind)
+      timeRequired: 3600000,  // 60 minutes (reduced from 90 minutes, WF8 balance)
       customCondition: null,
     },
   },
@@ -402,8 +402,8 @@ export const TIER_PROGRESSION_REQUIREMENTS = {
         MARKETPLACE: 2,
         WATCHTOWER: 2,
       },
-      totalResourcesSpent: 5000,
-      timeRequired: 10800000,  // 3 hours
+      totalResourcesSpent: 4500,  // Reduced from 5000 (WF8: slightly easier)
+      timeRequired: 7200000,  // 120 minutes (reduced from 180 minutes, WF8 balance)
       customCondition: null,
     },
   },

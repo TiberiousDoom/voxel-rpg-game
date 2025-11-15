@@ -1,0 +1,186 @@
+/**
+ * Button.css - Button component styles
+ */
+
+/* Base Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.btn:active:not(.btn-disabled) {
+  transform: scale(0.98);
+}
+
+/* Button Variants */
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(.btn-disabled) {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+  color: #333;
+}
+
+.btn-secondary:hover:not(.btn-disabled) {
+  box-shadow: 0 4px 12px rgba(158, 158, 158, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  color: white;
+}
+
+.btn-danger:hover:not(.btn-disabled) {
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+}
+
+.btn-success:hover:not(.btn-disabled) {
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+}
+
+.btn-warning:hover:not(.btn-disabled) {
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Button Sizes */
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+  gap: 4px;
+}
+
+.btn-medium {
+  padding: 10px 20px;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.btn-large {
+  padding: 14px 28px;
+  font-size: 16px;
+  gap: 10px;
+}
+
+/* Button States */
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-loading {
+  cursor: wait;
+}
+
+/* Button Content */
+.btn-text {
+  display: inline-block;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+}
+
+.btn-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Ripple Effect (optional enhancement) */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active:not(.btn-disabled)::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  .btn-small {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+
+  .btn-medium {
+    padding: 12px 22px;
+    font-size: 15px;
+    min-height: 48px;
+  }
+
+  .btn-large {
+    padding: 16px 30px;
+    font-size: 17px;
+    min-height: 56px;
+  }
+}

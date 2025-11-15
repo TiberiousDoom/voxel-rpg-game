@@ -772,6 +772,9 @@ class ModuleOrchestrator {
       const result = this.npcAssignment.assignNPCToBuilding(npcId, buildingId);
 
       if (result.success) {
+        // Set NPC movement to the building (this triggers movement)
+        this.npcManager.assignNPC(npcId, buildingId);
+
         // Update ConsumptionSystem to mark NPC as working
         this.consumption.setNPCWorking(npcId, true);
 
@@ -793,6 +796,9 @@ class ModuleOrchestrator {
   unassignNPC(npcId) {
     try {
       const wasUnassigned = this.npcAssignment.unassignNPC(npcId);
+
+      // Clear NPC movement state (stops moving to building)
+      this.npcManager.unassignNPC(npcId);
 
       // Update ConsumptionSystem to mark NPC as idle
       this.consumption.setNPCWorking(npcId, false);
@@ -834,11 +840,14 @@ class ModuleOrchestrator {
         // Find the building with most available slots
         const targetBuilding = buildingsWithSlots[0];
 
-        // Try to assign the NPC
+        // Try to assign the NPC (this handles the data structure)
         const assigned = this.npcAssignment.assignNPC(npc.id, targetBuilding.buildingId);
 
         if (assigned) {
           assignedCount++;
+
+          // Set NPC movement to the building (this triggers movement)
+          this.npcManager.assignNPC(npc.id, targetBuilding.buildingId);
 
           // Update NPC state
           this.npcManager.moveToWorking(npc.id);

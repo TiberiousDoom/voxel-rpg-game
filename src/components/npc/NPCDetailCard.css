@@ -17,7 +17,7 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   color: white;
 }
 
@@ -109,7 +109,7 @@
 .npc-detail-value.npc-role-badge {
   display: inline-block;
   padding: 4px 10px;
-  background: #667eea;
+  background: #3b82f6;
   color: white;
   border-radius: 12px;
   font-size: 12px;
@@ -229,7 +229,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px;
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(59, 130, 246, 0.1);
   border-radius: 6px;
 }
 

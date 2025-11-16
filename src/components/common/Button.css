@@ -24,7 +24,7 @@
 
 .btn:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
 .btn:active:not(.btn-disabled) {
@@ -33,12 +33,15 @@
 
 /* Button Variants */
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
   color: white;
 }
 
 .btn-primary:hover:not(.btn-disabled) {
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 1);
   transform: translateY(-2px);
 }
 

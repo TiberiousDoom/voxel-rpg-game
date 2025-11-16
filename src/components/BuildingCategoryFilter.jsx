@@ -13,7 +13,7 @@ import './BuildingCategoryFilter.css';
 
 // Category definitions with icons and colors
 const BUILDING_CATEGORIES = {
-  ALL: { icon: '📊', label: 'All', color: '#667eea' },
+  ALL: { icon: '📊', label: 'All', color: '#3b82f6' },
   PRODUCTION: { icon: '🌾', label: 'Production', color: '#4caf50' },
   HOUSING: { icon: '🏠', label: 'Housing', color: '#2196f3' },
   MILITARY: { icon: '⚔️', label: 'Military', color: '#f44336' },

@@ -248,7 +248,7 @@ const NPCDetailCard = ({ npc, building, onClose, onUnassign, onAssign }) => {
                     className="npc-detail-progress-fill"
                     style={{
                       width: `${getSkillValue(skillName)}%`,
-                      backgroundColor: '#667eea',
+                      backgroundColor: '#3b82f6',
                     }}
                   />
                 </div>

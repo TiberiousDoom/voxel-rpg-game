@@ -78,7 +78,7 @@
 .panel-title {
   margin: 0;
   padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   color: white;
   font-size: 14px;
   font-weight: 700;

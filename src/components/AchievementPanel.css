@@ -185,8 +185,8 @@
 }
 
 .achievement-category-btn-compact.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
+  background: rgba(59, 130, 246, 0.9);
+  border-color: #3b82f6;
   color: white;
 }
 

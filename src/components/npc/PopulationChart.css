@@ -34,7 +34,7 @@
 
 .population-current {
   font-size: 24px;
-  color: #667eea;
+  color: #3b82f6;
 }
 
 .population-separator {
@@ -177,7 +177,7 @@
   align-items: center;
   gap: 4px;
   padding: 10px 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   color: white;
   border: none;
   border-radius: 6px;
@@ -192,7 +192,7 @@
 .population-spawn-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
 }
 
 .population-spawn-btn:active:not(:disabled) {

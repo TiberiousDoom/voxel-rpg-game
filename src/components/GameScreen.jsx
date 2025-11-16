@@ -8,6 +8,7 @@ import RightSidebar from './RightSidebar';
 import HorizontalTabBar from './HorizontalTabBar';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import AchievementNotification from './AchievementNotification';
+import SettlementInventoryUI from './SettlementInventoryUI';
 import './GameScreen.css';
 
 /**
@@ -28,6 +29,7 @@ function GameScreen() {
   const [activeTab, setActiveTab] = useState('resources');
   const [leftCollapsed, setLeftCollapsed] = useState(true);
   const [rightCollapsed, setRightCollapsed] = useState(true);
+  const [showInventory, setShowInventory] = useState(false);
 
   // Auto-start game
   useEffect(() => {
@@ -112,6 +114,12 @@ function GameScreen() {
 
   // Tab navigation
   const handleTabClick = (tabId, side) => {
+    // Special handling for inventory tab
+    if (tabId === 'inventory') {
+      setShowInventory(true);
+      return;
+    }
+
     setActiveTab(tabId);
 
     // Expand the clicked sidebar, collapse the other
@@ -132,6 +140,7 @@ function GameScreen() {
   // Define tabs
   const leftTabs = [
     { id: 'resources', label: 'Resources', icon: '💰' },
+    { id: 'inventory', label: 'Inventory', icon: '📦' },
     { id: 'npcs', label: 'NPCs', icon: '👥', badge: idleNPCs > 0 ? idleNPCs : null },
     { id: 'stats', label: 'Stats', icon: '📊' },
     { id: 'achievements', label: 'Achievements', icon: '🏆' }
@@ -281,6 +290,13 @@ function GameScreen() {
           onDismiss={() => setNewlyUnlockedAchievements([])}
         />
       )}
+
+      {/* Settlement Inventory */}
+      <SettlementInventoryUI
+        gameManager={gameManager}
+        isOpen={showInventory}
+        onClose={() => setShowInventory(false)}
+      />
 
       {/* Toast */}
       {toastMessage && (

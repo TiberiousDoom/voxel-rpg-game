@@ -54,7 +54,7 @@
 .npc-filter-select:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .npc-search-input::placeholder {

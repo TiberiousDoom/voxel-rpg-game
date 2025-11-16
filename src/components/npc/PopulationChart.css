@@ -192,7 +192,7 @@
 .population-spawn-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
 }
 
 .population-spawn-btn:active:not(:disabled) {

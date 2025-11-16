@@ -4,7 +4,7 @@
 
 .current-selection-banner {
   padding: 10px 12px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(96, 165, 250, 0.05) 100%);
   border-top: 3px solid #3b82f6;
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;

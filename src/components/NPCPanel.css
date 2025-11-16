@@ -50,7 +50,7 @@
 }
 
 .npc-view-btn:hover {
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(59, 130, 246, 0.1);
   color: #3b82f6;
 }
 
@@ -102,7 +102,7 @@
 .npc-auto-assign-btn:hover {
   background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .npc-auto-assign-btn:active {
@@ -235,7 +235,7 @@
 .auto-assign-btn:hover {
   background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .auto-assign-btn:active {
@@ -326,7 +326,7 @@
 .npc-item-compact.selected {
   background: #e7f5ff;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .npc-item-compact.working {

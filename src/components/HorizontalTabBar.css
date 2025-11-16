@@ -1,0 +1,192 @@
+/**
+ * HorizontalTabBar.css - Horizontal tab navigation bar styling
+ */
+
+.horizontal-tab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid rgba(148, 163, 184, 0.1);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+  position: relative;
+  z-index: 100;
+}
+
+.horizontal-tab-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.horizontal-tab-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.horizontal-tab-bar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 2px;
+}
+
+/* Tab Groups */
+.tab-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.left-group {
+  margin-right: auto;
+}
+
+.right-group {
+  margin-left: auto;
+}
+
+/* Divider */
+.tab-divider {
+  width: 2px;
+  height: 24px;
+  background: rgba(148, 163, 184, 0.2);
+  margin: 0 8px;
+}
+
+/* Horizontal Tab Button */
+.horizontal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(30, 41, 59, 0.6);
+  border: none;
+  border-radius: 6px;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+}
+
+.horizontal-tab:hover {
+  background: rgba(30, 41, 59, 0.9);
+  color: rgba(226, 232, 240, 0.95);
+  transform: translateY(-1px);
+}
+
+.horizontal-tab:active {
+  transform: translateY(0);
+}
+
+/* Active Tab */
+.horizontal-tab.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-bottom-color: #3b82f6;
+}
+
+.horizontal-tab.active.expanded {
+  background: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Tab Icon */
+.horizontal-tab .tab-icon {
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tab Label */
+.horizontal-tab .tab-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tab Badge */
+.horizontal-tab .tab-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: white;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+}
+
+.horizontal-tab .badge-dot {
+  width: 6px;
+  height: 6px;
+  background: #ef4444;
+  border-radius: 50%;
+  display: block;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .horizontal-tab-bar {
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .horizontal-tab {
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .horizontal-tab .tab-label {
+    display: none;
+  }
+
+  .horizontal-tab .tab-icon {
+    font-size: 20px;
+  }
+
+  .tab-divider {
+    height: 20px;
+    margin: 0 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .horizontal-tab-bar {
+    padding: 4px 8px;
+    gap: 2px;
+  }
+
+  .horizontal-tab {
+    padding: 6px 10px;
+  }
+
+  .horizontal-tab .tab-icon {
+    font-size: 18px;
+  }
+
+  .tab-divider {
+    margin: 0 2px;
+  }
+}

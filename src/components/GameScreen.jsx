@@ -5,6 +5,7 @@ import HybridSystemDebugPanel from './HybridSystemDebugPanel';
 import GameViewport from './GameViewport';
 import LeftSidebar from './LeftSidebar';
 import RightSidebar from './RightSidebar';
+import HorizontalTabBar from './HorizontalTabBar';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import AchievementNotification from './AchievementNotification';
 import './GameScreen.css';
@@ -22,6 +23,11 @@ function GameScreen() {
   const [toastMessage, setToastMessage] = useState(null);
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState([]);
   const [showDebugPanel, setShowDebugPanel] = useState(true);
+
+  // Horizontal tab bar state
+  const [activeTab, setActiveTab] = useState('resources');
+  const [leftCollapsed, setLeftCollapsed] = useState(true);
+  const [rightCollapsed, setRightCollapsed] = useState(true);
 
   // Auto-start game
   useEffect(() => {
@@ -104,6 +110,40 @@ function GameScreen() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Tab navigation
+  const handleTabClick = (tabId, side) => {
+    setActiveTab(tabId);
+
+    // Expand the clicked sidebar, collapse the other
+    if (side === 'left') {
+      setLeftCollapsed(false);
+      setRightCollapsed(true);
+    } else {
+      setRightCollapsed(false);
+      setLeftCollapsed(true);
+    }
+  };
+
+  // Calculate idle NPCs for badge
+  const idleNPCs = (gameState.npcs || []).filter(npc =>
+    !npc.isDead && !npc.building
+  ).length;
+
+  // Define tabs
+  const leftTabs = [
+    { id: 'resources', label: 'Resources', icon: '💰' },
+    { id: 'npcs', label: 'NPCs', icon: '👥', badge: idleNPCs > 0 ? idleNPCs : null },
+    { id: 'stats', label: 'Stats', icon: '📊' },
+    { id: 'achievements', label: 'Achievements', icon: '🏆' }
+  ];
+
+  const rightTabs = [
+    { id: 'build', label: 'Build', icon: '🏗️' },
+    { id: 'expeditions', label: 'Expeditions', icon: '⚔️' },
+    { id: 'defense', label: 'Defense', icon: '🛡️' },
+    { id: 'actions', label: 'Actions', icon: '⚡' }
+  ];
+
   // Loading state
   if (isInitializing) {
     return (
@@ -144,6 +184,16 @@ function GameScreen() {
         showDebug={showDebugPanel}
       />
 
+      {/* Horizontal Tab Navigation */}
+      <HorizontalTabBar
+        leftTabs={leftTabs}
+        rightTabs={rightTabs}
+        activeTab={activeTab}
+        onTabClick={handleTabClick}
+        leftCollapsed={leftCollapsed}
+        rightCollapsed={rightCollapsed}
+      />
+
       {/* Main Layout - 3 Column */}
       <div className="compact-layout">
         {/* Left Sidebar - Tabbed Navigation */}
@@ -155,6 +205,9 @@ function GameScreen() {
             onAssignNPC={handleAssignNPC}
             onUnassignNPC={handleUnassignNPC}
             onAutoAssign={handleAutoAssign}
+            activeTab={activeTab}
+            collapsed={leftCollapsed}
+            onCollapse={() => setLeftCollapsed(true)}
           />
         </aside>
 
@@ -207,6 +260,9 @@ function GameScreen() {
             currentTier={gameState.currentTier || 'SURVIVAL'}
             buildingConfig={gameManager?.orchestrator?.buildingConfig}
             placedBuildingCounts={{}}
+            activeTab={activeTab}
+            collapsed={rightCollapsed}
+            onCollapse={() => setRightCollapsed(true)}
           />
         </aside>
       </div>

@@ -24,7 +24,10 @@ function RightSidebar({
   onAutoAssignNPCs,
   currentTier,
   buildingConfig,
-  placedBuildingCounts
+  placedBuildingCounts,
+  activeTab,
+  collapsed,
+  onCollapse
 }) {
   const { gameState, gameManager } = useGame();
 
@@ -33,6 +36,9 @@ function RightSidebar({
   const onExpedition = npcs.filter(npc => npc.status === 'ON_EXPEDITION').length;
   const raidManager = gameManager?.orchestrator?.raidEventManager;
   const activeRaid = raidManager?.activeRaid;
+
+  // If using horizontal tabs (activeTab provided), render content directly
+  const useHorizontalTabs = activeTab !== undefined;
 
   // Define tabs
   const tabs = [
@@ -82,6 +88,38 @@ function RightSidebar({
     }
   ];
 
+  // When using horizontal tabs, render content directly
+  if (useHorizontalTabs) {
+    if (collapsed) {
+      return null; // Hide when collapsed
+    }
+
+    // Find the active tab content
+    const activeTabData = tabs.find(tab => tab.id === activeTab);
+    if (!activeTabData) {
+      return null;
+    }
+
+    return (
+      <div className="sidebar-content-wrapper">
+        {onCollapse && (
+          <button
+            className="sidebar-collapse-btn right"
+            onClick={onCollapse}
+            aria-label="Collapse sidebar"
+            title="Collapse"
+          >
+            ▶
+          </button>
+        )}
+        <div className="sidebar-content">
+          {activeTabData.content}
+        </div>
+      </div>
+    );
+  }
+
+  // Default: use TabbedSidebar component (legacy mode)
   return (
     <TabbedSidebar
       tabs={tabs}

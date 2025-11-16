@@ -218,6 +218,14 @@ function GameViewport({
     mode: CAMERA_MODES.FOLLOW,
   });
 
+  // Force initial render after camera is ready
+  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+  useEffect(() => {
+    if (getOffset) {
+      forceUpdate();
+    }
+  }, [getOffset]);
+
   // Update player entity
   useEffect(() => {
     if (!enablePlayerMovement || !playerRef.current) return;
@@ -239,7 +247,7 @@ function GameViewport({
    * Now includes camera offset for scrolling
    */
   const worldToCanvas = React.useCallback((x, z) => {
-    const offset = getOffset ? getOffset() : { x: 0, y: 0 };
+    const offset = getOffset?.() || { x: 0, y: 0 };
     return {
       x: x * TILE_SIZE + offset.x,
       y: z * TILE_SIZE + offset.y
@@ -260,7 +268,7 @@ function GameViewport({
    * Convert canvas coordinates to world position (with camera offset)
    */
   const canvasToWorldPosition = React.useCallback((canvasX, canvasY) => {
-    const offset = getOffset ? getOffset() : { x: 0, y: 0 };
+    const offset = getOffset?.() || { x: 0, y: 0 };
     return {
       x: (canvasX - offset.x) / TILE_SIZE,
       z: (canvasY - offset.y) / TILE_SIZE
@@ -334,7 +342,7 @@ function GameViewport({
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Get camera offset
-    const offset = getOffset ? getOffset() : { x: 0, y: 0 };
+    const offset = getOffset?.() || { x: 0, y: 0 };
 
     // Draw grid with camera offset
     ctx.save();
@@ -400,8 +408,18 @@ function GameViewport({
   /**
    * Handle canvas click for placement (mouse and touch)
    */
+  const [touchStartTime, setTouchStartTime] = React.useState(0);
+  const [isLongPress, setIsLongPress] = React.useState(false);
+  const longPressTimerRef = React.useRef(null);
+
   const handleCanvasClick = (e) => {
     if (!canvasRef.current) return;
+
+    // Ignore if it was a long press (handled separately)
+    if (isLongPress) {
+      setIsLongPress(false);
+      return;
+    }
 
     const rect = canvasRef.current.getBoundingClientRect();
 
@@ -479,6 +497,47 @@ function GameViewport({
    */
   const handleTouchStart = (e) => {
     e.preventDefault(); // Prevent default touch behavior
+
+    // Start long press detection
+    setTouchStartTime(Date.now());
+    setIsLongPress(false);
+
+    // Set timer for long press (500ms)
+    longPressTimerRef.current = setTimeout(() => {
+      setIsLongPress(true);
+      // Enable sprinting
+      if (playerRef.current) {
+        playerRef.current.setSprinting(true);
+        // Visual/haptic feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(50); // Short vibration
+        }
+      }
+    }, 500);
+  };
+
+  /**
+   * Handle touch end for mobile
+   */
+  const handleTouchEnd = (e) => {
+    // Clear long press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    const pressDuration = Date.now() - touchStartTime;
+
+    // If it was a long press, disable sprinting
+    if (isLongPress || pressDuration >= 500) {
+      if (playerRef.current) {
+        playerRef.current.setSprinting(false);
+      }
+      setIsLongPress(false);
+      return; // Don't trigger click
+    }
+
+    // Otherwise, treat as normal click
     handleCanvasClick(e);
   };
 
@@ -583,6 +642,7 @@ function GameViewport({
         className="viewport-canvas"
         onClick={handleCanvasClick}
         onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onMouseMove={handleCanvasMouseMove}
         onMouseLeave={handleCanvasMouseLeave}
       />
@@ -590,7 +650,7 @@ function GameViewport({
         <p className="viewport-hint">
           {enablePlayerMovement ? (
             <>
-              <strong>Controls:</strong> WASD/Arrows or Click/Tap to move • Click/Tap nearby objects to interact • Shift to sprint • T to toggle camera
+              <strong>Controls:</strong> WASD/Arrows or Click/Tap to move • Long press to sprint • Click/Tap nearby objects to interact • T to toggle camera
               {cameraMode && ` • Camera: ${cameraMode}`}
               {canInteract && ' • Press E to interact!'}
             </>

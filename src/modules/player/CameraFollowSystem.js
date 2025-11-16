@@ -141,21 +141,22 @@ export class CameraFollowSystem {
  * React hook for camera follow system
  */
 export function useCameraFollow(player, options = {}) {
-  const cameraRef = useRef(null);
   const [cameraMode, setCameraMode] = useState(options.mode || CAMERA_MODES.FOLLOW);
   const lastUpdateRef = useRef(Date.now());
 
-  // Initialize camera
-  useEffect(() => {
+  // Initialize camera immediately (before first render) using lazy ref initialization
+  const cameraRef = useRef(null);
+  if (cameraRef.current === null) {
     const initialPosition = player ? { ...player.position } : { x: 25, z: 25 }; // Default to grid center
-    cameraRef.current = new CameraFollowSystem({
+    const camera = new CameraFollowSystem({
       ...options,
       mode: cameraMode,
     });
     // Set initial camera position to player position to avoid black screen
-    cameraRef.current.position = initialPosition;
-    cameraRef.current.targetPosition = { ...initialPosition };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    camera.position = initialPosition;
+    camera.targetPosition = { ...initialPosition };
+    cameraRef.current = camera;
+  }
 
   // Update camera mode when it changes
   useEffect(() => {

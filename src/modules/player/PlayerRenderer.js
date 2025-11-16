@@ -43,6 +43,11 @@ export class PlayerRenderer {
 
     ctx.save();
 
+    // Draw target marker (if tap-to-move is active)
+    if (player.targetPosition) {
+      this.renderTargetMarker(ctx, player.targetPosition, worldToCanvas);
+    }
+
     // Draw interaction radius (if enabled)
     if (this.showInteractionRadius) {
       this.renderInteractionRadius(ctx, centerX, centerY, player.interactionRadius);
@@ -249,6 +254,53 @@ export class PlayerRenderer {
       ctx.lineTo(x - 10 + offset, y + 10);
       ctx.stroke();
     }
+  }
+
+  /**
+   * Render target marker for tap-to-move
+   */
+  renderTargetMarker(ctx, targetPos, worldToCanvas) {
+    const canvasPos = worldToCanvas(targetPos.x, targetPos.z);
+    const x = canvasPos.x + this.tileSize / 2;
+    const y = canvasPos.y + this.tileSize / 2;
+
+    ctx.save();
+
+    // Pulsing animation
+    const time = Date.now() / 1000;
+    const pulse = Math.sin(time * 4) * 0.2 + 0.8;
+
+    // Draw outer ring
+    ctx.beginPath();
+    ctx.arc(x, y, 15 * pulse, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(74, 144, 226, ${0.6 * pulse})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw inner circle
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(74, 144, 226, 0.3)';
+    ctx.fill();
+    ctx.strokeStyle = '#4A90E2';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw crosshair
+    ctx.strokeStyle = '#4A90E2';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 10, y);
+    ctx.lineTo(x - 4, y);
+    ctx.moveTo(x + 4, y);
+    ctx.lineTo(x + 10, y);
+    ctx.moveTo(x, y - 10);
+    ctx.lineTo(x, y - 4);
+    ctx.moveTo(x, y + 4);
+    ctx.lineTo(x, y + 10);
+    ctx.stroke();
+
+    ctx.restore();
   }
 }
 

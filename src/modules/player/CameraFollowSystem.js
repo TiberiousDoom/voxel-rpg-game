@@ -147,10 +147,14 @@ export function useCameraFollow(player, options = {}) {
 
   // Initialize camera
   useEffect(() => {
+    const initialPosition = player ? { ...player.position } : { x: 25, z: 25 }; // Default to grid center
     cameraRef.current = new CameraFollowSystem({
       ...options,
       mode: cameraMode,
     });
+    // Set initial camera position to player position to avoid black screen
+    cameraRef.current.position = initialPosition;
+    cameraRef.current.targetPosition = { ...initialPosition };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update camera mode when it changes

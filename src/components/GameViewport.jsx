@@ -257,6 +257,17 @@ function GameViewport({
   };
 
   /**
+   * Convert canvas coordinates to world position (with camera offset)
+   */
+  const canvasToWorldPosition = React.useCallback((canvasX, canvasY) => {
+    const offset = getOffset ? getOffset() : { x: 0, y: 0 };
+    return {
+      x: (canvasX - offset.x) / TILE_SIZE,
+      z: (canvasY - offset.y) / TILE_SIZE
+    };
+  }, [getOffset]);
+
+  /**
    * Render interaction prompt above interactable object
    */
   const renderInteractionPrompt = React.useCallback((ctx, interactable) => {
@@ -405,27 +416,60 @@ function GameViewport({
     const canvasX = (clientX - rect.left) * scaleX;
     const canvasY = (clientY - rect.top) * scaleY;
 
-    const position = canvasToWorld(canvasX, canvasY);
+    // Get world position with camera offset
+    const worldPos = canvasToWorldPosition(canvasX, canvasY);
+    const gridPos = canvasToWorld(canvasX, canvasY);
 
     if (selectedBuildingType) {
       // Building placement mode
       onPlaceBuilding({
-        x: position.x,
+        x: gridPos.x,
         y: 0, // Ground level
-        z: position.z
+        z: gridPos.z
       });
+    } else if (enablePlayerMovement && playerRef.current) {
+      // Check if clicked on an interactable object
+      let didInteract = false;
+
+      // Check if close to an interactable
+      if (closestInteractable) {
+        const clickDist = Math.sqrt(
+          Math.pow(worldPos.x - closestInteractable.position.x, 2) +
+          Math.pow(worldPos.z - closestInteractable.position.z, 2)
+        );
+
+        // If clicked within 1.5 tiles of interactable, trigger interaction
+        if (clickDist < 1.5) {
+          // Trigger interaction based on type
+          if (closestInteractable.type === 'BUILDING') {
+            onBuildingClick(closestInteractable.object);
+          } else if (closestInteractable.type === 'NPC') {
+            // eslint-disable-next-line no-console
+            if (debugMode) console.log('Interacting with NPC:', closestInteractable.object);
+          } else if (closestInteractable.type === 'CHEST') {
+            // eslint-disable-next-line no-console
+            if (debugMode) console.log('Opening chest:', closestInteractable.object);
+          }
+          didInteract = true;
+        }
+      }
+
+      // If didn't interact, move to clicked position
+      if (!didInteract) {
+        playerRef.current.setTargetPosition(worldPos);
+      }
     } else {
       // Check if a building was clicked
       const clickedBuilding = buildings.find(b =>
         b && b.position &&
-        b.position.x === position.x &&
-        b.position.z === position.z
+        b.position.x === gridPos.x &&
+        b.position.z === gridPos.z
       );
 
       if (clickedBuilding) {
         onBuildingClick(clickedBuilding);
       } else {
-        onSelectTile(position);
+        onSelectTile(gridPos);
       }
     }
   };
@@ -546,7 +590,7 @@ function GameViewport({
         <p className="viewport-hint">
           {enablePlayerMovement ? (
             <>
-              <strong>Controls:</strong> WASD/Arrows to move • Shift to sprint • E to interact • T to toggle camera
+              <strong>Controls:</strong> WASD/Arrows or Click/Tap to move • Click/Tap nearby objects to interact • Shift to sprint • T to toggle camera
               {cameraMode && ` • Camera: ${cameraMode}`}
               {canInteract && ' • Press E to interact!'}
             </>

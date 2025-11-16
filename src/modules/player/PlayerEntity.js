@@ -17,6 +17,10 @@ export class PlayerEntity {
     this.velocity = { x: 0, z: 0 };
     this.facing = 'down'; // Direction: 'up', 'down', 'left', 'right'
 
+    // Tap-to-move
+    this.targetPosition = null; // Target position for tap-to-move
+    this.moveThreshold = 0.2; // How close to target before stopping
+
     // Movement stats
     this.baseSpeed = 3; // Grid cells per second (matches NPC speed)
     this.sprintMultiplier = 2;
@@ -52,6 +56,11 @@ export class PlayerEntity {
    */
   update(deltaTime) {
     if (deltaTime <= 0) return;
+
+    // Handle tap-to-move if target is set
+    if (this.targetPosition) {
+      this.updateTapToMove(deltaTime);
+    }
 
     const speed = this.getCurrentSpeed();
 
@@ -156,6 +165,52 @@ export class PlayerEntity {
     const distance = Math.sqrt(dx * dx + dz * dz);
 
     return distance < (this.collisionRadius + 0.5); // 0.5 = half building size
+  }
+
+  /**
+   * Set target position for tap-to-move
+   * @param {object} target - Target position {x, z}
+   */
+  setTargetPosition(target) {
+    if (!target) {
+      this.targetPosition = null;
+      return;
+    }
+
+    // Clamp target to grid bounds
+    const clampedX = Math.max(0, Math.min(GRID.GRID_WIDTH, target.x));
+    const clampedZ = Math.max(0, Math.min(GRID.GRID_HEIGHT, target.z));
+
+    this.targetPosition = { x: clampedX, z: clampedZ };
+  }
+
+  /**
+   * Update movement toward target position
+   * @param {number} deltaTime - Time since last update
+   */
+  updateTapToMove(deltaTime) {
+    if (!this.targetPosition) return;
+
+    const dx = this.targetPosition.x - this.position.x;
+    const dz = this.targetPosition.z - this.position.z;
+    const distance = Math.sqrt(dx * dx + dz * dz);
+
+    // If close enough to target, stop
+    if (distance < this.moveThreshold) {
+      this.targetPosition = null;
+      this.setVelocity(0, 0);
+      return;
+    }
+
+    // Set velocity toward target
+    this.setVelocity(dx / distance, dz / distance);
+  }
+
+  /**
+   * Clear target position (called when using keyboard controls)
+   */
+  clearTarget() {
+    this.targetPosition = null;
   }
 
   /**

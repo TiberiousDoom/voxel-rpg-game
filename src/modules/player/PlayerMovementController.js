@@ -123,6 +123,11 @@ export class PlayerMovementController {
     if (this.keys.a || this.keys.arrowLeft) x -= 1;
     if (this.keys.d || this.keys.arrowRight) x += 1;
 
+    // Clear tap-to-move target when using keyboard
+    if (x !== 0 || z !== 0) {
+      this.player.clearTarget();
+    }
+
     this.player.setVelocity(x, z);
   }
 

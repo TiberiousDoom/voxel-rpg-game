@@ -192,14 +192,17 @@ function GameViewport({
       onBuildingInteract: onBuildingClick,
       onNPCInteract: (npc) => {
         // TODO: Open NPC dialog/interaction panel
+        // eslint-disable-next-line no-console
         if (debugMode) console.log('Interacting with NPC:', npc);
       },
       onResourceInteract: (resource) => {
         // TODO: Implement resource gathering
+        // eslint-disable-next-line no-console
         if (debugMode) console.log('Gathering resource:', resource);
       },
       onChestInteract: (chest) => {
         // TODO: Open chest inventory panel
+        // eslint-disable-next-line no-console
         if (debugMode) console.log('Opening chest:', chest);
       },
       enabled: enablePlayerMovement,

@@ -49,7 +49,7 @@
   padding: 8px 12px;
   border: none;
   border-radius: 6px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   color: white;
   font-size: 11px;
   font-weight: 600;
@@ -225,7 +225,7 @@
   padding: 10px;
   background: rgba(102, 126, 234, 0.1);
   border-radius: 6px;
-  border-left: 3px solid #667eea;
+  border-left: 3px solid #3b82f6;
 }
 
 .info-text {
@@ -358,12 +358,12 @@
 }
 
 .slot-dropdown:hover {
-  border-color: #667eea;
+  border-color: #3b82f6;
 }
 
 .slot-dropdown:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 

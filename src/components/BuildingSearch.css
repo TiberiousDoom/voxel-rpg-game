@@ -26,7 +26,7 @@
 }
 
 .building-search.focused .search-input-wrapper {
-  border-color: #667eea;
+  border-color: #3b82f6;
   box-shadow: 0 0 8px rgba(102, 126, 234, 0.15);
 }
 
@@ -95,7 +95,7 @@
   padding: 4px 8px;
   background: rgba(102, 126, 234, 0.08);
   border-radius: 3px;
-  color: #667eea;
+  color: #3b82f6;
   font-weight: 500;
 }
 

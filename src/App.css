@@ -62,13 +62,13 @@ button:disabled {
 
 /* Links */
 a {
-  color: #667eea;
+  color: #3b82f6;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 a:hover {
-  color: #764ba2;
+  color: #60a5fa;
 }
 
 /* Scrollbars */
@@ -98,7 +98,7 @@ a:hover {
 
 /* Focus Styles */
 :focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
@@ -107,13 +107,13 @@ a:hover {
 }
 
 button:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid #3b82f6;
   outline-offset: -2px;
 }
 
 /* Selection */
 ::selection {
-  background: #667eea;
+  background: #3b82f6;
   color: white;
 }
 

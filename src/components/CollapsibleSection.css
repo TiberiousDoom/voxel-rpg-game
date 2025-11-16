@@ -17,7 +17,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;

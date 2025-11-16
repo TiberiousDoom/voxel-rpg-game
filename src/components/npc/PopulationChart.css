@@ -34,7 +34,7 @@
 
 .population-current {
   font-size: 24px;
-  color: #667eea;
+  color: #3b82f6;
 }
 
 .population-separator {
@@ -177,7 +177,7 @@
   align-items: center;
   gap: 4px;
   padding: 10px 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   color: white;
   border: none;
   border-radius: 6px;

@@ -26,8 +26,10 @@
 }
 
 .building-type-indicator {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: rgba(59, 130, 246, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 13px;
@@ -236,7 +238,7 @@
   }
 
   .viewport-canvas:active {
-    border-color: #667eea;
+    border-color: #3b82f6;
   }
 
   /* Legend - Stack vertically and increase touch targets */

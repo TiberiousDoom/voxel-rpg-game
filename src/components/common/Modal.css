@@ -80,8 +80,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 2px solid #e0e0e0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
   border-radius: 12px 12px 0 0;
 }
 

@@ -5,7 +5,7 @@
 .current-selection-banner {
   padding: 10px 12px;
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
-  border-top: 3px solid #667eea;
+  border-top: 3px solid #3b82f6;
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;
 }
@@ -42,7 +42,7 @@
 }
 
 .building-label strong {
-  color: #667eea;
+  color: #3b82f6;
   font-weight: 700;
 }
 
@@ -68,8 +68,8 @@
 
 .current-selection-banner .cancel-button:hover {
   background: #f5f5f5;
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
 
 .current-selection-banner .cancel-button:active {

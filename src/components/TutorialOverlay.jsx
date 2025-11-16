@@ -88,7 +88,7 @@ const TutorialOverlay = ({ tutorialSystem }) => {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
           border: '3px solid #fff',
           borderRadius: '16px',
           padding: '24px',
@@ -190,7 +190,7 @@ const TutorialOverlay = ({ tutorialSystem }) => {
               onClick={handleNext}
               style={{
                 background: '#fff',
-                color: '#667eea',
+                color: '#3b82f6',
                 border: 'none',
                 borderRadius: '8px',
                 padding: '10px 24px',

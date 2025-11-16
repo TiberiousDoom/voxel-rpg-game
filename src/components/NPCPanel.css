@@ -51,11 +51,11 @@
 
 .npc-view-btn:hover {
   background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  color: #3b82f6;
 }
 
 .npc-view-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   color: white;
 }
 
@@ -78,18 +78,18 @@
 
 .npc-batch-toggle-btn:hover {
   background: #f5f5f5;
-  border-color: #667eea;
+  border-color: #3b82f6;
 }
 
 .npc-batch-toggle-btn.active {
-  background: #667eea;
+  background: #3b82f6;
   color: white;
-  border-color: #667eea;
+  border-color: #3b82f6;
 }
 
 .npc-auto-assign-btn {
   padding: 8px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   color: white;
   border: none;
   border-radius: 4px;
@@ -114,7 +114,7 @@
   background: #f8f9fa;
   border-radius: 6px;
   padding: 12px;
-  border: 2px solid #667eea;
+  border: 2px solid #3b82f6;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -220,7 +220,7 @@
 .auto-assign-btn {
   width: 100%;
   padding: 8px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(59, 130, 246, 0.9);
   color: white;
   border: none;
   border-radius: 6px;
@@ -325,7 +325,7 @@
 
 .npc-item-compact.selected {
   background: #e7f5ff;
-  border-color: #667eea;
+  border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
@@ -409,7 +409,7 @@
   background: #f8f9fa;
   border-radius: 6px;
   padding: 10px;
-  border: 2px solid #667eea;
+  border: 2px solid #3b82f6;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -600,7 +600,7 @@
   background: rgba(0, 0, 0, 0.02);
   padding: 8px;
   border-radius: 4px;
-  border-left: 2px solid #667eea;
+  border-left: 2px solid #3b82f6;
 }
 
 .info-text {
@@ -662,7 +662,7 @@
 
 .npc-item.selected {
   background: #d3e3fd;
-  border: 1px solid #667eea;
+  border: 1px solid #3b82f6;
 }
 
 .npc-item.working {
@@ -724,7 +724,7 @@
 
 .auto-assign-btn {
   padding: 8px 12px;
-  background: #667eea;
+  background: #3b82f6;
   color: white;
   border: none;
   border-radius: 4px;

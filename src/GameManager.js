@@ -3,7 +3,7 @@ import BrowserSaveManager from './persistence/BrowserSaveManager';
 import ModuleOrchestrator from './core/ModuleOrchestrator';
 import GameEngine from './core/GameEngine';
 import UnifiedGameState from './core/UnifiedGameState';
-import ModeManager from './core/ModeManager';
+// import ModeManager from './core/ModeManager'; // TODO: Wire ModeManager after GameEngine creation
 import NPCAssignment from './modules/npc-system/NPCAssignment';
 import TierProgression from './modules/building-types/TierProgression';
 import BuildingConfig from './modules/building-types/BuildingConfig';

@@ -59,6 +59,9 @@ export class PlayerMovementController {
         this.keys.shift = true;
         this.player.setSprinting(true);
         break;
+      default:
+        // Ignore other keys
+        return;
     }
 
     this.updateVelocity();
@@ -99,6 +102,9 @@ export class PlayerMovementController {
         this.keys.shift = false;
         this.player.setSprinting(false);
         break;
+      default:
+        // Ignore other keys
+        return;
     }
 
     this.updateVelocity();

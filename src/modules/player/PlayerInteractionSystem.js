@@ -156,6 +156,10 @@ export class PlayerInteractionSystem {
           this.callbacks.onChestInteract(closest.object);
         }
         break;
+
+      default:
+        // Unknown interaction type
+        break;
     }
   }
 

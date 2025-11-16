@@ -138,6 +138,11 @@ export class PlayerRenderer {
         dx = offset;
         dy = 0;
         break;
+      default:
+        // Default to down
+        dx = 0;
+        dy = offset;
+        break;
     }
 
     ctx.beginPath();
@@ -251,7 +256,7 @@ export class PlayerRenderer {
  * Create a player renderer hook (React-style)
  */
 export function usePlayerRenderer(options = {}) {
-  const rendererRef = React.useRef(null);
+  const rendererRef = useRef(null);
 
   if (!rendererRef.current) {
     rendererRef.current = new PlayerRenderer(options);

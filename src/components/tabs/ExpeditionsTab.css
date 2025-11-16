@@ -1,0 +1,345 @@
+/**
+ * ExpeditionsTab.css - Styling for expedition management tab
+ */
+
+.expeditions-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px;
+}
+
+.expedition-section {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.expedition-section.active {
+  border-color: #3b82f6;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+}
+
+.expedition-section.info {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.expedition-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.expedition-icon {
+  font-size: 18px;
+}
+
+.expedition-header h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Active Expedition */
+.active-expedition-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.expedition-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.status-label {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.6);
+  text-transform: uppercase;
+}
+
+.status-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-left: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  transition: width 0.5s ease;
+}
+
+/* Party Members */
+.party-members {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.party-member-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.member-name {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.member-level {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 3px;
+  color: #60a5fa;
+}
+
+.member-health {
+  width: 60px;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.health-bar {
+  height: 100%;
+  background: #10b981;
+  transition: width 0.3s ease;
+}
+
+/* Available NPCs */
+.available-npcs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 20px;
+  color: rgba(226, 232, 240, 0.5);
+}
+
+.empty-state p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+}
+
+.empty-icon {
+  font-size: 32px;
+  opacity: 0.3;
+}
+
+.npc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.npc-card-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  transition: all 0.2s ease;
+}
+
+.npc-card-mini:hover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.npc-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.npc-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.npc-level {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 3px;
+  color: #60a5fa;
+}
+
+.npc-stats-mini {
+  display: flex;
+  gap: 12px;
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.more-npcs {
+  text-align: center;
+  padding: 6px;
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.5);
+  font-style: italic;
+}
+
+/* Dungeon List */
+.dungeon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dungeon-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  border: 2px solid rgba(148, 163, 184, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dungeon-card:hover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+  transform: translateY(-2px);
+}
+
+.dungeon-card.selected {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+}
+
+.dungeon-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dungeon-icon {
+  font-size: 24px;
+}
+
+.dungeon-info {
+  flex: 1;
+}
+
+.dungeon-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.dungeon-difficulty {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dungeon-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.dungeon-stat,
+.dungeon-rewards {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.stat-label,
+.rewards-label {
+  color: rgba(226, 232, 240, 0.6);
+}
+
+.stat-value,
+.rewards-value {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.start-expedition-btn {
+  padding: 8px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.start-expedition-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.start-expedition-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+/* Expedition Tips */
+.expedition-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.expedition-tips p {
+  margin: 0;
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.7);
+  line-height: 1.5;
+}

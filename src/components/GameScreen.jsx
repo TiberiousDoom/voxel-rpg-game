@@ -3,9 +3,8 @@ import { useGame } from '../context/GameContext';
 import CompactHeader from './CompactHeader';
 import HybridSystemDebugPanel from './HybridSystemDebugPanel';
 import GameViewport from './GameViewport';
-import ResourcePanel from './ResourcePanel';
-import NPCPanel from './NPCPanel';
-import BuildMenu from './BuildMenu';
+import LeftSidebar from './LeftSidebar';
+import RightSidebar from './RightSidebar';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import AchievementNotification from './AchievementNotification';
 import './GameScreen.css';
@@ -147,10 +146,10 @@ function GameScreen() {
 
       {/* Main Layout - 3 Column */}
       <div className="compact-layout">
-        {/* Left Sidebar - Resources & NPCs */}
+        {/* Left Sidebar - Tabbed Navigation */}
         <aside className="compact-sidebar left">
-          <ResourcePanel resources={gameState.resources || {}} />
-          <NPCPanel
+          <LeftSidebar
+            resources={gameState.resources || {}}
             npcs={gameState.npcs || []}
             buildings={gameState.buildings || []}
             onAssignNPC={handleAssignNPC}
@@ -197,14 +196,17 @@ function GameScreen() {
           )}
         </main>
 
-        {/* Right Sidebar - Build Menu */}
+        {/* Right Sidebar - Tabbed Navigation */}
         <aside className="compact-sidebar right">
-          <BuildMenu
+          <RightSidebar
             selectedBuildingType={selectedBuildingType}
             onSelectBuilding={setSelectedBuildingType}
             onSpawnNPC={() => actions.spawnNPC('WORKER')}
+            onAdvanceTier={() => {/* Advance tier - to be implemented */}}
+            onAutoAssignNPCs={handleAutoAssign}
             currentTier={gameState.currentTier || 'SURVIVAL'}
             buildingConfig={gameManager?.orchestrator?.buildingConfig}
+            placedBuildingCounts={{}}
           />
         </aside>
       </div>

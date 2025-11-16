@@ -157,6 +157,9 @@ class ModeManager {
       case 'defense':
         // Defense state is already in unifiedState
         break;
+      default:
+        // No action needed for unknown modes
+        break;
     }
   }
 

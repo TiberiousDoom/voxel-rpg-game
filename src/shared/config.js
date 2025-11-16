@@ -57,13 +57,13 @@ export const BUILDING_TIERS = {
 // The grid is square-based with configurable cell size.
 
 // Grid dimensions: The playable building area is a square grid.
-// 10x10 grid matches the GameViewport canvas size for proper visual alignment.
+// 50x50 grid provides ample space for player movement and base building.
 // This ensures buildings placed in the world appear correctly in the viewport.
 export const GRID = {
   CELL_SIZE: 1,              // Size of each grid cell in world units
-  GRID_WIDTH: 10,            // Grid cells wide (matches GameViewport GRID_WIDTH)
-  GRID_HEIGHT: 10,           // Grid cells tall (matches GameViewport GRID_HEIGHT)
-  GRID_ORIGIN: { x: -5, z: -5 }, // World position of grid origin (bottom-left)
+  GRID_WIDTH: 50,            // Grid cells wide (matches GameViewport GRID_WIDTH)
+  GRID_HEIGHT: 50,           // Grid cells tall (matches GameViewport GRID_HEIGHT)
+  GRID_ORIGIN: { x: -25, z: -25 }, // World position of grid origin (bottom-left)
 
   // Rotation rules: Buildings can snap to cardinal directions
   ALLOWED_ROTATIONS: [0, 90, 180, 270], // Degrees

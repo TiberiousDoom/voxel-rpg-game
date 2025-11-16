@@ -12,17 +12,25 @@
  * - WF4 owns: NPC rendering via useNPCRenderer() (to be added)
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
 import { useNPCRenderer, useNPCAnimation } from '../rendering/useNPCRenderer.js'; // WF4
+import { PlayerEntity } from '../modules/player/PlayerEntity.js';
+import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
+import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
+import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.js';
+import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import './GameViewport.css';
 
-// Grid constants
-const GRID_WIDTH = 10;
-const GRID_HEIGHT = 10;
+// Grid constants - Updated to 50x50 for player movement
+const GRID_WIDTH = 50;
+const GRID_HEIGHT = 50;
 const TILE_SIZE = 40;
-const CANVAS_WIDTH = GRID_WIDTH * TILE_SIZE;
-const CANVAS_HEIGHT = GRID_HEIGHT * TILE_SIZE;
+// Viewport size (window into the larger world)
+const VIEWPORT_WIDTH = 800; // 20 tiles visible width
+const VIEWPORT_HEIGHT = 600; // 15 tiles visible height
+const CANVAS_WIDTH = VIEWPORT_WIDTH;
+const CANVAS_HEIGHT = VIEWPORT_HEIGHT;
 
 // Color constants (moved outside component to prevent re-creation on every render)
 const BUILDING_COLORS = {
@@ -115,7 +123,8 @@ function GameViewport({
   onPlaceBuilding = () => {},
   onSelectTile = () => {},
   onBuildingClick = () => {},
-  debugMode = false
+  debugMode = false,
+  enablePlayerMovement = true, // New prop to enable/disable player movement
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
@@ -123,6 +132,24 @@ function GameViewport({
   const canvasRef = useRef(null);
   const rafRef = useRef(null); // requestAnimationFrame reference
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
+  const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
+
+  // Player state
+  const playerRef = useRef(null);
+  const playerRendererRef = useRef(null);
+
+  // Initialize player entity
+  useEffect(() => {
+    if (enablePlayerMovement && !playerRef.current) {
+      playerRef.current = new PlayerEntity({ x: 25, z: 25 }); // Start in center of 50x50 grid
+      playerRendererRef.current = new PlayerRenderer({
+        tileSize: TILE_SIZE,
+        showHealthBar: true,
+        showStaminaBar: true,
+        showInteractionRadius: debugMode,
+      });
+    }
+  }, [enablePlayerMovement, debugMode]);
 
   // WF3: Building rendering hook
   const {
@@ -150,16 +177,71 @@ function GameViewport({
 
   // WF4: Update NPC positions for smooth interpolation
   useNPCAnimation(npcs, npcRenderer.updatePositions, true);
+
+  // Player movement controller
+  usePlayerMovement(playerRef.current, enablePlayerMovement);
+
+  // Player interaction system
+  const { closestInteractable, canInteract } = usePlayerInteraction(
+    playerRef.current,
+    {
+      buildings,
+      npcs,
+      resources: [], // TODO: Add resources when implemented
+      chests: buildings.filter(b => b.type === 'CHEST'), // Chests are buildings
+      onBuildingInteract: onBuildingClick,
+      onNPCInteract: (npc) => {
+        // TODO: Open NPC dialog/interaction panel
+        if (debugMode) console.log('Interacting with NPC:', npc);
+      },
+      onResourceInteract: (resource) => {
+        // TODO: Implement resource gathering
+        if (debugMode) console.log('Gathering resource:', resource);
+      },
+      onChestInteract: (chest) => {
+        // TODO: Open chest inventory panel
+        if (debugMode) console.log('Opening chest:', chest);
+      },
+      enabled: enablePlayerMovement,
+    }
+  );
+
+  // Camera follow system
+  const { cameraMode, getOffset } = useCameraFollow(playerRef.current, {
+    viewportWidth: CANVAS_WIDTH,
+    viewportHeight: CANVAS_HEIGHT,
+    tileSize: TILE_SIZE,
+    smoothing: 0.15, // Smooth camera movement
+    mode: CAMERA_MODES.FOLLOW,
+  });
+
+  // Update player entity
+  useEffect(() => {
+    if (!enablePlayerMovement || !playerRef.current) return;
+
+    const updatePlayer = () => {
+      const now = Date.now();
+      const deltaTime = (now - lastUpdateTimeRef.current) / 1000;
+      lastUpdateTimeRef.current = now;
+
+      playerRef.current.update(deltaTime);
+    };
+
+    const intervalId = setInterval(updatePlayer, 16); // ~60 FPS
+
+    return () => clearInterval(intervalId);
+  }, [enablePlayerMovement]);
   /**
    * Convert world position to canvas coordinates
+   * Now includes camera offset for scrolling
    */
-  const worldToCanvas = (x, z) => {
-    // Simple 2D projection (top-down view)
+  const worldToCanvas = React.useCallback((x, z) => {
+    const offset = getOffset ? getOffset() : { x: 0, y: 0 };
     return {
-      x: (x % GRID_WIDTH) * TILE_SIZE,
-      y: (z % GRID_HEIGHT) * TILE_SIZE
+      x: x * TILE_SIZE + offset.x,
+      y: z * TILE_SIZE + offset.y
     };
-  };
+  }, [getOffset]);
 
   /**
    * Convert canvas coordinates to grid position
@@ -172,6 +254,60 @@ function GameViewport({
   };
 
   /**
+   * Render interaction prompt above interactable object
+   */
+  const renderInteractionPrompt = (ctx, interactable) => {
+    if (!interactable || !interactable.position) return;
+
+    const canvasPos = worldToCanvas(interactable.position.x, interactable.position.z);
+    const x = canvasPos.x + TILE_SIZE / 2;
+    const y = canvasPos.y - 20; // Above the object
+
+    // Draw prompt background
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.font = '12px Arial';
+    const text = 'Press E';
+    const textWidth = ctx.measureText(text).width;
+    const padding = 6;
+
+    ctx.fillRect(
+      x - textWidth / 2 - padding,
+      y - 12,
+      textWidth + padding * 2,
+      20
+    );
+
+    // Draw text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y);
+
+    // Draw interaction type icon
+    let icon = '?';
+    switch (interactable.type) {
+      case 'BUILDING':
+        icon = '🏠';
+        break;
+      case 'NPC':
+        icon = '👤';
+        break;
+      case 'RESOURCE':
+        icon = '⛏️';
+        break;
+      case 'CHEST':
+        icon = '📦';
+        break;
+    }
+
+    ctx.font = '16px Arial';
+    ctx.fillText(icon, x, y - 25);
+
+    ctx.restore();
+  };
+
+  /**
    * Draw the game world
    * Memoized to prevent unnecessary re-renders
    */
@@ -180,21 +316,39 @@ function GameViewport({
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Draw grid
+    // Get camera offset
+    const offset = getOffset ? getOffset() : { x: 0, y: 0 };
+
+    // Draw grid with camera offset
+    ctx.save();
     ctx.strokeStyle = GRID_COLOR;
     ctx.lineWidth = 1;
-    for (let i = 0; i <= GRID_WIDTH; i++) {
+
+    // Calculate visible grid range
+    const startX = Math.floor(-offset.x / TILE_SIZE);
+    const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
+    const startZ = Math.floor(-offset.y / TILE_SIZE);
+    const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
+
+    // Draw vertical lines
+    for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
+      const x = i * TILE_SIZE + offset.x;
       ctx.beginPath();
-      ctx.moveTo(i * TILE_SIZE, 0);
-      ctx.lineTo(i * TILE_SIZE, CANVAS_HEIGHT);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, CANVAS_HEIGHT);
       ctx.stroke();
     }
-    for (let i = 0; i <= GRID_HEIGHT; i++) {
+
+    // Draw horizontal lines
+    for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
+      const y = i * TILE_SIZE + offset.y;
       ctx.beginPath();
-      ctx.moveTo(0, i * TILE_SIZE);
-      ctx.lineTo(CANVAS_WIDTH, i * TILE_SIZE);
+      ctx.moveTo(0, y);
+      ctx.lineTo(CANVAS_WIDTH, y);
       ctx.stroke();
     }
+
+    ctx.restore();
 
     // WF3: Render buildings using new BuildingRenderer
     renderBuildingsWF3(ctx, buildings, worldToCanvas);
@@ -203,9 +357,19 @@ function GameViewport({
     // This uses the new rendering system with smooth interpolation and animations
     npcRenderer.renderNPCs(ctx, npcs, worldToCanvas);
 
+    // Render player
+    if (enablePlayerMovement && playerRef.current && playerRendererRef.current) {
+      playerRendererRef.current.renderPlayer(ctx, playerRef.current, worldToCanvas);
+    }
+
     // WF4: Render pathfinding visualization in debug mode
     if (debugMode) {
       npcRenderer.renderPaths(ctx, npcs, worldToCanvas);
+    }
+
+    // Render interaction prompts
+    if (enablePlayerMovement && canInteract && closestInteractable) {
+      renderInteractionPrompt(ctx, closestInteractable);
     }
 
     // WF3: Draw hover preview using new renderer
@@ -214,7 +378,7 @@ function GameViewport({
       const isValid = true; // Placeholder - should check collision/placement rules
       renderPlacementPreview(ctx, hoveredPosition, selectedBuildingType, isValid, worldToCanvas);
     }
-  }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview, debugMode, npcRenderer]);
+  }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview, debugMode, npcRenderer, worldToCanvas, getOffset, enablePlayerMovement, canInteract, closestInteractable]);
 
   /**
    * Handle canvas click for placement (mouse and touch)
@@ -374,10 +538,27 @@ function GameViewport({
       />
       <div className="viewport-footer">
         <p className="viewport-hint">
-          {selectedBuildingType
-            ? `Click to place ${selectedBuildingType} building`
-            : 'Select a building type from the menu to start building'}
+          {enablePlayerMovement ? (
+            <>
+              <strong>Controls:</strong> WASD/Arrows to move • Shift to sprint • E to interact • T to toggle camera
+              {cameraMode && ` • Camera: ${cameraMode}`}
+              {canInteract && ' • Press E to interact!'}
+            </>
+          ) : selectedBuildingType ? (
+            `Click to place ${selectedBuildingType} building`
+          ) : (
+            'Select a building type from the menu to start building'
+          )}
         </p>
+        {enablePlayerMovement && playerRef.current && (
+          <div className="player-stats">
+            <span>HP: {Math.round(playerRef.current.health)}/{playerRef.current.maxHealth}</span>
+            {' • '}
+            <span>Stamina: {Math.round(playerRef.current.stamina)}/{playerRef.current.maxStamina}</span>
+            {' • '}
+            <span>Pos: ({playerRef.current.position.x.toFixed(1)}, {playerRef.current.position.z.toFixed(1)})</span>
+          </div>
+        )}
         <div className="building-legend">
           <h4>Buildings:</h4>
           <ul>

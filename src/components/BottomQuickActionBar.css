@@ -1,0 +1,215 @@
+/**
+ * BottomQuickActionBar.css - Bottom floating action bar styling
+ */
+
+.bottom-quick-action-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateX(-50%) translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.bottom-quick-action-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Action Button */
+.bottom-quick-action-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 56px;
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.8);
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 2px;
+}
+
+.bottom-quick-action-button:hover:not(.disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.bottom-quick-action-button:active:not(.disabled) {
+  transform: translateY(-1px);
+}
+
+.bottom-quick-action-button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(30, 41, 59, 0.4);
+}
+
+/* Icon */
+.bottom-action-icon {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+
+/* Label */
+.bottom-action-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  text-align: center;
+}
+
+/* Shortcut */
+.bottom-action-shortcut {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+/* Badge */
+.bottom-action-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4444;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+  animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.bottom-quick-action-button.has-badge.disabled .bottom-action-badge {
+  background: #64748b;
+  animation: none;
+}
+
+/* Toggle Button */
+.bottom-action-toggle {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(30, 41, 59, 0.8);
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  font-size: 18px;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+}
+
+.bottom-action-toggle:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+}
+
+/* Show Button (when hidden) */
+.bottom-quick-action-bar-show {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  border-radius: 24px;
+  font-size: 24px;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.bottom-quick-action-bar-show:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  transform: translateX(-50%) translateY(-3px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .bottom-quick-action-bar {
+    bottom: 10px;
+  }
+
+  .bottom-quick-action-container {
+    padding: 8px 12px;
+    gap: 4px;
+  }
+
+  .bottom-quick-action-button {
+    min-width: 56px;
+    height: 48px;
+    padding: 6px 8px;
+  }
+
+  .bottom-action-icon {
+    font-size: 20px;
+  }
+
+  .bottom-action-label {
+    font-size: 8px;
+  }
+
+  .bottom-action-shortcut {
+    display: none;
+  }
+}

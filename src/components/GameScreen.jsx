@@ -236,6 +236,7 @@ function GameScreen() {
               }
             }}
             onBuildingClick={handleBuildingClick}
+            enablePlayerMovement={true}
           />
 
           {/* Selected Building Info */}

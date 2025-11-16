@@ -1,6 +1,6 @@
 # Documentation Archive Index
 
-**Last Updated:** 2025-11-15
+**Last Updated:** 2025-11-16
 **Purpose:** Index of all archived documentation
 
 This directory contains historical documentation. For current, authoritative docs, see the **root directory**.
@@ -136,6 +136,7 @@ These documents describe project planning, timelines, and implementation strateg
 
 | File | Description | Date | Status |
 |------|-------------|------|--------|
+| `GAMEPLAY_IMPROVEMENTS_IDEAS.md` | Gameplay improvement ideas for future implementation | Nov 16, 2025 | Active |
 | `PROJECT_TIMELINE.md` | Project timeline and milestones | Historical | Archived |
 | `IMPLEMENTATION_PLAN.md` | Implementation plan overview | Historical | Archived |
 | `PHASE_3_IMPLEMENTATION_PLAN.md` | Phase 3 implementation details | Nov 2025 | Reference |
@@ -328,12 +329,12 @@ git log --follow documentation/path/to/file.md
 
 | Category | File Count | Notes |
 |----------|-----------|-------|
-| Planning | 7 files | Project plans and timelines |
+| Planning | 8 files | Project plans and timelines |
 | Phase Completions | 12 files | Phase 1, 2, 3 completion reports |
 | Audits | 12 files | Architecture and phase audits |
 | History | 4 files | Development notes (60KB total) |
 | Migration | 2 files | Migration guides |
-| **Total** | **37 files** | Moved from root directory + new audits |
+| **Total** | **38 files** | Moved from root directory + new audits |
 
 **Root Cleanup Result:**
 - **Before:** 43 markdown files in root

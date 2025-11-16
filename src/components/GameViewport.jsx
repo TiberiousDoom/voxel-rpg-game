@@ -256,7 +256,7 @@ function GameViewport({
   /**
    * Render interaction prompt above interactable object
    */
-  const renderInteractionPrompt = (ctx, interactable) => {
+  const renderInteractionPrompt = React.useCallback((ctx, interactable) => {
     if (!interactable || !interactable.position) return;
 
     const canvasPos = worldToCanvas(interactable.position.x, interactable.position.z);
@@ -299,13 +299,16 @@ function GameViewport({
       case 'CHEST':
         icon = '📦';
         break;
+      default:
+        icon = '?';
+        break;
     }
 
     ctx.font = '16px Arial';
     ctx.fillText(icon, x, y - 25);
 
     ctx.restore();
-  };
+  }, [worldToCanvas]);
 
   /**
    * Draw the game world
@@ -378,7 +381,7 @@ function GameViewport({
       const isValid = true; // Placeholder - should check collision/placement rules
       renderPlacementPreview(ctx, hoveredPosition, selectedBuildingType, isValid, worldToCanvas);
     }
-  }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview, debugMode, npcRenderer, worldToCanvas, getOffset, enablePlayerMovement, canInteract, closestInteractable]);
+  }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview, debugMode, npcRenderer, worldToCanvas, getOffset, enablePlayerMovement, canInteract, closestInteractable, renderInteractionPrompt]);
 
   /**
    * Handle canvas click for placement (mouse and touch)

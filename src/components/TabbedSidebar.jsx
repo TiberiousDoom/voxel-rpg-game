@@ -8,6 +8,7 @@
  * - Icon + text labels
  * - Persistent tab selection (localStorage)
  * - Keyboard navigation support
+ * - Collapsible/expandable sidebar
  */
 
 import React, { useState, useEffect } from 'react';
@@ -30,6 +31,12 @@ function TabbedSidebar({
   defaultTab = null,
   className = ''
 }) {
+  // Get initial collapsed state from localStorage (default: collapsed)
+  const getInitialCollapsed = () => {
+    const stored = localStorage.getItem(`${storageKey}_collapsed`);
+    return stored !== null ? stored === 'true' : true; // Default to collapsed
+  };
+
   // Get initial tab from localStorage or default
   const getInitialTab = () => {
     const stored = localStorage.getItem(storageKey);
@@ -40,6 +47,7 @@ function TabbedSidebar({
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [collapsed, setCollapsed] = useState(getInitialCollapsed);
 
   // Persist tab selection
   useEffect(() => {
@@ -48,9 +56,22 @@ function TabbedSidebar({
     }
   }, [activeTab, storageKey]);
 
-  // Handle tab change
+  // Persist collapsed state
+  useEffect(() => {
+    localStorage.setItem(`${storageKey}_collapsed`, collapsed.toString());
+  }, [collapsed, storageKey]);
+
+  // Handle tab change - expand sidebar when tab is clicked
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
+    if (collapsed) {
+      setCollapsed(false);
+    }
+  };
+
+  // Handle minimize/collapse
+  const handleMinimize = () => {
+    setCollapsed(true);
   };
 
   // Handle keyboard navigation
@@ -77,7 +98,7 @@ function TabbedSidebar({
   };
 
   return (
-    <div className={`tabbed-sidebar ${side} ${className}`}>
+    <div className={`tabbed-sidebar ${side} ${collapsed ? 'collapsed' : 'expanded'} ${className}`}>
       {/* Tab Navigation */}
       <div className="tab-nav" role="tablist" aria-label={`${side} sidebar tabs`}>
         {tabs.map((tab, index) => (
@@ -91,34 +112,50 @@ function TabbedSidebar({
             aria-controls={`tab-panel-${tab.id}`}
             id={`tab-${tab.id}`}
             tabIndex={activeTab === tab.id ? 0 : -1}
+            title={collapsed ? tab.label : ''}
           >
             <span className="tab-icon" aria-hidden="true">{tab.icon}</span>
-            <span className="tab-label">{tab.label}</span>
-            {tab.badge !== undefined && tab.badge !== null && (
+            {!collapsed && <span className="tab-label">{tab.label}</span>}
+            {tab.badge !== undefined && tab.badge !== null && !collapsed && (
               <span className="tab-badge" aria-label={`${tab.badge} notifications`}>
                 {typeof tab.badge === 'number' && tab.badge > 0 ? tab.badge : ''}
                 {typeof tab.badge === 'boolean' && tab.badge && <span className="badge-dot" />}
               </span>
             )}
+            {tab.badge !== undefined && tab.badge !== null && collapsed && (
+              <span className="tab-badge-dot" aria-label={`${tab.badge} notifications`} />
+            )}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="tab-content-wrapper">
-        {tabs.map((tab) => (
-          <div
-            key={tab.id}
-            className={`tab-content ${activeTab === tab.id ? 'active' : ''}`}
-            role="tabpanel"
-            id={`tab-panel-${tab.id}`}
-            aria-labelledby={`tab-${tab.id}`}
-            hidden={activeTab !== tab.id}
+      {/* Tab Content - only show when expanded */}
+      {!collapsed && (
+        <>
+          <button
+            className="minimize-button"
+            onClick={handleMinimize}
+            aria-label="Minimize sidebar"
+            title="Minimize"
           >
-            {tab.content}
+            {side === 'left' ? '◀' : '▶'}
+          </button>
+          <div className="tab-content-wrapper">
+            {tabs.map((tab) => (
+              <div
+                key={tab.id}
+                className={`tab-content ${activeTab === tab.id ? 'active' : ''}`}
+                role="tabpanel"
+                id={`tab-panel-${tab.id}`}
+                aria-labelledby={`tab-${tab.id}`}
+                hidden={activeTab !== tab.id}
+              >
+                {tab.content}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </div>
   );
 }

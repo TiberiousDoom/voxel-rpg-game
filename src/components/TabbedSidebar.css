@@ -18,6 +18,30 @@
   backdrop-filter: blur(10px);
   border-radius: 8px;
   overflow: hidden;
+  position: relative;
+  transition: width 0.3s ease, min-width 0.3s ease;
+}
+
+/* Collapsed State */
+.tabbed-sidebar.collapsed {
+  width: 60px;
+  min-width: 60px;
+}
+
+.tabbed-sidebar.collapsed .tab-nav {
+  flex-direction: column;
+  border-bottom: none;
+  border-right: 2px solid rgba(148, 163, 184, 0.1);
+}
+
+.tabbed-sidebar.collapsed.right .tab-nav {
+  border-right: none;
+  border-left: 2px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Expanded State */
+.tabbed-sidebar.expanded {
+  width: 100%;
 }
 
 /* Tab Navigation */
@@ -68,6 +92,29 @@
   transition: all 0.2s ease;
   position: relative;
   white-space: nowrap;
+}
+
+/* Collapsed Tab Button */
+.tabbed-sidebar.collapsed .tab-button {
+  flex: none;
+  width: 100%;
+  padding: 12px 8px;
+  justify-content: center;
+  gap: 0;
+}
+
+.tabbed-sidebar.collapsed .tab-button.active {
+  border-bottom: none;
+  border-left: 3px solid #3b82f6;
+}
+
+.tabbed-sidebar.collapsed.right .tab-button.active {
+  border-left: none;
+  border-right: 3px solid #3b82f6;
+}
+
+.tabbed-sidebar.collapsed .tab-button.active::after {
+  display: none;
 }
 
 .tab-button:hover {
@@ -157,11 +204,75 @@
   }
 }
 
+/* Badge Dot for Collapsed State */
+.tab-badge-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid rgba(15, 23, 42, 0.95);
+  animation: pulse 2s infinite;
+}
+
+/* Minimize Button */
+.minimize-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: rgba(30, 41, 59, 0.8);
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  border-radius: 6px;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.minimize-button:hover {
+  background: rgba(30, 41, 59, 1);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #e2e8f0;
+  transform: scale(1.05);
+}
+
+.minimize-button:active {
+  transform: scale(0.95);
+}
+
+.tabbed-sidebar.left .minimize-button {
+  right: 8px;
+}
+
+.tabbed-sidebar.right .minimize-button {
+  left: 8px;
+  right: auto;
+}
+
 /* Tab Content Wrapper */
 .tab-content-wrapper {
   flex: 1;
   overflow: hidden;
   position: relative;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Tab Content */
@@ -226,13 +337,18 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .tabbed-sidebar.collapsed {
+    width: 50px;
+    min-width: 50px;
+  }
+
+  .tabbed-sidebar.collapsed .tab-button {
+    padding: 10px 4px;
+  }
+
   .tab-button {
     padding: 6px 8px;
     gap: 4px;
-  }
-
-  .tab-label {
-    display: none;
   }
 
   .tab-icon {
@@ -241,6 +357,37 @@
 
   .tab-content {
     padding: 8px;
+  }
+
+  .minimize-button {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    top: 6px;
+  }
+
+  .tabbed-sidebar.left .minimize-button {
+    right: 6px;
+  }
+
+  .tabbed-sidebar.right .minimize-button {
+    left: 6px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .tabbed-sidebar.collapsed {
+    width: 45px;
+    min-width: 45px;
+  }
+
+  .tabbed-sidebar.collapsed .tab-button {
+    padding: 8px 2px;
+  }
+
+  .tab-icon {
+    font-size: 16px;
   }
 }
 

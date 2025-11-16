@@ -14,9 +14,9 @@
  * - Responsive design (mobile/tablet/desktop)
  */
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import CollapsibleSection from './CollapsibleSection';
-import ResourceItem from './resource/ResourceItem';
+import EnhancedResourceItem from './resource/EnhancedResourceItem';
 import './ResourcePanel.css';
 
 /**
@@ -44,7 +44,27 @@ function ResourcePanel({
   ];
 
   // Default capacity per resource
-  const defaultCapacity = 1000;
+  const defaultCapacity = 500;
+
+  // Track previous resource values to calculate production rate
+  const prevResourcesRef = useRef(resources);
+  const [productionRates, setProductionRates] = useState({});
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const rates = {};
+      resourceList.forEach(({ key }) => {
+        const current = resources[key] || 0;
+        const previous = prevResourcesRef.current[key] || 0;
+        rates[key] = current - previous;
+      });
+      setProductionRates(rates);
+      prevResourcesRef.current = resources;
+    }, 1000);
+
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resources]);
 
   // Helper to format numbers
   const formatNumber = (num) => {
@@ -67,21 +87,16 @@ function ResourcePanel({
         {resourceList.map((resource) => {
           const amount = resources[resource.key] || 0;
           const resourceCapacity = capacity[resource.key] || defaultCapacity;
-          const resourceProduction = production[resource.key] || 0;
-          const resourceConsumption = consumption[resource.key] || 0;
+          const productionRate = productionRates[resource.key] || 0;
 
           return (
-            <ResourceItem
+            <EnhancedResourceItem
               key={resource.key}
               name={resource.name}
               icon={resource.icon}
               amount={amount}
               capacity={resourceCapacity}
-              color={resource.color}
-              production={resourceProduction}
-              consumption={resourceConsumption}
-              showTrend={true}
-              showTooltip={true}
+              productionRate={productionRate}
             />
           );
         })}

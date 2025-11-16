@@ -2,6 +2,8 @@ import EventEmitter from 'events';
 import BrowserSaveManager from './persistence/BrowserSaveManager';
 import ModuleOrchestrator from './core/ModuleOrchestrator';
 import GameEngine from './core/GameEngine';
+import UnifiedGameState from './core/UnifiedGameState';
+import ModeManager from './core/ModeManager';
 import NPCAssignment from './modules/npc-system/NPCAssignment';
 import TierProgression from './modules/building-types/TierProgression';
 import BuildingConfig from './modules/building-types/BuildingConfig';
@@ -29,6 +31,16 @@ import AchievementSystem from './modules/achievement-system/AchievementSystem';
 import achievementDefinitions from './modules/achievement-system/achievementDefinitions';
 // Phase 3B: Event System
 import { createEventSystem } from './modules/event-system';
+// Phase 2: NPC Combat Systems
+import NPCSkillSystem from './modules/combat/NPCSkillSystem';
+import NPCEquipmentManager from './modules/combat/NPCEquipmentManager';
+// Phase 3: Expedition System
+import NPCPartyManager from './modules/expedition/NPCPartyManager';
+import ExpeditionManager from './modules/expedition/ExpeditionManager';
+import DungeonCombatEngine from './modules/expedition/DungeonCombatEngine';
+// Phase 4: Defense/Raid System
+import RaidEventManager from './modules/defense/RaidEventManager';
+import DefenseCombatEngine from './modules/defense/DefenseCombatEngine';
 
 /**
  * GameManager - Main game controller
@@ -188,6 +200,27 @@ export default class GameManager extends EventEmitter {
     // Phase 3B: Event System (pass null for now, will set orchestrator after creation)
     const eventSystem = createEventSystem(null);
 
+    // ============================================
+    // PHASE 5: HYBRID GAME SYSTEMS
+    // ============================================
+
+    // Phase 1: Core Hybrid Systems
+    const unifiedState = new UnifiedGameState();
+    // ModeManager will be created after GameEngine is available
+
+    // Phase 2: NPC Combat Systems
+    const npcSkillSystem = new NPCSkillSystem(npcManager);
+    const npcEquipmentManager = new NPCEquipmentManager(npcManager);
+
+    // Phase 3: Expedition System
+    const npcPartyManager = new NPCPartyManager(npcManager);
+    const dungeonCombatEngine = new DungeonCombatEngine(npcManager, npcSkillSystem, npcEquipmentManager);
+    const expeditionManager = new ExpeditionManager(npcPartyManager, npcManager);
+
+    // Phase 4: Defense/Raid System
+    const raidEventManager = new RaidEventManager(npcManager);
+    const defenseCombatEngine = new DefenseCombatEngine(npcManager, npcSkillSystem, npcEquipmentManager);
+
     return {
       grid: grid,
       spatial: spatial,
@@ -213,7 +246,16 @@ export default class GameManager extends EventEmitter {
       // Phase 3C modules
       achievementSystem: achievementSystem,
       // Phase 3B modules
-      eventSystem: eventSystem
+      eventSystem: eventSystem,
+      // Phase 5: Hybrid Game Systems
+      unifiedState: unifiedState,
+      npcSkillSystem: npcSkillSystem,
+      npcEquipmentManager: npcEquipmentManager,
+      npcPartyManager: npcPartyManager,
+      expeditionManager: expeditionManager,
+      dungeonCombatEngine: dungeonCombatEngine,
+      raidEventManager: raidEventManager,
+      defenseCombatEngine: defenseCombatEngine
     };
   }
 

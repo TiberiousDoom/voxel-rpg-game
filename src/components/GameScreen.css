@@ -48,7 +48,24 @@
   position: relative;
   background: rgba(15, 23, 42, 0.5);
   border-radius: 8px;
-  overflow: hidden;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Fix flex container sizing */
+}
+
+.compact-viewport::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.compact-viewport::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.compact-viewport::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
 }
 
 /* Loading & Error States */
@@ -519,6 +536,45 @@
   .game-sidebar.mobile-overlay::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.3);
   }
+
+  /* Sidebar content wrapper - mobile specific */
+  .sidebar-content-wrapper {
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  }
+
+  .sidebar-content {
+    padding: 16px;
+    min-height: min-content;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-content > * {
+    margin-bottom: 12px;
+  }
+
+  .sidebar-content > *:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Increase touch targets for mobile */
+  .sidebar-collapse-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    top: 12px;
+  }
+
+  .sidebar-collapse-btn.right {
+    left: 12px;
+  }
+
+  .sidebar-collapse-btn:not(.right) {
+    right: 12px;
+  }
+
   .game-header {
     padding: 8px 10px;
   }

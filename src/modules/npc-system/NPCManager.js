@@ -344,7 +344,7 @@ class NPCManager {
     if (!position) {
       position = {
         x: Math.floor(Math.random() * GRID_SIZE),
-        y: 25,
+        y: 0, // Ground level for 2D top-down view
         z: Math.floor(Math.random() * GRID_SIZE)
       };
     }
@@ -355,7 +355,7 @@ class NPCManager {
       console.warn(`[NPCManager] Spawn position (${position.x}, ${position.z}) out of bounds, using random`);
       position = {
         x: Math.floor(Math.random() * GRID_SIZE),
-        y: 25,
+        y: 0, // Ground level for 2D top-down view
         z: Math.floor(Math.random() * GRID_SIZE)
       };
     }

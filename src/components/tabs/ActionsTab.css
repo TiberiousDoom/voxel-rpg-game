@@ -1,0 +1,237 @@
+/**
+ * ActionsTab.css - Styling for quick actions tab
+ */
+
+.actions-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px;
+}
+
+.actions-section {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.actions-section.info {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.actions-section.debug {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.actions-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.actions-icon {
+  font-size: 18px;
+}
+
+.actions-header h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Action Grid */
+.action-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-grid.compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+/* Action Button */
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 2px solid rgba(148, 163, 184, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.action-button:hover:not(.disabled) {
+  border-color: var(--action-color);
+  background: rgba(15, 23, 42, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.action-button:active:not(.disabled) {
+  transform: translateY(0);
+}
+
+.action-button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.action-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.action-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.action-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-description {
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.6);
+}
+
+.action-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ef4444;
+  color: white;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Small Action Button */
+.action-button-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 2px solid rgba(148, 163, 184, 0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-button-small:hover {
+  border-color: var(--action-color);
+  background: rgba(15, 23, 42, 0.7);
+  transform: translateY(-2px);
+}
+
+.action-icon-small {
+  font-size: 20px;
+}
+
+.action-label-small {
+  font-size: 9px;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.info-label {
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.info-value.yellow {
+  color: #f59e0b;
+}
+
+/* Keyboard Shortcuts */
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.shortcut-key {
+  min-width: 50px;
+  padding: 4px 8px;
+  background: rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-align: center;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.shortcut-desc {
+  flex: 1;
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.7);
+}

@@ -1,0 +1,256 @@
+/**
+ * TabbedSidebar.css - Styling for tabbed sidebar component
+ *
+ * Features:
+ * - Smooth tab transitions
+ * - Active tab indicators
+ * - Badge notifications
+ * - Responsive design
+ * - Glassmorphism effects
+ */
+
+/* Main Container */
+.tabbed-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Tab Navigation */
+.tab-nav {
+  display: flex;
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 2px solid rgba(148, 163, 184, 0.1);
+  padding: 4px;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+.tab-nav::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tab-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tab-nav::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 2px;
+}
+
+.tab-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Tab Button */
+.tab-button {
+  flex: 1;
+  min-width: fit-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.tab-button:hover {
+  background: rgba(148, 163, 184, 0.1);
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.tab-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.tab-button.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Tab Icon */
+.tab-icon {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tab Label */
+.tab-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tab Badge */
+.tab-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: white;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  background: #ef4444;
+  border-radius: 50%;
+  display: block;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Tab Content Wrapper */
+.tab-content-wrapper {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Tab Content */
+.tab-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+.tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tab-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tab-content::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.tab-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.tab-content.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  z-index: 1;
+}
+
+/* Left Sidebar Specific */
+.tabbed-sidebar.left .tab-content {
+  transform: translateX(-20px);
+}
+
+.tabbed-sidebar.left .tab-content.active {
+  transform: translateX(0);
+}
+
+/* Right Sidebar Specific */
+.tabbed-sidebar.right .tab-content {
+  transform: translateX(20px);
+}
+
+.tabbed-sidebar.right .tab-content.active {
+  transform: translateX(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tab-button {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .tab-label {
+    display: none;
+  }
+
+  .tab-icon {
+    font-size: 18px;
+  }
+
+  .tab-content {
+    padding: 8px;
+  }
+}
+
+/* Dark Mode Enhancements */
+@media (prefers-color-scheme: dark) {
+  .tabbed-sidebar {
+    background: rgba(15, 23, 42, 0.98);
+  }
+
+  .tab-nav {
+    background: rgba(30, 41, 59, 0.9);
+  }
+}

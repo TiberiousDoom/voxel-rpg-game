@@ -321,10 +321,11 @@
     opacity: 1 !important;
     visibility: visible !important;
 
-    /* Simple sizing - let canvas maintain its aspect ratio */
-    width: 100% !important;
-    max-width: 800px !important;
-    height: auto !important;
+    /* CRITICAL FIX: Canvas needs explicit dimensions, not height: auto */
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 75vw !important; /* 4:3 aspect ratio (800:600) */
+    max-height: 600px !important;
 
     /* Force hardware acceleration */
     transform: translate3d(0, 0, 0);

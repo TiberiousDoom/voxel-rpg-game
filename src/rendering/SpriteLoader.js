@@ -159,14 +159,11 @@ class SpriteLoader {
       } else if (entityData.idle || entityData.walk) {
         // Load sprite sheets (e.g., NPCs, player)
         const frameSize = entityData.frameSize || { width: 16, height: 16 };
-        const frames = entityData.frames || {};
 
         for (const [animKey, animPath] of Object.entries(entityData)) {
           if (animKey === 'frames' || animKey === 'frameSize') continue;
 
           const key = `${entityKey}_${animKey}`;
-          const frameCount = frames[animKey] || 1;
-          const sheetWidth = frameSize.width * frameCount;
 
           promises.push(
             this.loadSpriteSheet(key, animPath, frameSize.width, frameSize.height)

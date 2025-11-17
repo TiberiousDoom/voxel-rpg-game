@@ -134,22 +134,19 @@ function GameViewport({
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
 
-  // Player state
+  // Player state - Initialize synchronously to ensure it's available before first render
   const playerRef = useRef(null);
   const playerRendererRef = useRef(null);
 
-  // Initialize player entity
-  useEffect(() => {
-    if (enablePlayerMovement && !playerRef.current) {
-      playerRef.current = new PlayerEntity({ x: 25, z: 25 }); // Start in center of 50x50 grid
-      playerRendererRef.current = new PlayerRenderer({
-        tileSize: TILE_SIZE,
-        showHealthBar: true,
-        showStaminaBar: true,
-        showInteractionRadius: debugMode,
-      });
-    }
-  }, [enablePlayerMovement, debugMode]);
+  if (enablePlayerMovement && playerRef.current === null) {
+    playerRef.current = new PlayerEntity({ x: 25, z: 25 }); // Start in center of 50x50 grid
+    playerRendererRef.current = new PlayerRenderer({
+      tileSize: TILE_SIZE,
+      showHealthBar: true,
+      showStaminaBar: true,
+      showInteractionRadius: debugMode,
+    });
+  }
 
   // WF3: Building rendering hook
   const {

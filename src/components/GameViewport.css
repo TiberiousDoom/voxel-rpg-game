@@ -321,11 +321,15 @@
     opacity: 1 !important;
     visibility: visible !important;
 
+    /* CRITICAL: Override flex layout on mobile */
+    flex: none !important;
+
     /* CRITICAL FIX: Proper responsive sizing */
     width: 100% !important;
     height: auto !important;
     aspect-ratio: 4 / 3 !important; /* 800:600 ratio */
     max-width: 100% !important;
+    min-width: 0 !important;
     object-fit: contain !important;
 
     /* Force hardware acceleration */
@@ -352,5 +356,6 @@
     overflow: hidden !important;
     box-sizing: border-box !important;
     padding: 0 !important;
+    gap: 5px !important;
   }
 }

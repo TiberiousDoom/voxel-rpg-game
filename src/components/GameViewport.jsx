@@ -134,18 +134,34 @@ function GameViewport({
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
 
+  // Debug state for mobile diagnostics (always shown on mobile)
+  const [debugInfo, setDebugInfo] = useState({
+    canvasReady: false,
+    contextReady: false,
+    cameraReady: false,
+    playerReady: false,
+    rendering: false,
+    lastError: null,
+    renderCount: 0
+  });
+
   // Player state - Initialize synchronously to ensure it's available before first render
   const playerRef = useRef(null);
   const playerRendererRef = useRef(null);
 
   if (enablePlayerMovement && playerRef.current === null) {
-    playerRef.current = new PlayerEntity({ x: 25, z: 25 }); // Start in center of 50x50 grid
-    playerRendererRef.current = new PlayerRenderer({
-      tileSize: TILE_SIZE,
-      showHealthBar: true,
-      showStaminaBar: true,
-      showInteractionRadius: debugMode,
-    });
+    try {
+      playerRef.current = new PlayerEntity({ x: 25, z: 25 }); // Start in center of 50x50 grid
+      playerRendererRef.current = new PlayerRenderer({
+        tileSize: TILE_SIZE,
+        showHealthBar: true,
+        showStaminaBar: true,
+        showInteractionRadius: debugMode,
+      });
+      setDebugInfo(prev => ({ ...prev, playerReady: true }));
+    } catch (error) {
+      setDebugInfo(prev => ({ ...prev, playerReady: false, lastError: `Player init: ${error.message}` }));
+    }
   }
 
   // WF3: Building rendering hook
@@ -214,6 +230,18 @@ function GameViewport({
     smoothing: 0.15, // Smooth camera movement
     mode: CAMERA_MODES.FOLLOW,
   });
+
+  // Update debug info when camera is ready
+  useEffect(() => {
+    if (getOffset) {
+      const offset = getOffset();
+      setDebugInfo(prev => ({
+        ...prev,
+        cameraReady: offset !== null && offset !== undefined,
+        lastError: offset ? null : 'Camera offset is null'
+      }));
+    }
+  }, [getOffset]);
 
   // Force initial render after camera is ready
   const [, forceUpdate] = React.useReducer(x => x + 1, 0);
@@ -334,12 +362,24 @@ function GameViewport({
    * Memoized to prevent unnecessary re-renders
    */
   const drawViewport = React.useCallback((ctx) => {
-    // Clear canvas
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    try {
+      // Update debug info
+      setDebugInfo(prev => ({ ...prev, rendering: true, renderCount: prev.renderCount + 1 }));
 
-    // Get camera offset
-    const offset = getOffset?.() || { x: 0, y: 0 };
+      // Validate context
+      if (!ctx || !ctx.fillRect) {
+        throw new Error('Invalid canvas context');
+      }
+
+      // Clear canvas
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // Get camera offset with fallback
+      const offset = getOffset?.() || { x: 0, y: 0 };
+      if (!offset || typeof offset.x !== 'number' || typeof offset.y !== 'number') {
+        throw new Error(`Invalid camera offset: ${JSON.stringify(offset)}`);
+      }
 
     // Draw grid with camera offset
     ctx.save();
@@ -394,11 +434,33 @@ function GameViewport({
       renderInteractionPrompt(ctx, closestInteractable);
     }
 
-    // WF3: Draw hover preview using new renderer
-    if (hoveredPosition && selectedBuildingType) {
-      // TODO: Add validation check to determine if placement is valid
-      const isValid = true; // Placeholder - should check collision/placement rules
-      renderPlacementPreview(ctx, hoveredPosition, selectedBuildingType, isValid, worldToCanvas);
+      // WF3: Draw hover preview using new renderer
+      if (hoveredPosition && selectedBuildingType) {
+        // TODO: Add validation check to determine if placement is valid
+        const isValid = true; // Placeholder - should check collision/placement rules
+        renderPlacementPreview(ctx, hoveredPosition, selectedBuildingType, isValid, worldToCanvas);
+      }
+
+      // Mark rendering as successful
+      setDebugInfo(prev => ({ ...prev, lastError: null }));
+    } catch (error) {
+      // Log error and update debug info
+      setDebugInfo(prev => ({
+        ...prev,
+        rendering: false,
+        lastError: `Render error: ${error.message}`
+      }));
+
+      // Draw error message on canvas if context is available
+      if (ctx && ctx.fillText) {
+        try {
+          ctx.fillStyle = '#000000';
+          ctx.font = '14px Arial';
+          ctx.fillText(`Error: ${error.message}`, 10, 20);
+        } catch (e) {
+          // Ignore if even error rendering fails
+        }
+      }
     }
   }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview, debugMode, npcRenderer, worldToCanvas, getOffset, enablePlayerMovement, canInteract, closestInteractable, renderInteractionPrompt]);
 
@@ -598,10 +660,38 @@ function GameViewport({
    */
   React.useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      setDebugInfo(prev => ({ ...prev, canvasReady: false, lastError: 'Canvas ref is null' }));
+      return;
+    }
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    setDebugInfo(prev => ({ ...prev, canvasReady: true }));
+
+    let ctx;
+    try {
+      ctx = canvas.getContext('2d', {
+        alpha: false,
+        desynchronized: true, // Hint for better mobile performance
+      });
+    } catch (error) {
+      setDebugInfo(prev => ({
+        ...prev,
+        contextReady: false,
+        lastError: `Failed to get context: ${error.message}`
+      }));
+      return;
+    }
+
+    if (!ctx) {
+      setDebugInfo(prev => ({
+        ...prev,
+        contextReady: false,
+        lastError: 'getContext returned null'
+      }));
+      return;
+    }
+
+    setDebugInfo(prev => ({ ...prev, contextReady: true }));
 
     // Cancel any pending animation frame
     if (rafRef.current) {
@@ -610,7 +700,14 @@ function GameViewport({
 
     // Schedule render on next animation frame (max 60 FPS)
     rafRef.current = requestAnimationFrame(() => {
-      drawViewport(ctx);
+      try {
+        drawViewport(ctx);
+      } catch (error) {
+        setDebugInfo(prev => ({
+          ...prev,
+          lastError: `RAF error: ${error.message}`
+        }));
+      }
       rafRef.current = null;
     });
 
@@ -643,6 +740,38 @@ function GameViewport({
         onMouseMove={handleCanvasMouseMove}
         onMouseLeave={handleCanvasMouseLeave}
       />
+
+      {/* Debug overlay - always visible to diagnose mobile issues */}
+      <div className="debug-overlay" style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+        color: 'white',
+        padding: '10px',
+        borderRadius: '8px',
+        fontSize: '11px',
+        fontFamily: 'monospace',
+        maxWidth: '300px',
+        zIndex: 9999,
+        pointerEvents: 'none'
+      }}>
+        <div><strong>🔍 Render Status</strong></div>
+        <div>Canvas: {debugInfo.canvasReady ? '✓' : '✗'}</div>
+        <div>Context: {debugInfo.contextReady ? '✓' : '✗'}</div>
+        <div>Camera: {debugInfo.cameraReady ? '✓' : '✗'}</div>
+        <div>Player: {debugInfo.playerReady ? '✓' : '✗'}</div>
+        <div>Rendering: {debugInfo.rendering ? '✓' : '✗'}</div>
+        <div>Renders: {debugInfo.renderCount}</div>
+        <div>Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
+        <div>Offset: {getOffset ? JSON.stringify(getOffset()) : 'null'}</div>
+        {debugInfo.lastError && (
+          <div style={{ marginTop: '8px', color: '#ffff00', fontWeight: 'bold' }}>
+            ⚠️ {debugInfo.lastError}
+          </div>
+        )}
+      </div>
+
       <div className="viewport-footer">
         <p className="viewport-hint">
           {enablePlayerMovement ? (

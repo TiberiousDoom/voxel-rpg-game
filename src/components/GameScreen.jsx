@@ -11,6 +11,13 @@ import AchievementNotification from './AchievementNotification';
 import SettlementInventoryUI from './SettlementInventoryUI';
 import ModalWrapper from './ModalWrapper';
 import BuildMenu from './BuildMenu';
+import ResourcePanel from './ResourcePanel';
+import NPCPanel from './NPCPanel';
+import StatsTab from './tabs/StatsTab';
+import AchievementPanel from './AchievementPanel';
+import ExpeditionsTab from './tabs/ExpeditionsTab';
+import DefenseTab from './tabs/DefenseTab';
+import ActionsTab from './tabs/ActionsTab';
 import './GameScreen.css';
 
 /**
@@ -35,6 +42,13 @@ function GameScreen() {
 
   // Modal menu states
   const [showBuildModal, setShowBuildModal] = useState(false);
+  const [showResourcesModal, setShowResourcesModal] = useState(false);
+  const [showNPCsModal, setShowNPCsModal] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [showExpeditionsModal, setShowExpeditionsModal] = useState(false);
+  const [showDefenseModal, setShowDefenseModal] = useState(false);
+  const [showActionsModal, setShowActionsModal] = useState(false);
 
   // Auto-start game
   useEffect(() => {
@@ -117,22 +131,29 @@ function GameScreen() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Tab navigation
+  // Tab navigation - All tabs now open as modals
   const handleTabClick = (tabId, side) => {
-    // Special handling for modal menus
-    if (tabId === 'inventory') {
-      setShowInventory(true);
+    // Map tab IDs to modal state setters
+    const modalMap = {
+      'inventory': () => setShowInventory(true),
+      'build': () => setShowBuildModal(true),
+      'resources': () => setShowResourcesModal(true),
+      'npcs': () => setShowNPCsModal(true),
+      'stats': () => setShowStatsModal(true),
+      'achievements': () => setShowAchievementsModal(true),
+      'expeditions': () => setShowExpeditionsModal(true),
+      'defense': () => setShowDefenseModal(true),
+      'actions': () => setShowActionsModal(true)
+    };
+
+    // Open corresponding modal
+    if (modalMap[tabId]) {
+      modalMap[tabId]();
       return;
     }
 
-    if (tabId === 'build') {
-      setShowBuildModal(true);
-      return;
-    }
-
+    // Fallback to sidebar behavior (if needed)
     setActiveTab(tabId);
-
-    // Expand the clicked sidebar, collapse the other
     if (side === 'left') {
       setLeftCollapsed(false);
       setRightCollapsed(true);
@@ -325,6 +346,100 @@ function GameScreen() {
           currentTier={gameState.currentTier || 'SURVIVAL'}
           buildingConfig={gameManager?.orchestrator?.buildingConfig}
           placedBuildingCounts={{}}
+        />
+      </ModalWrapper>
+
+      {/* Resources Modal */}
+      <ModalWrapper
+        isOpen={showResourcesModal}
+        onClose={() => setShowResourcesModal(false)}
+        title="Resources"
+        icon="💰"
+        maxWidth="800px"
+      >
+        <ResourcePanel
+          resources={gameState.resources || {}}
+          production={{}}
+          consumption={{}}
+          capacity={{}}
+        />
+      </ModalWrapper>
+
+      {/* NPCs Modal */}
+      <ModalWrapper
+        isOpen={showNPCsModal}
+        onClose={() => setShowNPCsModal(false)}
+        title="NPCs"
+        icon="👥"
+        maxWidth="1000px"
+      >
+        <NPCPanel
+          npcs={gameState.npcs || []}
+          buildings={gameState.buildings || []}
+          onAssignNPC={handleAssignNPC}
+          onUnassignNPC={handleUnassignNPC}
+          onAutoAssign={handleAutoAssign}
+        />
+      </ModalWrapper>
+
+      {/* Stats Modal */}
+      <ModalWrapper
+        isOpen={showStatsModal}
+        onClose={() => setShowStatsModal(false)}
+        title="Stats"
+        icon="📊"
+        maxWidth="900px"
+      >
+        <StatsTab />
+      </ModalWrapper>
+
+      {/* Achievements Modal */}
+      <ModalWrapper
+        isOpen={showAchievementsModal}
+        onClose={() => setShowAchievementsModal(false)}
+        title="Achievements"
+        icon="🏆"
+        maxWidth="1000px"
+      >
+        <AchievementPanel
+          achievementSystem={gameManager?.orchestrator?.achievementSystem}
+        />
+      </ModalWrapper>
+
+      {/* Expeditions Modal */}
+      <ModalWrapper
+        isOpen={showExpeditionsModal}
+        onClose={() => setShowExpeditionsModal(false)}
+        title="Expeditions"
+        icon="⚔️"
+        maxWidth="1100px"
+      >
+        <ExpeditionsTab />
+      </ModalWrapper>
+
+      {/* Defense Modal */}
+      <ModalWrapper
+        isOpen={showDefenseModal}
+        onClose={() => setShowDefenseModal(false)}
+        title="Defense"
+        icon="🛡️"
+        maxWidth="1000px"
+      >
+        <DefenseTab />
+      </ModalWrapper>
+
+      {/* Actions Modal */}
+      <ModalWrapper
+        isOpen={showActionsModal}
+        onClose={() => setShowActionsModal(false)}
+        title="Quick Actions"
+        icon="⚡"
+        maxWidth="700px"
+      >
+        <ActionsTab
+          onSpawnNPC={() => actions.spawnNPC('WORKER')}
+          onAdvanceTier={() => {/* Advance tier - to be implemented */}}
+          onAutoAssignNPCs={handleAutoAssign}
         />
       </ModalWrapper>
 

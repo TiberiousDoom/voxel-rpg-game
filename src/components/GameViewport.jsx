@@ -246,7 +246,12 @@ function GameViewport({
     }
   }
 
-  // WF3: Building rendering hook
+  // Detect if mobile for performance optimizations
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768 ||
+                   ('ontouchstart' in window);
+
+  // WF3: Building rendering hook (optimized for mobile)
   const {
     renderBuildings: renderBuildingsWF3,
     // eslint-disable-next-line no-unused-vars -- Reserved for WF3: Hover effects not yet implemented
@@ -256,16 +261,16 @@ function GameViewport({
     tileSize: TILE_SIZE,
     showHealthBars: true,
     showProgressBars: true,
-    showShadows: true,
-    showOverlays: true
+    showShadows: !isMobile, // Disable shadows on mobile for performance
+    showOverlays: !isMobile // Disable texture overlays on mobile for performance
   });
 
-  // WF4: NPC Renderer integration
+  // WF4: NPC Renderer integration (optimized for mobile)
   const npcRenderer = useNPCRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: true,
-    showRoleBadges: true,
-    showStatusIndicators: true,
+    showHealthBars: !isMobile, // Hide health bars on mobile
+    showRoleBadges: !isMobile, // Hide role badges on mobile
+    showStatusIndicators: !isMobile, // Hide status indicators on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
@@ -470,36 +475,97 @@ function GameViewport({
         console.warn('Camera offset error, using default:', e);
       }
 
-    // Draw grid with camera offset
-    ctx.save();
-    ctx.strokeStyle = GRID_COLOR;
-    ctx.lineWidth = 1;
+    // Viewport culling - only render visible entities
+    const viewportBounds = {
+      left: -offset.x / TILE_SIZE - 2, // Add 2-tile margin
+      right: (CANVAS_WIDTH - offset.x) / TILE_SIZE + 2,
+      top: -offset.y / TILE_SIZE - 2,
+      bottom: (CANVAS_HEIGHT - offset.y) / TILE_SIZE + 2
+    };
 
-    // Calculate visible grid range
-    const startX = Math.floor(-offset.x / TILE_SIZE);
-    const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
-    const startZ = Math.floor(-offset.y / TILE_SIZE);
-    const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
+    // Filter visible buildings
+    const visibleBuildings = buildings.filter(b => {
+      if (!b || !b.position) return false;
+      return b.position.x >= viewportBounds.left &&
+             b.position.x <= viewportBounds.right &&
+             b.position.z >= viewportBounds.top &&
+             b.position.z <= viewportBounds.bottom;
+    });
 
-    // Draw vertical lines
-    for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
-      const x = i * TILE_SIZE + offset.x;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, CANVAS_HEIGHT);
-      ctx.stroke();
+    // Filter visible NPCs
+    const visibleNPCs = npcs.filter(npc => {
+      if (!npc || !npc.position) return false;
+      return npc.position.x >= viewportBounds.left &&
+             npc.position.x <= viewportBounds.right &&
+             npc.position.z >= viewportBounds.top &&
+             npc.position.z <= viewportBounds.bottom;
+    });
+
+    // Draw grid with camera offset (optimized for mobile)
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+    if (!isMobile) {
+      // Full grid on desktop
+      ctx.save();
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 1;
+
+      // Calculate visible grid range
+      const startX = Math.floor(-offset.x / TILE_SIZE);
+      const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
+      const startZ = Math.floor(-offset.y / TILE_SIZE);
+      const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
+
+      // Draw vertical lines
+      for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
+        const x = i * TILE_SIZE + offset.x;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+
+      // Draw horizontal lines
+      for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
+        const y = i * TILE_SIZE + offset.y;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    } else {
+      // Simplified grid on mobile - only major grid lines every 5 tiles
+      ctx.save();
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5; // Lighter grid on mobile
+
+      const startX = Math.floor(-offset.x / TILE_SIZE);
+      const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
+      const startZ = Math.floor(-offset.y / TILE_SIZE);
+      const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
+
+      // Draw every 5th line
+      for (let i = Math.max(0, Math.floor(startX / 5) * 5); i <= Math.min(GRID_WIDTH, endX); i += 5) {
+        const x = i * TILE_SIZE + offset.x;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+
+      for (let i = Math.max(0, Math.floor(startZ / 5) * 5); i <= Math.min(GRID_HEIGHT, endZ); i += 5) {
+        const y = i * TILE_SIZE + offset.y;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
     }
-
-    // Draw horizontal lines
-    for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
-      const y = i * TILE_SIZE + offset.y;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(CANVAS_WIDTH, y);
-      ctx.stroke();
-    }
-
-    ctx.restore();
 
     // Calculate viewport bounds for culling (add 2 tile buffer)
     const viewportBounds = {
@@ -539,7 +605,7 @@ function GameViewport({
 
     // WF4: Render pathfinding visualization in debug mode
     if (debugMode) {
-      npcRenderer.renderPaths(ctx, npcs, worldToCanvas);
+      npcRenderer.renderPaths(ctx, visibleNPCs, worldToCanvas);
     }
 
     // Render interaction prompts
@@ -621,13 +687,16 @@ function GameViewport({
     const gridPos = canvasToWorld(canvasX, canvasY);
 
     if (selectedBuildingType) {
-      // Building placement mode
+      // Building placement mode - don't move player
       onPlaceBuilding({
         x: gridPos.x,
         y: 0, // Ground level
         z: gridPos.z
       });
-    } else if (enablePlayerMovement && playerRef.current) {
+      return; // Explicitly prevent any other click handling
+    }
+
+    if (enablePlayerMovement && playerRef.current) {
       // Check if clicked on an interactable object
       let didInteract = false;
 
@@ -658,19 +727,20 @@ function GameViewport({
       if (!didInteract) {
         playerRef.current.setTargetPosition(worldPos);
       }
-    } else {
-      // Check if a building was clicked
-      const clickedBuilding = buildings.find(b =>
-        b && b.position &&
-        b.position.x === gridPos.x &&
-        b.position.z === gridPos.z
-      );
+      return;
+    }
 
-      if (clickedBuilding) {
-        onBuildingClick(clickedBuilding);
-      } else {
-        onSelectTile(gridPos);
-      }
+    // No player movement - check if a building was clicked for selection
+    const clickedBuilding = buildings.find(b =>
+      b && b.position &&
+      b.position.x === gridPos.x &&
+      b.position.z === gridPos.z
+    );
+
+    if (clickedBuilding) {
+      onBuildingClick(clickedBuilding);
+    } else {
+      onSelectTile(gridPos);
     }
   };
 

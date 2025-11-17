@@ -9,9 +9,11 @@
   border: 1px solid #e0e0e0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   margin-bottom: 12px;
-  min-height: 60px; /* Ensures readability even when compressed */
+  min-height: 60px; /* Prevents over-compression when collapsed */
   transition: all 0.3s ease;
 }
+
+/* Remove min-height restriction on expanded to allow full content display */
 
 .collapsible-header {
   width: 100%;

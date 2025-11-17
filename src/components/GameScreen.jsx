@@ -9,6 +9,8 @@ import HorizontalTabBar from './HorizontalTabBar';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import AchievementNotification from './AchievementNotification';
 import SettlementInventoryUI from './SettlementInventoryUI';
+import ModalWrapper from './ModalWrapper';
+import BuildMenu from './BuildMenu';
 import './GameScreen.css';
 
 /**
@@ -30,6 +32,9 @@ function GameScreen() {
   const [leftCollapsed, setLeftCollapsed] = useState(true);
   const [rightCollapsed, setRightCollapsed] = useState(true);
   const [showInventory, setShowInventory] = useState(false);
+
+  // Modal menu states
+  const [showBuildModal, setShowBuildModal] = useState(false);
 
   // Auto-start game
   useEffect(() => {
@@ -114,9 +119,14 @@ function GameScreen() {
 
   // Tab navigation
   const handleTabClick = (tabId, side) => {
-    // Special handling for inventory tab
+    // Special handling for modal menus
     if (tabId === 'inventory') {
       setShowInventory(true);
+      return;
+    }
+
+    if (tabId === 'build') {
+      setShowBuildModal(true);
       return;
     }
 
@@ -298,6 +308,25 @@ function GameScreen() {
         isOpen={showInventory}
         onClose={() => setShowInventory(false)}
       />
+
+      {/* Build Menu Modal */}
+      <ModalWrapper
+        isOpen={showBuildModal}
+        onClose={() => setShowBuildModal(false)}
+        title="Build Menu"
+        icon="🏗️"
+        maxWidth="1200px"
+      >
+        <BuildMenu
+          selectedBuildingType={selectedBuildingType}
+          onSelectBuilding={setSelectedBuildingType}
+          onSpawnNPC={() => actions.spawnNPC('WORKER')}
+          onAdvanceTier={() => {/* Advance tier - to be implemented */}}
+          currentTier={gameState.currentTier || 'SURVIVAL'}
+          buildingConfig={gameManager?.orchestrator?.buildingConfig}
+          placedBuildingCounts={{}}
+        />
+      </ModalWrapper>
 
       {/* Toast */}
       {toastMessage && (

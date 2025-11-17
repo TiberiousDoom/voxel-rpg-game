@@ -316,30 +316,25 @@
 /* Mobile-specific canvas fixes */
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
   .viewport-canvas {
-    /* Force hardware acceleration */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    will-change: transform;
+    /* Ensure visibility */
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 
-    /* Prevent mobile browser optimizations that break canvas */
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-
-    /* Fix sizing on mobile */
+    /* Simple sizing - let canvas maintain its aspect ratio */
     width: 100% !important;
     max-width: 800px !important;
     height: auto !important;
-    aspect-ratio: 800 / 600 !important;
 
-    /* Ensure visibility */
-    opacity: 1 !important;
-    visibility: visible !important;
-    background-color: #f0f0f0; /* Fallback background */
+    /* Force hardware acceleration */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
 
     /* Prevent touch delays */
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .debug-overlay {
@@ -347,20 +342,4 @@
     font-size: 10px !important;
     max-width: 250px !important;
   }
-}
-
-/* iOS Safari specific fixes */
-@supports (-webkit-touch-callout: none) {
-  .viewport-canvas {
-    -webkit-overflow-scrolling: touch;
-    position: relative;
-  }
-}
-
-/* Prevent mobile zoom/scroll */
-.game-viewport {
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
-  overflow: hidden;
 }

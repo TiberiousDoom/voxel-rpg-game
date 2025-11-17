@@ -33,26 +33,16 @@ const initializeCanvas = (canvas, width, height) => {
                    window.innerWidth <= 768 ||
                    ('ontouchstart' in window);
 
-  // Handle device pixel ratio for crisp rendering on mobile
-  const dpr = window.devicePixelRatio || 1;
-
-  // Set actual canvas size accounting for pixel ratio
-  if (isMobile && dpr > 1) {
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-  } else {
-    canvas.width = width;
-    canvas.height = height;
-  }
+  // Set canvas dimensions - keep it simple for mobile
+  canvas.width = width;
+  canvas.height = height;
 
   // Try multiple context configurations
   let ctx = null;
   const contextConfigs = [
-    { alpha: false, desynchronized: true }, // Your current config
     { alpha: false, willReadFrequently: true }, // Better for mobile
     { alpha: false }, // Minimal config
+    { alpha: false, desynchronized: true }, // Original config (try last as it might fail)
     {} // Fallback to defaults
   ];
 
@@ -60,30 +50,37 @@ const initializeCanvas = (canvas, width, height) => {
     try {
       ctx = canvas.getContext('2d', config);
       if (ctx) {
-        // Scale context for high DPI
-        if (isMobile && dpr > 1) {
-          ctx.scale(dpr, dpr);
-        }
-
         // Disable image smoothing for pixel art
         ctx.imageSmoothingEnabled = false;
         ctx.mozImageSmoothingEnabled = false;
         ctx.webkitImageSmoothingEnabled = false;
         ctx.msImageSmoothingEnabled = false;
 
-        // Test the context works
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, 1, 1);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Test the context works by drawing and clearing
+        try {
+          ctx.fillStyle = '#FF0000';
+          ctx.fillRect(0, 0, 10, 10);
+          ctx.clearRect(0, 0, width, height);
 
-        // eslint-disable-next-line no-console
-        console.log('Canvas initialized with config:', config);
+          // eslint-disable-next-line no-console
+          console.log('✅ Canvas initialized successfully with config:', config, 'Mobile:', isMobile);
+        } catch (testError) {
+          // eslint-disable-next-line no-console
+          console.warn('Context test failed:', testError);
+          ctx = null;
+          continue;
+        }
         break;
       }
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn('Context creation failed with config:', config, e);
     }
+  }
+
+  if (!ctx) {
+    // eslint-disable-next-line no-console
+    console.error('❌ Failed to initialize canvas context with any configuration');
   }
 
   return ctx;
@@ -765,6 +762,41 @@ function GameViewport({
         // Draw viewport with safe error handling
         drawViewport(ctx);
 
+        // After drawing viewport, add visual debug markers on the canvas
+        try {
+          // Draw frame counter in top-right corner
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(CANVAS_WIDTH - 100, 0, 100, 30);
+          ctx.fillStyle = '#00FF00';
+          ctx.font = 'bold 16px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(`Frame ${debugInfo.renderCount}`, CANVAS_WIDTH - 50, 20);
+          ctx.restore();
+
+          // Draw test pattern in bottom-right corner (always visible)
+          ctx.save();
+          ctx.fillStyle = '#FF0000';
+          ctx.fillRect(CANVAS_WIDTH - 50, CANVAS_HEIGHT - 50, 20, 20);
+          ctx.fillStyle = '#00FF00';
+          ctx.fillRect(CANVAS_WIDTH - 30, CANVAS_HEIGHT - 50, 20, 20);
+          ctx.fillStyle = '#0000FF';
+          ctx.fillRect(CANVAS_WIDTH - 50, CANVAS_HEIGHT - 30, 20, 20);
+          ctx.fillStyle = '#FFFF00';
+          ctx.fillRect(CANVAS_WIDTH - 30, CANVAS_HEIGHT - 30, 20, 20);
+          ctx.restore();
+
+          // Draw a border around the entire canvas
+          ctx.save();
+          ctx.strokeStyle = '#FF00FF';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(2, 2, CANVAS_WIDTH - 4, CANVAS_HEIGHT - 4);
+          ctx.restore();
+        } catch (debugErr) {
+          // eslint-disable-next-line no-console
+          console.warn('Debug markers failed:', debugErr);
+        }
+
         // Update debug info
         if (initialRenderAttempts < maxInitialAttempts) {
           initialRenderAttempts++;
@@ -783,13 +815,20 @@ function GameViewport({
           lastError: `Render error: ${error.message}`
         }));
 
-        // Try to draw error message
+        // eslint-disable-next-line no-console
+        console.error('Render error:', error);
+
+        // Try to draw error message on canvas
         try {
           ctx.fillStyle = '#ff0000';
-          ctx.font = '14px Arial';
+          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '20px Arial';
+          ctx.textAlign = 'left';
           ctx.fillText(`Error: ${error.message}`, 10, 30);
         } catch (e) {
-          // Ignore
+          // eslint-disable-next-line no-console
+          console.error('Failed to draw error on canvas:', e);
         }
       }
 
@@ -831,22 +870,24 @@ function GameViewport({
 
       {/* Debug overlay - always visible to diagnose mobile issues */}
       <div className="debug-overlay" style={{
-        position: 'absolute',
+        position: 'fixed',
         top: '10px',
         left: '10px',
-        background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+        background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0.95)',
         color: 'white',
-        padding: '10px',
+        padding: '12px',
         borderRadius: '8px',
-        fontSize: '11px',
+        border: '2px solid yellow',
+        fontSize: '12px',
         fontFamily: 'monospace',
-        maxWidth: '300px',
-        maxHeight: '80vh', // Improved scrollable container
-        minHeight: '60px', // Ensures readability even when compressed
+        maxWidth: '90vw',
+        maxHeight: '80vh',
+        minHeight: '100px',
         overflowY: 'auto',
         overflowX: 'hidden',
-        zIndex: 9999,
-        pointerEvents: 'none'
+        zIndex: 99999,
+        pointerEvents: 'none',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
       }}>
         <div><strong>🔍 Render Status</strong></div>
         <div>Canvas: {debugInfo.canvasReady ? '✓' : '✗'}</div>
@@ -855,7 +896,16 @@ function GameViewport({
         <div>Player: {debugInfo.playerReady ? '✓' : '✗'}</div>
         <div>Rendering: {debugInfo.rendering ? '✓' : '✗'}</div>
         <div>Renders: {debugInfo.renderCount}</div>
-        <div>Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
+        <div>Canvas Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
+        {canvasRef.current && (
+          <>
+            <div>Element: {canvasRef.current.width}x{canvasRef.current.height}</div>
+            <div>Display: {canvasRef.current.offsetWidth}x{canvasRef.current.offsetHeight}px</div>
+          </>
+        )}
+        <div>Window: {window.innerWidth}x{window.innerHeight}</div>
+        <div>DPR: {window.devicePixelRatio || 1}</div>
+        <div>Mobile: {/Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 768 ? 'Yes' : 'No'}</div>
         <div>Offset: {getOffset ? JSON.stringify(getOffset()) : 'null'}</div>
         {debugInfo.lastError && (
           <div style={{ marginTop: '8px', color: '#ffff00', fontWeight: 'bold' }}>

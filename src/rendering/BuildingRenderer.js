@@ -19,6 +19,8 @@ import {
   // eslint-disable-next-line no-unused-vars -- Reserved for WF3: CSS-based shadow rendering
   generateShadowCSS
 } from '../assets/building-icons.js';
+import { SpriteLoader } from './SpriteLoader.js';
+import { BUILDING_SPRITE_MANIFEST } from '../assets/sprite-manifest.js';
 
 /**
  * Building render states
@@ -45,8 +47,49 @@ export class BuildingRenderer {
     this.showShadows = options.showShadows !== false;
     this.showOverlays = options.showOverlays !== false;
 
+    // Sprite configuration
+    this.config = {
+      useSprites: options.useSprites !== false,
+      ...options
+    };
+
+    // Initialize sprite loader
+    this.spriteLoader = new SpriteLoader();
+    this.spritesLoaded = false;
+    this.spriteLoadError = false;
+
     // Cache for crack patterns to avoid regenerating with random() every frame
     this.crackCache = new Map();
+
+    // Load sprites if enabled
+    if (this.config.useSprites) {
+      this._loadSprites();
+    }
+  }
+
+  /**
+   * Load building sprites asynchronously
+   * Gracefully handles loading failures by falling back to emoji rendering
+   * @private
+   */
+  async _loadSprites() {
+    try {
+      // Load all building sprites from manifest
+      const loadPromises = Object.entries(BUILDING_SPRITE_MANIFEST).map(
+        ([buildingType, config]) => {
+          const spritePath = config.sprites.default;
+          const key = `building_${buildingType.toLowerCase()}_default`;
+          return this.spriteLoader.loadSprite(key, spritePath);
+        }
+      );
+
+      await Promise.allSettled(loadPromises);
+      this.spritesLoaded = true;
+      console.log('[BuildingRenderer] Sprites loaded successfully');
+    } catch (error) {
+      this.spriteLoadError = true;
+      console.warn('[BuildingRenderer] Failed to load sprites, falling back to emoji rendering:', error.message);
+    }
   }
 
   /**
@@ -74,8 +117,23 @@ export class BuildingRenderer {
       this.drawShadow(ctx, x, y, width, height, shadow);
     }
 
-    // Draw building base
-    this.drawBuildingBase(ctx, x, y, width, height, color, state);
+    // Determine if we should use sprites
+    const shouldUseSprites = this.config.useSprites && this.spritesLoaded && !this.spriteLoadError;
+
+    if (shouldUseSprites) {
+      // Try to render with sprite, fall back to emoji if sprite not available
+      const spriteRendered = this._renderBuildingWithSprite(ctx, building, x, y, width, height, state);
+
+      if (!spriteRendered) {
+        // Sprite not available for this building type, use emoji fallback
+        this.drawBuildingBase(ctx, x, y, width, height, color, state);
+        this.drawBuildingLabel(ctx, x, y, width, height, icon, state);
+      }
+    } else {
+      // Use emoji rendering (fallback)
+      this.drawBuildingBase(ctx, x, y, width, height, color, state);
+      this.drawBuildingLabel(ctx, x, y, width, height, icon, state);
+    }
 
     // Draw texture overlay if enabled
     if (this.showOverlays) {
@@ -100,8 +158,49 @@ export class BuildingRenderer {
       this.drawWorkerIndicator(ctx, x, y, width, height, building.workerCount);
     }
 
-    // Draw building icon/label
-    this.drawBuildingLabel(ctx, x, y, width, height, icon, state);
+    // Restore context state
+    ctx.restore();
+  }
+
+  /**
+   * Render building using sprite
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {object} building - Building object
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   * @param {number} width - Width
+   * @param {number} height - Height
+   * @param {string} state - Building state
+   * @returns {boolean} True if sprite was rendered, false if sprite not available
+   * @private
+   */
+  _renderBuildingWithSprite(ctx, building, x, y, width, height, state) {
+    const buildingType = building.type.toUpperCase();
+    const spriteKey = `building_${buildingType.toLowerCase()}_default`;
+
+    // Get sprite from loader
+    const sprite = this.spriteLoader.getSprite(spriteKey);
+
+    if (!sprite) {
+      // Sprite not available for this building type
+      return false;
+    }
+
+    // For blueprint/under construction states, we might want to render differently
+    // For now, we'll draw the sprite with reduced opacity
+    if (state === 'BLUEPRINT' || state === 'UNDER_CONSTRUCTION') {
+      ctx.globalAlpha = 0.5;
+    } else if (state === 'DESTROYED') {
+      ctx.globalAlpha = 0.3;
+    }
+
+    // Draw the sprite centered in the tile
+    ctx.drawImage(sprite, x, y, width, height);
+
+    // Reset opacity
+    ctx.globalAlpha = 1.0;
+
+    return true;
   }
 
   /**

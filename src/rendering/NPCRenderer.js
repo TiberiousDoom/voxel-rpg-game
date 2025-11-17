@@ -83,6 +83,7 @@ export class NPCRenderer {
       await this.spriteLoader.loadManifest(NPC_SPRITE_MANIFEST);
       this.spritesLoaded = true;
       if (this.config.debugMode) {
+        // eslint-disable-next-line no-console
         console.log('[NPCRenderer] Sprites loaded successfully', this.spriteLoader.getStats());
       }
     } catch (error) {

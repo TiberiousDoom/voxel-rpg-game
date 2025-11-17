@@ -483,15 +483,6 @@ function GameViewport({
       bottom: Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE) + 2
     };
 
-    // Filter visible buildings
-    const visibleBuildings = buildings.filter(b => {
-      if (!b || !b.position) return false;
-      return b.position.x >= viewportBounds.left &&
-             b.position.x <= viewportBounds.right &&
-             b.position.z >= viewportBounds.top &&
-             b.position.z <= viewportBounds.bottom;
-    });
-
     // Filter visible NPCs
     const visibleNPCs = npcs.filter(npc => {
       if (!npc || !npc.position) return false;

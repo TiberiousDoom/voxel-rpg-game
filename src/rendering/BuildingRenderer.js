@@ -85,6 +85,7 @@ export class BuildingRenderer {
 
       await Promise.allSettled(loadPromises);
       this.spritesLoaded = true;
+      // eslint-disable-next-line no-console
       console.log('[BuildingRenderer] Sprites loaded successfully');
     } catch (error) {
       this.spriteLoadError = true;

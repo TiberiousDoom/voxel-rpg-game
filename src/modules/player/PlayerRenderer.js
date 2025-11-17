@@ -86,6 +86,7 @@ export class PlayerRenderer {
 
       await Promise.allSettled(loadPromises);
       this.spritesLoaded = true;
+      // eslint-disable-next-line no-console
       console.log('[PlayerRenderer] Sprites loaded successfully');
     } catch (error) {
       this.spriteLoadError = true;
@@ -203,7 +204,6 @@ export class PlayerRenderer {
     }
 
     // Draw the sprite
-    const spriteSize = 16; // Player sprites are 16x16
     const drawSize = PLAYER_CONFIG.size * 1.5; // Scale up slightly for visibility
 
     ctx.save();

@@ -37,18 +37,34 @@ export function useBuildingRenderer(options = {}) {
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {Array} buildings - Array of building objects
    * @param {Function} worldToCanvas - Function to convert world coords to canvas coords
+   * @param {Object} viewportBounds - Optional viewport bounds for culling {left, right, top, bottom}
+   * @returns {number} Number of buildings rendered
    */
-  const renderBuildings = useCallback((ctx, buildings, worldToCanvas) => {
-    if (!rendererRef.current || !buildings) return;
+  const renderBuildings = useCallback((ctx, buildings, worldToCanvas, viewportBounds = null) => {
+    if (!rendererRef.current || !buildings) return 0;
 
     const renderer = rendererRef.current;
+    let renderedCount = 0;
 
     buildings.forEach(building => {
       if (!building || !building.position) return;
 
+      // Viewport culling if bounds provided
+      if (viewportBounds) {
+        if (building.position.x < viewportBounds.left ||
+            building.position.x > viewportBounds.right ||
+            building.position.z < viewportBounds.top ||
+            building.position.z > viewportBounds.bottom) {
+          return; // Skip rendering off-screen buildings
+        }
+      }
+
       const canvasPos = worldToCanvas(building.position.x, building.position.z);
       renderer.renderBuilding(ctx, building, canvasPos);
+      renderedCount++;
     });
+
+    return renderedCount;
   }, []);
 
   /**

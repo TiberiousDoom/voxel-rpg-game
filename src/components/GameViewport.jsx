@@ -14,7 +14,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
-import { useNPCRenderer, useNPCAnimation } from '../rendering/useNPCRenderer.js'; // WF4
+import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
@@ -208,6 +208,25 @@ function GameViewport({
     renderCount: 0
   });
 
+  // Performance metrics state
+  const [perfMetrics, setPerfMetrics] = useState({
+    fps: 0,
+    frameTime: 0,
+    visibleBuildings: 0,
+    totalBuildings: 0,
+    visibleNPCs: 0,
+    totalNPCs: 0,
+    isMobile: false,
+    canvasWidth: 0,
+    canvasHeight: 0
+  });
+
+  const perfRef = useRef({
+    frameCount: 0,
+    lastFpsUpdate: Date.now(),
+    frameTimes: []
+  });
+
   // Player state - Initialize synchronously to ensure it's available before first render
   const playerRef = useRef(null);
   const playerRendererRef = useRef(null);
@@ -250,9 +269,6 @@ function GameViewport({
     enableAnimations: true,
     debugMode: debugMode
   });
-
-  // WF4: Update NPC positions for smooth interpolation
-  useNPCAnimation(npcs, npcRenderer.updatePositions, true);
 
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
@@ -485,12 +501,36 @@ function GameViewport({
 
     ctx.restore();
 
-    // WF3: Render buildings using new BuildingRenderer
-    renderBuildingsWF3(ctx, buildings, worldToCanvas);
+    // Calculate viewport bounds for culling (add 2 tile buffer)
+    const viewportBounds = {
+      left: Math.floor(-offset.x / TILE_SIZE) - 2,
+      right: Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE) + 2,
+      top: Math.floor(-offset.y / TILE_SIZE) - 2,
+      bottom: Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE) + 2
+    };
+
+    // WF3: Render buildings using new BuildingRenderer with viewport culling
+    const visibleBuildingCount = renderBuildingsWF3(ctx, buildings, worldToCanvas, viewportBounds);
 
     // WF4: Render NPCs using NPCRenderer
-    // This uses the new rendering system with smooth interpolation and animations
-    npcRenderer.renderNPCs(ctx, npcs, worldToCanvas);
+    // Filter visible NPCs for performance
+    const visibleNPCs = npcs.filter(npc => {
+      if (!npc || !npc.position) return false;
+      return npc.position.x >= viewportBounds.left &&
+             npc.position.x <= viewportBounds.right &&
+             npc.position.z >= viewportBounds.top &&
+             npc.position.z <= viewportBounds.bottom;
+    });
+    npcRenderer.renderNPCs(ctx, visibleNPCs, worldToCanvas);
+
+    // Update performance metrics
+    setPerfMetrics(prev => ({
+      ...prev,
+      visibleBuildings: visibleBuildingCount,
+      totalBuildings: buildings?.length || 0,
+      visibleNPCs: visibleNPCs.length,
+      totalNPCs: npcs?.length || 0
+    }));
 
     // Render player
     if (enablePlayerMovement && playerRef.current && playerRendererRef.current) {
@@ -782,10 +822,44 @@ function GameViewport({
 
       if (elapsed > frameInterval) {
         lastFrameTime = currentTime - (elapsed % frameInterval);
+        const frameStartTime = performance.now();
 
         try {
+          // Update NPC positions before rendering
+          if (npcRenderer && npcs) {
+            npcRenderer.updatePositions(npcs, elapsed);
+          }
+
           // Draw viewport with safe error handling
           drawViewport(ctx);
+
+          // Track performance metrics
+          const frameEndTime = performance.now();
+          const frameTime = frameEndTime - frameStartTime;
+
+          perfRef.current.frameCount++;
+          perfRef.current.frameTimes.push(frameTime);
+          if (perfRef.current.frameTimes.length > 60) {
+            perfRef.current.frameTimes.shift();
+          }
+
+          const now = Date.now();
+          if (now - perfRef.current.lastFpsUpdate >= 1000) {
+            const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
+            const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
+
+            setPerfMetrics(prev => ({
+              ...prev,
+              fps,
+              frameTime: avgFrameTime.toFixed(2),
+              isMobile,
+              canvasWidth: CANVAS_WIDTH,
+              canvasHeight: CANVAS_HEIGHT
+            }));
+
+            perfRef.current.frameCount = 0;
+            perfRef.current.lastFpsUpdate = now;
+          }
 
           // Update debug info
           if (initialRenderAttempts < maxInitialAttempts) {
@@ -835,7 +909,7 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset]);
+  }, [drawViewport, getOffset, npcRenderer, npcs]);
 
   return (
     <div className="game-viewport">
@@ -903,6 +977,61 @@ function GameViewport({
         )}
         </div>
       )}
+
+      {/* Performance metrics overlay - always visible */}
+      <div className="performance-overlay" style={{
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        background: 'rgba(0, 0, 0, 0.85)',
+        color: '#00ff00',
+        padding: '12px',
+        borderRadius: '8px',
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        minWidth: '180px',
+        zIndex: 9999,
+        pointerEvents: 'none',
+        border: '2px solid rgba(0, 255, 0, 0.3)',
+      }}>
+        <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ffffff', borderBottom: '1px solid rgba(0, 255, 0, 0.3)', paddingBottom: '4px' }}>
+          ⚡ PERFORMANCE
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
+          <div>FPS:</div>
+          <div style={{ color: perfMetrics.fps < 30 ? '#ff4444' : perfMetrics.fps < 45 ? '#ffaa00' : '#00ff00' }}>
+            {perfMetrics.fps || 0}
+          </div>
+
+          <div>Frame:</div>
+          <div style={{ color: perfMetrics.frameTime > 33 ? '#ff4444' : perfMetrics.frameTime > 22 ? '#ffaa00' : '#00ff00' }}>
+            {perfMetrics.frameTime || 0}ms
+          </div>
+
+          <div>Target:</div>
+          <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
+
+          <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
+            Entities:
+          </div>
+
+          <div>Buildings:</div>
+          <div>{perfMetrics.visibleBuildings}/{perfMetrics.totalBuildings}</div>
+
+          <div>NPCs:</div>
+          <div>{perfMetrics.visibleNPCs}/{perfMetrics.totalNPCs}</div>
+
+          <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
+            Canvas:
+          </div>
+
+          <div>Size:</div>
+          <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
+
+          <div>Device:</div>
+          <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
+        </div>
+      </div>
 
       <div className="viewport-footer">
         <p className="viewport-hint">

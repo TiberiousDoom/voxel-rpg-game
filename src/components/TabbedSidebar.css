@@ -261,6 +261,7 @@
 /* Tab Content Wrapper */
 .tab-content-wrapper {
   flex: 1;
+  max-height: 80vh; /* Improved scrollable container */
   overflow: hidden;
   position: relative;
   animation: fadeIn 0.3s ease;

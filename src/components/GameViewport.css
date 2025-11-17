@@ -321,16 +321,20 @@
     opacity: 1 !important;
     visibility: visible !important;
 
-    /* CRITICAL: Override flex layout on mobile */
+    /* NUCLEAR OPTION: Break out of flex layout completely */
+    position: relative !important;
     flex: none !important;
+    align-self: stretch !important;
 
-    /* CRITICAL FIX: Proper responsive sizing */
-    width: 100% !important;
+    /* Use viewport units to guarantee sizing */
+    width: calc(100vw - 20px) !important; /* Account for potential padding */
+    max-width: 800px !important;
+    min-width: 200px !important;
     height: auto !important;
     aspect-ratio: 4 / 3 !important; /* 800:600 ratio */
-    max-width: 100% !important;
-    min-width: 0 !important;
-    object-fit: contain !important;
+
+    /* Center it */
+    margin: 0 auto !important;
 
     /* Force hardware acceleration */
     transform: translate3d(0, 0, 0);
@@ -351,11 +355,11 @@
 
   /* Ensure parent container doesn't overflow */
   .game-viewport {
-    width: 100% !important;
+    width: 100vw !important;
     max-width: 100vw !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
-    padding: 0 !important;
+    padding: 0 10px !important;
     gap: 5px !important;
   }
 }

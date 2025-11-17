@@ -753,6 +753,10 @@ function GameViewport({
         fontSize: '11px',
         fontFamily: 'monospace',
         maxWidth: '300px',
+        maxHeight: '80vh', // Improved scrollable container
+        minHeight: '60px', // Ensures readability even when compressed
+        overflowY: 'auto',
+        overflowX: 'hidden',
         zIndex: 9999,
         pointerEvents: 'none'
       }}>

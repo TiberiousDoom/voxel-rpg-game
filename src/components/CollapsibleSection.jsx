@@ -23,7 +23,7 @@ function CollapsibleSection({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className={`collapsible-section ${className}`}>
+    <div className={`collapsible-section ${isExpanded ? 'expanded' : ''} ${className}`}>
       <button
         className="collapsible-header"
         onClick={() => setIsExpanded(!isExpanded)}

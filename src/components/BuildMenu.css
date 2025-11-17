@@ -43,31 +43,11 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(0, 0, 0, 0.3);
+  /* Removed flex: 1 and overflow to allow natural content expansion */
+  /* Parent .build-menu handles scrolling */
 }
 
-.buildings-section::-webkit-scrollbar {
-  width: 6px;
-}
-
-.buildings-section::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-}
-
-.buildings-section::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.5);
-  border-radius: 3px;
-}
-
-.buildings-section::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.7);
-}
+/* Scrollbar styling removed - parent .build-menu handles scrolling */
 
 /* Tier Section Styling */
 .buildings-section .collapsible-section {

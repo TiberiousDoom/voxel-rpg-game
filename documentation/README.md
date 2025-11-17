@@ -1,6 +1,6 @@
 # Documentation Archive Index
 
-**Last Updated:** 2025-11-16
+**Last Updated:** 2025-11-17
 **Purpose:** Index of all archived documentation
 
 This directory contains historical documentation. For current, authoritative docs, see the **root directory**.
@@ -28,6 +28,7 @@ Implementation plans, timelines, and workflow coordination.
 
 | File | Description | Date | Status |
 |------|-------------|------|--------|
+| `SPRITE_SYSTEM_IMPLEMENTATION_PLAN.md` | Implementation plan for sprite-based rendering system | Nov 17, 2025 | Active |
 | `PHASE_4_WORKFLOWS.md` | Phase 4 parallel workflow breakdown | Nov 15, 2025 | Active |
 | `HYBRID_GAME_INTEGRATION_PLAN.md` | Plan to integrate action RPG with settlement management | Nov 15, 2025 | Active |
 | `HYBRID_CORE_SYSTEMS_SPEC.md` | Technical spec for hybrid game core systems | Nov 15, 2025 | Active |
@@ -88,7 +89,7 @@ Guides for migrating between versions or architectures.
 
 ---
 
-**Last Updated:** 2025-11-15
+**Last Updated:** 2025-11-17
 **Maintained By:** Project team
 # Documentation Archive
 

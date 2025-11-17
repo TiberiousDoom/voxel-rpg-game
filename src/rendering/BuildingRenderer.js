@@ -44,6 +44,9 @@ export class BuildingRenderer {
     this.showProgressBars = options.showProgressBars !== false;
     this.showShadows = options.showShadows !== false;
     this.showOverlays = options.showOverlays !== false;
+
+    // Cache for crack patterns to avoid regenerating with random() every frame
+    this.crackCache = new Map();
   }
 
   /**
@@ -65,9 +68,6 @@ export class BuildingRenderer {
     const y = canvasPos.y + 2;
     const width = this.tileSize - 4;
     const height = this.tileSize - 4;
-
-    // Save context state
-    ctx.save();
 
     // Draw shadow if enabled
     if (this.showShadows && state !== 'BLUEPRINT') {
@@ -102,9 +102,6 @@ export class BuildingRenderer {
 
     // Draw building icon/label
     this.drawBuildingLabel(ctx, x, y, width, height, icon, state);
-
-    // Restore context state
-    ctx.restore();
   }
 
   /**
@@ -154,7 +151,7 @@ export class BuildingRenderer {
     // Create pattern overlay using image data manipulation
     // For damaged buildings, draw crack patterns
     if (state === 'DAMAGED' || healthPercent < 1) {
-      this.drawCracks(ctx, x, y, width, height, healthPercent);
+      this.drawCracks(ctx, x, y, width, height, healthPercent, building.id);
     }
 
     // For blueprint, draw grid pattern
@@ -169,19 +166,47 @@ export class BuildingRenderer {
   }
 
   /**
-   * Draw crack patterns for damaged buildings
+   * Draw crack patterns for damaged buildings (with caching)
    */
-  drawCracks(ctx, x, y, width, height, healthPercent) {
-    const crackCount = Math.floor((1 - healthPercent) * 5);
+  drawCracks(ctx, x, y, width, height, healthPercent, buildingId) {
+    // Round health percent to nearest 10% to limit cache entries
+    const healthBucket = Math.floor(healthPercent * 10) / 10;
+    const cacheKey = `${buildingId}_${healthBucket}`;
 
+    // Check cache first
+    if (!this.crackCache.has(cacheKey)) {
+      // Generate crack pattern once and cache it
+      const crackCount = Math.floor((1 - healthPercent) * 5);
+      const cracks = [];
+
+      for (let i = 0; i < crackCount; i++) {
+        cracks.push({
+          startX: Math.random(),
+          startY: Math.random(),
+          endX: Math.random() - 0.5,
+          endY: Math.random() - 0.5
+        });
+      }
+
+      this.crackCache.set(cacheKey, cracks);
+
+      // Limit cache size to prevent memory leaks
+      if (this.crackCache.size > 100) {
+        const firstKey = this.crackCache.keys().next().value;
+        this.crackCache.delete(firstKey);
+      }
+    }
+
+    // Draw cached crack pattern
+    const cracks = this.crackCache.get(cacheKey);
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.lineWidth = 1;
 
-    for (let i = 0; i < crackCount; i++) {
-      const startX = x + Math.random() * width;
-      const startY = y + Math.random() * height;
-      const endX = startX + (Math.random() - 0.5) * width * 0.5;
-      const endY = startY + (Math.random() - 0.5) * height * 0.5;
+    for (const crack of cracks) {
+      const startX = x + crack.startX * width;
+      const startY = y + crack.startY * height;
+      const endX = startX + crack.endX * width * 0.5;
+      const endY = startY + crack.endY * height * 0.5;
 
       ctx.beginPath();
       ctx.moveTo(startX, startY);

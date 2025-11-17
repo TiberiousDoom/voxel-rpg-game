@@ -14,7 +14,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
-import { useNPCRenderer, useNPCAnimation } from '../rendering/useNPCRenderer.js'; // WF4
+import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
@@ -227,7 +227,12 @@ function GameViewport({
     }
   }
 
-  // WF3: Building rendering hook
+  // Detect if mobile for performance optimizations
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768 ||
+                   ('ontouchstart' in window);
+
+  // WF3: Building rendering hook (optimized for mobile)
   const {
     renderBuildings: renderBuildingsWF3,
     // eslint-disable-next-line no-unused-vars -- Reserved for WF3: Hover effects not yet implemented
@@ -237,22 +242,19 @@ function GameViewport({
     tileSize: TILE_SIZE,
     showHealthBars: true,
     showProgressBars: true,
-    showShadows: true,
-    showOverlays: true
+    showShadows: !isMobile, // Disable shadows on mobile for performance
+    showOverlays: !isMobile // Disable texture overlays on mobile for performance
   });
 
-  // WF4: NPC Renderer integration
+  // WF4: NPC Renderer integration (optimized for mobile)
   const npcRenderer = useNPCRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: true,
-    showRoleBadges: true,
-    showStatusIndicators: true,
+    showHealthBars: !isMobile, // Hide health bars on mobile
+    showRoleBadges: !isMobile, // Hide role badges on mobile
+    showStatusIndicators: !isMobile, // Hide status indicators on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
-
-  // WF4: Update NPC positions for smooth interpolation
-  useNPCAnimation(npcs, npcRenderer.updatePositions, true);
 
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
@@ -849,6 +851,11 @@ function GameViewport({
         lastFrameTime = currentTime - (elapsed % frameInterval);
 
         try {
+          // Update NPC positions before rendering
+          if (npcRenderer && npcs) {
+            npcRenderer.updatePositions(npcs, elapsed);
+          }
+
           // Draw viewport with safe error handling
           drawViewport(ctx);
 
@@ -900,7 +907,7 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset]);
+  }, [drawViewport, getOffset, npcRenderer, npcs]);
 
   return (
     <div className="game-viewport">

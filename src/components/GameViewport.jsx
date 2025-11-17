@@ -438,6 +438,18 @@ function GameViewport({
       ctx.fillStyle = '#f0f0f0'; // Light gray instead of white
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+      // IMMEDIATE TEST: Draw something right after clearing
+      // This should be visible if canvas is working at all
+      ctx.fillStyle = '#FF0000';
+      ctx.fillRect(10, 10, 50, 50);
+      ctx.fillStyle = '#00FF00';
+      ctx.fillRect(70, 10, 50, 50);
+      ctx.fillStyle = '#0000FF';
+      ctx.fillRect(130, 10, 50, 50);
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 24px Arial';
+      ctx.fillText('TEST', 200, 40);
+
       // Get camera offset with better fallback
       let offset = { x: 0, y: 0 }; // Default offset
 

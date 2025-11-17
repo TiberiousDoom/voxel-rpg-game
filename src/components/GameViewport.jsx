@@ -434,21 +434,9 @@ function GameViewport({
         throw new Error('Invalid canvas context');
       }
 
-      // Clear canvas - use a visible color to verify rendering
-      ctx.fillStyle = '#f0f0f0'; // Light gray instead of white
+      // Clear canvas
+      ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-      // IMMEDIATE TEST: Draw something right after clearing
-      // This should be visible if canvas is working at all
-      ctx.fillStyle = '#FF0000';
-      ctx.fillRect(10, 10, 50, 50);
-      ctx.fillStyle = '#00FF00';
-      ctx.fillRect(70, 10, 50, 50);
-      ctx.fillStyle = '#0000FF';
-      ctx.fillRect(130, 10, 50, 50);
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 24px Arial';
-      ctx.fillText('TEST', 200, 40);
 
       // Get camera offset with better fallback
       let offset = { x: 0, y: 0 }; // Default offset
@@ -777,41 +765,6 @@ function GameViewport({
         // Draw viewport with safe error handling
         drawViewport(ctx);
 
-        // After drawing viewport, add visual debug markers on the canvas
-        try {
-          // Draw frame counter in top-right corner
-          ctx.save();
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-          ctx.fillRect(CANVAS_WIDTH - 100, 0, 100, 30);
-          ctx.fillStyle = '#00FF00';
-          ctx.font = 'bold 16px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(`Frame ${frameCount}`, CANVAS_WIDTH - 50, 20);
-          ctx.restore();
-
-          // Draw test pattern in bottom-right corner (always visible)
-          ctx.save();
-          ctx.fillStyle = '#FF0000';
-          ctx.fillRect(CANVAS_WIDTH - 50, CANVAS_HEIGHT - 50, 20, 20);
-          ctx.fillStyle = '#00FF00';
-          ctx.fillRect(CANVAS_WIDTH - 30, CANVAS_HEIGHT - 50, 20, 20);
-          ctx.fillStyle = '#0000FF';
-          ctx.fillRect(CANVAS_WIDTH - 50, CANVAS_HEIGHT - 30, 20, 20);
-          ctx.fillStyle = '#FFFF00';
-          ctx.fillRect(CANVAS_WIDTH - 30, CANVAS_HEIGHT - 30, 20, 20);
-          ctx.restore();
-
-          // Draw a border around the entire canvas
-          ctx.save();
-          ctx.strokeStyle = '#FF00FF';
-          ctx.lineWidth = 4;
-          ctx.strokeRect(2, 2, CANVAS_WIDTH - 4, CANVAS_HEIGHT - 4);
-          ctx.restore();
-        } catch (debugErr) {
-          // eslint-disable-next-line no-console
-          console.warn('Debug markers failed:', debugErr);
-        }
-
         // Update debug info
         if (initialRenderAttempts < maxInitialAttempts) {
           initialRenderAttempts++;
@@ -883,27 +836,25 @@ function GameViewport({
         onMouseLeave={handleCanvasMouseLeave}
       />
 
-      {/* Debug overlay - always visible to diagnose mobile issues */}
-      <div className="debug-overlay" style={{
-        position: 'fixed',
-        top: '10px',
-        left: '10px',
-        background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0.95)',
-        color: 'white',
-        padding: '12px',
-        borderRadius: '8px',
-        border: '2px solid yellow',
-        fontSize: '12px',
-        fontFamily: 'monospace',
-        maxWidth: '90vw',
-        maxHeight: '80vh',
-        minHeight: '100px',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        zIndex: 99999,
-        pointerEvents: 'none',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-      }}>
+      {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
+      {debugMode && (
+        <div className="debug-overlay" style={{
+          position: 'fixed',
+          top: '10px',
+          left: '10px',
+          background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          padding: '8px',
+          borderRadius: '6px',
+          fontSize: '10px',
+          fontFamily: 'monospace',
+          maxWidth: '200px',
+          maxHeight: '300px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }}>
         <div><strong>🔍 Render Status</strong></div>
         <div>Canvas: {debugInfo.canvasReady ? '✓' : '✗'}</div>
         <div>Context: {debugInfo.contextReady ? '✓' : '✗'}</div>
@@ -927,7 +878,8 @@ function GameViewport({
             ⚠️ {debugInfo.lastError}
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       <div className="viewport-footer">
         <p className="viewport-hint">

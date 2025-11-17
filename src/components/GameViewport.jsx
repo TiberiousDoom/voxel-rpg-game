@@ -759,27 +759,43 @@ function GameViewport({
 
     const animate = () => {
       try {
-        // Draw a test pattern first to ensure canvas is working
-        if (initialRenderAttempts === 0) {
-          try {
-            ctx.fillStyle = '#00FF00';
-            ctx.fillRect(0, 0, 100, 100);
-            ctx.fillStyle = '#FF0000';
-            ctx.fillRect(100, 0, 100, 100);
-            ctx.fillStyle = '#0000FF';
-            ctx.fillRect(0, 100, 100, 100);
-            ctx.fillStyle = '#FFFF00';
-            ctx.fillRect(100, 100, 100, 100);
-            // eslint-disable-next-line no-console
-            console.log('🎨 Test pattern drawn');
-          } catch (testErr) {
-            // eslint-disable-next-line no-console
-            console.error('❌ Failed to draw test pattern:', testErr);
-          }
-        }
-
         // Draw viewport with safe error handling
         drawViewport(ctx);
+
+        // After drawing viewport, add visual debug markers on the canvas
+        try {
+          // Draw frame counter in top-right corner
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(CANVAS_WIDTH - 100, 0, 100, 30);
+          ctx.fillStyle = '#00FF00';
+          ctx.font = 'bold 16px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(`Frame ${debugInfo.renderCount}`, CANVAS_WIDTH - 50, 20);
+          ctx.restore();
+
+          // Draw test pattern in bottom-right corner (always visible)
+          ctx.save();
+          ctx.fillStyle = '#FF0000';
+          ctx.fillRect(CANVAS_WIDTH - 50, CANVAS_HEIGHT - 50, 20, 20);
+          ctx.fillStyle = '#00FF00';
+          ctx.fillRect(CANVAS_WIDTH - 30, CANVAS_HEIGHT - 50, 20, 20);
+          ctx.fillStyle = '#0000FF';
+          ctx.fillRect(CANVAS_WIDTH - 50, CANVAS_HEIGHT - 30, 20, 20);
+          ctx.fillStyle = '#FFFF00';
+          ctx.fillRect(CANVAS_WIDTH - 30, CANVAS_HEIGHT - 30, 20, 20);
+          ctx.restore();
+
+          // Draw a border around the entire canvas
+          ctx.save();
+          ctx.strokeStyle = '#FF00FF';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(2, 2, CANVAS_WIDTH - 4, CANVAS_HEIGHT - 4);
+          ctx.restore();
+        } catch (debugErr) {
+          // eslint-disable-next-line no-console
+          console.warn('Debug markers failed:', debugErr);
+        }
 
         // Update debug info
         if (initialRenderAttempts < maxInitialAttempts) {
@@ -808,6 +824,7 @@ function GameViewport({
           ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
           ctx.fillStyle = '#ffffff';
           ctx.font = '20px Arial';
+          ctx.textAlign = 'left';
           ctx.fillText(`Error: ${error.message}`, 10, 30);
         } catch (e) {
           // eslint-disable-next-line no-console
@@ -853,22 +870,24 @@ function GameViewport({
 
       {/* Debug overlay - always visible to diagnose mobile issues */}
       <div className="debug-overlay" style={{
-        position: 'absolute',
+        position: 'fixed',
         top: '10px',
         left: '10px',
-        background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+        background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0.95)',
         color: 'white',
-        padding: '10px',
+        padding: '12px',
         borderRadius: '8px',
-        fontSize: '11px',
+        border: '2px solid yellow',
+        fontSize: '12px',
         fontFamily: 'monospace',
-        maxWidth: '300px',
-        maxHeight: '80vh', // Improved scrollable container
-        minHeight: '60px', // Ensures readability even when compressed
+        maxWidth: '90vw',
+        maxHeight: '80vh',
+        minHeight: '100px',
         overflowY: 'auto',
         overflowX: 'hidden',
-        zIndex: 9999,
-        pointerEvents: 'none'
+        zIndex: 99999,
+        pointerEvents: 'none',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
       }}>
         <div><strong>🔍 Render Status</strong></div>
         <div>Canvas: {debugInfo.canvasReady ? '✓' : '✗'}</div>

@@ -343,14 +343,15 @@ function GameViewport({
   }, [getOffset]);
 
   /**
-   * Convert canvas coordinates to grid position
+   * Convert canvas coordinates to grid position (with camera offset)
    */
-  const canvasToWorld = (canvasX, canvasY) => {
+  const canvasToWorld = React.useCallback((canvasX, canvasY) => {
+    const offset = getOffset?.() || { x: 0, y: 0 };
     return {
-      x: Math.floor(canvasX / TILE_SIZE),
-      z: Math.floor(canvasY / TILE_SIZE)
+      x: Math.floor((canvasX - offset.x) / TILE_SIZE),
+      z: Math.floor((canvasY - offset.y) / TILE_SIZE)
     };
-  };
+  }, [getOffset]);
 
   /**
    * Convert canvas coordinates to world position (with camera offset)
@@ -772,7 +773,7 @@ function GameViewport({
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
                      window.innerWidth <= 768 ||
                      ('ontouchstart' in window);
-    const targetFPS = isMobile ? 30 : 60; // 30 FPS on mobile, 60 FPS on desktop
+    const targetFPS = isMobile ? 45 : 60; // Increased mobile FPS to 45 for better responsiveness
     const frameInterval = 1000 / targetFPS;
 
     const animate = (currentTime) => {

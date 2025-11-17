@@ -19,7 +19,7 @@ import {
   // eslint-disable-next-line no-unused-vars -- Reserved for WF3: CSS-based shadow rendering
   generateShadowCSS
 } from '../assets/building-icons.js';
-import { SpriteLoader } from './SpriteLoader.js';
+import SpriteLoader from './SpriteLoader.js';
 import { BUILDING_SPRITE_MANIFEST } from '../assets/sprite-manifest.js';
 
 /**

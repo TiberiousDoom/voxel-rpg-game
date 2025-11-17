@@ -4,7 +4,7 @@
  */
 
 import { useRef } from 'react';
-import { SpriteLoader } from '../../rendering/SpriteLoader.js';
+import SpriteLoader from '../../rendering/SpriteLoader.js';
 import { PLAYER_SPRITE_MANIFEST } from '../../assets/sprite-manifest.js';
 
 /**

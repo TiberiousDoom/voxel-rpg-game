@@ -4,6 +4,8 @@
  */
 
 import { useRef } from 'react';
+import { SpriteLoader } from '../../rendering/SpriteLoader.js';
+import { PLAYER_SPRITE_MANIFEST } from '../../assets/sprite-manifest.js';
 
 /**
  * Player sprite configuration
@@ -26,6 +28,69 @@ export class PlayerRenderer {
     this.showHealthBar = options.showHealthBar !== false;
     this.showStaminaBar = options.showStaminaBar !== false;
     this.showInteractionRadius = options.showInteractionRadius || false;
+
+    // Sprite configuration
+    this.config = {
+      useSprites: options.useSprites !== false,
+      ...options
+    };
+
+    // Initialize sprite loader
+    this.spriteLoader = new SpriteLoader();
+    this.spritesLoaded = false;
+    this.spriteLoadError = false;
+    this.spriteSheets = {};
+
+    // Animation tracking
+    this.animationFrame = 0;
+    this.lastAnimationUpdate = 0;
+    this.animationSpeed = 150; // ms per frame
+
+    // Load sprites if enabled
+    if (this.config.useSprites) {
+      this._loadSprites();
+    }
+  }
+
+  /**
+   * Load player sprites asynchronously
+   * Gracefully handles loading failures by falling back to circle rendering
+   * @private
+   */
+  async _loadSprites() {
+    try {
+      const frameWidth = PLAYER_SPRITE_MANIFEST.frameSize.width;
+      const frameHeight = PLAYER_SPRITE_MANIFEST.frameSize.height;
+
+      // Load all player sprite sheets (idle, walk, sprint)
+      const states = ['idle', 'walk', 'sprint'];
+      const loadPromises = states.map(async (state) => {
+        const spritePath = PLAYER_SPRITE_MANIFEST[state];
+        const frameCount = PLAYER_SPRITE_MANIFEST.frames[state];
+        const key = `player_${state}`;
+
+        const spriteSheet = await this.spriteLoader.loadSpriteSheet(
+          key,
+          spritePath,
+          frameWidth,
+          frameHeight
+        );
+
+        this.spriteSheets[state] = {
+          sheet: spriteSheet,
+          frameCount: frameCount
+        };
+
+        return spriteSheet;
+      });
+
+      await Promise.allSettled(loadPromises);
+      this.spritesLoaded = true;
+      console.log('[PlayerRenderer] Sprites loaded successfully');
+    } catch (error) {
+      this.spriteLoadError = true;
+      console.warn('[PlayerRenderer] Failed to load sprites, falling back to circle rendering:', error.message);
+    }
   }
 
   /**
@@ -81,9 +146,101 @@ export class PlayerRenderer {
   }
 
   /**
-   * Render player body (circle with outline)
+   * Render player body (sprite or circle with outline)
    */
   renderBody(ctx, x, y, player) {
+    // Determine if we should use sprites
+    const shouldUseSprites = this.config.useSprites && this.spritesLoaded && !this.spriteLoadError;
+
+    if (shouldUseSprites) {
+      this._renderPlayerWithSprite(ctx, x, y, player);
+    } else {
+      this._renderPlayerWithCircle(ctx, x, y, player);
+    }
+  }
+
+  /**
+   * Render player using sprite
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {number} x - Center X position
+   * @param {number} y - Center Y position
+   * @param {object} player - Player entity
+   * @private
+   */
+  _renderPlayerWithSprite(ctx, x, y, player) {
+    // Determine animation state
+    const isMoving = player.velocity.x !== 0 || player.velocity.z !== 0;
+    let animState = 'idle';
+
+    if (isMoving) {
+      animState = player.isSprinting ? 'sprint' : 'walk';
+    }
+
+    const spriteData = this.spriteSheets[animState];
+
+    if (!spriteData || !spriteData.sheet) {
+      // Sprite not available for this state, fall back to circle
+      this._renderPlayerWithCircle(ctx, x, y, player);
+      return;
+    }
+
+    // Update animation frame
+    const now = Date.now();
+    if (now - this.lastAnimationUpdate > this.animationSpeed) {
+      this.animationFrame = (this.animationFrame + 1) % spriteData.frameCount;
+      this.lastAnimationUpdate = now;
+    }
+
+    // Determine if we should flip the sprite based on facing direction
+    const flipX = player.facing === 'left';
+
+    // Draw outer glow if sprinting
+    if (player.isSprinting) {
+      ctx.beginPath();
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(74, 144, 226, 0.3)';
+      ctx.fill();
+    }
+
+    // Draw the sprite
+    const spriteSize = 16; // Player sprites are 16x16
+    const drawSize = PLAYER_CONFIG.size * 1.5; // Scale up slightly for visibility
+
+    ctx.save();
+    if (flipX) {
+      ctx.scale(-1, 1);
+      spriteData.sheet.drawFrameFlipped(
+        ctx,
+        this.animationFrame,
+        -x - drawSize / 2,
+        y - drawSize / 2,
+        drawSize,
+        drawSize,
+        true
+      );
+    } else {
+      spriteData.sheet.drawFrameFlipped(
+        ctx,
+        this.animationFrame,
+        x - drawSize / 2,
+        y - drawSize / 2,
+        drawSize,
+        drawSize,
+        false
+      );
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Render player using circle (fallback)
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {number} x - Center X position
+   * @param {number} y - Center Y position
+   * @param {object} player - Player entity
+   * @private
+   */
+  _renderPlayerWithCircle(ctx, x, y, player) {
     const radius = PLAYER_CONFIG.size / 2;
 
     // Pulsing effect when moving

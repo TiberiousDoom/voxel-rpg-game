@@ -755,13 +755,10 @@ function GameViewport({
 
     let animationId = null;
     let initialRenderAttempts = 0;
-    let frameCount = 0;
     const maxInitialAttempts = 60; // Try for 1 second
 
     const animate = () => {
       try {
-        frameCount++;
-
         // Draw viewport with safe error handling
         drawViewport(ctx);
 

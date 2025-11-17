@@ -648,7 +648,10 @@ function GameViewport({
         y: 0, // Ground level
         z: gridPos.z
       });
-    } else if (enablePlayerMovement && playerRef.current) {
+      return; // Explicitly prevent any other click handling
+    }
+
+    if (enablePlayerMovement && playerRef.current) {
       // Check if clicked on an interactable object
       let didInteract = false;
 
@@ -679,19 +682,20 @@ function GameViewport({
       if (!didInteract) {
         playerRef.current.setTargetPosition(worldPos);
       }
-    } else {
-      // Check if a building was clicked
-      const clickedBuilding = buildings.find(b =>
-        b && b.position &&
-        b.position.x === gridPos.x &&
-        b.position.z === gridPos.z
-      );
+      return;
+    }
 
-      if (clickedBuilding) {
-        onBuildingClick(clickedBuilding);
-      } else {
-        onSelectTile(gridPos);
-      }
+    // No player movement - check if a building was clicked for selection
+    const clickedBuilding = buildings.find(b =>
+      b && b.position &&
+      b.position.x === gridPos.x &&
+      b.position.z === gridPos.z
+    );
+
+    if (clickedBuilding) {
+      onBuildingClick(clickedBuilding);
+    } else {
+      onSelectTile(gridPos);
     }
   };
 

@@ -22,6 +22,73 @@ import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import './GameViewport.css';
 
+/**
+ * Mobile-safe canvas initialization
+ * Handles device pixel ratio and fallback context options
+ */
+const initializeCanvas = (canvas, width, height) => {
+  if (!canvas) return null;
+
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768 ||
+                   ('ontouchstart' in window);
+
+  // Handle device pixel ratio for crisp rendering on mobile
+  const dpr = window.devicePixelRatio || 1;
+
+  // Set actual canvas size accounting for pixel ratio
+  if (isMobile && dpr > 1) {
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+  } else {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  // Try multiple context configurations
+  let ctx = null;
+  const contextConfigs = [
+    { alpha: false, desynchronized: true }, // Your current config
+    { alpha: false, willReadFrequently: true }, // Better for mobile
+    { alpha: false }, // Minimal config
+    {} // Fallback to defaults
+  ];
+
+  for (const config of contextConfigs) {
+    try {
+      ctx = canvas.getContext('2d', config);
+      if (ctx) {
+        // Scale context for high DPI
+        if (isMobile && dpr > 1) {
+          ctx.scale(dpr, dpr);
+        }
+
+        // Disable image smoothing for pixel art
+        ctx.imageSmoothingEnabled = false;
+        ctx.mozImageSmoothingEnabled = false;
+        ctx.webkitImageSmoothingEnabled = false;
+        ctx.msImageSmoothingEnabled = false;
+
+        // Test the context works
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, 1, 1);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // eslint-disable-next-line no-console
+        console.log('Canvas initialized with config:', config);
+        break;
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Context creation failed with config:', config, e);
+    }
+  }
+
+  return ctx;
+};
+
 // Grid constants - Updated to 50x50 for player movement
 const GRID_WIDTH = 50;
 const GRID_HEIGHT = 50;
@@ -130,7 +197,6 @@ function GameViewport({
   // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const canvasRef = useRef(null);
-  const rafRef = useRef(null); // requestAnimationFrame reference
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
 
@@ -371,14 +437,23 @@ function GameViewport({
         throw new Error('Invalid canvas context');
       }
 
-      // Clear canvas
-      ctx.fillStyle = '#FFFFFF';
+      // Clear canvas - use a visible color to verify rendering
+      ctx.fillStyle = '#f0f0f0'; // Light gray instead of white
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Get camera offset with fallback
-      const offset = getOffset?.() || { x: 0, y: 0 };
-      if (!offset || typeof offset.x !== 'number' || typeof offset.y !== 'number') {
-        throw new Error(`Invalid camera offset: ${JSON.stringify(offset)}`);
+      // Get camera offset with better fallback
+      let offset = { x: 0, y: 0 }; // Default offset
+
+      try {
+        if (getOffset && typeof getOffset === 'function') {
+          const tempOffset = getOffset();
+          if (tempOffset && typeof tempOffset.x === 'number' && typeof tempOffset.y === 'number') {
+            offset = tempOffset;
+          }
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Camera offset error, using default:', e);
       }
 
     // Draw grid with camera offset
@@ -655,8 +730,8 @@ function GameViewport({
   };
 
   /**
-   * Optimized canvas rendering using requestAnimationFrame
-   * Only renders when state changes, but caps at 60 FPS
+   * Mobile-safe canvas initialization and rendering loop
+   * Uses continuous animation loop for smooth rendering
    */
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -667,57 +742,70 @@ function GameViewport({
 
     setDebugInfo(prev => ({ ...prev, canvasReady: true }));
 
-    let ctx;
-    try {
-      ctx = canvas.getContext('2d', {
-        alpha: false,
-        desynchronized: true, // Hint for better mobile performance
-      });
-    } catch (error) {
-      setDebugInfo(prev => ({
-        ...prev,
-        contextReady: false,
-        lastError: `Failed to get context: ${error.message}`
-      }));
-      return;
-    }
+    // Initialize with mobile-safe function
+    const ctx = initializeCanvas(canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     if (!ctx) {
       setDebugInfo(prev => ({
         ...prev,
         contextReady: false,
-        lastError: 'getContext returned null'
+        lastError: 'Failed to initialize canvas context'
       }));
       return;
     }
 
     setDebugInfo(prev => ({ ...prev, contextReady: true }));
 
-    // Cancel any pending animation frame
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-    }
+    let animationId = null;
+    let initialRenderAttempts = 0;
+    const maxInitialAttempts = 60; // Try for 1 second
 
-    // Schedule render on next animation frame (max 60 FPS)
-    rafRef.current = requestAnimationFrame(() => {
+    const animate = () => {
       try {
+        // Draw viewport with safe error handling
         drawViewport(ctx);
+
+        // Update debug info
+        if (initialRenderAttempts < maxInitialAttempts) {
+          initialRenderAttempts++;
+          if (getOffset) {
+            setDebugInfo(prev => ({
+              ...prev,
+              cameraReady: true,
+              lastError: null
+            }));
+          }
+        }
+
       } catch (error) {
         setDebugInfo(prev => ({
           ...prev,
-          lastError: `RAF error: ${error.message}`
+          lastError: `Render error: ${error.message}`
         }));
-      }
-      rafRef.current = null;
-    });
 
-    // Cleanup on unmount
+        // Try to draw error message
+        try {
+          ctx.fillStyle = '#ff0000';
+          ctx.font = '14px Arial';
+          ctx.fillText(`Error: ${error.message}`, 10, 30);
+        } catch (e) {
+          // Ignore
+        }
+      }
+
+      animationId = requestAnimationFrame(animate);
+    };
+
+    // Start animation
+    animate();
+
+    // Cleanup
     return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+      if (animationId) {
+        cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport]);
+  }, [drawViewport, getOffset]);
 
   return (
     <div className="game-viewport">

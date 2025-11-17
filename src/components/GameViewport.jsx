@@ -477,10 +477,10 @@ function GameViewport({
 
     // Viewport culling - only render visible entities
     const viewportBounds = {
-      left: -offset.x / TILE_SIZE - 2, // Add 2-tile margin
-      right: (CANVAS_WIDTH - offset.x) / TILE_SIZE + 2,
-      top: -offset.y / TILE_SIZE - 2,
-      bottom: (CANVAS_HEIGHT - offset.y) / TILE_SIZE + 2
+      left: Math.floor(-offset.x / TILE_SIZE) - 2, // Add 2-tile margin
+      right: Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE) + 2,
+      top: Math.floor(-offset.y / TILE_SIZE) - 2,
+      bottom: Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE) + 2
     };
 
     // Filter visible buildings
@@ -567,26 +567,10 @@ function GameViewport({
       ctx.restore();
     }
 
-    // Calculate viewport bounds for culling (add 2 tile buffer)
-    const viewportBounds = {
-      left: Math.floor(-offset.x / TILE_SIZE) - 2,
-      right: Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE) + 2,
-      top: Math.floor(-offset.y / TILE_SIZE) - 2,
-      bottom: Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE) + 2
-    };
-
     // WF3: Render buildings using new BuildingRenderer with viewport culling
     const visibleBuildingCount = renderBuildingsWF3(ctx, buildings, worldToCanvas, viewportBounds);
 
-    // WF4: Render NPCs using NPCRenderer
-    // Filter visible NPCs for performance
-    const visibleNPCs = npcs.filter(npc => {
-      if (!npc || !npc.position) return false;
-      return npc.position.x >= viewportBounds.left &&
-             npc.position.x <= viewportBounds.right &&
-             npc.position.z >= viewportBounds.top &&
-             npc.position.z <= viewportBounds.bottom;
-    });
+    // WF4: Render NPCs using NPCRenderer (already filtered)
     npcRenderer.renderNPCs(ctx, visibleNPCs, worldToCanvas);
 
     // Update performance metrics

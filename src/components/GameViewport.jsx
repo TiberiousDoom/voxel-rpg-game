@@ -776,7 +776,12 @@ function GameViewport({
     let initialRenderAttempts = 0;
     const maxInitialAttempts = 60; // Try for 1 second
     let lastFrameTime = 0;
-    const targetFPS = 30; // Limit to 30 FPS on mobile for better performance
+
+    // Detect mobile for appropriate frame rate
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                     window.innerWidth <= 768 ||
+                     ('ontouchstart' in window);
+    const targetFPS = isMobile ? 30 : 60; // 30 FPS on mobile, 60 FPS on desktop
     const frameInterval = 1000 / targetFPS;
 
     const animate = (currentTime) => {

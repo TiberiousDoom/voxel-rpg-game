@@ -7,6 +7,7 @@
  * - Direction-based sprite flipping
  * - Health bars and status indicators
  * - Pathfinding visualization (debug mode)
+ * - Sprite-based rendering with fallback to circles
  */
 
 import {
@@ -25,6 +26,9 @@ import {
   calculateAnimationSpeed
 } from './NPCAnimations.js';
 
+import SpriteLoader from './SpriteLoader.js';
+import { NPC_SPRITE_MANIFEST } from '../assets/sprite-manifest.js';
+
 /**
  * NPC Renderer Class
  * Manages rendering state and logic for all NPCs
@@ -42,6 +46,7 @@ export class NPCRenderer {
       showStatusIndicators: config.showStatusIndicators !== false,
       enableAnimations: config.enableAnimations !== false,
       debugMode: config.debugMode || false,
+      useSprites: config.useSprites !== false, // Enable sprite rendering (fallback to circles if sprites unavailable)
       ...config
     };
 
@@ -54,9 +59,36 @@ export class NPCRenderer {
     // Last known positions for direction calculation
     this.lastPositions = new Map();
 
+    // Sprite loading system
+    this.spriteLoader = new SpriteLoader();
+    this.spritesLoaded = false;
+    this.spriteLoadError = false;
+
     // Performance tracking
     this.lastRenderTime = 0;
     this.renderCount = 0;
+
+    // Auto-load sprites if enabled
+    if (this.config.useSprites) {
+      this._loadSprites();
+    }
+  }
+
+  /**
+   * Load NPC sprites asynchronously
+   * @private
+   */
+  async _loadSprites() {
+    try {
+      await this.spriteLoader.loadManifest(NPC_SPRITE_MANIFEST);
+      this.spritesLoaded = true;
+      if (this.config.debugMode) {
+        console.log('[NPCRenderer] Sprites loaded successfully', this.spriteLoader.getStats());
+      }
+    } catch (error) {
+      this.spriteLoadError = true;
+      console.warn('[NPCRenderer] Failed to load sprites, falling back to circles:', error.message);
+    }
   }
 
   /**
@@ -172,13 +204,98 @@ export class NPCRenderer {
    * @param {NPCPositionInterpolator} interpolator - Position interpolator
    */
   _renderNPC(ctx, npc, canvasPos, interpolator) {
-    const sprite = getSpriteForRole(npc.role);
-    const statusColor = getStatusColor(npc);
     const tileSize = this.config.tileSize;
 
     // Calculate center position
     const centerX = canvasPos.x + tileSize / 2;
     const centerY = canvasPos.y + tileSize / 2;
+
+    // Determine if we should use sprites
+    const shouldUseSprites = this.config.useSprites && this.spritesLoaded && !this.spriteLoadError;
+
+    if (shouldUseSprites) {
+      this._renderNPCWithSprite(ctx, npc, centerX, centerY, interpolator);
+    } else {
+      this._renderNPCWithCircle(ctx, npc, centerX, centerY, interpolator);
+    }
+
+    // Draw health bar if damaged
+    if (this.config.showHealthBars) {
+      this._renderHealthBar(ctx, npc, centerX, centerY);
+    }
+
+    // Draw status indicator if enabled
+    if (this.config.showStatusIndicators) {
+      this._renderStatusIndicator(ctx, npc, centerX, centerY);
+    }
+  }
+
+  /**
+   * Render NPC using sprite (if available)
+   * @private
+   */
+  _renderNPCWithSprite(ctx, npc, centerX, centerY, interpolator) {
+    const sprite = getSpriteForRole(npc.role);
+
+    // Get animation frame if enabled
+    let frameOffset = { x: 0, y: 0 };
+    let frameScale = 1.0;
+    let frameIndex = 0;
+
+    if (this.config.enableAnimations) {
+      const animManager = this._getAnimationManager(npc.id);
+      const frames = getAnimationFrames(npc);
+      const currentFrame = animManager.getCurrentFrame(frames);
+      frameOffset = currentFrame.offset;
+      frameScale = currentFrame.scale;
+      frameIndex = animManager.frameIndex;
+    }
+
+    // Determine animation state
+    const velocity = interpolator.getVelocity();
+    const isMoving = Math.abs(velocity.x) > 0.01 || Math.abs(velocity.z) > 0.01;
+    const isWorking = npc.status === 'WORKING' || npc.isWorking;
+    const animState = isWorking ? 'work' : (isMoving ? 'walk' : 'idle');
+
+    // Get sprite sheet for this animation state
+    const spriteKey = `${npc.role}_${animState}`;
+    const spriteSheet = this.spriteLoader.getSprite(spriteKey);
+
+    // Fall back to circle if sprite not available
+    if (!spriteSheet) {
+      this._renderNPCWithCircle(ctx, npc, centerX, centerY, interpolator);
+      return;
+    }
+
+    // Calculate direction for sprite flipping
+    const direction = getMovementDirection(velocity);
+    const shouldFlip = shouldFlipSprite(direction);
+
+    // Apply transformations
+    ctx.save();
+    ctx.translate(centerX + frameOffset.x, centerY + frameOffset.y);
+    ctx.scale(frameScale, frameScale);
+
+    // Draw sprite frame
+    const renderSize = sprite.size * 2; // Sprites are 16x16, render at 2x for visibility
+    spriteSheet.drawFrameFlipped(
+      ctx,
+      frameIndex,
+      -renderSize / 2, -renderSize / 2, // Center the sprite
+      renderSize, renderSize,
+      shouldFlip
+    );
+
+    ctx.restore();
+  }
+
+  /**
+   * Render NPC using circle (fallback)
+   * @private
+   */
+  _renderNPCWithCircle(ctx, npc, centerX, centerY, interpolator) {
+    const sprite = getSpriteForRole(npc.role);
+    const statusColor = getStatusColor(npc);
 
     // Get animation frame if enabled
     let frameOffset = { x: 0, y: 0 };
@@ -233,16 +350,6 @@ export class NPCRenderer {
     }
 
     ctx.restore();
-
-    // Draw health bar if damaged
-    if (this.config.showHealthBars) {
-      this._renderHealthBar(ctx, npc, centerX, centerY);
-    }
-
-    // Draw status indicator if enabled
-    if (this.config.showStatusIndicators) {
-      this._renderStatusIndicator(ctx, npc, centerX, centerY);
-    }
   }
 
   /**

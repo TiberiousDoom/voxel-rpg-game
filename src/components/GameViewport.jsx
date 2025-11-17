@@ -755,10 +755,13 @@ function GameViewport({
 
     let animationId = null;
     let initialRenderAttempts = 0;
+    let frameCount = 0;
     const maxInitialAttempts = 60; // Try for 1 second
 
     const animate = () => {
       try {
+        frameCount++;
+
         // Draw viewport with safe error handling
         drawViewport(ctx);
 
@@ -771,7 +774,7 @@ function GameViewport({
           ctx.fillStyle = '#00FF00';
           ctx.font = 'bold 16px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText(`Frame ${debugInfo.renderCount}`, CANVAS_WIDTH - 50, 20);
+          ctx.fillText(`Frame ${frameCount}`, CANVAS_WIDTH - 50, 20);
           ctx.restore();
 
           // Draw test pattern in bottom-right corner (always visible)

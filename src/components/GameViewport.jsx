@@ -540,6 +540,7 @@ function GameViewport({
    * Handle canvas click for placement (mouse and touch)
    */
   const [touchStartTime, setTouchStartTime] = React.useState(0);
+  const [touchStartPos, setTouchStartPos] = React.useState(null);
   const [isLongPress, setIsLongPress] = React.useState(false);
   const longPressTimerRef = React.useRef(null);
 
@@ -559,8 +560,18 @@ function GameViewport({
     const scaleY = CANVAS_HEIGHT / rect.height;
 
     // Support both mouse and touch events
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // For touch events, use changedTouches if touches is empty (touchend event)
+    let clientX, clientY;
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
 
     const canvasX = (clientX - rect.left) * scaleX;
     const canvasY = (clientY - rect.top) * scaleY;
@@ -628,6 +639,14 @@ function GameViewport({
    */
   const handleTouchStart = (e) => {
     e.preventDefault(); // Prevent default touch behavior
+
+    // Store touch position for later use
+    if (e.touches && e.touches.length > 0) {
+      setTouchStartPos({
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      });
+    }
 
     // Start long press detection
     setTouchStartTime(Date.now());
@@ -728,7 +747,7 @@ function GameViewport({
 
   /**
    * Mobile-safe canvas initialization and rendering loop
-   * Uses continuous animation loop for smooth rendering
+   * Uses continuous animation loop with frame rate limiting
    */
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -756,44 +775,54 @@ function GameViewport({
     let animationId = null;
     let initialRenderAttempts = 0;
     const maxInitialAttempts = 60; // Try for 1 second
+    let lastFrameTime = 0;
+    const targetFPS = 30; // Limit to 30 FPS on mobile for better performance
+    const frameInterval = 1000 / targetFPS;
 
-    const animate = () => {
-      try {
-        // Draw viewport with safe error handling
-        drawViewport(ctx);
+    const animate = (currentTime) => {
+      // Throttle to target FPS
+      const elapsed = currentTime - lastFrameTime;
 
-        // Update debug info
-        if (initialRenderAttempts < maxInitialAttempts) {
-          initialRenderAttempts++;
-          if (getOffset) {
-            setDebugInfo(prev => ({
-              ...prev,
-              cameraReady: true,
-              lastError: null
-            }));
-          }
-        }
+      if (elapsed > frameInterval) {
+        lastFrameTime = currentTime - (elapsed % frameInterval);
 
-      } catch (error) {
-        setDebugInfo(prev => ({
-          ...prev,
-          lastError: `Render error: ${error.message}`
-        }));
-
-        // eslint-disable-next-line no-console
-        console.error('Render error:', error);
-
-        // Try to draw error message on canvas
         try {
-          ctx.fillStyle = '#ff0000';
-          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '20px Arial';
-          ctx.textAlign = 'left';
-          ctx.fillText(`Error: ${error.message}`, 10, 30);
-        } catch (e) {
+          // Draw viewport with safe error handling
+          drawViewport(ctx);
+
+          // Update debug info
+          if (initialRenderAttempts < maxInitialAttempts) {
+            initialRenderAttempts++;
+            if (getOffset) {
+              setDebugInfo(prev => ({
+                ...prev,
+                cameraReady: true,
+                lastError: null
+              }));
+            }
+          }
+
+        } catch (error) {
+          setDebugInfo(prev => ({
+            ...prev,
+            lastError: `Render error: ${error.message}`
+          }));
+
           // eslint-disable-next-line no-console
-          console.error('Failed to draw error on canvas:', e);
+          console.error('Render error:', error);
+
+          // Try to draw error message on canvas
+          try {
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Error: ${error.message}`, 10, 30);
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to draw error on canvas:', e);
+          }
         }
       }
 
@@ -801,7 +830,7 @@ function GameViewport({
     };
 
     // Start animation
-    animate();
+    animationId = requestAnimationFrame(animate);
 
     // Cleanup
     return () => {

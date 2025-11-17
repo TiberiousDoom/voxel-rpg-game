@@ -312,3 +312,54 @@
     padding: 3px 8px;
   }
 }
+
+/* Mobile-specific canvas fixes */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .viewport-canvas {
+    /* Ensure visibility */
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+
+    /* NUCLEAR OPTION: Break out of flex layout completely */
+    position: relative !important;
+    flex: none !important;
+    align-self: stretch !important;
+
+    /* Use viewport units to guarantee sizing */
+    width: calc(100vw - 20px) !important; /* Account for potential padding */
+    max-width: 800px !important;
+    min-width: 200px !important;
+    height: auto !important;
+    aspect-ratio: 4 / 3 !important; /* 800:600 ratio */
+
+    /* Center it */
+    margin: 0 auto !important;
+
+    /* Force hardware acceleration */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+
+    /* Prevent touch delays */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .debug-overlay {
+    /* Make debug overlay more visible on mobile */
+    font-size: 10px !important;
+    max-width: 250px !important;
+  }
+
+  /* Ensure parent container doesn't overflow */
+  .game-viewport {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    padding: 0 10px !important;
+    gap: 5px !important;
+  }
+}

@@ -319,7 +319,7 @@ export function getFrameSize(entityType, entityId) {
   return { width: 16, height: 16 };
 }
 
-export default {
+const spriteManifestExports = {
   NPC_SPRITE_MANIFEST,
   BUILDING_SPRITE_MANIFEST,
   PLAYER_SPRITE_MANIFEST,
@@ -328,3 +328,5 @@ export default {
   getFrameCount,
   getFrameSize
 };
+
+export default spriteManifestExports;

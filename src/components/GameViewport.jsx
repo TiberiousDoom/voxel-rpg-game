@@ -14,13 +14,77 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
-import { useNPCRenderer, useNPCAnimation } from '../rendering/useNPCRenderer.js'; // WF4
+import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
 import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.js';
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import './GameViewport.css';
+
+/**
+ * Mobile-safe canvas initialization
+ * Handles device pixel ratio and fallback context options
+ */
+const initializeCanvas = (canvas, width, height) => {
+  if (!canvas) return null;
+
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768 ||
+                   ('ontouchstart' in window);
+
+  // Set canvas dimensions - keep it simple for mobile
+  canvas.width = width;
+  canvas.height = height;
+
+  // Try multiple context configurations
+  let ctx = null;
+  const contextConfigs = [
+    { alpha: false, willReadFrequently: true }, // Better for mobile
+    { alpha: false }, // Minimal config
+    { alpha: false, desynchronized: true }, // Original config (try last as it might fail)
+    {} // Fallback to defaults
+  ];
+
+  for (const config of contextConfigs) {
+    try {
+      ctx = canvas.getContext('2d', config);
+      if (ctx) {
+        // Disable image smoothing for pixel art
+        ctx.imageSmoothingEnabled = false;
+        ctx.mozImageSmoothingEnabled = false;
+        ctx.webkitImageSmoothingEnabled = false;
+        ctx.msImageSmoothingEnabled = false;
+
+        // Test the context works by drawing and clearing
+        try {
+          ctx.fillStyle = '#FF0000';
+          ctx.fillRect(0, 0, 10, 10);
+          ctx.clearRect(0, 0, width, height);
+
+          // eslint-disable-next-line no-console
+          console.log('✅ Canvas initialized successfully with config:', config, 'Mobile:', isMobile);
+        } catch (testError) {
+          // eslint-disable-next-line no-console
+          console.warn('Context test failed:', testError);
+          ctx = null;
+          continue;
+        }
+        break;
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Context creation failed with config:', config, e);
+    }
+  }
+
+  if (!ctx) {
+    // eslint-disable-next-line no-console
+    console.error('❌ Failed to initialize canvas context with any configuration');
+  }
+
+  return ctx;
+};
 
 // Grid constants - Updated to 50x50 for player movement
 const GRID_WIDTH = 50;
@@ -130,7 +194,6 @@ function GameViewport({
   // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const canvasRef = useRef(null);
-  const rafRef = useRef(null); // requestAnimationFrame reference
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
 
@@ -143,6 +206,25 @@ function GameViewport({
     rendering: false,
     lastError: null,
     renderCount: 0
+  });
+
+  // Performance metrics state
+  const [perfMetrics, setPerfMetrics] = useState({
+    fps: 0,
+    frameTime: 0,
+    visibleBuildings: 0,
+    totalBuildings: 0,
+    visibleNPCs: 0,
+    totalNPCs: 0,
+    isMobile: false,
+    canvasWidth: 0,
+    canvasHeight: 0
+  });
+
+  const perfRef = useRef({
+    frameCount: 0,
+    lastFpsUpdate: Date.now(),
+    frameTimes: []
   });
 
   // Player state - Initialize synchronously to ensure it's available before first render
@@ -164,7 +246,12 @@ function GameViewport({
     }
   }
 
-  // WF3: Building rendering hook
+  // Detect if mobile for performance optimizations
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768 ||
+                   ('ontouchstart' in window);
+
+  // WF3: Building rendering hook (optimized for mobile)
   const {
     renderBuildings: renderBuildingsWF3,
     // eslint-disable-next-line no-unused-vars -- Reserved for WF3: Hover effects not yet implemented
@@ -174,22 +261,19 @@ function GameViewport({
     tileSize: TILE_SIZE,
     showHealthBars: true,
     showProgressBars: true,
-    showShadows: true,
-    showOverlays: true
+    showShadows: !isMobile, // Disable shadows on mobile for performance
+    showOverlays: !isMobile // Disable texture overlays on mobile for performance
   });
 
-  // WF4: NPC Renderer integration
+  // WF4: NPC Renderer integration (optimized for mobile)
   const npcRenderer = useNPCRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: true,
-    showRoleBadges: true,
-    showStatusIndicators: true,
+    showHealthBars: !isMobile, // Hide health bars on mobile
+    showRoleBadges: !isMobile, // Hide role badges on mobile
+    showStatusIndicators: !isMobile, // Hide status indicators on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
-
-  // WF4: Update NPC positions for smooth interpolation
-  useNPCAnimation(npcs, npcRenderer.updatePositions, true);
 
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
@@ -280,14 +364,15 @@ function GameViewport({
   }, [getOffset]);
 
   /**
-   * Convert canvas coordinates to grid position
+   * Convert canvas coordinates to grid position (with camera offset)
    */
-  const canvasToWorld = (canvasX, canvasY) => {
+  const canvasToWorld = React.useCallback((canvasX, canvasY) => {
+    const offset = getOffset?.() || { x: 0, y: 0 };
     return {
-      x: Math.floor(canvasX / TILE_SIZE),
-      z: Math.floor(canvasY / TILE_SIZE)
+      x: Math.floor((canvasX - offset.x) / TILE_SIZE),
+      z: Math.floor((canvasY - offset.y) / TILE_SIZE)
     };
-  };
+  }, [getOffset]);
 
   /**
    * Convert canvas coordinates to world position (with camera offset)
@@ -375,49 +460,118 @@ function GameViewport({
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Get camera offset with fallback
-      const offset = getOffset?.() || { x: 0, y: 0 };
-      if (!offset || typeof offset.x !== 'number' || typeof offset.y !== 'number') {
-        throw new Error(`Invalid camera offset: ${JSON.stringify(offset)}`);
+      // Get camera offset with better fallback
+      let offset = { x: 0, y: 0 }; // Default offset
+
+      try {
+        if (getOffset && typeof getOffset === 'function') {
+          const tempOffset = getOffset();
+          if (tempOffset && typeof tempOffset.x === 'number' && typeof tempOffset.y === 'number') {
+            offset = tempOffset;
+          }
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Camera offset error, using default:', e);
       }
 
-    // Draw grid with camera offset
-    ctx.save();
-    ctx.strokeStyle = GRID_COLOR;
-    ctx.lineWidth = 1;
+    // Viewport culling - only render visible entities
+    const viewportBounds = {
+      left: Math.floor(-offset.x / TILE_SIZE) - 2, // Add 2-tile margin
+      right: Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE) + 2,
+      top: Math.floor(-offset.y / TILE_SIZE) - 2,
+      bottom: Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE) + 2
+    };
 
-    // Calculate visible grid range
-    const startX = Math.floor(-offset.x / TILE_SIZE);
-    const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
-    const startZ = Math.floor(-offset.y / TILE_SIZE);
-    const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
+    // Filter visible NPCs
+    const visibleNPCs = npcs.filter(npc => {
+      if (!npc || !npc.position) return false;
+      return npc.position.x >= viewportBounds.left &&
+             npc.position.x <= viewportBounds.right &&
+             npc.position.z >= viewportBounds.top &&
+             npc.position.z <= viewportBounds.bottom;
+    });
 
-    // Draw vertical lines
-    for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
-      const x = i * TILE_SIZE + offset.x;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, CANVAS_HEIGHT);
-      ctx.stroke();
+    // Draw grid with camera offset (optimized for mobile)
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+    if (!isMobile) {
+      // Full grid on desktop
+      ctx.save();
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 1;
+
+      // Calculate visible grid range
+      const startX = Math.floor(-offset.x / TILE_SIZE);
+      const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
+      const startZ = Math.floor(-offset.y / TILE_SIZE);
+      const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
+
+      // Draw vertical lines
+      for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
+        const x = i * TILE_SIZE + offset.x;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+
+      // Draw horizontal lines
+      for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
+        const y = i * TILE_SIZE + offset.y;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    } else {
+      // Simplified grid on mobile - only major grid lines every 5 tiles
+      ctx.save();
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5; // Lighter grid on mobile
+
+      const startX = Math.floor(-offset.x / TILE_SIZE);
+      const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
+      const startZ = Math.floor(-offset.y / TILE_SIZE);
+      const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
+
+      // Draw every 5th line
+      for (let i = Math.max(0, Math.floor(startX / 5) * 5); i <= Math.min(GRID_WIDTH, endX); i += 5) {
+        const x = i * TILE_SIZE + offset.x;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+
+      for (let i = Math.max(0, Math.floor(startZ / 5) * 5); i <= Math.min(GRID_HEIGHT, endZ); i += 5) {
+        const y = i * TILE_SIZE + offset.y;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
     }
 
-    // Draw horizontal lines
-    for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
-      const y = i * TILE_SIZE + offset.y;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(CANVAS_WIDTH, y);
-      ctx.stroke();
-    }
+    // WF3: Render buildings using new BuildingRenderer with viewport culling
+    const visibleBuildingCount = renderBuildingsWF3(ctx, buildings, worldToCanvas, viewportBounds);
 
-    ctx.restore();
+    // WF4: Render NPCs using NPCRenderer (already filtered)
+    npcRenderer.renderNPCs(ctx, visibleNPCs, worldToCanvas);
 
-    // WF3: Render buildings using new BuildingRenderer
-    renderBuildingsWF3(ctx, buildings, worldToCanvas);
-
-    // WF4: Render NPCs using NPCRenderer
-    // This uses the new rendering system with smooth interpolation and animations
-    npcRenderer.renderNPCs(ctx, npcs, worldToCanvas);
+    // Update performance metrics
+    setPerfMetrics(prev => ({
+      ...prev,
+      visibleBuildings: visibleBuildingCount,
+      totalBuildings: buildings?.length || 0,
+      visibleNPCs: visibleNPCs.length,
+      totalNPCs: npcs?.length || 0
+    }));
 
     // Render player
     if (enablePlayerMovement && playerRef.current && playerRendererRef.current) {
@@ -426,7 +580,7 @@ function GameViewport({
 
     // WF4: Render pathfinding visualization in debug mode
     if (debugMode) {
-      npcRenderer.renderPaths(ctx, npcs, worldToCanvas);
+      npcRenderer.renderPaths(ctx, visibleNPCs, worldToCanvas);
     }
 
     // Render interaction prompts
@@ -487,8 +641,18 @@ function GameViewport({
     const scaleY = CANVAS_HEIGHT / rect.height;
 
     // Support both mouse and touch events
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // For touch events, use changedTouches if touches is empty (touchend event)
+    let clientX, clientY;
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
 
     const canvasX = (clientX - rect.left) * scaleX;
     const canvasY = (clientY - rect.top) * scaleY;
@@ -498,13 +662,16 @@ function GameViewport({
     const gridPos = canvasToWorld(canvasX, canvasY);
 
     if (selectedBuildingType) {
-      // Building placement mode
+      // Building placement mode - don't move player
       onPlaceBuilding({
         x: gridPos.x,
         y: 0, // Ground level
         z: gridPos.z
       });
-    } else if (enablePlayerMovement && playerRef.current) {
+      return; // Explicitly prevent any other click handling
+    }
+
+    if (enablePlayerMovement && playerRef.current) {
       // Check if clicked on an interactable object
       let didInteract = false;
 
@@ -535,19 +702,20 @@ function GameViewport({
       if (!didInteract) {
         playerRef.current.setTargetPosition(worldPos);
       }
-    } else {
-      // Check if a building was clicked
-      const clickedBuilding = buildings.find(b =>
-        b && b.position &&
-        b.position.x === gridPos.x &&
-        b.position.z === gridPos.z
-      );
+      return;
+    }
 
-      if (clickedBuilding) {
-        onBuildingClick(clickedBuilding);
-      } else {
-        onSelectTile(gridPos);
-      }
+    // No player movement - check if a building was clicked for selection
+    const clickedBuilding = buildings.find(b =>
+      b && b.position &&
+      b.position.x === gridPos.x &&
+      b.position.z === gridPos.z
+    );
+
+    if (clickedBuilding) {
+      onBuildingClick(clickedBuilding);
+    } else {
+      onSelectTile(gridPos);
     }
   };
 
@@ -655,8 +823,8 @@ function GameViewport({
   };
 
   /**
-   * Optimized canvas rendering using requestAnimationFrame
-   * Only renders when state changes, but caps at 60 FPS
+   * Mobile-safe canvas initialization and rendering loop
+   * Uses continuous animation loop with frame rate limiting
    */
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -667,57 +835,126 @@ function GameViewport({
 
     setDebugInfo(prev => ({ ...prev, canvasReady: true }));
 
-    let ctx;
-    try {
-      ctx = canvas.getContext('2d', {
-        alpha: false,
-        desynchronized: true, // Hint for better mobile performance
-      });
-    } catch (error) {
-      setDebugInfo(prev => ({
-        ...prev,
-        contextReady: false,
-        lastError: `Failed to get context: ${error.message}`
-      }));
-      return;
-    }
+    // Initialize with mobile-safe function
+    const ctx = initializeCanvas(canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     if (!ctx) {
       setDebugInfo(prev => ({
         ...prev,
         contextReady: false,
-        lastError: 'getContext returned null'
+        lastError: 'Failed to initialize canvas context'
       }));
       return;
     }
 
     setDebugInfo(prev => ({ ...prev, contextReady: true }));
 
-    // Cancel any pending animation frame
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-    }
+    let animationId = null;
+    let initialRenderAttempts = 0;
+    const maxInitialAttempts = 60; // Try for 1 second
+    let lastFrameTime = 0;
 
-    // Schedule render on next animation frame (max 60 FPS)
-    rafRef.current = requestAnimationFrame(() => {
-      try {
-        drawViewport(ctx);
-      } catch (error) {
-        setDebugInfo(prev => ({
-          ...prev,
-          lastError: `RAF error: ${error.message}`
-        }));
+    // Detect mobile for appropriate frame rate
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                     window.innerWidth <= 768 ||
+                     ('ontouchstart' in window);
+    const targetFPS = isMobile ? 45 : 60; // Increased mobile FPS to 45 for better responsiveness
+    const frameInterval = 1000 / targetFPS;
+
+    const animate = (currentTime) => {
+      // Throttle to target FPS
+      const elapsed = currentTime - lastFrameTime;
+
+      if (elapsed > frameInterval) {
+        lastFrameTime = currentTime - (elapsed % frameInterval);
+        const frameStartTime = performance.now();
+
+        try {
+          // Update NPC positions before rendering
+          if (npcRenderer && npcs) {
+            npcRenderer.updatePositions(npcs, elapsed);
+          }
+
+          // Draw viewport with safe error handling
+          drawViewport(ctx);
+
+          // Track performance metrics
+          const frameEndTime = performance.now();
+          const frameTime = frameEndTime - frameStartTime;
+
+          perfRef.current.frameCount++;
+          perfRef.current.frameTimes.push(frameTime);
+          if (perfRef.current.frameTimes.length > 60) {
+            perfRef.current.frameTimes.shift();
+          }
+
+          const now = Date.now();
+          if (now - perfRef.current.lastFpsUpdate >= 1000) {
+            const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
+            const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
+
+            setPerfMetrics(prev => ({
+              ...prev,
+              fps,
+              frameTime: avgFrameTime.toFixed(2),
+              isMobile,
+              canvasWidth: CANVAS_WIDTH,
+              canvasHeight: CANVAS_HEIGHT
+            }));
+
+            perfRef.current.frameCount = 0;
+            perfRef.current.lastFpsUpdate = now;
+          }
+
+          // Update debug info
+          if (initialRenderAttempts < maxInitialAttempts) {
+            initialRenderAttempts++;
+            if (getOffset) {
+              setDebugInfo(prev => ({
+                ...prev,
+                cameraReady: true,
+                lastError: null
+              }));
+            }
+          }
+
+        } catch (error) {
+          setDebugInfo(prev => ({
+            ...prev,
+            lastError: `Render error: ${error.message}`
+          }));
+
+          // eslint-disable-next-line no-console
+          console.error('Render error:', error);
+
+          // Try to draw error message on canvas
+          try {
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Error: ${error.message}`, 10, 30);
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to draw error on canvas:', e);
+          }
+        }
       }
-      rafRef.current = null;
-    });
 
-    // Cleanup on unmount
+      animationId = requestAnimationFrame(animate);
+    };
+
+    // Start animation
+    animationId = requestAnimationFrame(animate);
+
+    // Cleanup
     return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+      if (animationId) {
+        cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport]);
+  }, [drawViewport, getOffset, npcRenderer, npcs]);
 
   return (
     <div className="game-viewport">
@@ -741,25 +978,25 @@ function GameViewport({
         onMouseLeave={handleCanvasMouseLeave}
       />
 
-      {/* Debug overlay - always visible to diagnose mobile issues */}
-      <div className="debug-overlay" style={{
-        position: 'absolute',
-        top: '10px',
-        left: '10px',
-        background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-        color: 'white',
-        padding: '10px',
-        borderRadius: '8px',
-        fontSize: '11px',
-        fontFamily: 'monospace',
-        maxWidth: '300px',
-        maxHeight: '80vh', // Improved scrollable container
-        minHeight: '60px', // Ensures readability even when compressed
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        zIndex: 9999,
-        pointerEvents: 'none'
-      }}>
+      {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
+      {debugMode && (
+        <div className="debug-overlay" style={{
+          position: 'fixed',
+          top: '10px',
+          left: '10px',
+          background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          padding: '8px',
+          borderRadius: '6px',
+          fontSize: '10px',
+          fontFamily: 'monospace',
+          maxWidth: '200px',
+          maxHeight: '300px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }}>
         <div><strong>🔍 Render Status</strong></div>
         <div>Canvas: {debugInfo.canvasReady ? '✓' : '✗'}</div>
         <div>Context: {debugInfo.contextReady ? '✓' : '✗'}</div>
@@ -767,13 +1004,78 @@ function GameViewport({
         <div>Player: {debugInfo.playerReady ? '✓' : '✗'}</div>
         <div>Rendering: {debugInfo.rendering ? '✓' : '✗'}</div>
         <div>Renders: {debugInfo.renderCount}</div>
-        <div>Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
+        <div>Canvas Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
+        {canvasRef.current && (
+          <>
+            <div>Element: {canvasRef.current.width}x{canvasRef.current.height}</div>
+            <div>Display: {canvasRef.current.offsetWidth}x{canvasRef.current.offsetHeight}px</div>
+          </>
+        )}
+        <div>Window: {window.innerWidth}x{window.innerHeight}</div>
+        <div>DPR: {window.devicePixelRatio || 1}</div>
+        <div>Mobile: {/Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 768 ? 'Yes' : 'No'}</div>
         <div>Offset: {getOffset ? JSON.stringify(getOffset()) : 'null'}</div>
         {debugInfo.lastError && (
           <div style={{ marginTop: '8px', color: '#ffff00', fontWeight: 'bold' }}>
             ⚠️ {debugInfo.lastError}
           </div>
         )}
+        </div>
+      )}
+
+      {/* Performance metrics overlay - always visible */}
+      <div className="performance-overlay" style={{
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        background: 'rgba(0, 0, 0, 0.85)',
+        color: '#00ff00',
+        padding: '12px',
+        borderRadius: '8px',
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        minWidth: '180px',
+        zIndex: 9999,
+        pointerEvents: 'none',
+        border: '2px solid rgba(0, 255, 0, 0.3)',
+      }}>
+        <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ffffff', borderBottom: '1px solid rgba(0, 255, 0, 0.3)', paddingBottom: '4px' }}>
+          ⚡ PERFORMANCE
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
+          <div>FPS:</div>
+          <div style={{ color: perfMetrics.fps < 30 ? '#ff4444' : perfMetrics.fps < 45 ? '#ffaa00' : '#00ff00' }}>
+            {perfMetrics.fps || 0}
+          </div>
+
+          <div>Frame:</div>
+          <div style={{ color: perfMetrics.frameTime > 33 ? '#ff4444' : perfMetrics.frameTime > 22 ? '#ffaa00' : '#00ff00' }}>
+            {perfMetrics.frameTime || 0}ms
+          </div>
+
+          <div>Target:</div>
+          <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
+
+          <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
+            Entities:
+          </div>
+
+          <div>Buildings:</div>
+          <div>{perfMetrics.visibleBuildings}/{perfMetrics.totalBuildings}</div>
+
+          <div>NPCs:</div>
+          <div>{perfMetrics.visibleNPCs}/{perfMetrics.totalNPCs}</div>
+
+          <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
+            Canvas:
+          </div>
+
+          <div>Size:</div>
+          <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
+
+          <div>Device:</div>
+          <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
+        </div>
       </div>
 
       <div className="viewport-footer">

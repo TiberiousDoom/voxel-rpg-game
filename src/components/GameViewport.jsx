@@ -540,7 +540,6 @@ function GameViewport({
    * Handle canvas click for placement (mouse and touch)
    */
   const [touchStartTime, setTouchStartTime] = React.useState(0);
-  const [touchStartPos, setTouchStartPos] = React.useState(null);
   const [isLongPress, setIsLongPress] = React.useState(false);
   const longPressTimerRef = React.useRef(null);
 
@@ -639,14 +638,6 @@ function GameViewport({
    */
   const handleTouchStart = (e) => {
     e.preventDefault(); // Prevent default touch behavior
-
-    // Store touch position for later use
-    if (e.touches && e.touches.length > 0) {
-      setTouchStartPos({
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY
-      });
-    }
 
     // Start long press detection
     setTouchStartTime(Date.now());

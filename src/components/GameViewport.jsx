@@ -33,26 +33,16 @@ const initializeCanvas = (canvas, width, height) => {
                    window.innerWidth <= 768 ||
                    ('ontouchstart' in window);
 
-  // Handle device pixel ratio for crisp rendering on mobile
-  const dpr = window.devicePixelRatio || 1;
-
-  // Set actual canvas size accounting for pixel ratio
-  if (isMobile && dpr > 1) {
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-  } else {
-    canvas.width = width;
-    canvas.height = height;
-  }
+  // Set canvas dimensions - keep it simple for mobile
+  canvas.width = width;
+  canvas.height = height;
 
   // Try multiple context configurations
   let ctx = null;
   const contextConfigs = [
-    { alpha: false, desynchronized: true }, // Your current config
     { alpha: false, willReadFrequently: true }, // Better for mobile
     { alpha: false }, // Minimal config
+    { alpha: false, desynchronized: true }, // Original config (try last as it might fail)
     {} // Fallback to defaults
   ];
 
@@ -60,30 +50,37 @@ const initializeCanvas = (canvas, width, height) => {
     try {
       ctx = canvas.getContext('2d', config);
       if (ctx) {
-        // Scale context for high DPI
-        if (isMobile && dpr > 1) {
-          ctx.scale(dpr, dpr);
-        }
-
         // Disable image smoothing for pixel art
         ctx.imageSmoothingEnabled = false;
         ctx.mozImageSmoothingEnabled = false;
         ctx.webkitImageSmoothingEnabled = false;
         ctx.msImageSmoothingEnabled = false;
 
-        // Test the context works
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, 1, 1);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Test the context works by drawing and clearing
+        try {
+          ctx.fillStyle = '#FF0000';
+          ctx.fillRect(0, 0, 10, 10);
+          ctx.clearRect(0, 0, width, height);
 
-        // eslint-disable-next-line no-console
-        console.log('Canvas initialized with config:', config);
+          // eslint-disable-next-line no-console
+          console.log('✅ Canvas initialized successfully with config:', config, 'Mobile:', isMobile);
+        } catch (testError) {
+          // eslint-disable-next-line no-console
+          console.warn('Context test failed:', testError);
+          ctx = null;
+          continue;
+        }
         break;
       }
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn('Context creation failed with config:', config, e);
     }
+  }
+
+  if (!ctx) {
+    // eslint-disable-next-line no-console
+    console.error('❌ Failed to initialize canvas context with any configuration');
   }
 
   return ctx;
@@ -762,6 +759,25 @@ function GameViewport({
 
     const animate = () => {
       try {
+        // Draw a test pattern first to ensure canvas is working
+        if (initialRenderAttempts === 0) {
+          try {
+            ctx.fillStyle = '#00FF00';
+            ctx.fillRect(0, 0, 100, 100);
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(100, 0, 100, 100);
+            ctx.fillStyle = '#0000FF';
+            ctx.fillRect(0, 100, 100, 100);
+            ctx.fillStyle = '#FFFF00';
+            ctx.fillRect(100, 100, 100, 100);
+            // eslint-disable-next-line no-console
+            console.log('🎨 Test pattern drawn');
+          } catch (testErr) {
+            // eslint-disable-next-line no-console
+            console.error('❌ Failed to draw test pattern:', testErr);
+          }
+        }
+
         // Draw viewport with safe error handling
         drawViewport(ctx);
 
@@ -783,13 +799,19 @@ function GameViewport({
           lastError: `Render error: ${error.message}`
         }));
 
-        // Try to draw error message
+        // eslint-disable-next-line no-console
+        console.error('Render error:', error);
+
+        // Try to draw error message on canvas
         try {
           ctx.fillStyle = '#ff0000';
-          ctx.font = '14px Arial';
+          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '20px Arial';
           ctx.fillText(`Error: ${error.message}`, 10, 30);
         } catch (e) {
-          // Ignore
+          // eslint-disable-next-line no-console
+          console.error('Failed to draw error on canvas:', e);
         }
       }
 
@@ -855,7 +877,16 @@ function GameViewport({
         <div>Player: {debugInfo.playerReady ? '✓' : '✗'}</div>
         <div>Rendering: {debugInfo.rendering ? '✓' : '✗'}</div>
         <div>Renders: {debugInfo.renderCount}</div>
-        <div>Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
+        <div>Canvas Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
+        {canvasRef.current && (
+          <>
+            <div>Element: {canvasRef.current.width}x{canvasRef.current.height}</div>
+            <div>Display: {canvasRef.current.offsetWidth}x{canvasRef.current.offsetHeight}px</div>
+          </>
+        )}
+        <div>Window: {window.innerWidth}x{window.innerHeight}</div>
+        <div>DPR: {window.devicePixelRatio || 1}</div>
+        <div>Mobile: {/Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 768 ? 'Yes' : 'No'}</div>
         <div>Offset: {getOffset ? JSON.stringify(getOffset()) : 'null'}</div>
         {debugInfo.lastError && (
           <div style={{ marginTop: '8px', color: '#ffff00', fontWeight: 'bold' }}>

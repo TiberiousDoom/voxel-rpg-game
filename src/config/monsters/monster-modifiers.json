@@ -1,0 +1,37 @@
+{
+  "ELITE": {
+    "nameSuffix": "Elite",
+    "healthMultiplier": 3.0,
+    "damageMultiplier": 2.0,
+    "xpMultiplier": 5.0,
+    "goldMultiplier": 4.0,
+    "lootQuality": 2,
+    "tint": "#ffaa00"
+  },
+  "FAST": {
+    "nameSuffix": "Swift",
+    "healthMultiplier": 0.8,
+    "speedMultiplier": 1.5,
+    "xpMultiplier": 1.5,
+    "goldMultiplier": 1.2,
+    "tint": "#00ffff"
+  },
+  "TANK": {
+    "nameSuffix": "Armored",
+    "healthMultiplier": 2.0,
+    "speedMultiplier": 0.7,
+    "defenseMultiplier": 2.0,
+    "xpMultiplier": 2.0,
+    "goldMultiplier": 1.8,
+    "tint": "#888888"
+  },
+  "BERSERKER": {
+    "nameSuffix": "Berserker",
+    "damageMultiplier": 3.0,
+    "defenseMultiplier": 0.5,
+    "attackSpeedMultiplier": 1.5,
+    "xpMultiplier": 2.5,
+    "goldMultiplier": 2.2,
+    "tint": "#ff0000"
+  }
+}

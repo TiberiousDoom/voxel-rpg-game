@@ -58,8 +58,10 @@ function DeveloperTab() {
       const monster = new Monster(type, { x, z }, { level: monsterLevel, modifier: selectedModifier });
       spawnMonster(monster);
       const modText = selectedModifier ? ` ${selectedModifier}` : '';
+      // eslint-disable-next-line no-console
       console.log(`✅ Spawned${modText} ${type} (Level ${monsterLevel}) at (${x.toFixed(1)}, ${z.toFixed(1)})`);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn monster:', error);
     }
   };
@@ -79,8 +81,10 @@ function DeveloperTab() {
         spawnMonster(monster);
       }
       const modText = selectedModifier ? ` ${selectedModifier}` : '';
+      // eslint-disable-next-line no-console
       console.log(`✅ Spawned ${count}x${modText} ${type} in circle (Level ${monsterLevel})`);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn monster circle:', error);
     }
   };
@@ -89,6 +93,7 @@ function DeveloperTab() {
   const handleClearMonsters = () => {
     const count = enemies.length;
     enemies.forEach(monster => removeMonster(monster.id));
+    // eslint-disable-next-line no-console
     console.log(`✅ Cleared ${count} monsters`);
   };
 
@@ -103,8 +108,10 @@ function DeveloperTab() {
       );
       spawnMonster(monster);
       const modText = selectedModifier ? ` ${selectedModifier}` : '';
+      // eslint-disable-next-line no-console
       console.log(`✅ AI Test: Spawned${modText} ${type} 15 tiles away (aggro test)`);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn test monster:', error);
     }
   };
@@ -131,9 +138,12 @@ function DeveloperTab() {
 
       spawnMonster(monster);
       const modText = selectedModifier ? ` ${selectedModifier}` : '';
+      // eslint-disable-next-line no-console
       console.log(`✅ Spawned patrolling${modText} ${type} (Level ${monsterLevel}) at (${x.toFixed(1)}, ${z.toFixed(1)})`);
+      // eslint-disable-next-line no-console
       console.log(`   Path: ${pathSize}x${pathSize} square`);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn patrol monster:', error);
     }
   };

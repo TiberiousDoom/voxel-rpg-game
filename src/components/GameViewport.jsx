@@ -933,18 +933,18 @@ function GameViewport({
           }
 
           // Update monster AI before rendering
-          if (monsterAIRef.current && monsters && monsters.length > 0 && playerRef.current) {
+          if (monsterAIRef.current && monstersRef.current && monstersRef.current.length > 0 && playerRef.current) {
             const gameState = {
               player: playerRef.current,
-              npcs: npcs || [],
-              buildings: buildings || []
+              npcs: npcsRef.current || [],
+              buildings: buildingsRef.current || []
             };
-            monsterAIRef.current.updateAll(monsters, gameState, elapsed);
+            monsterAIRef.current.updateAll(monstersRef.current, gameState, elapsed);
           }
 
           // Update monster positions before rendering
-          if (monsterRenderer && monsters) {
-            monsterRenderer.updatePositions(monsters, elapsed);
+          if (monsterRenderer && monstersRef.current) {
+            monsterRenderer.updatePositions(monstersRef.current, elapsed);
           }
 
           // Draw viewport with safe error handling

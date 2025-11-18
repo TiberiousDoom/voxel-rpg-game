@@ -1012,7 +1012,7 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset, npcRenderer, monsterRenderer]);
+  }, [drawViewport, getOffset, npcRenderer, npcs, buildings, monsterRenderer]);
 
   return (
     <div className="game-viewport">

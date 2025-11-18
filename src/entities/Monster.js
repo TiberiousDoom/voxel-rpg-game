@@ -48,6 +48,11 @@ export class Monster {
     this.attackRange = stats.attackRange;
     this.aggroRange = stats.aggroRange;
 
+    // Rewards (must be set before level scaling)
+    this.xpReward = stats.xpReward;
+    this.goldReward = stats.goldReward; // [min, max]
+    this.lootTable = stats.lootTable;
+
     // Level scaling (if specified)
     this.level = options.level || 1;
     if (this.level > 1) {
@@ -70,11 +75,6 @@ export class Monster {
     // Behavior flags
     this.canFlee = stats.canFlee || false;
     this.fleeHealthPercent = stats.fleeHealthPercent || 0.3;
-
-    // Rewards
-    this.xpReward = stats.xpReward;
-    this.goldReward = stats.goldReward; // [min, max]
-    this.lootTable = stats.lootTable;
 
     // Visual
     this.color = stats.color;

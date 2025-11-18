@@ -1,0 +1,36 @@
+{
+  "SLIME": {
+    "name": "Slime",
+    "health": 30,
+    "maxHealth": 30,
+    "damage": 5,
+    "defense": 0,
+    "moveSpeed": 2.0,
+    "attackSpeed": 0.5,
+    "attackRange": 1.5,
+    "aggroRange": 10,
+    "xpReward": 10,
+    "goldReward": [1, 5],
+    "lootTable": "SLIME_COMMON",
+    "color": "#00ff00",
+    "size": 12
+  },
+  "GOBLIN": {
+    "name": "Goblin",
+    "health": 50,
+    "maxHealth": 50,
+    "damage": 8,
+    "defense": 2,
+    "moveSpeed": 3.0,
+    "attackSpeed": 0.7,
+    "attackRange": 1.5,
+    "aggroRange": 12,
+    "xpReward": 20,
+    "goldReward": [5, 15],
+    "lootTable": "GOBLIN_COMMON",
+    "color": "#8B4513",
+    "size": 14,
+    "canFlee": true,
+    "fleeHealthPercent": 0.3
+  }
+}

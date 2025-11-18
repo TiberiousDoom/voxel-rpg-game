@@ -15,6 +15,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
+import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
+import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
@@ -29,20 +31,16 @@ import './GameViewport.css';
 const initializeCanvas = (canvas, width, height) => {
   if (!canvas) return null;
 
-  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
-                   window.innerWidth <= 768 ||
-                   ('ontouchstart' in window);
-
-  // Set canvas dimensions - keep it simple for mobile
+  // Set canvas dimensions
   canvas.width = width;
   canvas.height = height;
 
   // Try multiple context configurations
+  // CRITICAL: Never use willReadFrequently:true - it DISABLES GPU acceleration!
   let ctx = null;
   const contextConfigs = [
-    { alpha: false, willReadFrequently: true }, // Better for mobile
-    { alpha: false }, // Minimal config
-    { alpha: false, desynchronized: true }, // Original config (try last as it might fail)
+    { alpha: false, desynchronized: true }, // Best for games - allows GPU to work ahead
+    { alpha: false }, // Standard GPU-accelerated rendering
     {} // Fallback to defaults
   ];
 
@@ -61,20 +59,16 @@ const initializeCanvas = (canvas, width, height) => {
           ctx.fillStyle = '#FF0000';
           ctx.fillRect(0, 0, 10, 10);
           ctx.clearRect(0, 0, width, height);
-
-          // eslint-disable-next-line no-console
-          console.log('✅ Canvas initialized successfully with config:', config, 'Mobile:', isMobile);
+          // Context initialized successfully
         } catch (testError) {
-          // eslint-disable-next-line no-console
-          console.warn('Context test failed:', testError);
+          // Context test failed, try next config
           ctx = null;
           continue;
         }
         break;
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('Context creation failed with config:', config, e);
+      // Context creation failed, try next config
     }
   }
 
@@ -183,6 +177,7 @@ const getBuildingColor = (building) => {
 function GameViewport({
   buildings = [],
   npcs = [],
+  monsters = [], // Array of Monster instances
   selectedBuildingType = null,
   onPlaceBuilding = () => {},
   onSelectTile = () => {},
@@ -224,12 +219,48 @@ function GameViewport({
   const perfRef = useRef({
     frameCount: 0,
     lastFpsUpdate: Date.now(),
-    frameTimes: []
+    frameTimes: [],
+    // Store current frame metrics without triggering state updates
+    currentMetrics: {
+      visibleBuildings: 0,
+      totalBuildings: 0,
+      visibleNPCs: 0,
+      totalNPCs: 0
+    }
   });
 
   // Player state - Initialize synchronously to ensure it's available before first render
   const playerRef = useRef(null);
   const playerRendererRef = useRef(null);
+
+  // Use refs for frequently changing data to avoid animation loop recreation
+  const npcsRef = useRef(npcs);
+  const buildingsRef = useRef(buildings);
+  const monstersRef = useRef(monsters);
+  const hoveredPositionRef = useRef(hoveredPosition);
+  const selectedBuildingTypeRef = useRef(selectedBuildingType);
+  const debugModeRef = useRef(debugMode);
+  const enablePlayerMovementRef = useRef(enablePlayerMovement);
+  const canInteractRef = useRef(null); // Will be set below after usePlayerInteraction
+  const closestInteractableRef = useRef(null); // Will be set below after usePlayerInteraction
+
+  // Update refs when props change (prevents useCallback recreation)
+  useEffect(() => {
+    npcsRef.current = npcs;
+    buildingsRef.current = buildings;
+    monstersRef.current = monsters;
+    hoveredPositionRef.current = hoveredPosition;
+    selectedBuildingTypeRef.current = selectedBuildingType;
+    debugModeRef.current = debugMode;
+    enablePlayerMovementRef.current = enablePlayerMovement;
+    // canInteract and closestInteractable updated in separate useEffect below
+  }, [npcs, buildings, monsters, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+
+  // Monster AI system
+  const monsterAIRef = useRef(null);
+  if (monsterAIRef.current === null) {
+    monsterAIRef.current = new MonsterAI();
+  }
 
   if (enablePlayerMovement && playerRef.current === null) {
     try {
@@ -246,10 +277,12 @@ function GameViewport({
     }
   }
 
-  // Detect if mobile for performance optimizations
-  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
-                   window.innerWidth <= 768 ||
-                   ('ontouchstart' in window);
+  // Detect if mobile for performance optimizations (cached - never changes during session)
+  const isMobile = React.useMemo(() =>
+    /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768 ||
+    ('ontouchstart' in window),
+  []);
 
   // WF3: Building rendering hook (optimized for mobile)
   const {
@@ -271,6 +304,14 @@ function GameViewport({
     showHealthBars: !isMobile, // Hide health bars on mobile
     showRoleBadges: !isMobile, // Hide role badges on mobile
     showStatusIndicators: !isMobile, // Hide status indicators on mobile
+    enableAnimations: true,
+    debugMode: debugMode
+  });
+
+  // Monster Renderer integration
+  const monsterRenderer = useMonsterRenderer({
+    tileSize: TILE_SIZE,
+    showHealthBars: !isMobile, // Hide health bars on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
@@ -305,6 +346,12 @@ function GameViewport({
       enabled: enablePlayerMovement,
     }
   );
+
+  // Update interaction refs after they're defined
+  useEffect(() => {
+    canInteractRef.current = canInteract;
+    closestInteractableRef.current = closestInteractable;
+  }, [canInteract, closestInteractable]);
 
   // Camera follow system
   const { cameraMode, getOffset } = useCameraFollow(playerRef.current, {
@@ -448,9 +495,6 @@ function GameViewport({
    */
   const drawViewport = React.useCallback((ctx) => {
     try {
-      // Update debug info
-      setDebugInfo(prev => ({ ...prev, rendering: true, renderCount: prev.renderCount + 1 }));
-
       // Validate context
       if (!ctx || !ctx.fillRect) {
         throw new Error('Invalid canvas context');
@@ -471,8 +515,8 @@ function GameViewport({
           }
         }
       } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('Camera offset error, using default:', e);
+        // Don't log in render loop - kills mobile performance!
+        // Silently use default offset
       }
 
     // Viewport culling - only render visible entities
@@ -483,8 +527,8 @@ function GameViewport({
       bottom: Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE) + 2
     };
 
-    // Filter visible NPCs
-    const visibleNPCs = npcs.filter(npc => {
+    // Filter visible NPCs (use ref to avoid useCallback recreation!)
+    const visibleNPCs = (npcsRef.current || []).filter(npc => {
       if (!npc || !npc.position) return false;
       return npc.position.x >= viewportBounds.left &&
              npc.position.x <= viewportBounds.right &&
@@ -492,11 +536,21 @@ function GameViewport({
              npc.position.z <= viewportBounds.bottom;
     });
 
+    // Filter visible monsters (use ref to avoid useCallback recreation!)
+    const visibleMonsters = (monstersRef.current || []).filter(monster => {
+      if (!monster || !monster.position) return false;
+      return monster.position.x >= viewportBounds.left &&
+             monster.position.x <= viewportBounds.right &&
+             monster.position.z >= viewportBounds.top &&
+             monster.position.z <= viewportBounds.bottom;
+    });
+
     // Draw grid with camera offset (optimized for mobile)
-    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    // isMobile is already cached above, use it directly!
 
     if (!isMobile) {
       // Full grid on desktop
+      // OPTIMIZED: Batch all lines into single path for better performance
       ctx.save();
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
@@ -507,27 +561,30 @@ function GameViewport({
       const startZ = Math.floor(-offset.y / TILE_SIZE);
       const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
 
-      // Draw vertical lines
+      // Batch all grid lines into a single path (much faster!)
+      ctx.beginPath();
+
+      // Vertical lines
       for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
         const x = i * TILE_SIZE + offset.x;
-        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
-        ctx.stroke();
       }
 
-      // Draw horizontal lines
+      // Horizontal lines
       for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
         const y = i * TILE_SIZE + offset.y;
-        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
-        ctx.stroke();
       }
+
+      // Single stroke for all lines
+      ctx.stroke();
 
       ctx.restore();
     } else {
       // Simplified grid on mobile - only major grid lines every 5 tiles
+      // OPTIMIZED: Batch all lines into single path for better performance
       ctx.save();
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
@@ -538,77 +595,77 @@ function GameViewport({
       const startZ = Math.floor(-offset.y / TILE_SIZE);
       const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
 
-      // Draw every 5th line
+      // Batch all grid lines into a single path (much faster!)
+      ctx.beginPath();
+
+      // Vertical lines
       for (let i = Math.max(0, Math.floor(startX / 5) * 5); i <= Math.min(GRID_WIDTH, endX); i += 5) {
         const x = i * TILE_SIZE + offset.x;
-        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
-        ctx.stroke();
       }
 
+      // Horizontal lines
       for (let i = Math.max(0, Math.floor(startZ / 5) * 5); i <= Math.min(GRID_HEIGHT, endZ); i += 5) {
         const y = i * TILE_SIZE + offset.y;
-        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
-        ctx.stroke();
       }
+
+      // Single stroke for all lines
+      ctx.stroke();
 
       ctx.restore();
     }
 
-    // WF3: Render buildings using new BuildingRenderer with viewport culling
-    const visibleBuildingCount = renderBuildingsWF3(ctx, buildings, worldToCanvas, viewportBounds);
+    // WF3: Render buildings using new BuildingRenderer with viewport culling (use ref!)
+    const visibleBuildingCount = renderBuildingsWF3(ctx, buildingsRef.current, worldToCanvas, viewportBounds);
 
-    // WF4: Render NPCs using NPCRenderer (already filtered)
+    // WF4: Render NPCs using NPCRenderer (already filtered, use ref!)
     npcRenderer.renderNPCs(ctx, visibleNPCs, worldToCanvas);
 
-    // Update performance metrics
-    setPerfMetrics(prev => ({
-      ...prev,
-      visibleBuildings: visibleBuildingCount,
-      totalBuildings: buildings?.length || 0,
-      visibleNPCs: visibleNPCs.length,
-      totalNPCs: npcs?.length || 0
-    }));
+    // Render monsters using MonsterRenderer (already filtered)
+    monsterRenderer.renderMonsters(ctx, visibleMonsters, worldToCanvas);
 
-    // Render player
-    if (enablePlayerMovement && playerRef.current && playerRendererRef.current) {
+    // Store metrics in ref (don't trigger state update every frame)
+    perfRef.current.currentMetrics = {
+      visibleBuildings: visibleBuildingCount,
+      totalBuildings: buildingsRef.current?.length || 0,
+      visibleNPCs: visibleNPCs.length,
+      totalNPCs: npcsRef.current?.length || 0,
+      visibleMonsters: visibleMonsters.length,
+      totalMonsters: monstersRef.current?.length || 0
+    };
+
+    // Render player (use ref!)
+    if (enablePlayerMovementRef.current && playerRef.current && playerRendererRef.current) {
       playerRendererRef.current.renderPlayer(ctx, playerRef.current, worldToCanvas);
     }
 
-    // WF4: Render pathfinding visualization in debug mode
-    if (debugMode) {
+    // WF4: Render pathfinding visualization in debug mode (use ref!)
+    if (debugModeRef.current) {
       npcRenderer.renderPaths(ctx, visibleNPCs, worldToCanvas);
     }
 
-    // Render interaction prompts
-    if (enablePlayerMovement && canInteract && closestInteractable) {
-      renderInteractionPrompt(ctx, closestInteractable);
+    // Render interaction prompts (use refs!)
+    if (enablePlayerMovementRef.current && canInteractRef.current && closestInteractableRef.current) {
+      renderInteractionPrompt(ctx, closestInteractableRef.current);
     }
 
-      // WF3: Draw hover preview using new renderer
-      if (hoveredPosition && selectedBuildingType) {
+      // WF3: Draw hover preview using new renderer (use refs!)
+      if (hoveredPositionRef.current && selectedBuildingTypeRef.current) {
         // TODO: Add validation check to determine if placement is valid
         const isValid = true; // Placeholder - should check collision/placement rules
-        renderPlacementPreview(ctx, hoveredPosition, selectedBuildingType, isValid, worldToCanvas);
+        renderPlacementPreview(ctx, hoveredPositionRef.current, selectedBuildingTypeRef.current, isValid, worldToCanvas);
       }
-
-      // Mark rendering as successful
-      setDebugInfo(prev => ({ ...prev, lastError: null }));
     } catch (error) {
-      // Log error and update debug info
-      setDebugInfo(prev => ({
-        ...prev,
-        rendering: false,
-        lastError: `Render error: ${error.message}`
-      }));
-
-      // Draw error message on canvas if context is available
+      // Don't update state in render loop - causes severe FPS drops!
+      // Just draw error message on canvas
       if (ctx && ctx.fillText) {
         try {
-          ctx.fillStyle = '#000000';
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+          ctx.fillStyle = '#ffffff';
           ctx.font = '14px Arial';
           ctx.fillText(`Error: ${error.message}`, 10, 20);
         } catch (e) {
@@ -616,7 +673,7 @@ function GameViewport({
         }
       }
     }
-  }, [buildings, npcs, hoveredPosition, selectedBuildingType, renderBuildingsWF3, renderPlacementPreview, debugMode, npcRenderer, worldToCanvas, getOffset, enablePlayerMovement, canInteract, closestInteractable, renderInteractionPrompt]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
 
   /**
    * Handle canvas click for placement (mouse and touch)
@@ -870,9 +927,24 @@ function GameViewport({
         const frameStartTime = performance.now();
 
         try {
-          // Update NPC positions before rendering
-          if (npcRenderer && npcs) {
-            npcRenderer.updatePositions(npcs, elapsed);
+          // Update NPC positions before rendering (use ref to avoid loop recreation)
+          if (npcRenderer && npcsRef.current) {
+            npcRenderer.updatePositions(npcsRef.current, elapsed);
+          }
+
+          // Update monster AI before rendering
+          if (monsterAIRef.current && monstersRef.current && monstersRef.current.length > 0 && playerRef.current) {
+            const gameState = {
+              player: playerRef.current,
+              npcs: npcsRef.current || [],
+              buildings: buildingsRef.current || []
+            };
+            monsterAIRef.current.updateAll(monstersRef.current, gameState, elapsed);
+          }
+
+          // Update monster positions before rendering
+          if (monsterRenderer && monstersRef.current) {
+            monsterRenderer.updatePositions(monstersRef.current, elapsed);
           }
 
           // Draw viewport with safe error handling
@@ -893,51 +965,37 @@ function GameViewport({
             const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
             const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
 
-            setPerfMetrics(prev => ({
-              ...prev,
+            // Update state only once per second (not every frame!)
+            setPerfMetrics({
               fps,
               frameTime: avgFrameTime.toFixed(2),
               isMobile,
               canvasWidth: CANVAS_WIDTH,
-              canvasHeight: CANVAS_HEIGHT
-            }));
+              canvasHeight: CANVAS_HEIGHT,
+              ...perfRef.current.currentMetrics
+            });
 
             perfRef.current.frameCount = 0;
             perfRef.current.lastFpsUpdate = now;
           }
 
-          // Update debug info
+          // Track initial render attempts (no state updates!)
           if (initialRenderAttempts < maxInitialAttempts) {
             initialRenderAttempts++;
-            if (getOffset) {
-              setDebugInfo(prev => ({
-                ...prev,
-                cameraReady: true,
-                lastError: null
-              }));
-            }
           }
 
         } catch (error) {
-          setDebugInfo(prev => ({
-            ...prev,
-            lastError: `Render error: ${error.message}`
-          }));
-
-          // eslint-disable-next-line no-console
-          console.error('Render error:', error);
-
-          // Try to draw error message on canvas
+          // Don't log or setState in animation loop - kills FPS!
+          // Just draw error on canvas
           try {
             ctx.fillStyle = '#ff0000';
             ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             ctx.fillStyle = '#ffffff';
             ctx.font = '20px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText(`Error: ${error.message}`, 10, 30);
+            ctx.fillText(`Render Error: ${error.message}`, 10, 30);
           } catch (e) {
-            // eslint-disable-next-line no-console
-            console.error('Failed to draw error on canvas:', e);
+            // Silent failure - can't even draw error
           }
         }
       }
@@ -954,7 +1012,7 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset, npcRenderer, npcs, buildings]);
+  }, [drawViewport, getOffset, npcRenderer, npcs, buildings, monsterRenderer]);
 
   return (
     <div className="game-viewport">

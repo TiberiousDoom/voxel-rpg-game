@@ -70,8 +70,8 @@ const useGameStore = create((set, get) => ({
     materials: { wood: 10, iron: 5, leather: 8, crystal: 2 },
   },
 
-  // Enemies
-  enemies: [],
+  // Enemies/Monsters
+  enemies: [], // Array of Monster instances
 
   // Projectiles
   projectiles: [],
@@ -152,6 +152,29 @@ const useGameStore = create((set, get) => ({
   removeParticleEffect: (id) =>
     set((state) => ({
       particleEffects: state.particleEffects.filter((p) => p.id !== id),
+    })),
+
+  // Monster management
+  spawnMonster: (monster) =>
+    set((state) => ({
+      enemies: [...state.enemies, monster],
+    })),
+
+  removeMonster: (id) =>
+    set((state) => ({
+      enemies: state.enemies.filter((m) => m.id !== id),
+    })),
+
+  updateMonster: (id, updates) =>
+    set((state) => ({
+      enemies: state.enemies.map((m) =>
+        m.id === id ? { ...m, ...updates } : m
+      ),
+    })),
+
+  clearDeadMonsters: () =>
+    set((state) => ({
+      enemies: state.enemies.filter((m) => m.alive),
     })),
 
   updatePlayer: (updates) =>

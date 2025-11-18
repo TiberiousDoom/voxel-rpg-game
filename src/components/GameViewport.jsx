@@ -224,12 +224,29 @@ function GameViewport({
   const perfRef = useRef({
     frameCount: 0,
     lastFpsUpdate: Date.now(),
-    frameTimes: []
+    frameTimes: [],
+    // Store current frame metrics without triggering state updates
+    currentMetrics: {
+      visibleBuildings: 0,
+      totalBuildings: 0,
+      visibleNPCs: 0,
+      totalNPCs: 0
+    }
   });
 
   // Player state - Initialize synchronously to ensure it's available before first render
   const playerRef = useRef(null);
   const playerRendererRef = useRef(null);
+
+  // Use refs for frequently changing data to avoid animation loop recreation
+  const npcsRef = useRef(npcs);
+  const buildingsRef = useRef(buildings);
+
+  // Update refs when props change
+  useEffect(() => {
+    npcsRef.current = npcs;
+    buildingsRef.current = buildings;
+  }, [npcs, buildings]);
 
   if (enablePlayerMovement && playerRef.current === null) {
     try {
@@ -448,9 +465,6 @@ function GameViewport({
    */
   const drawViewport = React.useCallback((ctx) => {
     try {
-      // Update debug info
-      setDebugInfo(prev => ({ ...prev, rendering: true, renderCount: prev.renderCount + 1 }));
-
       // Validate context
       if (!ctx || !ctx.fillRect) {
         throw new Error('Invalid canvas context');
@@ -497,6 +511,7 @@ function GameViewport({
 
     if (!isMobile) {
       // Full grid on desktop
+      // OPTIMIZED: Batch all lines into single path for better performance
       ctx.save();
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
@@ -507,27 +522,30 @@ function GameViewport({
       const startZ = Math.floor(-offset.y / TILE_SIZE);
       const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
 
-      // Draw vertical lines
+      // Batch all grid lines into a single path (much faster!)
+      ctx.beginPath();
+
+      // Vertical lines
       for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
         const x = i * TILE_SIZE + offset.x;
-        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
-        ctx.stroke();
       }
 
-      // Draw horizontal lines
+      // Horizontal lines
       for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
         const y = i * TILE_SIZE + offset.y;
-        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
-        ctx.stroke();
       }
+
+      // Single stroke for all lines
+      ctx.stroke();
 
       ctx.restore();
     } else {
       // Simplified grid on mobile - only major grid lines every 5 tiles
+      // OPTIMIZED: Batch all lines into single path for better performance
       ctx.save();
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
@@ -538,22 +556,25 @@ function GameViewport({
       const startZ = Math.floor(-offset.y / TILE_SIZE);
       const endZ = Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE);
 
-      // Draw every 5th line
+      // Batch all grid lines into a single path (much faster!)
+      ctx.beginPath();
+
+      // Vertical lines
       for (let i = Math.max(0, Math.floor(startX / 5) * 5); i <= Math.min(GRID_WIDTH, endX); i += 5) {
         const x = i * TILE_SIZE + offset.x;
-        ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
-        ctx.stroke();
       }
 
+      // Horizontal lines
       for (let i = Math.max(0, Math.floor(startZ / 5) * 5); i <= Math.min(GRID_HEIGHT, endZ); i += 5) {
         const y = i * TILE_SIZE + offset.y;
-        ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
-        ctx.stroke();
       }
+
+      // Single stroke for all lines
+      ctx.stroke();
 
       ctx.restore();
     }
@@ -564,14 +585,13 @@ function GameViewport({
     // WF4: Render NPCs using NPCRenderer (already filtered)
     npcRenderer.renderNPCs(ctx, visibleNPCs, worldToCanvas);
 
-    // Update performance metrics
-    setPerfMetrics(prev => ({
-      ...prev,
+    // Store metrics in ref (don't trigger state update every frame)
+    perfRef.current.currentMetrics = {
       visibleBuildings: visibleBuildingCount,
       totalBuildings: buildings?.length || 0,
       visibleNPCs: visibleNPCs.length,
       totalNPCs: npcs?.length || 0
-    }));
+    };
 
     // Render player
     if (enablePlayerMovement && playerRef.current && playerRendererRef.current) {
@@ -594,9 +614,6 @@ function GameViewport({
         const isValid = true; // Placeholder - should check collision/placement rules
         renderPlacementPreview(ctx, hoveredPosition, selectedBuildingType, isValid, worldToCanvas);
       }
-
-      // Mark rendering as successful
-      setDebugInfo(prev => ({ ...prev, lastError: null }));
     } catch (error) {
       // Log error and update debug info
       setDebugInfo(prev => ({
@@ -870,9 +887,9 @@ function GameViewport({
         const frameStartTime = performance.now();
 
         try {
-          // Update NPC positions before rendering
-          if (npcRenderer && npcs) {
-            npcRenderer.updatePositions(npcs, elapsed);
+          // Update NPC positions before rendering (use ref to avoid loop recreation)
+          if (npcRenderer && npcsRef.current) {
+            npcRenderer.updatePositions(npcsRef.current, elapsed);
           }
 
           // Draw viewport with safe error handling
@@ -893,14 +910,15 @@ function GameViewport({
             const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
             const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
 
-            setPerfMetrics(prev => ({
-              ...prev,
+            // Update state only once per second (not every frame!)
+            setPerfMetrics({
               fps,
               frameTime: avgFrameTime.toFixed(2),
               isMobile,
               canvasWidth: CANVAS_WIDTH,
-              canvasHeight: CANVAS_HEIGHT
-            }));
+              canvasHeight: CANVAS_HEIGHT,
+              ...perfRef.current.currentMetrics
+            });
 
             perfRef.current.frameCount = 0;
             perfRef.current.lastFpsUpdate = now;
@@ -954,7 +972,7 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset, npcRenderer, npcs]);
+  }, [drawViewport, getOffset, npcRenderer]);
 
   return (
     <div className="game-viewport">

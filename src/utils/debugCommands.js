@@ -158,6 +158,35 @@ export function initDebugCommands() {
   };
 
   /**
+   * Get player position
+   * @returns {Object} Player position {x, z}
+   */
+  window.debug.getPlayerPos = () => {
+    const player = useGameStore.getState().player;
+    const pos = { x: player.position[0], z: player.position[2] };
+    console.log(`📍 Player position: (${pos.x.toFixed(1)}, ${pos.z.toFixed(1)})`);
+    return pos;
+  };
+
+  /**
+   * Spawn monster near player
+   * @param {string} type - Monster type
+   * @param {number} distance - Distance from player (default 5)
+   * @param {number} level - Monster level
+   */
+  window.debug.spawnNearPlayer = (type = 'SLIME', distance = 5, level = 1) => {
+    const player = useGameStore.getState().player;
+    const playerX = player.position[0];
+    const playerZ = player.position[2];
+
+    // Spawn in front of player (toward positive X)
+    const x = playerX + distance;
+    const z = playerZ;
+
+    return window.debug.spawnMonster(type, x, z, level);
+  };
+
+  /**
    * Spawn test arena with various monsters
    */
   window.debug.spawnTestArena = () => {
@@ -179,6 +208,29 @@ export function initDebugCommands() {
     console.log('✅ Test arena spawned! Monsters around player at (25, 25)');
   };
 
+  /**
+   * Test AI behavior - spawn a monster and watch it chase
+   */
+  window.debug.testAI = (type = 'SLIME') => {
+    console.log(`🧠 Testing ${type} AI behavior...`);
+
+    const player = useGameStore.getState().player;
+    const playerX = player.position[0];
+    const playerZ = player.position[2];
+
+    // Spawn monster 15 tiles away (outside aggro range initially)
+    const monster = window.debug.spawnMonster(type, playerX + 15, playerZ, 1);
+
+    console.log(`✅ Spawned ${type} at (${monster.position.x}, ${monster.position.z})`);
+    console.log(`📍 Player at (${playerX.toFixed(1)}, ${playerZ.toFixed(1)})`);
+    console.log(`📏 Distance: ${Math.sqrt(Math.pow(15, 2)).toFixed(1)} tiles`);
+    console.log(`\n🎯 Walk toward the monster to trigger aggro (range: ${monster.aggroRange} tiles)`);
+    console.log(`⚔️  Monster will chase when you get close enough`);
+    console.log(`🗡️  Attack range: ${monster.attackRange} tiles`);
+
+    return monster;
+  };
+
   // Show available commands
   console.log(`
 🎮 Debug Commands Available:
@@ -186,8 +238,10 @@ export function initDebugCommands() {
 
 Spawn Monsters:
   debug.spawnMonster(type, x, z, level)
+  debug.spawnNearPlayer(type, distance, level)
   debug.spawnMonsterCircle(type, count, centerX, centerZ, radius, level)
   debug.spawnTestArena()
+  debug.testAI(type)  👈 NEW! Test AI behavior
 
 Manage Monsters:
   debug.getMonsters()
@@ -197,16 +251,19 @@ Manage Monsters:
   debug.clearMonsters()
 
 Utility:
+  debug.getPlayerPos()  👈 NEW! Get player position
   debug.teleportPlayer(x, z)
 
 Examples:
+  debug.testAI('SLIME')  // Watch monster chase and attack!
+  debug.spawnNearPlayer('GOBLIN', 8, 2)  // Spawn 8 tiles away
   debug.spawnMonster('SLIME', 10, 10, 1)
   debug.spawnMonsterCircle('GOBLIN', 5, 15, 15, 8, 2)
-  debug.spawnTestArena()
-  debug.getMonsters()
+  debug.getPlayerPos()
   debug.damageMonster('monster_123', 15)
 
 Monster Types: SLIME, GOBLIN
+AI States: IDLE → CHASE → ATTACK (FLEE for goblins at low HP)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   `);
 }

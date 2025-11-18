@@ -16,6 +16,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
+import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
@@ -254,6 +255,12 @@ function GameViewport({
     enablePlayerMovementRef.current = enablePlayerMovement;
     // canInteract and closestInteractable updated in separate useEffect below
   }, [npcs, buildings, monsters, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+
+  // Monster AI system
+  const monsterAIRef = useRef(null);
+  if (monsterAIRef.current === null) {
+    monsterAIRef.current = new MonsterAI();
+  }
 
   if (enablePlayerMovement && playerRef.current === null) {
     try {
@@ -923,6 +930,16 @@ function GameViewport({
           // Update NPC positions before rendering (use ref to avoid loop recreation)
           if (npcRenderer && npcsRef.current) {
             npcRenderer.updatePositions(npcsRef.current, elapsed);
+          }
+
+          // Update monster AI before rendering
+          if (monsterAIRef.current && monsters && monsters.length > 0 && playerRef.current) {
+            const gameState = {
+              player: playerRef.current,
+              npcs: npcs || [],
+              buildings: buildings || []
+            };
+            monsterAIRef.current.updateAll(monsters, gameState, elapsed);
           }
 
           // Update monster positions before rendering

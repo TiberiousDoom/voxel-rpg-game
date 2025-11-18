@@ -89,6 +89,7 @@ export class PlayerRenderer {
           console.log(`[PlayerRenderer] Successfully loaded ${state} sprite`);
           return { state, success: true };
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.warn(`[PlayerRenderer] Failed to load ${state} sprite:`, error.message);
           return { state, success: false, error };
         }
@@ -108,6 +109,7 @@ export class PlayerRenderer {
       }
     } catch (error) {
       this.spriteLoadError = true;
+      // eslint-disable-next-line no-console
       console.warn('[PlayerRenderer] Failed to load sprites, falling back to circle rendering:', error.message);
     }
   }

@@ -34,11 +34,11 @@ const initializeCanvas = (canvas, width, height) => {
   canvas.height = height;
 
   // Try multiple context configurations
+  // CRITICAL: Never use willReadFrequently:true - it DISABLES GPU acceleration!
   let ctx = null;
   const contextConfigs = [
-    { alpha: false, willReadFrequently: true }, // Better for mobile
-    { alpha: false }, // Minimal config
-    { alpha: false, desynchronized: true }, // Original config (try last as it might fail)
+    { alpha: false, desynchronized: true }, // Best for games - allows GPU to work ahead
+    { alpha: false }, // Standard GPU-accelerated rendering
     {} // Fallback to defaults
   ];
 

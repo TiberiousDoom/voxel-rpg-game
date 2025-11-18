@@ -954,7 +954,7 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset, npcRenderer, npcs]);
+  }, [drawViewport, getOffset, npcRenderer, npcs, buildings]);
 
   return (
     <div className="game-viewport">

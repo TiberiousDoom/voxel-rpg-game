@@ -101,6 +101,9 @@ export class MonsterAI {
       case 'IDLE':
         this.updateIdle(monster, playerPos, distToPlayer);
         break;
+      case 'PATROL':
+        this.updatePatrol(monster, playerPos, distToPlayer, deltaTime);
+        break;
       case 'CHASE':
         this.updateChase(monster, playerPos, distToPlayer, deltaTime);
         break;
@@ -128,9 +131,68 @@ export class MonsterAI {
       return;
     }
 
+    // Start patrol if has patrol path
+    if (monster.patrolPath && monster.patrolPath.length > 0) {
+      monster.aiState = 'PATROL';
+      monster.currentWaypointIndex = 0;
+      return;
+    }
+
     // Stay idle - no movement
     monster.velocity = { x: 0, z: 0 };
     monster.animationState = 'idle';
+  }
+
+  /**
+   * Update PATROL state
+   * Monster follows waypoints
+   */
+  updatePatrol(monster, playerPos, distToPlayer, deltaTime) {
+    // Check for player
+    if (distToPlayer <= monster.aggroRange) {
+      monster.aiState = 'CHASE';
+      return;
+    }
+
+    // Get current waypoint
+    const waypoint = monster.patrolPath[monster.currentWaypointIndex];
+    const distToWaypoint = distance(monster.position, waypoint);
+
+    // Reached waypoint
+    if (distToWaypoint < 1) {
+      monster.currentWaypointIndex = (monster.currentWaypointIndex + 1) % monster.patrolPath.length;
+      monster.pauseUntil = Date.now() + 2000; // Pause 2 seconds at waypoint
+      monster.velocity = { x: 0, z: 0 };
+      monster.animationState = 'idle';
+      return;
+    }
+
+    // Wait at waypoint
+    if (monster.pauseUntil && Date.now() < monster.pauseUntil) {
+      monster.velocity = { x: 0, z: 0 };
+      monster.animationState = 'idle';
+      return;
+    }
+
+    // Move to waypoint
+    const direction = normalize(subtract(waypoint, monster.position));
+    const deltaSeconds = deltaTime / 1000;
+
+    // Patrol at half speed
+    monster.velocity = {
+      x: direction.x * monster.moveSpeed * 0.5,
+      z: direction.z * monster.moveSpeed * 0.5
+    };
+
+    // Update position
+    monster.position.x += monster.velocity.x * deltaSeconds;
+    monster.position.z += monster.velocity.z * deltaSeconds;
+
+    // Update facing angle
+    monster.facingAngle = Math.atan2(direction.z, direction.x);
+
+    // Set animation state
+    monster.animationState = 'walk';
   }
 
   /**

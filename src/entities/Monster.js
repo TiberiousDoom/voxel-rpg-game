@@ -9,6 +9,7 @@
  */
 
 import MONSTER_STATS from '../config/monsters/monster-types.json';
+import MONSTER_MODIFIERS from '../config/monsters/monster-modifiers.json';
 
 /**
  * Monster entity class
@@ -53,6 +54,12 @@ export class Monster {
       this.scaleToLevel(this.level);
     }
 
+    // Apply modifier (if specified)
+    this.modifier = options.modifier || null;
+    if (this.modifier) {
+      this.applyModifier(this.modifier);
+    }
+
     // AI state
     this.aiState = 'IDLE'; // IDLE, PATROL, CHASE, ATTACK, FLEE, DEATH
     this.targetId = null; // Player or NPC being targeted
@@ -91,6 +98,62 @@ export class Monster {
     this.damage = Math.floor(this.damage * multiplier);
     this.xpReward = Math.floor(this.xpReward * multiplier);
     this.goldReward = this.goldReward.map(val => Math.floor(val * multiplier));
+  }
+
+  /**
+   * Apply modifier to monster
+   * @param {string} modifierKey - Modifier type (e.g., 'ELITE', 'FAST')
+   */
+  applyModifier(modifierKey) {
+    const modConfig = MONSTER_MODIFIERS[modifierKey];
+    if (!modConfig) {
+      console.warn(`Unknown modifier: ${modifierKey}`);
+      return;
+    }
+
+    // Update name with suffix
+    this.name = `${modConfig.nameSuffix} ${this.name}`;
+
+    // Apply stat multipliers
+    if (modConfig.healthMultiplier) {
+      this.maxHealth = Math.floor(this.maxHealth * modConfig.healthMultiplier);
+      this.health = this.maxHealth;
+    }
+
+    if (modConfig.damageMultiplier) {
+      this.damage = Math.floor(this.damage * modConfig.damageMultiplier);
+    }
+
+    if (modConfig.speedMultiplier) {
+      this.moveSpeed *= modConfig.speedMultiplier;
+    }
+
+    if (modConfig.defenseMultiplier) {
+      this.defense = Math.floor(this.defense * modConfig.defenseMultiplier);
+    }
+
+    if (modConfig.attackSpeedMultiplier) {
+      this.attackSpeed *= modConfig.attackSpeedMultiplier;
+    }
+
+    // Apply reward multipliers
+    if (modConfig.xpMultiplier) {
+      this.xpReward = Math.floor(this.xpReward * modConfig.xpMultiplier);
+    }
+
+    if (modConfig.goldMultiplier) {
+      this.goldReward = this.goldReward.map(val => Math.floor(val * modConfig.goldMultiplier));
+    }
+
+    // Apply visual tint
+    if (modConfig.tint) {
+      this.tint = modConfig.tint;
+    }
+
+    // Store loot quality boost
+    if (modConfig.lootQuality) {
+      this.lootQualityBoost = modConfig.lootQuality;
+    }
   }
 
   /**

@@ -209,6 +209,35 @@ export function initDebugCommands() {
   };
 
   /**
+   * Spawn a patrolling monster
+   * @param {string} type - Monster type
+   * @param {number} x - Start X position
+   * @param {number} z - Start Z position
+   * @param {number} pathSize - Size of patrol path (default 5)
+   * @param {number} level - Monster level
+   */
+  window.debug.spawnPatrolMonster = (type = 'GOBLIN', x = 15, z = 15, pathSize = 5, level = 1) => {
+    const monster = new Monster(type, { x, z }, { level });
+
+    // Create square patrol path
+    monster.patrolPath = [
+      { x: x, z: z },
+      { x: x + pathSize, z: z },
+      { x: x + pathSize, z: z + pathSize },
+      { x: x, z: z + pathSize }
+    ];
+
+    monster.currentWaypointIndex = 0;
+
+    useGameStore.getState().spawnMonster(monster);
+    console.log(`✅ Spawned patrolling ${type} (Level ${level}) at (${x}, ${z})`);
+    console.log(`   Path: ${pathSize}x${pathSize} square`);
+    console.log(`   Waypoints: ${monster.patrolPath.length}`);
+
+    return monster;
+  };
+
+  /**
    * Test AI behavior - spawn a monster and watch it chase
    */
   window.debug.testAI = (type = 'SLIME') => {
@@ -240,8 +269,9 @@ Spawn Monsters:
   debug.spawnMonster(type, x, z, level)
   debug.spawnNearPlayer(type, distance, level)
   debug.spawnMonsterCircle(type, count, centerX, centerZ, radius, level)
+  debug.spawnPatrolMonster(type, x, z, pathSize, level)  👈 NEW! Patrolling monster
   debug.spawnTestArena()
-  debug.testAI(type)  👈 NEW! Test AI behavior
+  debug.testAI(type)
 
 Manage Monsters:
   debug.getMonsters()
@@ -251,11 +281,12 @@ Manage Monsters:
   debug.clearMonsters()
 
 Utility:
-  debug.getPlayerPos()  👈 NEW! Get player position
+  debug.getPlayerPos()
   debug.teleportPlayer(x, z)
 
 Examples:
   debug.testAI('SLIME')  // Watch monster chase and attack!
+  debug.spawnPatrolMonster('GOBLIN', 15, 15, 8, 2)  // Patrol in 8x8 square
   debug.spawnNearPlayer('GOBLIN', 8, 2)  // Spawn 8 tiles away
   debug.spawnMonster('SLIME', 10, 10, 1)
   debug.spawnMonsterCircle('GOBLIN', 5, 15, 15, 8, 2)
@@ -263,7 +294,7 @@ Examples:
   debug.damageMonster('monster_123', 15)
 
 Monster Types: SLIME, GOBLIN
-AI States: IDLE → CHASE → ATTACK (FLEE for goblins at low HP)
+AI States: IDLE → PATROL → CHASE → ATTACK → FLEE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   `);
 }

@@ -16,13 +16,26 @@ import './DeveloperTab.css';
 function DeveloperTab() {
   const { enemies, spawnMonster, removeMonster } = useGameStore();
   const [selectedType, setSelectedType] = useState('SLIME');
+  const [selectedModifier, setSelectedModifier] = useState(null);
   const [spawnDistance, setSpawnDistance] = useState(5);
   const [monsterLevel, setMonsterLevel] = useState(1);
 
   // Monster type configurations
   const monsterTypes = [
     { id: 'SLIME', name: 'Slime', icon: '🟢', color: '#00ff00' },
-    { id: 'GOBLIN', name: 'Goblin', icon: '👺', color: '#8B4513' }
+    { id: 'GOBLIN', name: 'Goblin', icon: '👺', color: '#8B4513' },
+    { id: 'WOLF', name: 'Wolf', icon: '🐺', color: '#666666' },
+    { id: 'SKELETON', name: 'Skeleton', icon: '💀', color: '#EEEEEE' },
+    { id: 'ORC', name: 'Orc', icon: '👹', color: '#2d5016' }
+  ];
+
+  // Monster modifier configurations
+  const monsterModifiers = [
+    { id: null, name: 'None', icon: '⚪', color: '#888888' },
+    { id: 'ELITE', name: 'Elite', icon: '⭐', color: '#ffaa00' },
+    { id: 'FAST', name: 'Swift', icon: '💨', color: '#00ffff' },
+    { id: 'TANK', name: 'Armored', icon: '🛡️', color: '#888888' },
+    { id: 'BERSERKER', name: 'Berserker', icon: '🔥', color: '#ff0000' }
   ];
 
   // Get player position from gameStore (fallback to center)
@@ -42,9 +55,10 @@ function DeveloperTab() {
       const x = playerPos.x + Math.cos(angle) * distance;
       const z = playerPos.z + Math.sin(angle) * distance;
 
-      const monster = new Monster(type, { x, z }, { level: monsterLevel });
+      const monster = new Monster(type, { x, z }, { level: monsterLevel, modifier: selectedModifier });
       spawnMonster(monster);
-      console.log(`✅ Spawned ${type} (Level ${monsterLevel}) at (${x.toFixed(1)}, ${z.toFixed(1)})`);
+      const modText = selectedModifier ? ` ${selectedModifier}` : '';
+      console.log(`✅ Spawned${modText} ${type} (Level ${monsterLevel}) at (${x.toFixed(1)}, ${z.toFixed(1)})`);
     } catch (error) {
       console.error('❌ Failed to spawn monster:', error);
     }
@@ -61,10 +75,11 @@ function DeveloperTab() {
         const x = playerPos.x + Math.cos(angle) * radius;
         const z = playerPos.z + Math.sin(angle) * radius;
 
-        const monster = new Monster(type, { x, z }, { level: monsterLevel });
+        const monster = new Monster(type, { x, z }, { level: monsterLevel, modifier: selectedModifier });
         spawnMonster(monster);
       }
-      console.log(`✅ Spawned ${count}x ${type} in circle (Level ${monsterLevel})`);
+      const modText = selectedModifier ? ` ${selectedModifier}` : '';
+      console.log(`✅ Spawned ${count}x${modText} ${type} in circle (Level ${monsterLevel})`);
     } catch (error) {
       console.error('❌ Failed to spawn monster circle:', error);
     }
@@ -84,12 +99,42 @@ function DeveloperTab() {
       // Spawn monster 15 tiles away to test aggro range
       const monster = new Monster(type,
         { x: playerPos.x + 15, z: playerPos.z },
-        { level: monsterLevel }
+        { level: monsterLevel, modifier: selectedModifier }
       );
       spawnMonster(monster);
-      console.log(`✅ AI Test: Spawned ${type} 15 tiles away (aggro test)`);
+      const modText = selectedModifier ? ` ${selectedModifier}` : '';
+      console.log(`✅ AI Test: Spawned${modText} ${type} 15 tiles away (aggro test)`);
     } catch (error) {
       console.error('❌ Failed to spawn test monster:', error);
+    }
+  };
+
+  // Spawn patrolling monster
+  const handleSpawnPatrol = (type) => {
+    try {
+      const playerPos = getPlayerPosition();
+      const x = playerPos.x + spawnDistance;
+      const z = playerPos.z;
+
+      const monster = new Monster(type, { x, z }, { level: monsterLevel, modifier: selectedModifier });
+
+      // Create square patrol path
+      const pathSize = 5;
+      monster.patrolPath = [
+        { x: x, z: z },
+        { x: x + pathSize, z: z },
+        { x: x + pathSize, z: z + pathSize },
+        { x: x, z: z + pathSize }
+      ];
+
+      monster.currentWaypointIndex = 0;
+
+      spawnMonster(monster);
+      const modText = selectedModifier ? ` ${selectedModifier}` : '';
+      console.log(`✅ Spawned patrolling${modText} ${type} (Level ${monsterLevel}) at (${x.toFixed(1)}, ${z.toFixed(1)})`);
+      console.log(`   Path: ${pathSize}x${pathSize} square`);
+    } catch (error) {
+      console.error('❌ Failed to spawn patrol monster:', error);
     }
   };
 
@@ -133,6 +178,27 @@ function DeveloperTab() {
             >
               <span className="monster-icon">{type.icon}</span>
               <span className="monster-name">{type.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Monster Modifier Selection */}
+      <div className="dev-section">
+        <div className="dev-header">
+          <span className="dev-icon">✨</span>
+          <h3>Select Modifier (Optional)</h3>
+        </div>
+        <div className="monster-modifier-grid">
+          {monsterModifiers.map(mod => (
+            <button
+              key={mod.id || 'none'}
+              className={`monster-modifier-button ${selectedModifier === mod.id ? 'selected' : ''}`}
+              onClick={() => setSelectedModifier(mod.id)}
+              style={{ '--modifier-color': mod.color }}
+            >
+              <span className="modifier-icon">{mod.icon}</span>
+              <span className="modifier-name">{mod.name}</span>
             </button>
           ))}
         </div>
@@ -224,6 +290,17 @@ function DeveloperTab() {
               <span className="action-description">Aggro range test</span>
             </div>
           </button>
+
+          <button
+            className="dev-action-button info"
+            onClick={() => handleSpawnPatrol(selectedType)}
+          >
+            <span className="action-icon">🚶</span>
+            <div className="action-info">
+              <span className="action-label">Spawn Patrol</span>
+              <span className="action-description">Patrolling {selectedType.toLowerCase()}</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -294,6 +371,10 @@ function DeveloperTab() {
             <span className="tip-text">Monsters spawn at set distance from player</span>
           </div>
           <div className="tip-item">
+            <span className="tip-icon">🚶</span>
+            <span className="tip-text">Patrol monsters walk in a square until player gets close</span>
+          </div>
+          <div className="tip-item">
             <span className="tip-icon">⚔️</span>
             <span className="tip-text">Walk close to trigger aggro and combat</span>
           </div>
@@ -303,7 +384,7 @@ function DeveloperTab() {
           </div>
           <div className="tip-item">
             <span className="tip-icon">💚</span>
-            <span className="tip-text">Goblins will flee at low health</span>
+            <span className="tip-text">Goblins will flee at low health (30%)</span>
           </div>
         </div>
       </div>

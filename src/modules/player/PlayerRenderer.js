@@ -65,29 +65,47 @@ export class PlayerRenderer {
       // Load all player sprite sheets (idle, walk, sprint)
       const states = ['idle', 'walk', 'sprint'];
       const loadPromises = states.map(async (state) => {
-        const spritePath = PLAYER_SPRITE_MANIFEST[state];
-        const frameCount = PLAYER_SPRITE_MANIFEST.frames[state];
-        const key = `player_${state}`;
+        try {
+          const spritePath = PLAYER_SPRITE_MANIFEST[state];
+          const frameCount = PLAYER_SPRITE_MANIFEST.frames[state];
+          const key = `player_${state}`;
 
-        const spriteSheet = await this.spriteLoader.loadSpriteSheet(
-          key,
-          spritePath,
-          frameWidth,
-          frameHeight
-        );
+          // eslint-disable-next-line no-console
+          console.log(`[PlayerRenderer] Loading ${state} sprite from ${spritePath}`);
 
-        this.spriteSheets[state] = {
-          sheet: spriteSheet,
-          frameCount: frameCount
-        };
+          const spriteSheet = await this.spriteLoader.loadSpriteSheet(
+            key,
+            spritePath,
+            frameWidth,
+            frameHeight
+          );
 
-        return spriteSheet;
+          this.spriteSheets[state] = {
+            sheet: spriteSheet,
+            frameCount: frameCount
+          };
+
+          // eslint-disable-next-line no-console
+          console.log(`[PlayerRenderer] Successfully loaded ${state} sprite`);
+          return { state, success: true };
+        } catch (error) {
+          console.warn(`[PlayerRenderer] Failed to load ${state} sprite:`, error.message);
+          return { state, success: false, error };
+        }
       });
 
-      await Promise.allSettled(loadPromises);
-      this.spritesLoaded = true;
-      // eslint-disable-next-line no-console
-      console.log('[PlayerRenderer] Sprites loaded successfully');
+      const results = await Promise.all(loadPromises);
+
+      // Check if at least one sprite loaded successfully
+      const successCount = results.filter(r => r.success).length;
+
+      if (successCount > 0) {
+        this.spritesLoaded = true;
+        // eslint-disable-next-line no-console
+        console.log(`[PlayerRenderer] ${successCount} sprite(s) loaded successfully`);
+      } else {
+        throw new Error('No sprites loaded successfully');
+      }
     } catch (error) {
       this.spriteLoadError = true;
       console.warn('[PlayerRenderer] Failed to load sprites, falling back to circle rendering:', error.message);

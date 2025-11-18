@@ -15,6 +15,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
+import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
@@ -175,6 +176,7 @@ const getBuildingColor = (building) => {
 function GameViewport({
   buildings = [],
   npcs = [],
+  monsters = [], // Array of Monster instances
   selectedBuildingType = null,
   onPlaceBuilding = () => {},
   onSelectTile = () => {},
@@ -233,6 +235,7 @@ function GameViewport({
   // Use refs for frequently changing data to avoid animation loop recreation
   const npcsRef = useRef(npcs);
   const buildingsRef = useRef(buildings);
+  const monstersRef = useRef(monsters);
   const hoveredPositionRef = useRef(hoveredPosition);
   const selectedBuildingTypeRef = useRef(selectedBuildingType);
   const debugModeRef = useRef(debugMode);
@@ -244,12 +247,13 @@ function GameViewport({
   useEffect(() => {
     npcsRef.current = npcs;
     buildingsRef.current = buildings;
+    monstersRef.current = monsters;
     hoveredPositionRef.current = hoveredPosition;
     selectedBuildingTypeRef.current = selectedBuildingType;
     debugModeRef.current = debugMode;
     enablePlayerMovementRef.current = enablePlayerMovement;
     // canInteract and closestInteractable updated in separate useEffect below
-  }, [npcs, buildings, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+  }, [npcs, buildings, monsters, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
 
   if (enablePlayerMovement && playerRef.current === null) {
     try {
@@ -293,6 +297,14 @@ function GameViewport({
     showHealthBars: !isMobile, // Hide health bars on mobile
     showRoleBadges: !isMobile, // Hide role badges on mobile
     showStatusIndicators: !isMobile, // Hide status indicators on mobile
+    enableAnimations: true,
+    debugMode: debugMode
+  });
+
+  // Monster Renderer integration
+  const monsterRenderer = useMonsterRenderer({
+    tileSize: TILE_SIZE,
+    showHealthBars: !isMobile, // Hide health bars on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
@@ -517,6 +529,15 @@ function GameViewport({
              npc.position.z <= viewportBounds.bottom;
     });
 
+    // Filter visible monsters (use ref to avoid useCallback recreation!)
+    const visibleMonsters = (monstersRef.current || []).filter(monster => {
+      if (!monster || !monster.position) return false;
+      return monster.position.x >= viewportBounds.left &&
+             monster.position.x <= viewportBounds.right &&
+             monster.position.z >= viewportBounds.top &&
+             monster.position.z <= viewportBounds.bottom;
+    });
+
     // Draw grid with camera offset (optimized for mobile)
     // isMobile is already cached above, use it directly!
 
@@ -596,12 +617,17 @@ function GameViewport({
     // WF4: Render NPCs using NPCRenderer (already filtered, use ref!)
     npcRenderer.renderNPCs(ctx, visibleNPCs, worldToCanvas);
 
+    // Render monsters using MonsterRenderer (already filtered)
+    monsterRenderer.renderMonsters(ctx, visibleMonsters, worldToCanvas);
+
     // Store metrics in ref (don't trigger state update every frame)
     perfRef.current.currentMetrics = {
       visibleBuildings: visibleBuildingCount,
       totalBuildings: buildingsRef.current?.length || 0,
       visibleNPCs: visibleNPCs.length,
-      totalNPCs: npcsRef.current?.length || 0
+      totalNPCs: npcsRef.current?.length || 0,
+      visibleMonsters: visibleMonsters.length,
+      totalMonsters: monstersRef.current?.length || 0
     };
 
     // Render player (use ref!)
@@ -640,7 +666,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
 
   /**
    * Handle canvas click for placement (mouse and touch)
@@ -899,6 +925,11 @@ function GameViewport({
             npcRenderer.updatePositions(npcsRef.current, elapsed);
           }
 
+          // Update monster positions before rendering
+          if (monsterRenderer && monsters) {
+            monsterRenderer.updatePositions(monsters, elapsed);
+          }
+
           // Draw viewport with safe error handling
           drawViewport(ctx);
 
@@ -964,7 +995,7 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset, npcRenderer]);
+  }, [drawViewport, getOffset, npcRenderer, monsterRenderer]);
 
   return (
     <div className="game-viewport">

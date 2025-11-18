@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import App from './App'; // 2D version
 import App3D from './App3D'; // 3D version
+import { initDebugCommands } from './utils/debugCommands.js';
 
 /**
  * GameSelector - Choose between 2D and 3D versions
  */
 const GameSelector = () => {
   const [mode, setMode] = useState(null);
+
+  // Initialize debug commands on mount
+  useEffect(() => {
+    initDebugCommands();
+  }, []);
 
   if (mode === '2d') {
     return <App />;

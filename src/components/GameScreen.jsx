@@ -18,6 +18,7 @@ import AchievementPanel from './AchievementPanel';
 import ExpeditionsTab from './tabs/ExpeditionsTab';
 import DefenseTab from './tabs/DefenseTab';
 import ActionsTab from './tabs/ActionsTab';
+import DeveloperTab from './tabs/DeveloperTab';
 import './GameScreen.css';
 
 /**
@@ -49,6 +50,7 @@ function GameScreen() {
   const [showExpeditionsModal, setShowExpeditionsModal] = useState(false);
   const [showDefenseModal, setShowDefenseModal] = useState(false);
   const [showActionsModal, setShowActionsModal] = useState(false);
+  const [showDeveloperModal, setShowDeveloperModal] = useState(false);
 
   // Auto-start game
   useEffect(() => {
@@ -143,7 +145,8 @@ function GameScreen() {
       'achievements': () => setShowAchievementsModal(true),
       'expeditions': () => setShowExpeditionsModal(true),
       'defense': () => setShowDefenseModal(true),
-      'actions': () => setShowActionsModal(true)
+      'actions': () => setShowActionsModal(true),
+      'developer': () => setShowDeveloperModal(true)
     };
 
     // Open corresponding modal
@@ -181,7 +184,8 @@ function GameScreen() {
     { id: 'build', label: 'Build', icon: '🏗️' },
     { id: 'expeditions', label: 'Expeditions', icon: '⚔️' },
     { id: 'defense', label: 'Defense', icon: '🛡️' },
-    { id: 'actions', label: 'Actions', icon: '⚡' }
+    { id: 'actions', label: 'Actions', icon: '⚡' },
+    { id: 'developer', label: 'Developer', icon: '🛠️' }
   ];
 
   // Loading state
@@ -442,6 +446,17 @@ function GameScreen() {
           onAdvanceTier={() => {/* Advance tier - to be implemented */}}
           onAutoAssignNPCs={handleAutoAssign}
         />
+      </ModalWrapper>
+
+      {/* Developer Modal */}
+      <ModalWrapper
+        isOpen={showDeveloperModal}
+        onClose={() => setShowDeveloperModal(false)}
+        title="Developer Tools"
+        icon="🛠️"
+        maxWidth="600px"
+      >
+        <DeveloperTab />
       </ModalWrapper>
 
       {/* Toast */}

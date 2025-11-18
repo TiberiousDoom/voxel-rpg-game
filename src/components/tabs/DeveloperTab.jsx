@@ -44,8 +44,10 @@ function DeveloperTab() {
 
       const monster = new Monster(type, { x, z }, { level: monsterLevel });
       spawnMonster(monster);
+      // eslint-disable-next-line no-console
       console.log(`✅ Spawned ${type} (Level ${monsterLevel}) at (${x.toFixed(1)}, ${z.toFixed(1)})`);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn monster:', error);
     }
   };
@@ -64,8 +66,10 @@ function DeveloperTab() {
         const monster = new Monster(type, { x, z }, { level: monsterLevel });
         spawnMonster(monster);
       }
+      // eslint-disable-next-line no-console
       console.log(`✅ Spawned ${count}x ${type} in circle (Level ${monsterLevel})`);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn monster circle:', error);
     }
   };
@@ -74,6 +78,7 @@ function DeveloperTab() {
   const handleClearMonsters = () => {
     const count = enemies.length;
     enemies.forEach(monster => removeMonster(monster.id));
+    // eslint-disable-next-line no-console
     console.log(`✅ Cleared ${count} monsters`);
   };
 
@@ -87,8 +92,10 @@ function DeveloperTab() {
         { level: monsterLevel }
       );
       spawnMonster(monster);
+      // eslint-disable-next-line no-console
       console.log(`✅ AI Test: Spawned ${type} 15 tiles away (aggro test)`);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn test monster:', error);
     }
   };

@@ -297,61 +297,67 @@ export class BuildingRenderer {
       }
     }
 
-    // Draw cached crack pattern
+    // Draw cached crack pattern (batched for performance)
     const cracks = this.crackCache.get(cacheKey);
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.lineWidth = 1;
 
+    // Batch all cracks into single path for better performance
+    ctx.beginPath();
     for (const crack of cracks) {
       const startX = x + crack.startX * width;
       const startY = y + crack.startY * height;
       const endX = startX + crack.endX * width * 0.5;
       const endY = startY + crack.endY * height * 0.5;
 
-      ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.lineTo(endX, endY);
-      ctx.stroke();
     }
+    // Single stroke for all cracks
+    ctx.stroke();
   }
 
   /**
-   * Draw blueprint grid pattern
+   * Draw blueprint grid pattern (batched for performance)
    */
   drawBlueprintGrid(ctx, x, y, width, height) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.lineWidth = 0.5;
 
+    // Batch all lines into single path for better performance
+    ctx.beginPath();
+
     // Vertical lines
     for (let i = 0; i <= width; i += 5) {
-      ctx.beginPath();
       ctx.moveTo(x + i, y);
       ctx.lineTo(x + i, y + height);
-      ctx.stroke();
     }
 
     // Horizontal lines
     for (let i = 0; i <= height; i += 5) {
-      ctx.beginPath();
       ctx.moveTo(x, y + i);
       ctx.lineTo(x + width, y + i);
-      ctx.stroke();
     }
+
+    // Single stroke for all lines
+    ctx.stroke();
   }
 
   /**
-   * Draw construction diagonal pattern
+   * Draw construction diagonal pattern (batched for performance)
    */
   drawConstructionPattern(ctx, x, y, width, height) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
     ctx.lineWidth = 1;
 
+    // Batch all diagonal lines into single path for better performance
+    ctx.beginPath();
     for (let i = -height; i < width; i += 10) {
-      ctx.beginPath();
       ctx.moveTo(x + i, y);
       ctx.lineTo(x + i + height, y + height);
-      ctx.stroke();
     }
+    // Single stroke for all lines
+    ctx.stroke();
   }
 
   /**

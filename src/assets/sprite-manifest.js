@@ -214,8 +214,8 @@ export const PLAYER_SPRITE_MANIFEST = {
     sprint: 4
   },
   frameSize: {
-    width: 16,
-    height: 16
+    width: 32,
+    height: 32
   }
 };
 

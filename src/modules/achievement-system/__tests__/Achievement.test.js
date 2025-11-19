@@ -516,9 +516,9 @@ describe('Achievement', () => {
         condition: { type: ConditionType.TIER_SPEED, target: 600 }
       });
 
-      achievement.updateProgress(480);
+      achievement.updateProgress(720);
 
-      expect(achievement.getProgressDescription()).toContain('8min');
+      expect(achievement.getProgressDescription()).toContain('12min');
       expect(achievement.getProgressDescription()).toContain('limit: 10min');
     });
 

@@ -116,6 +116,10 @@ export class MonsterAI {
       case 'DEATH':
         // No updates for dead monsters
         break;
+      default:
+        // Unknown state, reset to IDLE
+        monster.aiState = 'IDLE';
+        break;
     }
   }
 
@@ -321,6 +325,7 @@ export class MonsterAI {
     player.health = Math.max(0, player.health - damage);
 
     // Log attack (for debugging)
+    // eslint-disable-next-line no-console
     console.log(`🗡️ ${monster.type} attacked player for ${damage} damage! Player HP: ${player.health}/${player.maxHealth}`);
 
     // Spawn damage number (if system exists)
@@ -333,6 +338,7 @@ export class MonsterAI {
 
     // Check if player died
     if (player.health <= 0) {
+      // eslint-disable-next-line no-console
       console.log('💀 Player died!');
       // Game over logic will be handled by game manager
     }

@@ -35,13 +35,23 @@ const initializeCanvas = (canvas, width, height) => {
   canvas.width = width;
   canvas.height = height;
 
+  // Detect mobile device
+  const isMobileDevice = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                        window.innerWidth <= 768 ||
+                        ('ontouchstart' in window);
+
   // Try multiple context configurations
   // CRITICAL: Never use willReadFrequently:true - it DISABLES GPU acceleration!
   let ctx = null;
-  const contextConfigs = [
-    { alpha: false, desynchronized: true }, // Best for games - allows GPU to work ahead
-    { alpha: false }, // Standard GPU-accelerated rendering
-    {} // Fallback to defaults
+  const contextConfigs = isMobileDevice ? [
+    // Mobile: Use desynchronized for better performance (no flashing on mobile)
+    { alpha: false, desynchronized: true },
+    { alpha: false },
+    {}
+  ] : [
+    // Desktop: Skip desynchronized to prevent flashing/tearing
+    { alpha: false },
+    {}
   ];
 
   for (const config of contextConfigs) {
@@ -1012,7 +1022,7 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset, npcRenderer, monsterRenderer]);
+  }, [drawViewport, getOffset, npcRenderer, npcs, buildings, monsterRenderer]);
 
   return (
     <div className="game-viewport">

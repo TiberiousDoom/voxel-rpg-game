@@ -4,6 +4,8 @@
  * Adds helper functions to window.debug for testing gameplay features
  */
 
+/* eslint-disable no-console */
+
 import { Monster } from '../entities/Monster.js';
 import useGameStore from '../stores/useGameStore.js';
 

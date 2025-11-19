@@ -254,11 +254,14 @@ export function initDebugCommands() {
     ];
 
     monster.currentWaypointIndex = 0;
+    // Set AI state to PATROL so it starts patrolling immediately
+    monster.aiState = 'PATROL';
 
     useGameStore.getState().spawnMonster(monster);
     console.log(`✅ Spawned patrolling ${type} (Level ${level}) at (${x}, ${z})`);
     console.log(`   Path: ${pathSize}x${pathSize} square`);
     console.log(`   Waypoints: ${monster.patrolPath.length}`);
+    console.log(`   💡 Monster will patrol until player gets within ${monster.aggroRange} tiles`);
 
     return monster;
   };
@@ -273,12 +276,12 @@ export function initDebugCommands() {
     const playerX = player.position[0];
     const playerZ = player.position[2];
 
-    // Spawn monster 15 tiles away (outside aggro range initially)
-    const monster = window.debug.spawnMonster(type, playerX + 15, playerZ, 1);
+    // Spawn monster 20 tiles away (safely outside aggro range)
+    const monster = window.debug.spawnMonster(type, playerX + 20, playerZ, 1);
 
     console.log(`✅ Spawned ${type} at (${monster.position.x}, ${monster.position.z})`);
     console.log(`📍 Player at (${playerX.toFixed(1)}, ${playerZ.toFixed(1)})`);
-    console.log(`📏 Distance: ${Math.sqrt(Math.pow(15, 2)).toFixed(1)} tiles`);
+    console.log(`📏 Distance: 20 tiles`);
     console.log(`\n🎯 Walk toward the monster to trigger aggro (range: ${monster.aggroRange} tiles)`);
     console.log(`⚔️  Monster will chase when you get close enough`);
     console.log(`🗡️  Attack range: ${monster.attackRange} tiles`);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
+import useGameStore from '../stores/useGameStore';
 import CompactHeader from './CompactHeader';
 import HybridSystemDebugPanel from './HybridSystemDebugPanel';
 import GameViewport from './GameViewport';
@@ -27,6 +28,7 @@ import './GameScreen.css';
  */
 function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing, gameManager } = useGame();
+  const { enemies } = useGameStore(); // Get monsters from useGameStore
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
@@ -269,7 +271,7 @@ function GameScreen() {
           <GameViewport
             buildings={gameState.buildings || []}
             npcs={gameState.npcs || []}
-            monsters={gameState.enemies || []}
+            monsters={enemies || []}
             selectedBuildingType={selectedBuildingType}
             onPlaceBuilding={(position) => {
               if (selectedBuildingType) {

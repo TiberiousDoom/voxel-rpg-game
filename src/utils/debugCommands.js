@@ -19,6 +19,32 @@ export function initDebugCommands() {
   // Create debug namespace
   window.debug = window.debug || {};
 
+  // Expose store for debugging
+  window.useGameStore = useGameStore;
+
+  /**
+   * Debug: Check monster rendering pipeline
+   */
+  window.debug.checkMonsterPipeline = () => {
+    const store = useGameStore.getState();
+    console.log('🔍 Monster Rendering Pipeline Check:');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('1. Store enemies:', store.enemies);
+    console.log('   Count:', store.enemies?.length || 0);
+    if (store.enemies && store.enemies.length > 0) {
+      console.log('   First enemy:', store.enemies[0]);
+      console.log('   Position:', store.enemies[0].position);
+      console.log('   Type:', store.enemies[0].type);
+      console.log('   Color:', store.enemies[0].color);
+    }
+    console.log('\n2. Player position:', store.player?.position);
+    console.log('\n3. To check if rendering:');
+    console.log('   - Open GameViewport component');
+    console.log('   - Check if monsters prop is received');
+    console.log('   - Check visibleMonsters filter');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  };
+
   /**
    * Spawn a monster
    * @param {string} type - Monster type ('SLIME', 'GOBLIN', etc.)
@@ -271,7 +297,7 @@ Spawn Monsters:
   debug.spawnMonster(type, x, z, level)
   debug.spawnNearPlayer(type, distance, level)
   debug.spawnMonsterCircle(type, count, centerX, centerZ, radius, level)
-  debug.spawnPatrolMonster(type, x, z, pathSize, level)  👈 NEW! Patrolling monster
+  debug.spawnPatrolMonster(type, x, z, pathSize, level)
   debug.spawnTestArena()
   debug.testAI(type)
 
@@ -285,17 +311,18 @@ Manage Monsters:
 Utility:
   debug.getPlayerPos()
   debug.teleportPlayer(x, z)
+  debug.checkMonsterPipeline()  👈 NEW! Check if monsters are rendering
 
 Examples:
+  debug.checkMonsterPipeline()  // Diagnose rendering issues
   debug.testAI('SLIME')  // Watch monster chase and attack!
   debug.spawnPatrolMonster('GOBLIN', 15, 15, 8, 2)  // Patrol in 8x8 square
   debug.spawnNearPlayer('GOBLIN', 8, 2)  // Spawn 8 tiles away
   debug.spawnMonster('SLIME', 10, 10, 1)
   debug.spawnMonsterCircle('GOBLIN', 5, 15, 15, 8, 2)
-  debug.getPlayerPos()
-  debug.damageMonster('monster_123', 15)
 
-Monster Types: SLIME, GOBLIN
+Monster Types: SLIME, GOBLIN, WOLF, SKELETON, ORC
+Modifiers: ELITE, FAST, TANK, BERSERKER
 AI States: IDLE → PATROL → CHASE → ATTACK → FLEE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   `);

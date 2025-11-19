@@ -86,15 +86,23 @@ export class MonsterAI {
     if (!monster.alive) return;
 
     const player = gameState.player;
-    if (!player) return;
+    if (!player) {
+      console.warn('⚠️ MonsterAI: No player in game state');
+      return;
+    }
 
-    // Convert player position array [x, y, z] to {x, z} object
+    // Player position is an object {x, z}, not an array
     const playerPos = {
-      x: player.position[0],
-      z: player.position[2]
+      x: player.position.x,
+      z: player.position.z
     };
 
     const distToPlayer = distance(monster.position, playerPos);
+
+    // Debug: Log first time monster detects player nearby
+    if (distToPlayer <= monster.aggroRange && monster.aiState === 'IDLE') {
+      console.log(`🎯 ${monster.name} detected player at distance ${distToPlayer.toFixed(1)} tiles (aggro range: ${monster.aggroRange})`);
+    }
 
     // State machine
     switch (monster.aiState) {
@@ -150,7 +158,15 @@ export class MonsterAI {
   updatePatrol(monster, playerPos, distToPlayer, deltaTime) {
     // Check for player
     if (distToPlayer <= monster.aggroRange) {
+      console.log(`🎯 ${monster.name} spotted player during patrol! Switching to CHASE (distance: ${distToPlayer.toFixed(1)})`);
       monster.aiState = 'CHASE';
+      return;
+    }
+
+    // Validate patrol path exists
+    if (!monster.patrolPath || monster.patrolPath.length === 0) {
+      console.warn(`⚠️ ${monster.name} in PATROL state but has no patrol path! Switching to IDLE`);
+      monster.aiState = 'IDLE';
       return;
     }
 

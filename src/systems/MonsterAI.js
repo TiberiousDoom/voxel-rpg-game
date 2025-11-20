@@ -101,6 +101,7 @@ export class MonsterAI {
 
     // Debug: Log first time monster detects player nearby
     if (distToPlayer <= monster.aggroRange && monster.aiState === 'IDLE') {
+      // eslint-disable-next-line no-console
       console.log(`🎯 ${monster.name} detected player at distance ${distToPlayer.toFixed(1)} tiles (aggro range: ${monster.aggroRange})`);
     }
 
@@ -162,6 +163,7 @@ export class MonsterAI {
   updatePatrol(monster, playerPos, distToPlayer, deltaTime) {
     // Check for player
     if (distToPlayer <= monster.aggroRange) {
+      // eslint-disable-next-line no-console
       console.log(`🎯 ${monster.name} spotted player during patrol! Switching to CHASE (distance: ${distToPlayer.toFixed(1)})`);
       monster.aiState = 'CHASE';
       return;

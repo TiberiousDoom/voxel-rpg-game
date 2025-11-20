@@ -1,7 +1,8 @@
 # Game Environment Implementation Plan
 
-**Last Updated:** 2025-11-20
+**Last Updated:** 2025-11-20 (Revised with critical feedback)
 **Status:** Active
+**Version:** 2.0
 **Purpose:** Comprehensive plan for implementing procedurally generated game environment system for 2D settlement RPG
 
 ---
@@ -9,16 +10,17 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Project Requirements](#project-requirements)
-3. [Current State Analysis](#current-state-analysis)
-4. [System Architecture](#system-architecture)
-5. [Implementation Phases](#implementation-phases)
-6. [File Structure](#file-structure)
-7. [Technical Specifications](#technical-specifications)
-8. [Performance Considerations](#performance-considerations)
-9. [Timeline Estimates](#timeline-estimates)
-10. [Success Criteria](#success-criteria)
-11. [References](#references)
+2. [Critical Amendments (v2.0)](#critical-amendments-v20)
+3. [Project Requirements](#project-requirements)
+4. [Current State Analysis](#current-state-analysis)
+5. [System Architecture](#system-architecture)
+6. [Implementation Phases](#implementation-phases)
+7. [File Structure](#file-structure)
+8. [Technical Specifications](#technical-specifications)
+9. [Performance Considerations](#performance-considerations)
+10. [Timeline Estimates](#timeline-estimates)
+11. [Success Criteria](#success-criteria)
+12. [References](#references)
 
 ---
 
@@ -34,14 +36,119 @@ This plan outlines the implementation of a comprehensive procedurally generated 
 - **Player Interaction**: Destructible terrain, resource gathering, environmental mechanics
 - **Integration**: Seamless integration with existing grid, rendering, and game systems
 
-### Priorities (In Order)
+### Priorities (In Order) - REVISED v2.0
 
-1. Diverse biomes (forests, deserts, mountains, etc.)
-2. Environmental props (trees, rocks, water features)
-3. Procedural structures (ruins, dungeons, villages)
-4. Resource nodes for gathering
-5. Day/night cycle and weather
-6. Destructible/interactive terrain
+1. **Terrain + Chunks** - Core foundation system
+2. **Props + Resources** - Immediate gameplay value (trees, rocks ARE resource nodes)
+3. **Biomes** - Visual variety and exploration
+4. **Interactive Terrain** - Player agency (harvesting, terraforming)
+5. **Structures** - Exploration incentive (ruins, villages, dungeons)
+6. **Day/Night Cycle** - Atmospheric enhancement
+7. **Weather** - Polish and immersion
+8. **Optimization** - Ongoing throughout, not a final phase
+
+---
+
+## Critical Amendments (v2.0)
+
+**Date:** 2025-11-20
+**Reason:** Incorporated expert feedback to improve realism and reduce implementation risks
+
+### Key Changes from v1.0
+
+#### 🔴 **Timeline Adjustments** (Critical)
+- **Issue**: Original 12-18 week estimate was overly optimistic
+- **Change**: Added 30-40% buffer to all phase estimates
+- **New Timeline**: 16-24 weeks for full implementation
+- **Rationale**: Accounts for integration complexity, testing, and unforeseen issues
+
+#### 🔴 **Added Phase 0: Integration Planning** (Critical)
+- **Issue**: Original plan didn't address how terrain height affects existing systems
+- **New Phase**: 1-week prototype phase before main implementation
+- **Covers**: Building placement on slopes, NPC pathfinding with height, projectile physics, line-of-sight
+- **Rationale**: Validate core assumptions before committing to full implementation
+
+#### 🔴 **Performance Targets Revised** (Critical)
+- **Issue**: "1000+ props at 60 FPS" unrealistic for Canvas 2D
+- **Old Targets**: 1000+ props desktop, 500 mobile
+- **New Targets**: 500 props desktop (60 FPS), 200 props mobile (30 FPS)
+- **Added**: Sprite batching and LOD system in Phase 2 (not Phase 8)
+- **Rationale**: Conservative targets prevent over-promising, easier to optimize up
+
+#### 🔴 **Chunk Size Increased** (Critical)
+- **Issue**: 16x16 chunks too small, causes excessive loading/unloading
+- **Old**: 16x16 tiles per chunk
+- **New**: 32x32 tiles per chunk
+- **Rationale**: Player moving 5 tiles/sec in 16x16 = new chunk every 3 seconds (thrashing)
+
+#### 🟡 **Save System Architecture** (Important)
+- **Issue**: Save/load complexity underestimated
+- **Added to Phase 1**: Full week dedicated to save system architecture
+- **Covers**: Differential saves, compression, multiplayer sync, version migration
+- **Rationale**: Save system affects all subsequent phases
+
+#### 🟡 **Biome Generation Approach** (Important)
+- **Issue**: Temperature × Moisture lookup creates harsh boundaries
+- **Old**: Grid-based temperature/moisture maps
+- **New**: Voronoi diagrams with noise-based distortion for irregular shapes
+- **Rationale**: Creates more natural, organic biome distributions
+
+#### 🟡 **Resource Nodes Moved Earlier** (Important)
+- **Issue**: Resources are core gameplay, shouldn't be in Phase 5
+- **Old**: Phase 5 (separate from props)
+- **New**: Phase 2 (combined with props - trees/rocks ARE resources)
+- **Rationale**: Provides immediate gameplay value, reduces duplication
+
+#### 🟡 **Weather Particle Count** (Important)
+- **Issue**: 500 particles excessive for Canvas 2D
+- **Old**: 500 desktop, 200 mobile
+- **New**: 50-100 max, with particle pooling from start
+- **Alternative**: CSS animation overlays instead of particles
+- **Rationale**: 500 particles = 30-40% frame budget
+
+#### 🟡 **Structure Generation Simplified** (Important)
+- **Issue**: Procedural generation more complex than estimated
+- **Old**: Full procedural generation in Phase 4
+- **New**: Start with prefab templates, add procedural variation later
+- **Covers**: Door alignment, multi-story, interior gen, loot placement
+- **Rationale**: Deliver value faster, reduce complexity
+
+#### 🟡 **Day/Night Implementation** (Important)
+- **Issue**: Real-time lighting expensive in Canvas 2D
+- **Old**: Dynamic lighting and shadow calculations
+- **New**: Semi-transparent overlay approach + pre-baked sprite variants
+- **Rationale**: Simpler, more performant, achieves same visual effect
+
+#### 🟡 **Testing Strategy Enhanced** (Important)
+- **Added**: Automated performance regression tests from Phase 1
+- **Added**: Chunk boundary edge case tests
+- **Added**: Biome generation determinism tests
+- **Added**: Memory leak monitoring
+- **Added**: Multiplayer desync scenarios
+- **Rationale**: Catch issues early, prevent technical debt
+
+### Things Kept from v1.0 (Done Well) ✅
+
+- ✅ Excellent data model definitions
+- ✅ Smart reuse of existing systems (GridManager, SpatialPartitioning)
+- ✅ Comprehensive risk assessment
+- ✅ Clear success criteria
+- ✅ Good technical specifications for noise generation
+- ✅ Proper consideration of mobile performance
+- ✅ Modular approach and clear phase dependencies
+
+### Summary of Impact
+
+| Aspect | v1.0 | v2.0 | Impact |
+|--------|------|------|--------|
+| **Timeline** | 12-18 weeks | 16-24 weeks | +30-40% more realistic |
+| **Phases** | 8 phases | 9 phases (added Phase 0) | Better risk mitigation |
+| **Chunk Size** | 16x16 | 32x32 | Reduced loading overhead |
+| **Prop Target** | 1000+ | 500 desktop, 200 mobile | Achievable performance |
+| **Resource Nodes** | Phase 5 | Phase 2 (with props) | Earlier gameplay value |
+| **Weather Particles** | 500 | 50-100 | 60-80% performance savings |
+| **Structure Gen** | Full procedural | Prefabs first | Faster delivery |
+| **Day/Night** | Dynamic lighting | Overlay approach | Simpler, performant |
 
 ---
 
@@ -445,7 +552,80 @@ class WeatherSystem {
 
 ## Implementation Phases
 
-### Phase 1: Core Terrain Generation System (2-3 weeks)
+### Phase 0: Integration Planning & Prototyping (1 week) - **NEW in v2.0**
+
+**Goal**: Validate core assumptions and prototype terrain integration with existing systems BEFORE full implementation
+
+**Critical Issue Addressed**: Original plan didn't validate how terrain height affects building placement, NPC pathfinding, combat, and line-of-sight. This phase reduces risk by prototyping integration first.
+
+**Tasks**:
+1. **Terrain Height Prototype**
+   - Create minimal height map (doesn't need to be procedural yet)
+   - Simple 10x10 grid with varied heights for testing
+   - Render height visually (color-coded or stacked sprites)
+
+2. **Building Placement on Slopes**
+   - Prototype building placement validation with height
+   - Test: Can buildings be placed on slopes?
+   - Test: Auto-flatten terrain under buildings?
+   - Test: Minimum/maximum slope requirements?
+   - Decision: Flat terrain required, or support elevated buildings?
+
+3. **NPC Pathfinding with Height**
+   - Update pathfinding to consider terrain height
+   - Test: Can NPCs navigate uphill/downhill?
+   - Test: Max slope NPCs can traverse?
+   - Test: Pathfinding performance with height data?
+   - Decision: A* with height cost, or separate layers?
+
+4. **Combat & Projectiles**
+   - Test projectile physics with height differences
+   - High ground advantage in combat?
+   - Projectiles blocked by terrain elevation?
+   - Decision: Simple 2D with height visuals, or true height physics?
+
+5. **Line-of-Sight**
+   - Test vision/fog of war with hills blocking view
+   - Should hills block vision?
+   - Performance impact of LOS calculations?
+   - Decision: Implement terrain LOS or keep simple?
+
+6. **Performance Baseline**
+   - Measure current FPS without terrain
+   - Add height data and measure impact
+   - Establish performance budget for terrain features
+   - Identify bottlenecks early
+
+7. **Integration Documentation**
+   - Document decisions made
+   - Document integration points discovered
+   - Update Phase 1 plan based on findings
+   - Create integration test suite
+
+**Deliverables**:
+- ✅ Working prototype with terrain height + existing systems
+- ✅ Documented decisions on building/pathfinding/combat integration
+- ✅ Performance baseline established
+- ✅ Integration test suite created
+- ✅ Validated assumptions (or pivot plan based on findings)
+
+**Success Criteria**:
+- All integration questions answered
+- No major technical blockers discovered
+- Performance impact measured and acceptable
+- Team confident in Phase 1 approach
+
+**Risks Mitigated**:
+- Discovering late that terrain breaks existing systems
+- Performance issues discovered after full implementation
+- Wasted effort on wrong approach
+- Integration complexity underestimated
+
+**Time Investment**: 1 week upfront saves 2-4 weeks of rework later
+
+---
+
+### Phase 1: Core Terrain Generation System (3-4 weeks) - **REVISED v2.0** (was 2-3 weeks)
 
 **Goal**: Establish procedural terrain generation with height variation
 
@@ -463,10 +643,11 @@ class WeatherSystem {
    - Terrain modification support (digging, flattening)
 
 3. **ChunkManager Implementation**
-   - Chunk data structure (16x16 default size)
+   - Chunk data structure (32x32 default size) - **REVISED v2.0** (was 16x16)
    - Chunk loading/unloading logic
    - Active chunk tracking based on player positions
    - Memory management and chunk limits
+   - Async chunk generation (don't block main thread)
 
 4. **WorldGenerator (Basic)**
    - World seed management
@@ -480,11 +661,20 @@ class WeatherSystem {
    - Isometric height representation (optional: stacked tiles)
    - Camera culling for visible chunks only
 
-6. **Integration**
+6. **Save System Architecture** - **NEW in v2.0** (Full week dedicated)
+   - Design differential save format (only save changes from procedural baseline)
+   - Implement data compression for terrain/chunk data
+   - Multiplayer save synchronization strategy
+   - Version migration system (handle algorithm changes between versions)
+   - Benchmark save/load performance (target: <2 seconds for large world)
+   - Test save file size (target: <5 MB for typical world)
+
+7. **Integration**
    - Integrate TerrainManager with GridManager
-   - Update building placement to consider height
-   - Update NPC pathfinding to consider terrain
-   - Save/load terrain data
+   - Update building placement to consider height (use Phase 0 decisions)
+   - Update NPC pathfinding to consider terrain (use Phase 0 approach)
+   - Implement save/load terrain data (using architecture from task 6)
+   - Automated integration tests
 
 **Deliverables**:
 - ✅ Working procedural terrain generation
@@ -502,16 +692,18 @@ class WeatherSystem {
 
 ---
 
-### Phase 2: Biome System (1-2 weeks)
+### Phase 2: Biome System (2 weeks) - **REVISED v2.0** (was 1-2 weeks)
 
 **Goal**: Create diverse biomes with different terrain characteristics
 
 **Tasks**:
-1. **BiomeManager Implementation**
-   - Temperature map generation (Perlin noise)
-   - Moisture map generation (Perlin noise)
-   - Biome lookup table (temperature × moisture → biome)
-   - Biome blending at boundaries
+1. **BiomeManager Implementation** - **REVISED v2.0** (Added Voronoi approach)
+   - **Primary**: Voronoi diagram generation with noise-based distortion
+   - Voronoi seed point placement (1 per biome region)
+   - Biome cell boundary distortion using Perlin noise (irregular shapes)
+   - Biome type assignment based on region properties
+   - **Fallback**: Temperature × Moisture lookup (if Voronoi proves complex)
+   - Biome blending at boundaries with noise distortion
 
 2. **Biome Definitions**
    - Create 6 core biomes:
@@ -557,9 +749,11 @@ class WeatherSystem {
 
 ---
 
-### Phase 3: Environmental Props & Decorations (2-3 weeks)
+### Phase 3: Environmental Props & Resources (3-4 weeks) - **REVISED v2.0** (was 2-3 weeks, now includes resources)
 
-**Goal**: Populate the world with trees, rocks, and environmental details
+**Goal**: Populate the world with trees, rocks, and environmental details - **TREES/ROCKS ARE RESOURCES**
+
+**Key Change**: Resource nodes moved from Phase 5 to Phase 3. Trees = wood, Rocks = stone. They're the same system!
 
 **Tasks**:
 1. **PropManager Implementation**
@@ -569,15 +763,19 @@ class WeatherSystem {
    - Prop removal/harvesting
    - Prop persistence (save/load)
 
-2. **Prop Asset Creation**
+2. **Prop Asset Creation** - **REVISED v2.0** (now includes resource nodes)
    - Create/acquire sprites for:
-     - Trees (3-4 varieties)
-     - Rocks (2-3 sizes)
-     - Bushes/shrubs
-     - Flowers/grass clumps
+     - **Trees** (3-4 varieties) - **Resource**: Wood
+     - **Rocks** (2-3 sizes) - **Resource**: Stone
+     - **Ore veins** (Iron, Gold, Crystal) - **Resource**: Ore
+     - **Herb patches** (Medicinal, Magical) - **Resource**: Herbs
+     - Berry bushes (Food) - **Resource**: Berries
+     - Mushroom clusters - **Resource**: Mushrooms
+     - Bushes/shrubs (decorative, some harvestable)
+     - Flowers/grass clumps (decorative)
      - Water features (ponds, decorative)
    - Create sprite manifest entries
-   - Define prop configurations
+   - Define prop configurations (including resource drop rates)
 
 3. **Biome-Specific Prop Rules**
    - Forest: High tree density, bushes
@@ -594,11 +792,14 @@ class WeatherSystem {
    - Respect terrain height and slopes
    - Avoid building/structure areas
 
-5. **Prop Rendering**
+5. **Prop Rendering** - **REVISED v2.0** (added batching/LOD early)
    - Render props in EnvironmentRenderer
-   - Z-sorting for correct depth
-   - Prop shadows (optional)
-   - Animation for trees/bushes (wind sway)
+   - **Sprite batching**: Group props by sprite type to reduce draw calls
+   - **LOD system**: Simplified sprites for distant props (Phase 3, not Phase 8!)
+   - Z-sorting for correct depth (optimize: sort once per frame)
+   - Object pooling for prop instances (reuse objects, don't create/destroy)
+   - Prop shadows (optional, low priority)
+   - Animation for trees/bushes (wind sway - use CSS if possible)
 
 6. **Water Features**
    - Lake/pond generation (low-lying areas)
@@ -619,39 +820,49 @@ class WeatherSystem {
 - ✅ Water features generate naturally
 - ✅ Prop sprites and rendering working
 
-**Success Criteria**:
+**Success Criteria - REVISED v2.0**:
 - Props look natural and well-distributed
 - No prop overlap or clipping
-- Performance: 1000+ props on screen at 60 FPS
-- Harvesting works smoothly
+- **Performance: 500 props on screen at 60 FPS (desktop), 200 props at 30 FPS (mobile)** - **REVISED**
+- Sprite batching reduces draw calls by 80%+
+- LOD system working for distant props
+- Harvesting works smoothly (trees → wood, rocks → stone)
+- Resource gathering integrated with inventory
 - Props persist correctly in saves
 
 ---
 
-### Phase 4: Procedural Structures (2-3 weeks)
+### Phase 4: Prefab Structures (2-3 weeks) - **REVISED v2.0** (Prefabs first, procedural later)
 
-**Goal**: Generate ruins, villages, and points of interest
+**Goal**: Generate ruins, villages, and points of interest using **prefab templates**
+
+**Key Change**: Start with hand-crafted prefab structures, NOT full procedural generation. Procedural variation added later.
+
+**Rationale**: Procedural structure generation is complex (door alignment, multi-story, interiors, loot placement). Deliver value faster with prefabs, iterate to procedural.
 
 **Tasks**:
 1. **StructureGenerator Implementation**
-   - Structure template system
-   - Structure placement algorithm
+   - Structure template system (load from JSON/data files)
+   - Structure placement algorithm (find suitable locations)
    - Structure overlap prevention
-   - Structure-terrain integration (flatten area)
+   - Structure-terrain integration (flatten area under structure)
+   - **NOT YET**: Full procedural generation (Phase 4+, post-launch)
 
-2. **Structure Templates**
-   - Create 5-10 structure templates:
-     - Small ruins (2x2, 3x3)
-     - Large ruins (5x5, 7x7)
-     - NPC hut
-     - Small village (cluster of huts)
-     - Resource camp
+2. **Structure Templates (Hand-Crafted Prefabs)** - **REVISED v2.0**
+   - Create 5-10 prefab structure templates:
+     - Small ruins (2x2, 3x3) - 2 variations each
+     - Large ruins (5x5, 7x7) - 2 variations each
+     - NPC hut - 3 variations
+     - Small village (cluster of 3-5 huts)
+     - Resource camp (1-2 variations)
      - Dungeon entrance marker
      - Abandoned tower
      - Stone circle
-   - Define structure tile layouts
-   - Define loot tables
-   - Define NPC spawn points
+   - Define structure tile layouts in data files (JSON)
+   - Define loot tables per structure type
+   - Define NPC spawn points per structure
+   - Define door/entrance positions
+   - Define interior tiles (if multi-story)
 
 3. **Structure Placement Rules**
    - Minimum distance between structures
@@ -694,56 +905,20 @@ class WeatherSystem {
 
 ---
 
-### Phase 5: Resource Nodes System (1-2 weeks)
+### ~~Phase 5: Resource Nodes System~~ - **MOVED TO PHASE 3** ✅
 
-**Goal**: Add gatherable resource nodes to the environment
+**This phase has been merged into Phase 3 (Environmental Props & Resources).**
 
-**Tasks**:
-1. **Resource Node Types**
-   - Ore veins (Iron, Gold, Crystal)
-   - Herb patches (Medicinal, Magical)
-   - Berry bushes (Food)
-   - Mushroom clusters (Alchemy)
-   - Fishing spots (Water)
+**Rationale**: Trees and rocks ARE resources (wood, stone). Combining props and resources into one phase:
+- Reduces duplication (same placement, rendering, harvesting systems)
+- Delivers gameplay value earlier
+- Simplifies architecture
 
-2. **Resource Node Placement**
-   - Biome-specific resources
-   - Rarity tiers (common, uncommon, rare)
-   - Cluster generation (ore veins)
-   - Respect terrain features
-
-3. **Resource Node Rendering**
-   - Visual indicators (glowing, distinctive sprites)
-   - Resource type identification
-   - Depleted state visualization
-
-4. **Resource Gathering**
-   - Click to gather
-   - Skill checks (optional: mining skill for ore)
-   - Resource depletion and respawn
-   - Inventory integration
-
-5. **Resource Economy**
-   - Configure resource spawn rates
-   - Balance resource availability
-   - Resource-based crafting integration
-
-**Deliverables**:
-- ✅ 5+ resource node types
-- ✅ Nodes spawn in appropriate biomes
-- ✅ Gathering mechanic working
-- ✅ Resources added to inventory
-- ✅ Nodes respawn over time
-
-**Success Criteria**:
-- Resources are discoverable
-- Distribution encourages exploration
-- Gathering feels rewarding
-- Resource economy is balanced
+See **Phase 3** for full resource implementation.
 
 ---
 
-### Phase 6: Day/Night Cycle & Weather (2 weeks)
+### Phase 5: Day/Night Cycle & Weather (2-3 weeks) - **REVISED v2.0** (was Phase 6)
 
 **Goal**: Add dynamic time and weather systems
 
@@ -752,19 +927,22 @@ class WeatherSystem {
    - Time tracking (0-24 hour cycle)
    - Configurable day length (e.g., 20 real minutes = 1 game day)
    - Time events (dawn, noon, dusk, night)
-   - Time-based lighting
+   - Event system for time-based triggers
 
-2. **Lighting System**
-   - Ambient light levels by time
-   - Darkness overlay at night
-   - Lantern/torch radius for player
-   - Building lights at night
+2. **Lighting System - REVISED v2.0 (Overlay Approach)**
+   - **Overlay method**: Semi-transparent dark overlay (NOT per-sprite tinting)
+   - Sinusoidal darkness calculation (0.0-0.7 opacity)
+   - Apply as canvas globalAlpha or CSS overlay
+   - **Alternative**: Pre-baked day/night sprite variants (swap sprites)
+   - **NOT**: Dynamic lighting per sprite (too expensive for Canvas 2D)
+   - Lantern/torch radius for player (optional, light circle around player)
+   - Building lights at night (light windows on building sprites)
 
 3. **Day/Night Effects**
-   - Visual sky color changes
-   - Shadow opacity changes
-   - Star/moon rendering at night
-   - Time-based NPC schedules (optional)
+   - Visual sky color changes (simple background color transition)
+   - Darkness overlay opacity changes (smooth sinusoidal curve)
+   - Star/moon rendering at night (simple sprites in sky layer)
+   - Time-based NPC schedules (optional - NPCs sleep at night)
 
 4. **WeatherSystem Implementation**
    - Weather states: Clear, Cloudy, Rain, Snow, Storm
@@ -772,12 +950,15 @@ class WeatherSystem {
    - Weather duration (random, 2-10 minutes)
    - Biome-specific weather (no snow in desert)
 
-5. **Weather Rendering**
-   - Rain particle effects (falling drops)
-   - Snow particle effects
-   - Cloud overlay (translucent)
-   - Lightning flashes (storms)
-   - Wind effects (tree sway)
+5. **Weather Rendering - REVISED v2.0 (Reduced particles)**
+   - **Rain particles**: 50-100 MAX (desktop), 30-50 (mobile) - **NOT 500!**
+   - **Snow particles**: 50-100 MAX (desktop), 30-50 (mobile)
+   - **Particle pooling**: Reuse particle objects, don't create/destroy
+   - **Alternative**: CSS rain/snow animation overlays (more performant)
+   - **Alternative**: Animated sprite overlays (rain streaks, snow texture)
+   - Cloud overlay (translucent, simple sprite or gradient)
+   - Lightning flashes (full-screen white flash, no particles)
+   - Wind effects (tree sway - reuse from prop rendering Phase 3)
 
 6. **Weather Gameplay Effects**
    - Rain reduces visibility slightly
@@ -797,16 +978,18 @@ class WeatherSystem {
 - ✅ Gameplay effects implemented
 - ✅ UI shows time and weather
 
-**Success Criteria**:
+**Success Criteria - REVISED v2.0**:
 - Time progresses smoothly
-- Lighting changes are noticeable
+- **Lighting changes are noticeable (overlay method working)**
+- **Overlay approach performs well (<2% FPS impact)**
 - Weather feels immersive
+- **Weather particles perform well (50-100 particles, <3% FPS impact)**
 - Weather effects are balanced
-- Performance: <5% FPS impact
+- **Total performance impact: <5% FPS** (was correct)
 
 ---
 
-### Phase 7: Destructible/Interactive Terrain (1-2 weeks)
+### Phase 6: Interactive Terrain (2 weeks) - **REVISED v2.0** (was Phase 7, was 1-2 weeks)
 
 **Goal**: Allow players to modify the environment
 
@@ -859,17 +1042,23 @@ class WeatherSystem {
 
 ---
 
-### Phase 8: Optimization & Polish (1-2 weeks)
+### Phase 7: Final Optimization & Polish (2 weeks) - **REVISED v2.0** (was Phase 8)
 
-**Goal**: Ensure performance, stability, and visual polish
+**Goal**: Final performance tuning, stability, and visual polish
+
+**IMPORTANT**: Optimization is ONGOING throughout all phases, not just this final phase!
+- Phase 1: Async chunk loading, performance baseline
+- Phase 3: Sprite batching, LOD, object pooling
+- Phase 5: Particle pooling, overlay approach
+- Phase 7: Final tuning and polish
 
 **Tasks**:
-1. **Performance Optimization**
-   - Profile rendering performance
-   - Optimize chunk loading (async)
-   - Object pooling for props/particles
-   - Spatial indexing optimization
-   - LOD for distant terrain/props (optional)
+1. **Performance Profiling & Tuning**
+   - Profile rendering performance across all devices
+   - Identify and fix remaining bottlenecks
+   - **Already Done in Earlier Phases**: Async chunks, sprite batching, LOD, object pooling
+   - Spatial indexing optimization (if needed)
+   - Texture atlas for sprites (if not already done)
 
 2. **Memory Optimization**
    - Chunk unloading based on distance
@@ -895,11 +1084,16 @@ class WeatherSystem {
    - Designer tools for content creation
    - Debug visualization tools
 
-6. **Testing**
-   - Load testing (large worlds)
-   - Multiplayer sync testing
-   - Save/load testing
-   - Edge case handling (world borders)
+6. **Comprehensive Testing - REVISED v2.0 (Enhanced)**
+   - Load testing (large worlds, 10+ players)
+   - Multiplayer sync testing (desync scenarios)
+   - Save/load testing (large files, version migration)
+   - Edge case handling (world borders, chunk boundaries)
+   - **NEW**: Automated performance regression tests
+   - **NEW**: Chunk boundary edge case tests
+   - **NEW**: Biome generation determinism tests (same seed = same world)
+   - **NEW**: Memory leak monitoring (long-running sessions)
+   - **NEW**: Automated integration test suite (from Phase 0)
 
 7. **Documentation**
    - Update ARCHITECTURE.md
@@ -1034,10 +1228,16 @@ src/
 
 ### Chunk System
 
-**Chunk Size**: 16x16 tiles (configurable)
+**Chunk Size**: 32x32 tiles (configurable) - **REVISED v2.0** (was 16x16)
 **Load Radius**: 3 chunks (desktop), 2 chunks (mobile)
 **Unload Distance**: 5 chunks
 **Max Active Chunks**: 100 (desktop), 50 (mobile)
+
+**Rationale for 32x32**:
+- Reduces chunk loading frequency (player at 5 tiles/sec = ~6 seconds per chunk vs 3 seconds with 16x16)
+- Fewer chunk boundaries to manage
+- Less overhead from chunk generation/loading
+- Still granular enough for streaming
 
 **Chunk Coordinates**:
 ```javascript
@@ -1047,9 +1247,21 @@ chunkZ = Math.floor(worldZ / CHUNK_SIZE)
 
 **Chunk Key**: `${chunkX},${chunkZ}`
 
-### Biome Generation
+### Biome Generation - **REVISED v2.0**
 
-**Biome Lookup Table**:
+**Primary Approach: Voronoi Diagrams** (More natural than grid-based)
+```javascript
+// Use Voronoi cells with noise-based distortion for irregular biome shapes
+// This creates organic, naturalistic biome distributions
+// Rather than rigid temperature × moisture grids
+
+// 1. Generate Voronoi seed points (one per biome region)
+// 2. Distort cell boundaries with Perlin noise
+// 3. Assign biome types based on region properties
+// 4. Blend at boundaries for smooth transitions
+```
+
+**Fallback: Temperature × Moisture Lookup** (Simpler, but less organic)
 ```javascript
 // Temperature (-1 to 1) × Moisture (-1 to 1) → Biome
 const BIOME_TABLE = {
@@ -1068,9 +1280,10 @@ const BIOME_TABLE = {
 ```
 
 **Biome Blending**:
-- Sample 4 nearest biomes
+- Sample 4 nearest biomes (or Voronoi neighbors)
 - Weighted average based on distance
 - Smooth interpolation for colors/heights
+- Noise-based distortion for irregular boundaries (not straight lines)
 
 ### Prop Placement
 
@@ -1095,24 +1308,40 @@ const BIOME_TABLE = {
 - Avoid chunk edges (to prevent cutting)
 - Flatten 1-tile border around structure
 
-### Day/Night Cycle
+### Day/Night Cycle - **REVISED v2.0**
 
 **Time Scale**: 1 real minute = 1 game hour (configurable)
 **Full Day**: 24 real minutes
 
-**Light Levels**:
-- Noon (12:00): 1.0 (full brightness)
-- Dusk (18:00): 0.6
-- Night (0:00): 0.3
-- Dawn (6:00): 0.6
-
-**Lighting Calculation**:
+**Implementation Approach: Overlay Method** (More performant than dynamic lighting)
 ```javascript
-// Sinusoidal lighting curve
-const lightLevel = 0.5 + 0.5 * Math.sin((time - 6) / 24 * Math.PI * 2);
-const minLight = 0.3; // Never completely dark
-const finalLight = Math.max(minLight, lightLevel);
+// Use semi-transparent overlay instead of per-sprite tinting
+// Avoids expensive redraw of all sprites
+
+// Overlay opacity calculation (sinusoidal)
+const time = getCurrentGameTime(); // 0-24
+const darkness = 0.5 - 0.5 * Math.cos((time / 24) * Math.PI * 2);
+const maxDarkness = 0.7; // Never completely black
+const overlayOpacity = Math.min(darkness, maxDarkness);
+
+// Apply as CSS overlay or canvas globalAlpha
+canvas.globalAlpha = overlayOpacity;
+ctx.fillStyle = '#000033'; // Dark blue for night
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+canvas.globalAlpha = 1.0;
 ```
+
+**Alternative: Pre-baked Sprite Variants**
+- Day sprites (normal)
+- Night sprites (darker versions)
+- Swap sprites based on time of day
+- Less flexible but very performant
+
+**Light Levels**:
+- Noon (12:00): 0.0 overlay opacity (full brightness)
+- Dusk (18:00): 0.4 overlay opacity
+- Night (0:00): 0.7 overlay opacity (never completely dark)
+- Dawn (6:00): 0.4 overlay opacity
 
 ### Weather System
 
@@ -1126,9 +1355,13 @@ const finalLight = Math.max(minLight, lightLevel);
 
 **Weather Duration**: 2-10 minutes (random)
 
-**Particle Counts**:
-- Desktop: 500 rain/snow particles
-- Mobile: 200 rain/snow particles
+**Particle Counts - REVISED v2.0**:
+- Desktop: 50-100 rain/snow particles MAX (was 500 - unrealistic for Canvas 2D)
+- Mobile: 30-50 rain/snow particles MAX (was 200)
+- **IMPORTANT**: Use particle pooling from day 1 to reuse objects
+- **Alternative**: CSS animations or canvas overlay effects (more performant than particles)
+
+**Rationale**: 500 particles = 30-40% of frame budget in Canvas 2D. Start conservative.
 
 ### Performance Budgets
 
@@ -1139,12 +1372,13 @@ const finalLight = Math.max(minLight, lightLevel);
 - Game logic: 5ms
 - Rendering other: 2.67ms
 
-**Memory Budget**:
-- Chunk data: ~10 KB per chunk
-- 100 active chunks: ~1 MB
+**Memory Budget - REVISED v2.0**:
+- Chunk data: ~20 KB per chunk (32x32 vs 16x16, was ~10 KB)
+- 100 active chunks: ~2 MB (was ~1 MB)
 - Props: ~100 bytes per prop
-- 10,000 props: ~1 MB
-- Total environment: <5 MB
+- Target: 500 visible props on screen (desktop)
+- Total props in memory: ~5,000 props across loaded chunks = ~500 KB
+- Total environment: <5 MB (still achievable)
 
 ---
 
@@ -1183,47 +1417,66 @@ const finalLight = Math.max(minLight, lightLevel);
 
 ## Timeline Estimates
 
-### Full Implementation Timeline
+### Full Implementation Timeline - **REVISED v2.0**
 
-| Phase | Duration | Dependencies |
-|-------|----------|--------------|
-| **Phase 1: Core Terrain** | 2-3 weeks | None |
-| **Phase 2: Biomes** | 1-2 weeks | Phase 1 |
-| **Phase 3: Props** | 2-3 weeks | Phase 1, 2 |
-| **Phase 4: Structures** | 2-3 weeks | Phase 1, 2, 3 |
-| **Phase 5: Resources** | 1-2 weeks | Phase 3 |
-| **Phase 6: Day/Night/Weather** | 2 weeks | Phase 1, 3 |
-| **Phase 7: Interactive Terrain** | 1-2 weeks | Phase 1, 3 |
-| **Phase 8: Optimization** | 1-2 weeks | All phases |
-| **Total** | **12-18 weeks** | Sequential + parallel |
+| Phase | Duration (v2.0) | v1.0 Duration | Dependencies | Notes |
+|-------|-----------------|---------------|--------------|-------|
+| **Phase 0: Integration Planning** | 1 week | (NEW) | None | **NEW** - Validate assumptions first |
+| **Phase 1: Core Terrain** | 3-4 weeks | 2-3 weeks | Phase 0 | +1 week for save system architecture |
+| **Phase 2: Biomes** | 2 weeks | 1-2 weeks | Phase 1 | Voronoi adds complexity |
+| **Phase 3: Props + Resources** | 3-4 weeks | 2-3 weeks | Phase 1, 2 | Now includes resources (was Phase 5) |
+| **Phase 4: Prefab Structures** | 2-3 weeks | 2-3 weeks | Phase 1, 2, 3 | Prefabs simplifies vs full procedural |
+| ~~**Phase 5: Resources**~~ | (MERGED) | 1-2 weeks | - | **REMOVED** - Merged into Phase 3 |
+| **Phase 5: Day/Night/Weather** | 2-3 weeks | 2 weeks | Phase 1, 3 | Was Phase 6, overlay approach |
+| **Phase 6: Interactive Terrain** | 2 weeks | 1-2 weeks | Phase 1, 3 | Was Phase 7 |
+| **Phase 7: Final Polish** | 2 weeks | 1-2 weeks | All phases | Was Phase 8, optimization ongoing |
+| **Total** | **16-24 weeks** | **12-18 weeks** | Sequential + parallel | **+30-40% buffer added** |
 
-### Parallel Work Opportunities
+**Key Changes**:
+- ✅ Added Phase 0 (1 week) - Integration prototyping
+- ✅ Extended Phase 1 by 1 week - Save system architecture
+- ✅ Removed Phase 5 - Resources merged into Phase 3
+- ✅ Total timeline: **16-24 weeks** (was 12-18 weeks) - **+4-6 weeks more realistic**
+
+### Parallel Work Opportunities - **REVISED v2.0**
 
 Some phases can be worked on in parallel:
-- Phase 5 (Resources) can start after Phase 3 (Props)
-- Phase 6 (Day/Night) can be developed independently after Phase 1
-- Asset creation can happen parallel to development
+- Phase 5 (Day/Night) can be developed independently after Phase 1 (low dependency)
+- Asset creation can happen parallel to development (sprites, structures)
+- Testing can begin early (Phase 1+) with automated tests
 
-**Optimized Timeline**: 10-14 weeks with 2 developers
+**Optimized Timeline**: 14-20 weeks with 2 developers (was 10-14 weeks)
 
-### Milestones
+### Milestones - **REVISED v2.0**
 
-**Month 1**:
-- ✅ Phase 1 complete: Terrain generation working
+**Week 1**:
+- ✅ Phase 0 complete: Integration assumptions validated
+
+**Month 1** (Weeks 2-5):
+- ✅ Phase 1 complete: Terrain generation + save system working
+- ✅ Phase 2 started: Biome implementation underway
+
+**Month 2** (Weeks 6-9):
 - ✅ Phase 2 complete: Biomes visually distinct
+- ✅ Phase 3 in progress: Props and resources generating
 
-**Month 2**:
-- ✅ Phase 3 complete: World populated with props
+**Month 3** (Weeks 10-13):
+- ✅ Phase 3 complete: World populated with props and resources
 - ✅ Phase 4 in progress: First structures generating
 
-**Month 3**:
-- ✅ Phase 4-7 complete: Full feature set
-- ✅ Phase 8 in progress: Optimization and polish
+**Month 4** (Weeks 14-17):
+- ✅ Phase 4 complete: Structures working
+- ✅ Phase 5 in progress: Day/night and weather
 
-**Month 4** (Buffer):
-- ✅ Phase 8 complete: Production ready
+**Month 5** (Weeks 18-21):
+- ✅ Phase 5-6 complete: Day/night, weather, interactive terrain
+- ✅ Phase 7 in progress: Final optimization and polish
+
+**Month 6** (Weeks 22-24, Buffer):
+- ✅ Phase 7 complete: Production ready
 - ✅ Testing and bug fixes
 - ✅ Documentation complete
+- ✅ Buffer for unforeseen issues
 
 ---
 
@@ -1409,6 +1662,20 @@ Some phases can be worked on in parallel:
 
 ## Version History
 
+- **v2.0** (2025-11-20) - Major revision with expert feedback
+  - Added Phase 0: Integration Planning & Prototyping
+  - Timeline increased 30-40% (16-24 weeks vs 12-18 weeks)
+  - Chunk size increased (32x32 vs 16x16)
+  - Performance targets revised (500 props vs 1000+)
+  - Biome generation: Voronoi approach added
+  - Resources moved to Phase 3 (merged with props)
+  - Weather particles reduced (50-100 vs 500)
+  - Structure generation: Prefabs first (vs full procedural)
+  - Day/night: Overlay approach (vs dynamic lighting)
+  - Testing strategy enhanced (automated tests added)
+  - Save system architecture added to Phase 1
+  - Optimization made ongoing (not just final phase)
+
 - **v1.0** (2025-11-20) - Initial comprehensive plan created
   - All 8 phases detailed
   - Technical specifications defined
@@ -1418,5 +1685,6 @@ Some phases can be worked on in parallel:
 ---
 
 **Document Created:** 2025-11-20
-**Version:** 1.0
+**Current Version:** 2.0
+**Last Revised:** 2025-11-20
 **Author:** Environment System Planning Team

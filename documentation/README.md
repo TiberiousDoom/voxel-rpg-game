@@ -1,6 +1,6 @@
 # Documentation Archive Index
 
-**Last Updated:** 2025-11-18
+**Last Updated:** 2025-11-20
 **Purpose:** Index of all archived documentation
 
 This directory contains historical documentation. For current, authoritative docs, see the **root directory**.
@@ -28,6 +28,7 @@ Implementation plans, timelines, and workflow coordination.
 
 | File | Description | Date | Status |
 |------|-------------|------|--------|
+| `GAME_ENVIRONMENT_IMPLEMENTATION_PLAN.md` | **Comprehensive plan for procedural environment system (terrain, biomes, props, structures, weather)** | Nov 20, 2025 | **Active** |
 | `GAMEPLAY_FEATURES_IMPLEMENTATION_PLAN.md` | **Comprehensive plan for monsters, loot, quests, and dungeons** | Nov 18, 2025 | **Active** |
 | `SPRITE_SYSTEM_IMPLEMENTATION_PLAN.md` | Implementation plan for sprite-based rendering system | Nov 17, 2025 | Active |
 | `PHASE_4_WORKFLOWS.md` | Phase 4 parallel workflow breakdown | Nov 15, 2025 | Active |
@@ -90,13 +91,13 @@ Guides for migrating between versions or architectures.
 
 ---
 
-**Last Updated:** 2025-11-18
+**Last Updated:** 2025-11-20
 **Maintained By:** Project team
 # Documentation Archive
 
 This directory contains historical documentation, archived reports, and phase completion summaries.
 
-**Last Updated:** November 18, 2025
+**Last Updated:** November 20, 2025
 
 ---
 

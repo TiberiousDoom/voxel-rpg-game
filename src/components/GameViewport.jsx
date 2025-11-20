@@ -964,6 +964,7 @@ function GameViewport({
             monstersRef.current.forEach(monster => {
               if (!monster.alive && monster.deathTime && (now - monster.deathTime > 1000)) {
                 // Monster has finished death animation, remove from store
+                // eslint-disable-next-line no-console
                 console.log(`🗑️ Removing ${monster.name} after death animation (${((now - monster.deathTime) / 1000).toFixed(1)}s ago)`);
                 useGameStore.getState().removeMonster(monster.id);
               }

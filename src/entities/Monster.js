@@ -168,12 +168,14 @@ export class Monster {
     const actualDamage = Math.max(1, amount - this.defense);
     this.health -= actualDamage;
 
+    // eslint-disable-next-line no-console
     console.log(`🩸 ${this.name} took ${actualDamage} damage (${this.health}/${this.maxHealth} HP)`);
 
     if (this.health <= 0) {
       this.health = 0;
       this.alive = false;
       this.aiState = 'DEATH';
+      // eslint-disable-next-line no-console
       console.log(`💀 ${this.name} died!`);
       this.die();
       return true;
@@ -184,6 +186,7 @@ export class Monster {
       const healthPercent = this.health / this.maxHealth;
       if (healthPercent <= this.fleeHealthPercent) {
         this.aiState = 'FLEE';
+        // eslint-disable-next-line no-console
         console.log(`🏃 ${this.name} is fleeing!`);
       }
     }

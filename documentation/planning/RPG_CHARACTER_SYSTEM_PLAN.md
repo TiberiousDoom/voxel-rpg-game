@@ -1,64 +1,336 @@
 # RPG Character System Implementation Plan
 
 **Last Updated:** 2025-11-21
+**Version:** 2.0 (Revised with Claude Opus feedback)
 **Status:** Active - Planning Phase
 **Purpose:** Comprehensive plan to enhance the player character system with full RPG features including character menus, skills, inventory, stats, progression, and customization
+
+---
+
+## 🎯 Executive Summary - MVP Focus
+
+### Critical Feedback Integration
+
+This plan has been **significantly revised** based on expert feedback to:
+- ✅ **Reduce scope by 50%** - Focus on MVP first, iterate later
+- ✅ **Add Phase 0** - Integration audit before building
+- ✅ **Game-specific attributes** - Aligned with settlement/exploration gameplay
+- ✅ **Simplified active abilities** - Max 8 instead of 15+
+- ✅ **Fixed scaling** - Linear progression instead of exponential
+- ✅ **Save versioning** - Migration strategy from day one
+- ✅ **Performance budgets** - Clear optimization targets
+
+### Revised Vision: Ship MVP, Then Iterate
+
+**MVP Goals (First Release):**
+- Core attribute system (6 game-specific attributes)
+- Single skill tree (30 nodes, Settlement focus)
+- Basic character sheet UI
+- Simplified progression (no classes, no sets, no sockets)
+- Working save/load with versioning
+
+**Post-MVP (Future Updates):**
+- Additional skill trees (Explorer, Combat)
+- Equipment sets and sockets
+- Character customization
+- Class specializations
+- Advanced features
+
+### Why This Approach?
+
+> "Your players would rather have 30 amazing skills than 90 mediocre ones."
+
+**Benefits:**
+- Faster time to market (4-5 weeks vs 13 weeks)
+- Validate core systems early
+- Gather player feedback
+- Iterate based on real usage
+- Avoid over-engineering
 
 ---
 
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)
-2. [Current State Analysis](#current-state-analysis)
-3. [Gap Analysis](#gap-analysis)
-4. [Proposed Features](#proposed-features)
-5. [Implementation Phases](#implementation-phases)
-6. [Technical Architecture](#technical-architecture)
-7. [Integration Points](#integration-points)
-8. [UI/UX Design](#uiux-design)
-9. [Data Structures](#data-structures)
-10. [Balance Considerations](#balance-considerations)
-11. [Testing Strategy](#testing-strategy)
-12. [Timeline & Resources](#timeline--resources)
+2. [Claude Opus Feedback Summary](#claude-opus-feedback-summary)
+3. [Phase 0: Integration Audit](#phase-0-integration-audit)
+4. [Current State Analysis](#current-state-analysis)
+5. [Gap Analysis](#gap-analysis)
+6. [Revised Attribute System](#revised-attribute-system)
+7. [Revised Skill Trees](#revised-skill-trees)
+8. [MVP Features](#mvp-features)
+9. [Post-MVP Features](#post-mvp-features)
+10. [Technical Architecture](#technical-architecture)
+11. [Save Versioning Strategy](#save-versioning-strategy)
+12. [Performance Budgets](#performance-budgets)
+13. [Revised Balance](#revised-balance)
+14. [Revised Timeline](#revised-timeline)
+15. [Testing Strategy](#testing-strategy)
+16. [Risk Mitigation](#risk-mitigation)
 
 ---
 
-## Executive Summary
+## Claude Opus Feedback Summary
 
-### Vision
+### 🔴 Critical Issues Addressed
 
-Transform the player character from a basic entity with health/stamina into a deep, customizable RPG character with:
-- **Character Sheet** - Detailed stats, attributes, and progression
-- **Skill Trees** - Multiple progression paths and build diversity
-- **Enhanced Inventory** - Comprehensive item management with categories
-- **Equipment System** - Full gear slots with set bonuses
-- **Character Customization** - Visual appearance and naming
-- **Attribute System** - Core stats affecting gameplay (STR, DEX, INT, etc.)
-- **Class System** - Optional specializations with unique abilities
+1. **Integration Complexity Underestimated** ✅ FIXED
+   - Added Phase 0: Integration Audit (1 week)
+   - Mapped all system touchpoints
+   - Created migration strategy
 
-### Goals
+2. **Generic Attributes** ✅ FIXED
+   - Replaced STR/DEX/INT with game-specific attributes
+   - Leadership, Construction, Exploration, Combat, Magic, Endurance
+   - Tied to settlement building and exploration
 
-1. **Depth** - Provide meaningful character progression choices
-2. **Replayability** - Enable different character builds and playstyles
-3. **Integration** - Seamlessly integrate with existing settlement/combat systems
-4. **Accessibility** - Maintain ease of use while adding complexity
-5. **Performance** - Ensure no impact on game performance
+3. **Misaligned Skill Trees** ✅ FIXED
+   - Replaced Combat/Magic/Utility with Settlement/Explorer/Combat
+   - Aligned with core gameplay pillars
+   - MVP focuses on Settlement tree only
 
-### Timeline Overview
+4. **Too Many Active Abilities** ✅ FIXED
+   - Reduced from 15+ to max 8 active abilities
+   - Modified existing spells instead of adding more
+   - Combo system for complexity
 
+5. **Exponential Scaling** ✅ FIXED
+   - Changed to linear base + percentage bonuses
+   - Level 1: 10 dmg → Level 50: 50 base + 100% = 100 dmg (10x, not 40x)
+   - More sustainable long-term
+
+6. **Skill Point Scarcity** ✅ FIXED
+   - Increased to 2 points per level
+   - ~100 points by level 50
+   - Can meaningfully invest in multiple trees
+
+### 🟡 Important Improvements Made
+
+7. **Save File Migration** ✅ ADDRESSED
+   - Versioned save system implemented first
+   - Backup and rollback strategy
+   - Recovery mode for corrupted saves
+
+8. **Performance Budgets** ✅ ADDED
+   - Stat calculation: <5ms
+   - Skill tree render: <16ms
+   - Character sheet: <8ms
+
+### 🟢 Enhancements Added
+
+9. **Skill Loadouts** ✅ ADDED
+10. **Skill Preview Mode** ✅ ADDED
+11. **Progression Visualization** ✅ ADDED
+
+---
+
+## Phase 0: Integration Audit (Week 1)
+
+### Why Phase 0?
+
+**Problem:** Existing systems (spells, equipment, combat, NPCs) need deep integration with new character system. Underestimating this = technical debt and bugs.
+
+**Solution:** Spend 1 week auditing, mapping, and planning integration BEFORE writing code.
+
+### Integration Audit Checklist
+
+#### 1. **Map All Touchpoints** (2 days)
+
+**System Inventory:**
 ```
-Phase 1: Foundation Systems (2-3 weeks)
-  ↓
-Phase 2: Character Menus & UI (2 weeks)
-  ↓
-Phase 3: Skill Trees (3-4 weeks)
-  ↓
-Phase 4: Enhanced Inventory (1-2 weeks)
-  ↓
-Phase 5: Polish & Balance (1-2 weeks)
+Current Systems Requiring Integration:
+├── Spell System (src/data/spells.js)
+│   ├── Damage calculations (needs Magic attribute scaling)
+│   ├── Mana costs (needs skill modifiers)
+│   └── Cooldowns (needs skill reduction)
+│
+├── Equipment System (src/utils/equipmentStats.js)
+│   ├── Stat bonuses (needs attribute requirements)
+│   ├── getTotalStats() (needs attribute integration)
+│   └── Equipment slots (needs level requirements)
+│
+├── Combat System (src/components/3d/Player.jsx)
+│   ├── Damage calculation (needs Combat/Magic attributes)
+│   ├── Health/stamina (needs Endurance attribute)
+│   ├── Crit/dodge (needs derived stat formulas)
+│   └── Status effects (needs skill tree modifiers)
+│
+├── NPC System (src/modules/npc-system/)
+│   ├── NPC efficiency (needs Leadership attribute)
+│   ├── NPC happiness (needs Leadership skills)
+│   └── NPC combat stats (needs player buff skills)
+│
+├── Building System (src/modules/foundation/)
+│   ├── Placement speed (needs Construction attribute)
+│   ├── Building costs (needs Construction skills)
+│   └── Building limits (needs skill tree unlocks)
+│
+├── Resource System (src/modules/resource-economy/)
+│   ├── Gathering speed (needs Exploration attribute)
+│   ├── Resource bonuses (needs skill modifiers)
+│   └── Production rates (needs Leadership/Construction)
+│
+└── Save System (src/persistence/)
+    ├── Schema changes (needs versioning)
+    ├── Migration strategy (needs backward compatibility)
+    └── Validation (needs new character data)
 ```
 
-**Total Estimated Time:** 9-13 weeks
+**Deliverable:** Integration map document with all touchpoints identified.
+
+#### 2. **Create Integration Tests First** (1 day)
+
+**Test-Driven Integration:**
+```javascript
+// Write tests BEFORE implementing
+describe('Attribute Integration Tests', () => {
+  test('Magic attribute scales spell damage', () => {
+    const player = createPlayer({ magic: 50 });
+    const spellDamage = calculateSpellDamage('fireball', player);
+    expect(spellDamage).toBe(20 + (20 * 0.50)); // 30 damage
+  });
+
+  test('Leadership attribute affects NPC efficiency', () => {
+    const player = createPlayer({ leadership: 40 });
+    const npcBonus = calculateNPCEfficiency(player);
+    expect(npcBonus).toBe(1.40); // 140% efficiency
+  });
+
+  test('Construction attribute reduces building costs', () => {
+    const player = createPlayer({ construction: 60 });
+    const cost = calculateBuildingCost('FARM', player);
+    expect(cost.wood).toBe(100 * 0.70); // 30% discount
+  });
+});
+```
+
+**Deliverable:** Integration test suite (failing tests = acceptance criteria).
+
+#### 3. **Design Migration Strategy** (1 day)
+
+**Save File Version Management:**
+```javascript
+// Version 1 (Current)
+{
+  player: {
+    health: 100,
+    stamina: 100,
+    level: 5,
+    xp: 450
+  }
+}
+
+// Version 2 (With Character System)
+{
+  version: 2,
+  player: {
+    health: 100, // unchanged
+    stamina: 100, // unchanged
+    level: 5, // unchanged
+    xp: 450 // unchanged
+  },
+  character: {
+    attributes: {
+      leadership: 10,
+      construction: 10,
+      exploration: 10,
+      combat: 10,
+      magic: 10,
+      endurance: 10
+    },
+    skillPoints: 10, // Awarded retroactively
+    attributePoints: 25, // 5 per level
+    skills: {
+      settlement: []
+    }
+  }
+}
+
+// Migration function
+function migrateV1ToV2(saveData) {
+  if (saveData.version === 2) return saveData;
+
+  // Award retroactive points based on level
+  const retroactiveSkillPoints = saveData.player.level * 2;
+  const retroactiveAttributePoints = saveData.player.level * 5;
+
+  return {
+    version: 2,
+    player: saveData.player,
+    character: {
+      attributes: {
+        leadership: 10,
+        construction: 10,
+        exploration: 10,
+        combat: 10,
+        magic: 10,
+        endurance: 10
+      },
+      skillPoints: retroactiveSkillPoints,
+      attributePoints: retroactiveAttributePoints,
+      skills: { settlement: [] }
+    }
+  };
+}
+```
+
+**Deliverable:** Complete migration strategy with rollback plan.
+
+#### 4. **API Design** (1 day)
+
+**Define Clean Integration APIs:**
+```javascript
+// AttributeSystem API
+class AttributeSystem {
+  calculateDerivedStat(statName, attributes) { }
+  getAttributeBonus(attributeName, value) { }
+  validateAttributeAllocation(character, attribute, points) { }
+}
+
+// Integration with existing systems
+class CombatIntegration {
+  static applyAttributesToCombat(player, attributes) {
+    // Modify existing combat calculations
+    player.damage += attributes.combat * 2;
+    player.maxHealth += attributes.endurance * 15;
+    player.critChance += attributes.combat * 0.3;
+  }
+}
+
+class SpellIntegration {
+  static applyAttributesToSpells(spell, attributes) {
+    // Modify spell calculations
+    spell.damage += spell.damage * (attributes.magic * 0.02);
+    spell.cooldown *= (1 - (attributes.magic * 0.005));
+  }
+}
+```
+
+**Deliverable:** API specification document.
+
+#### 5. **Risk Assessment** (1 day)
+
+**Integration Risks:**
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Breaking existing combat | High | Feature flags, gradual rollout |
+| Save file corruption | Critical | Backup system, recovery mode |
+| Performance regression | Medium | Performance budgets, profiling |
+| Balance issues | Medium | Configurable multipliers |
+| NPC system conflicts | Medium | Integration tests, careful API design |
+
+**Deliverable:** Risk mitigation plan.
+
+### Phase 0 Deliverables
+
+✅ Integration map document
+✅ Failing integration tests (TDD)
+✅ Migration strategy with rollback
+✅ API specification
+✅ Risk mitigation plan
+
+**Time Investment:** 1 week
+**Payoff:** Avoid 2-4 weeks of refactoring and debugging later
 
 ---
 
@@ -75,15 +347,10 @@ Phase 5: Polish & Balance (1-2 weeks)
 - Interaction radius
 - Basic serialization for save/load
 
-**Strengths:**
-- Clean, simple architecture
-- Good foundation for expansion
-- Proper collision detection
-
-**Limitations:**
-- No level/XP system integration
-- No stat scaling
-- Limited to health/stamina
+**Integration Needs:**
+- Add attribute scaling to health/stamina
+- Add derived stats calculation
+- Integrate with new character manager
 
 #### 2. 3D Player Component (`src/components/3d/Player.jsx`)
 **Current Features:**
@@ -98,17 +365,10 @@ Phase 5: Polish & Balance (1-2 weeks)
 - Status effects array
 - Rage system (0/100)
 
-**Strengths:**
-- Comprehensive combat integration
-- Equipment stat bonuses working
-- Advanced mechanics (dodge, block, combo)
-- Spell casting system
-
-**Limitations:**
-- Stats are flat values with no attribute scaling
-- No skill trees or progression paths
-- Limited build diversity
-- No character customization
+**Integration Needs:**
+- Replace flat stats with attribute-derived stats
+- Add skill tree modifier application
+- Update damage calculations with new formulas
 
 #### 3. Game Store (`src/stores/useGameStore.js`)
 **Current Features:**
@@ -118,66 +378,22 @@ Phase 5: Polish & Balance (1-2 weeks)
 - XP and leveling system
 - Skill points (not used yet)
 
-**Strengths:**
-- Well-structured state management
-- Equipment system ready for expansion
-- Skill points placeholder exists
-
-**Limitations:**
-- Skill points not connected to any system
-- No attribute system
-- Basic inventory structure
-- No character sheet data
+**Integration Needs:**
+- Add character state section
+- Add attribute management actions
+- Add skill tree state
 
 #### 4. Spell System (`src/data/spells.js`)
 **Current Features:**
-- 11+ spells across 4 categories (damage, control, support, status)
+- 11+ spells across 4 categories
 - Mana costs and cooldowns
 - Status effects system
 - Keyboard shortcuts (1-6, Q, E, R, F, T)
 
-**Strengths:**
-- Well-designed spell variety
-- Good categorization
-- Working cooldown system
-
-**Limitations:**
-- No spell unlocking/progression
-- No spell upgrading
-- Not tied to character build
-
-#### 5. Equipment & Inventory (`src/components/InventoryUI.jsx`, `src/utils/equipmentStats.js`)
-**Current Features:**
-- Equipment management UI
-- Item equipping/unequipping
-- Equipment stat calculation
-- Mobile-responsive design
-
-**Strengths:**
-- Functional equipment system
-- Good UI foundation
-
-**Limitations:**
-- Basic inventory categorization
-- No item comparison
-- No equipment sets
-- Limited item filtering/sorting
-
-### Existing Related Systems
-
-#### Achievement System
-- 50 achievements across 5 categories
-- Reward system (not fully connected)
-- Could integrate with character milestones
-
-#### Tutorial System
-- 12-step tutorial
-- Context-sensitive help
-- Could guide character progression
-
-#### Event System
-- Random/seasonal events
-- Could tie into character challenges/quests
+**Integration Needs:**
+- Add Magic attribute scaling
+- Add skill tree modifiers
+- Simplify to 8 spells max (or modify existing instead of adding)
 
 ---
 
@@ -187,841 +403,720 @@ Phase 5: Polish & Balance (1-2 weeks)
 
 #### 1. **Attribute System** 🔴 CRITICAL
 **What's Missing:**
-- No core attributes (Strength, Dexterity, Intelligence, Vitality, Wisdom, Luck)
+- No core attributes aligned with gameplay
 - No attribute points on level up
 - No attribute-based stat scaling
-- No attribute requirements for equipment
 
-**Impact:** High
-- Limits build diversity
-- No meaningful stat choices
-- Equipment feels generic
+**Impact:** Very High
+**MVP Status:** ✅ INCLUDED
 
-#### 2. **Skill Trees** 🔴 CRITICAL
+#### 2. **Skill Tree System** 🔴 CRITICAL
 **What's Missing:**
 - No skill tree system
 - Skill points accumulate but aren't usable
 - No passive abilities
 - No active ability unlocks
-- No build specialization
 
 **Impact:** Very High
-- No character progression depth
-- No replayability incentive
-- Limited playstyle variety
+**MVP Status:** ✅ INCLUDED (Settlement tree only)
 
 #### 3. **Character Sheet/Menu** 🔴 CRITICAL
 **What's Missing:**
 - No comprehensive character stats screen
 - No way to view total stats with bonuses
 - No attribute allocation UI
-- No character overview
 
 **Impact:** High
-- Players can't see their build
-- No way to make informed decisions
-- Poor user experience
+**MVP Status:** ✅ INCLUDED (Basic version)
 
-#### 4. **Enhanced Inventory System** 🟡 HIGH PRIORITY
+#### 4. **Save Versioning** 🔴 CRITICAL
+**What's Missing:**
+- No save file version management
+- No migration system
+- No backward compatibility
+
+**Impact:** Critical
+**MVP Status:** ✅ INCLUDED (Must be first)
+
+#### 5. **Enhanced Inventory** 🟡 NICE TO HAVE
 **What's Missing:**
 - No item categories/tabs
-- No item filtering
-- No item comparison tooltips
-- No quick-slot system
-- Limited inventory space management
+- No item filtering/sorting
+- No item comparison
 
-**Impact:** Medium-High
-- Poor inventory management UX
-- Difficult to find items
-- No way to compare gear
+**Impact:** Medium
+**MVP Status:** ❌ POST-MVP
 
-#### 5. **Character Customization** 🟡 HIGH PRIORITY
+#### 6. **Equipment Sets & Sockets** 🟡 NICE TO HAVE
+**What's Missing:**
+- No equipment set bonuses
+- No item socket system
+- No item upgrading
+
+**Impact:** Medium
+**MVP Status:** ❌ POST-MVP
+
+#### 7. **Character Customization** 🟡 NICE TO HAVE
 **What's Missing:**
 - No character creation screen
-- No character naming
-- No visual customization
+- No appearance customization
 - No class selection
 
-**Impact:** Medium
-- Less player connection to character
-- No character identity
-- Limited RPG feel
-
-#### 6. **Equipment Enhancements** 🟢 MEDIUM PRIORITY
-**What's Missing:**
-- No equipment sets with bonuses
-- No item rarity tiers (common, rare, epic, legendary)
-- No equipment upgrade system
-- No gem/socket system
-- No equipment durability
-
-**Impact:** Medium
-- Less equipment variety
-- Limited itemization depth
-- No long-term equipment goals
-
-#### 7. **Class/Specialization System** 🟢 MEDIUM PRIORITY
-**What's Missing:**
-- No class selection
-- No class-specific abilities
-- No hybrid builds
-- No multiclassing
-
-**Impact:** Medium
-- Less build identity
-- Fewer progression paths
-- Reduced replayability
+**Impact:** Low-Medium
+**MVP Status:** ❌ POST-MVP
 
 ---
 
-## Proposed Features
+## Revised Attribute System
 
-### Feature 1: Attribute System
+### Game-Specific Attributes (Not Generic RPG)
 
-#### Core Attributes
+**Design Philosophy:** Attributes should reflect your game's unique features (settlement building + dungeon exploration + combat), not generic D&D stats.
 
-**Primary Attributes (6 total):**
+#### The 6 Core Attributes
 
-1. **Strength (STR)**
-   - Primary: Melee damage
-   - Secondary: Carry capacity, building placement speed
-   - Per point: +2 melee damage, +5 carry weight
+**1. Leadership (LED)**
+- **Primary:** NPC efficiency, NPC happiness
+- **Secondary:** Max NPCs, settlement production
+- **Settlement Impact:** Direct boost to your core gameplay loop
 
-2. **Dexterity (DEX)**
-   - Primary: Attack speed, dodge chance
-   - Secondary: Ranged damage, crit chance
-   - Per point: +2% attack speed, +0.5% dodge, +1 ranged damage
-
-3. **Intelligence (INT)**
-   - Primary: Spell damage, mana pool
-   - Secondary: Crafting quality, research speed
-   - Per point: +5% spell damage, +10 max mana
-
-4. **Vitality (VIT)**
-   - Primary: Max health, health regen
-   - Secondary: Stamina, resistance
-   - Per point: +20 max health, +0.5 health regen/sec
-
-5. **Wisdom (WIS)**
-   - Primary: Mana regen, cooldown reduction
-   - Secondary: XP gain, resource gathering bonus
-   - Per point: +1 mana regen/sec, +2% XP gain
-
-6. **Luck (LCK)**
-   - Primary: Crit chance, loot quality
-   - Secondary: Dodge chance, rare event chance
-   - Per point: +0.5% crit chance, +1% better loot
-
-**Attribute Point Allocation:**
-- 5 points per level
-- Starting stats: 10 in each attribute
-- Max stat cap: 200 per attribute
-- Respec option: Costs gold/essence (limited uses per tier)
-
-**Derived Stats Formula:**
+**Per Point Bonuses:**
 ```javascript
-// Example calculations
-maxHealth = 100 + (vitality * 20);
-maxMana = 100 + (intelligence * 10);
-maxStamina = 100 + (vitality * 5);
-meleeDamage = baseDamage + (strength * 2);
-spellDamage = baseDamage + (baseDamage * intelligence * 0.05);
-critChance = 5 + (dexterity * 0.5) + (luck * 0.5);
-dodgeChance = 5 + (dexterity * 0.5) + (luck * 0.3);
++1% NPC work efficiency
++0.5% NPC happiness
++0.1 max NPC capacity (every 10 points = +1 NPC)
++1% settlement-wide production
 ```
+
+**Why This Attribute?**
+- Directly impacts settlement building (core pillar)
+- Makes NPCs more effective (your workforce)
+- Scales with gameplay progression
 
 ---
 
-### Feature 2: Skill Tree System
-
-#### Overview
-Three major skill trees with 30-40 nodes each:
-
-1. **Combat Tree** - Warrior-focused abilities
-2. **Magic Tree** - Spellcaster-focused abilities
-3. **Utility Tree** - Settlement/support abilities
-
-#### Skill Tree Structure
-
-**Tier System:**
-- **Tier 1** (Level 1-10): Basic passive bonuses
-- **Tier 2** (Level 11-20): Enhanced passives + minor actives
-- **Tier 3** (Level 21-35): Major passives + powerful actives
-- **Tier 4** (Level 36-50): Elite abilities + ultimate skills
-- **Tier 5** (Level 50+): Capstone abilities (one per tree)
-
-#### Combat Tree (Warrior Path)
-
-**Tier 1 Skills (Cost: 1 point each):**
-1. **Power Strike** - +10% melee damage
-2. **Tough Skin** - +5% damage reduction
-3. **Weapon Mastery** - +5% attack speed
-4. **Battle Rage** - Gain 5 rage per enemy kill
-5. **Shield Training** - +15% block effectiveness
-
-**Tier 2 Skills (Cost: 2 points each, requires 5 points in tree):**
-6. **Whirlwind** (Active) - Spin attack hitting all nearby enemies (Cost: 30 stamina, CD: 8s)
-7. **Berserker Rage** (Passive) - +1% damage per 10 rage
-8. **Fortified Defense** - +10% max health
-9. **Cleave** - Attacks hit 1 additional enemy
-10. **War Cry** (Active) - Buff nearby NPCs +20% damage for 10s (Cost: 40 stamina, CD: 30s)
-
-**Tier 3 Skills (Cost: 3 points each, requires 15 points in tree):**
-11. **Execute** (Active) - Deal 300% damage to enemies below 30% health (Cost: 50 stamina, CD: 15s)
-12. **Unbreakable** (Passive) - Become immune to stuns and slows
-13. **Blood Thirst** - Heal 5% max HP per kill
-14. **Champion's Might** - +25% damage when at full health
-15. **Ground Slam** (Active) - AOE stun for 2s (Cost: 60 stamina, CD: 20s)
-
-**Tier 4 Skills (Cost: 4 points each, requires 30 points in tree):**
-16. **Avatar of War** (Ultimate) - 10s buff: +50% damage, +30% speed, immune to CC (Cost: 100 stamina, CD: 60s)
-17. **Weapon Master** - Can dual-wield or use any weapon type
-18. **Undying Fury** - Survive lethal damage once per 2 minutes
-19. **Titan Strength** - Carry 2x capacity, +30% damage
-20. **Rally** (Active) - Fully heal all nearby NPCs (Cost: 80 stamina, CD: 90s)
-
-**Tier 5 Capstone (Cost: 5 points, requires 45 points in tree):**
-21. **God of War** - Permanent +50% combat stats, unlock Divine Fury ability
-
-#### Magic Tree (Mage Path)
-
-**Tier 1 Skills:**
-1. **Arcane Knowledge** - +10% spell damage
-2. **Mana Flow** - +5 mana regen per second
-3. **Spell Efficiency** - -10% mana costs
-4. **Quick Cast** - -10% spell cooldowns
-5. **Magic Shield** - Gain 50 shield after casting (5s duration)
-
-**Tier 2 Skills:**
-6. **Fireball Mastery** - Fireball explodes in larger AOE
-7. **Ice Armor** (Active) - +30% damage reduction, slow attackers (Cost: 40 mana, CD: 30s)
-8. **Lightning Reflexes** - Lightning Bolt chains to 2 targets
-9. **Spell Focus** - Critical spells deal +50% damage
-10. **Arcane Missiles** (Active) - Barrage of 5 missiles (Cost: 50 mana, CD: 12s)
-
-**Tier 3 Skills:**
-11. **Elemental Master** - All elemental damage +25%
-12. **Meteor Storm** (Active) - Rain fire AOE (Cost: 80 mana, CD: 25s)
-13. **Mana Shield** - Convert 50% damage to mana drain
-14. **Time Warp** (Active) - Reduce all cooldowns by 50% for 5s (Cost: 60 mana, CD: 45s)
-15. **Spell Weaving** - Casting 3 spells in 5s grants +30% spell damage for 8s
-
-**Tier 4 Skills:**
-16. **Archmage** (Ultimate) - 15s: Free spells, instant cast (Cost: 150 mana, CD: 90s)
-17. **Omniscient** - See all enemies on map, +20% damage to marked targets
-18. **Elemental Fusion** - Combine elements for new spell effects
-19. **Astral Projection** - Teleport anywhere on map (Cost: 100 mana, CD: 60s)
-20. **Black Hole** (Active) - Suck all enemies to a point, stun 3s (Cost: 120 mana, CD: 90s)
-
-**Tier 5 Capstone:**
-21. **Arcane Ascension** - Permanent +100% mana pool, unlock Reality Tear ultimate
-
-#### Utility Tree (Builder/Support Path)
-
-**Tier 1 Skills:**
-1. **Fast Hands** - +10% building placement speed
-2. **Resourceful** - +10% resource gathering
-3. **Town Planning** - Buildings cost 10% less
-4. **Negotiator** - Merchants offer 15% better prices
-5. **Green Thumb** - Farms produce +15% food
-
-**Tier 2 Skills:**
-6. **Master Builder** - Place buildings 2x faster
-7. **Gold Rush** (Passive) - +20% gold from all sources
-8. **NPC Training** - NPCs level up 25% faster
-9. **Inspiring Presence** (Active) - All NPCs +30% productivity for 30s (Cost: 40 stamina, CD: 60s)
-10. **Scavenger** - Find extra materials when gathering
-
-**Tier 3 Skills:**
-11. **Town Hall Upgrade** - Unlock tier upgrades for all buildings
-12. **Mass Production** - All production buildings +25% output
-13. **Kingdom's Blessing** (Active) - Double all resource gains for 20s (Cost: 60 stamina, CD: 120s)
-14. **Architect** - Can place unique building blueprints
-15. **Trade Master** - Unlock special merchant trades
-
-**Tier 4 Skills:**
-16. **Empire Builder** (Ultimate) - 30s: Free building placement, instant construction (CD: 180s)
-17. **Legendary Craftsman** - Craft legendary tier items
-18. **Settlement Guardian** - All buildings +50% defense
-19. **Abundant Harvest** - Resource nodes never deplete
-20. **Master of All** - Gain +10% to ALL stats per 5 buildings placed
-
-**Tier 5 Capstone:**
-21. **Civilization** - Unlock city-level buildings, permanent +100% settlement stats
-
-#### Skill Point Acquisition
-- **Per Level:** 1 skill point
-- **Quests:** 1-3 skill points for major quests
-- **Achievements:** 1 skill point for specific achievements
-- **Rare Events:** Chance for bonus skill points
-- **Total Available:** ~100 points by max level (can't max all trees)
-
----
-
-### Feature 3: Character Sheet & Menus
-
-#### Main Character Menu (Press 'C')
-
-**Tabs:**
-1. **Character** - Stats and attributes
-2. **Skills** - Skill tree interface
-3. **Equipment** - Gear management (already exists, enhance)
-4. **Inventory** - Items (already exists, enhance)
-5. **Achievements** - Progress tracking (already exists)
-6. **Crafting** - Recipe management (already exists)
-
-#### Character Stats Tab Layout
-
-**Left Panel - Core Stats:**
-```
-=== CHARACTER SHEET ===
-
-Name: [Editable]
-Level: 42
-XP: 8,450 / 10,000 (84%)
-Class: Battle Mage
-
-=== ATTRIBUTES ===
-Strength:     45 (+15 equipment)
-Dexterity:    38 (+8 equipment)
-Intelligence: 52 (+20 equipment)
-Vitality:     40 (+12 equipment)
-Wisdom:       35 (+5 equipment)
-Luck:         28 (+3 equipment)
-
-Available Points: 5
-[Allocate Points] [Reset ($500)]
-```
-
-**Center Panel - Derived Stats:**
-```
-=== COMBAT STATS ===
-Health:      900 / 900
-Mana:        620 / 620
-Stamina:     300 / 300
-
-Damage:      85 (62 base + 23 equipment)
-Spell Power: 286 (150 base + 136 int scaling)
-Defense:     42 (30 equipment + 12 skills)
-Attack Speed: 1.45 (base 1.0 + 45% bonus)
-
-Crit Chance:  24.5%
-Crit Damage:  210%
-Dodge Chance: 19%
-Block Chance: 15%
-
-=== RESISTANCES ===
-Fire:     25%
-Ice:      15%
-Lightning: 20%
-Physical: 30%
-```
-
-**Right Panel - Secondary Stats:**
-```
-=== UTILITY STATS ===
-Movement Speed:   6.2
-Interaction Range: 2.5
-Carry Capacity:   325 / 400
-
-Resource Bonus:   +35%
-Building Speed:   +40%
-XP Gain:          +18%
-Gold Find:        +25%
-Loot Quality:     +14%
-
-=== SKILL TREES ===
-Combat:  32 / 50 points
-Magic:   18 / 50 points
-Utility: 12 / 50 points
-
-Unspent: 3 points
-[Manage Skills]
-```
-
----
-
-### Feature 4: Enhanced Inventory System
-
-#### Inventory Organization
-
-**Tab Structure:**
-1. **All** - View everything
-2. **Equipment** - Weapons, armor, accessories
-3. **Consumables** - Potions, food, scrolls
-4. **Materials** - Crafting resources, essence, crystals
-5. **Quest** - Quest items and special items
-6. **Junk** - Vendor trash
-
-#### New Inventory Features
-
-**Item Slots:**
-- Base capacity: 30 slots
-- Increased by +5 per 10 Strength
-- Max capacity: 100 slots
-- Stackable items (materials, consumables)
-
-**Item Comparison:**
-```
-[Hovering over new item shows comparison]
-
-Iron Sword          vs    Steel Sword
-+25 Damage                +40 Damage    [+15]
-+5 STR                    +8 STR        [+3]
-5% Crit                   8% Crit       [+3%]
-                          +15% Attack   [NEW]
-Value: 50g                Value: 150g
-[EQUIPPED]                [Better] [Equip]
-```
-
-**Filtering & Sorting:**
-- Filter by: Rarity, Level, Type, Usability
-- Sort by: Name, Value, Level, Recently Acquired
-- Quick-filter buttons for common searches
-
-**Item Rarity Tiers:**
-1. **Common** (White) - Basic items
-2. **Uncommon** (Green) - 1-2 bonus stats
-3. **Rare** (Blue) - 2-3 bonus stats, higher values
-4. **Epic** (Purple) - 3-4 bonus stats, unique effects
-5. **Legendary** (Orange) - 4-5 bonus stats, powerful effects
-6. **Mythic** (Red) - 5-6 bonus stats, game-changing effects
-
-**Quick-Slot System:**
-- 6 quick slots (1-6 keys)
-- Assign consumables or items
-- Use without opening inventory
-- Visual cooldown indicators
-
----
-
-### Feature 5: Character Customization
-
-#### Character Creation Screen (New Game)
-
-**Step 1: Identity**
-- Character Name (15 char max)
-- Appearance Selection:
-  - Skin tone (8 options)
-  - Hair style (12 options)
-  - Hair color (10 options)
-  - Facial features (8 options)
-  - Body type (3 options)
-
-**Step 2: Starting Class (Optional)**
-- **Warrior** - Starts with +5 STR, +5 VIT, basic sword, light armor
-- **Mage** - Starts with +5 INT, +5 WIS, basic staff, robes, 2 extra spells
-- **Scout** - Starts with +5 DEX, +5 LCK, basic bow, leather armor
-- **Builder** - Starts with +10 VIT, +200 starting resources, basic tools
-- **Balanced** - Even distribution, no bonuses, most flexible
-
-**Step 3: Background (Flavor/Minor Bonuses)**
-- **Noble** - Start with +500 gold, +10% merchant prices
-- **Soldier** - Start with better weapon, +5% damage
-- **Scholar** - Start with +10% XP gain, 1 research unlocked
-- **Commoner** - No bonuses, +1 extra skill point at start
-
-#### In-Game Customization
-
-**Appearance Changes:**
-- Visit "Barber" building to change hair/appearance
-- Costs gold (50-200g)
-- Unlimited changes
-
-**Character Rename:**
-- Rare item or achievement reward
-- Limited uses (1-3 times per playthrough)
-
-**Title System:**
-- Earn titles from achievements
-- Display title above character name
-- Examples: "Dragonslayer", "Master Builder", "Archmage", "The Wealthy"
-
----
-
-### Feature 6: Equipment Enhancements
-
-#### Equipment Set System
-
-**Set Bonuses (Example: "Warrior's Valor Set"):**
-```
-Warrior's Helm (2/5 pieces equipped)
-Warrior's Chest (+20% health regen)
-Warrior's Gauntlets
-Warrior's Greaves
-Warrior's Shield (4/5 pieces equipped)
-                (+50 max health, +10% damage)
-
-Set Bonuses:
-(2) +20% health regeneration
-(4) +50 max health, +10% damage
-(5) +100 max health, gain "Warrior's Fury" ability
-```
-
-**Equipment Set Categories:**
-- **Combat Sets** (5 sets) - Warrior, Berserker, Guardian, Duelist, Paladin
-- **Magic Sets** (5 sets) - Archmage, Pyromancer, Cryomancer, Storm Caller, Necromancer
-- **Utility Sets** (3 sets) - Builder's Pride, Merchant's Fortune, Explorer's Endurance
-- **Hybrid Sets** (3 sets) - Battle Mage, Spell Blade, Arcane Warrior
-
-#### Item Socket System
-
-**Socket Types:**
-- **Weapon Sockets** (1-3 sockets) - Damage, effects, procs
-- **Armor Sockets** (1-2 sockets) - Defense, resistance, utility
-- **Accessory Sockets** (1 socket) - Special effects
-
-**Gem Types:**
-1. **Ruby** - +Fire damage, +Fire resistance
-2. **Sapphire** - +Ice damage, +Ice resistance
-3. **Topaz** - +Lightning damage, +Lightning resistance
-4. **Emerald** - +Health, +Health regen
-5. **Amethyst** - +Mana, +Mana regen
-6. **Diamond** - +All stats, +XP gain
-7. **Onyx** - +Critical chance, +Critical damage
-
-**Socket Operations:**
-- **Add Socket** - Use socketing tool + resources (expensive)
-- **Insert Gem** - Place gem in socket (permanent until removed)
-- **Remove Gem** - Extract gem (costs gold, may destroy gem)
-- **Upgrade Gem** - Combine 3 gems → next tier gem
-
-**Gem Tiers:**
-- Tier 1: +5% bonus
-- Tier 2: +10% bonus
-- Tier 3: +15% bonus
-- Tier 4: +25% bonus
-- Tier 5: +40% bonus
-
-#### Equipment Upgrade System
-
-**Upgrade Mechanics:**
-- Upgrade items +1 to +10
-- Each upgrade: +10% base stats
-- Costs scale exponentially
-- Requires materials + gold
-- Higher tiers more expensive
-
-**Upgrade Formula:**
+**2. Construction (CON)**
+- **Primary:** Building speed, building cost reduction
+- **Secondary:** Building durability, unlock advanced blueprints
+- **Settlement Impact:** Makes base building more efficient
+
+**Per Point Bonuses:**
 ```javascript
-// Cost per upgrade level
-const upgradeCost = baseValue * level * 2;
-const materialsNeeded = {
-  wood: 10 * level,
-  iron: 5 * level,
-  essence: level > 5 ? (level - 5) * 2 : 0,
-  crystal: level > 8 ? (level - 8) : 0
-};
-
-// Stat bonus
-const statBonus = baseStats * (1 + (upgradeLevel * 0.1));
++2% building placement speed
++1% building cost reduction (caps at 30%)
++0.5% building health/durability
+Unlocks: Advanced buildings at thresholds
 ```
 
-**Visual Indicators:**
-- +1 to +3: Normal glow
-- +4 to +6: Enhanced glow + sparkles
-- +7 to +9: Bright glow + particles
-- +10: Radiant glow + special effect
+**Why This Attribute?**
+- Directly impacts building gameplay
+- Resource efficiency matters
+- Enables build variety
 
 ---
 
-### Feature 7: Class Specialization System (Optional)
+**3. Exploration (EXP)**
+- **Primary:** Resource discovery, movement speed
+- **Secondary:** Map reveal range, loot quality
+- **Dungeon Impact:** Better exploration and resource gathering
 
-#### Class Selection
+**Per Point Bonuses:**
+```javascript
++1% movement speed
++2% resource gathering speed
++1% chance to find rare resources
++0.5% map reveal range
+```
 
-**When Available:**
-- Level 10: Choose primary class
-- Level 30: Choose secondary class (hybrid build)
-- Can respec classes at level milestones (20, 40, 60)
-
-**Primary Classes (Choose 1 at Level 10):**
-
-1. **Warrior**
-   - +10% melee damage
-   - +5% health
-   - Unlock: Shield Bash ability
-   - Combat tree skills 20% cheaper
-
-2. **Mage**
-   - +15% spell damage
-   - +10% mana pool
-   - Unlock: Arcane Blast ability
-   - Magic tree skills 20% cheaper
-
-3. **Ranger**
-   - +10% ranged damage
-   - +10% movement speed
-   - Unlock: Multi-Shot ability
-   - +15% critical chance
-
-4. **Builder**
-   - +25% building speed
-   - +20% resource gathering
-   - Unlock: Instant Build ability (1/day)
-   - Utility tree skills 20% cheaper
-
-5. **Hybrid**
-   - +5% to all stats
-   - No specialization bonuses
-   - Can access all skill tree capstones
-   - Most flexible build
-
-**Secondary Classes (Choose 1 at Level 30):**
-- Adds 50% of chosen class bonuses
-- Enables "hybrid" abilities
-- Examples: Battle Mage (Warrior + Mage), Spell Blade (Ranger + Mage)
+**Why This Attribute?**
+- Supports exploration pillar
+- Ties to resource economy
+- Encourages map exploration
 
 ---
 
-## Implementation Phases
+**4. Combat (CMB)**
+- **Primary:** Physical damage, defense
+- **Secondary:** Crit chance, attack speed
+- **Combat Impact:** Direct damage increase
 
-### Phase 1: Foundation Systems (Weeks 1-3)
+**Per Point Bonuses:**
+```javascript
++1.5 physical damage
++0.5 defense
++0.2% crit chance
++1% attack speed
+```
 
-#### Week 1: Attribute System
-**Tasks:**
-1. Create `AttributeSystem.js` class
-   - Attribute storage and calculations
-   - Derived stat formulas
-   - Point allocation logic
-2. Update `useGameStore` with attribute state
-3. Add attribute calculations to player stats
-4. Implement attribute scaling for combat
-5. Add serialization for save/load
+**Why This Attribute?**
+- Simple combat scaling
+- Applies to melee and ranged
+- Affects both offense and defense
 
-**Deliverables:**
-- Working attribute system backend
-- Stats properly scale with attributes
-- Save/load support
-- Unit tests for calculations
+---
 
-**Files to Create/Modify:**
-- `src/modules/character/AttributeSystem.js` (NEW)
-- `src/stores/useGameStore.js` (MODIFY)
-- `src/components/3d/Player.jsx` (MODIFY)
-- `src/modules/player/PlayerEntity.js` (MODIFY)
+**5. Magic (MAG)**
+- **Primary:** Spell damage, mana pool
+- **Secondary:** Mana regen, spell cooldown
+- **Magic Impact:** Spell effectiveness
 
-#### Week 2: Character Data Structure
-**Tasks:**
-1. Design comprehensive character data schema
-2. Implement `CharacterManager.js`
-3. Add character creation flow
-4. Update serialization system
-5. Migration for existing saves
+**Per Point Bonuses:**
+```javascript
++2% spell damage
++8 max mana
++0.5 mana regen per second
++0.5% cooldown reduction (caps at 40%)
+```
 
-**Deliverables:**
-- Character manager system
-- Save/load with full character data
-- Backward compatibility with old saves
+**Why This Attribute?**
+- Existing spell system integration
+- Enables magic builds
+- Balanced with Combat attribute
 
-**Files to Create:**
-- `src/modules/character/CharacterManager.js`
-- `src/modules/character/CharacterData.js`
-- `src/modules/character/migrations/v1-to-v2.js`
+---
 
-#### Week 3: Skill Tree Backend
-**Tasks:**
-1. Create `SkillTreeSystem.js`
-2. Define all skill tree nodes (JSON)
-3. Implement skill point allocation
-4. Add skill prerequisites checking
-5. Create skill effect application system
+**6. Endurance (END)**
+- **Primary:** Max health, stamina
+- **Secondary:** Health regen, stamina regen, resistances
+- **Survival Impact:** Survivability for all builds
 
-**Deliverables:**
-- Skill tree data structure
-- Skill allocation backend
-- Passive skill effects working
+**Per Point Bonuses:**
+```javascript
++15 max health
++5 max stamina
++0.3 health regen per second
++0.5% resistance to all damage
+```
+
+**Why This Attribute?**
+- Universal survivability
+- Enables tank builds
+- Supports all playstyles
+
+---
+
+### Attribute Allocation
+
+**Points per Level:** 5 points
+**Starting Points:** 10 in each attribute (60 total)
+**Level 50 Total:** 60 + (49 × 5) = 305 points
+
+**Soft Caps (Diminishing Returns):**
+```javascript
+0-50 points:   100% effectiveness
+51-100 points: 75% effectiveness
+101-150 points: 50% effectiveness
+151+ points:   25% effectiveness
+
+// Example: Leadership at 120
+actualBonus = (50 * 1.0) + (50 * 0.75) + (20 * 0.5)
+            = 50 + 37.5 + 10
+            = 97.5 (instead of 120 with no diminishing returns)
+```
+
+**Why Soft Caps?**
+- Encourages balanced builds
+- Prevents single-stat stacking
+- Makes replayability more interesting
+
+### Attribute Respec
+
+**Cost Structure:**
+```javascript
+1st respec: 500 gold
+2nd respec: 2,000 gold + 10 essence
+3rd respec: 5,000 gold + 50 essence + 5 crystals
+4th+ respec: 10,000 gold + 100 essence + 10 crystals
+
+Max respecs: 5 per character
+```
+
+**Alternative: Free Respec Until Level 20**
+- Lets new players experiment
+- Locked in after level 20 (committed build)
+
+---
+
+### Derived Stats Formulas
+
+```javascript
+// Health
+maxHealth = 100 + (endurance * 15);
+healthRegen = 0.5 + (endurance * 0.3);
+
+// Mana
+maxMana = 100 + (magic * 8);
+manaRegen = 1.0 + (magic * 0.5);
+
+// Stamina
+maxStamina = 100 + (endurance * 5);
+staminaRegen = 2.0 + (endurance * 0.2);
+
+// Damage
+physicalDamage = baseWeaponDamage + (combat * 1.5);
+spellDamage = baseSpellDamage * (1 + (magic * 0.02));
+
+// Defense
+defense = baseArmorDefense + (combat * 0.5) + (endurance * 0.3);
+
+// Speed
+movementSpeed = 5.0 + (exploration * 0.1);
+attackSpeed = 1.0 + (combat * 0.01);
+
+// Crit
+critChance = 5.0 + (combat * 0.2) + (exploration * 0.1);
+critDamage = 150 + (combat * 0.5);
+
+// NPC bonuses
+npcEfficiency = 1.0 + (leadership * 0.01);
+npcHappiness = 50 + (leadership * 0.5);
+
+// Building bonuses
+buildingSpeed = 1.0 + (construction * 0.02);
+buildingCostReduction = Math.min(0.30, construction * 0.01); // Cap at 30%
+
+// Resource bonuses
+resourceGatherSpeed = 1.0 + (exploration * 0.02);
+resourceFindBonus = exploration * 0.01;
+```
+
+---
+
+## Revised Skill Trees
+
+### Design Philosophy: Align with Gameplay Pillars
+
+**Your Game's Core Pillars:**
+1. **Settlement Building** - Base construction, NPC management, resource economy
+2. **Dungeon Exploration** - Procedural dungeons, loot, survival challenges
+3. **Monster Combat** - Action combat, spells, equipment progression
+
+**New Skill Tree Structure:**
+1. **Settlement Tree** - Building, NPCs, economy (MVP focus)
+2. **Explorer Tree** - Dungeons, loot, survival (Post-MVP)
+3. **Combat Tree** - Damage, defense, abilities (Post-MVP)
+
+---
+
+### Settlement Tree (MVP - 30 Nodes)
+
+**Theme:** Master of building, NPCs, and resource management
+
+#### Tier 1: Foundation (Level 1-10)
+
+**Passive Skills (1 point each):**
+
+1. **Efficient Builder**
+   - +10% building placement speed
+   - Prerequisite: None
+
+2. **Resource Management**
+   - +10% resource gathering speed
+   - Prerequisite: None
+
+3. **Inspiring Leader**
+   - +5% NPC work efficiency
+   - Prerequisite: None
+
+4. **Careful Planning**
+   - -10% building costs
+   - Prerequisite: None
+
+5. **Quick Learner**
+   - +10% XP gain
+   - Prerequisite: None
+
+---
+
+#### Tier 2: Specialization (Level 11-20, requires 5 points in tree)
+
+**Passive Skills (2 points each):**
+
+6. **Master Builder**
+   - +25% building speed, unlock rapid placement mode
+   - Prerequisite: Efficient Builder
+
+7. **Prospector**
+   - +20% rare resource discovery chance
+   - Prerequisite: Resource Management
+
+8. **Natural Leader**
+   - +10% NPC efficiency, +10% NPC happiness
+   - Prerequisite: Inspiring Leader
+
+9. **Economic Genius**
+   - +15% gold from all sources
+   - Prerequisite: Careful Planning
+
+10. **Scholar**
+    - +15% XP, unlock research bonuses
+    - Prerequisite: Quick Learner
+
+**Active Skills (2 points each):**
+
+11. **Rally Cry** (Active)
+    - All NPCs +30% productivity for 30 seconds
+    - Cost: 50 stamina | Cooldown: 60s
+    - Prerequisite: Natural Leader
+
+12. **Instant Repair** (Active)
+    - Instantly repair all damaged buildings
+    - Cost: 100 gold | Cooldown: 120s
+    - Prerequisite: Master Builder
+
+---
+
+#### Tier 3: Mastery (Level 21-35, requires 15 points in tree)
+
+**Passive Skills (3 points each):**
+
+13. **Architectural Genius**
+    - Unlock Tier 3 building upgrades
+    - Buildings can have +2 NPC slots
+    - Prerequisite: Master Builder
+
+14. **Resource Empire**
+    - +50% resource production from all buildings
+    - Prerequisite: Prospector
+
+15. **Charismatic**
+    - Max NPC capacity +5
+    - NPCs level up 50% faster
+    - Prerequisite: Natural Leader
+
+16. **Trade Master**
+    - Unlock special merchant trades
+    - Sell items for +25% value
+    - Prerequisite: Economic Genius
+
+17. **Lore Master**
+    - Unlock all research immediately
+    - +25% XP from exploration
+    - Prerequisite: Scholar
+
+**Active Skills (3 points each):**
+
+18. **Mass Production** (Active)
+    - Double all resource gains for 20 seconds
+    - Cost: 80 stamina | Cooldown: 180s
+    - Prerequisite: Resource Empire
+
+19. **Kingdom's Blessing** (Active)
+    - All settlement bonuses doubled for 30 seconds
+    - Cost: 100 stamina | Cooldown: 300s
+    - Prerequisite: Charismatic
+
+---
+
+#### Tier 4: Legendary (Level 36-50, requires 25 points in tree)
+
+**Passive Skills (4 points each):**
+
+20. **Master of All Trades**
+    - +10% to ALL stats per 5 buildings placed
+    - Cap: +50% at 25 buildings
+    - Prerequisite: Architectural Genius
+
+21. **Abundant Harvest**
+    - Resource nodes never deplete
+    - +100% resource gathering speed
+    - Prerequisite: Resource Empire
+
+22. **Legendary Leader**
+    - NPCs gain +50% efficiency
+    - NPCs cannot die from starvation
+    - Prerequisite: Charismatic
+
+23. **Economic Powerhouse**
+    - Gain 1% of total gold as passive income every minute
+    - Prerequisite: Trade Master
+
+24. **Sage**
+    - All buildings provide +10% XP when near them
+    - Unlock sage-tier research
+    - Prerequisite: Lore Master
+
+**Active Skills (4 points each):**
+
+25. **Instant Fortress** (Ultimate)
+    - Place 5 buildings instantly for free
+    - Cooldown: 600s (once per 10 minutes)
+    - Prerequisite: Master of All Trades
+
+26. **Golden Age** (Ultimate)
+    - 60 seconds: Free building placement, double resources, max NPC efficiency
+    - Cooldown: 900s (once per 15 minutes)
+    - Prerequisite: Economic Powerhouse
+
+---
+
+#### Tier 5: Capstone (Level 50, requires 40 points in tree)
+
+**Choose ONE:**
+
+27. **Civilization** (Capstone)
+    - Unlock city-tier buildings
+    - Permanent +100% to all settlement stats
+    - All buildings provide unique bonuses
+    - Passive income doubled
+    - Prerequisite: 40 points in Settlement tree
+
+28. **Empire Builder** (Capstone)
+    - Unlock empire management features
+    - Can have 2 settlements simultaneously
+    - Resources shared across settlements
+    - +200% building efficiency
+    - Prerequisite: 40 points in Settlement tree
+
+---
+
+### Explorer Tree (POST-MVP - 30 Nodes)
+
+**Theme:** Master of dungeons, loot, and survival
+
+**Why Post-MVP?**
+- Depends on dungeon system being implemented
+- Requires loot system enhancements
+- Settlement tree provides enough depth for MVP
+
+**Preview Skills:**
+- Dungeon sense (reveals map)
+- Loot finder (better drops)
+- Trap detection
+- Survival instincts (less damage in dungeons)
+- Treasure hunter (rare item bonuses)
+- Dungeon mastery ultimate
+
+---
+
+### Combat Tree (POST-MVP - 30 Nodes)
+
+**Theme:** Master of damage, defense, and abilities
+
+**Why Post-MVP?**
+- Combat system already functional
+- Spell system already robust
+- Settlement tree more unique to your game
+
+**Preview Skills:**
+- Weapon specializations
+- Spell enhancements (modify existing spells)
+- Defense masteries
+- Critical strike bonuses
+- Ultimate abilities (God Mode, Avatar of War, etc.)
+
+---
+
+### Skill Point Economy
+
+**Acquisition:**
+- **Per Level:** 2 points (increased from 1)
+- **Major Quests:** 1-2 points
+- **Achievements:** 1 point (select achievements only)
+- **Total by Level 50:** ~100 points
+
+**Spending:**
+- Tier 1: 1 point per skill
+- Tier 2: 2 points per skill
+- Tier 3: 3 points per skill
+- Tier 4: 4 points per skill
+- Tier 5: 5 points (capstone)
+
+**Can You Max One Tree?**
+```
+Settlement Tree: 30 skills
+Cost = (5 * 1) + (7 * 2) + (7 * 3) + (9 * 4) + (2 * 5)
+    = 5 + 14 + 21 + 36 + 10
+    = 86 points
+
+Yes! With 100 points, you can max one tree + invest in another.
+```
+
+---
+
+### Active Ability Limit: 8 Maximum
+
+**Current Problem:** 15+ new abilities + 11 existing spells = 26+ hotkeys = cognitive overload
+
+**Solution: Modify, Don't Add**
+
+**8 Active Ability Slots:**
+1. **Slot 1-6:** Existing spells (11 spells reduced to 6 core spells)
+2. **Slot Q:** Skill tree ability slot 1
+3. **Slot E:** Skill tree ability slot 2
+
+**Skill Tree Actives Modify Existing Spells:**
+```javascript
+// Instead of adding "Whirlwind" as new ability...
+// Modify existing spell
+{
+  skillId: 'rallyCry',
+  type: 'active',
+  activationKey: 'Q',
+  name: 'Rally Cry',
+  description: 'Buff NPCs +30% productivity',
+  cost: 50, // stamina
+  cooldown: 60
+}
+
+// Instead of adding 15 new hotkeys, only Q and E for settlement skills
+```
+
+**Why This Works:**
+- Fits existing control scheme
+- No hotkey bloat
+- Settlement skills don't need combat hotkeys
+- Clean separation: 1-6 = combat, Q/E = utility
+
+---
+
+## MVP Features (First Release)
+
+### MVP Scope: Core Systems Only
+
+**Goal:** Validate character progression adds fun, then iterate.
+
+**Timeline:** 4-5 weeks (vs 13 weeks for full plan)
+
+### Included in MVP
+
+#### ✅ 1. Attribute System (Full)
+- All 6 attributes (Leadership, Construction, Exploration, Combat, Magic, Endurance)
+- Attribute allocation on level up (5 points per level)
+- Derived stat calculations
 - Save/load support
 
-**Files to Create:**
-- `src/modules/character/SkillTreeSystem.js`
-- `src/modules/character/SkillNode.js`
-- `src/data/skillTrees/combatTree.json`
-- `src/data/skillTrees/magicTree.json`
-- `src/data/skillTrees/utilityTree.json`
+#### ✅ 2. Settlement Skill Tree (30 nodes)
+- Complete Settlement tree with 30 skills
+- Tier 1-5 progression
+- Active abilities (Rally Cry, Instant Repair, Mass Production, etc.)
+- Skill point allocation UI
+
+#### ✅ 3. Basic Character Sheet
+- View all attributes
+- View derived stats
+- Allocate attribute points
+- View skill tree
+- Allocate skill points
+- Keyboard shortcut ('C' key)
+
+#### ✅ 4. Save Versioning System
+- Version management (v1 → v2 migration)
+- Backward compatibility
+- Rollback support
+- Recovery mode
+
+#### ✅ 5. Core Integrations
+- Attributes affect combat stats
+- Attributes affect NPC efficiency
+- Attributes affect building speed
+- Skills modify gameplay
+- Equipment still works with new system
+
+#### ✅ 6. Performance Optimization
+- Stat calculation caching
+- Efficient skill tree rendering
+- Optimized UI updates
+- Performance budgets met
+
+### What's MVP vs Post-MVP?
+
+| Feature | MVP | Post-MVP |
+|---------|-----|----------|
+| Attribute system | ✅ Full | - |
+| Settlement tree | ✅ 30 nodes | - |
+| Explorer tree | ❌ | ✅ 30 nodes |
+| Combat tree | ❌ | ✅ 30 nodes |
+| Character sheet | ✅ Basic | ✅ Enhanced |
+| Skill tree UI | ✅ One tree | ✅ Three trees |
+| Inventory tabs | ❌ | ✅ Full |
+| Item rarity | ❌ | ✅ 6 tiers |
+| Equipment sets | ❌ | ✅ 15 sets |
+| Socket system | ❌ | ✅ Full |
+| Item upgrading | ❌ | ✅ +1 to +10 |
+| Character creator | ❌ | ✅ Full |
+| Appearance editor | ❌ | ✅ Full |
+| Class system | ❌ | ✅ 5 classes |
+| Skill loadouts | ❌ | ✅ Full |
+| Skill preview | ❌ | ✅ Full |
 
 ---
 
-### Phase 2: Character Menus & UI (Weeks 4-5)
+## Post-MVP Features (Future Updates)
 
-#### Week 4: Character Sheet UI
-**Tasks:**
-1. Create `CharacterSheet.jsx` component
-2. Design stats display layout
-3. Implement attribute allocation UI
-4. Add stat tooltips and explanations
-5. Mobile-responsive design
+### Post-MVP Phase 1: Additional Skill Trees (3 weeks)
 
-**Deliverables:**
-- Character sheet UI
-- Attribute allocation interface
-- Stat breakdown tooltips
-- Keyboard shortcut ('C' to open)
+**Explorer Tree (30 nodes):**
+- Dungeon navigation skills
+- Loot quality bonuses
+- Survival abilities
+- Trap detection
+- Treasure hunting
+- Ultimate: Dungeon Master ability
 
-**Files to Create:**
-- `src/components/character/CharacterSheet.jsx`
-- `src/components/character/AttributePanel.jsx`
-- `src/components/character/StatsDisplay.jsx`
-- `src/styles/CharacterSheet.css`
+**Combat Tree (30 nodes):**
+- Weapon masteries
+- Spell modifications
+- Defense abilities
+- Critical strike bonuses
+- Combo enhancements
+- Ultimate: God Mode ability
 
-#### Week 5: Skill Tree UI
-**Tasks:**
-1. Create `SkillTreeUI.jsx` component
-2. Implement interactive skill tree visualization
-3. Add skill node tooltips
-4. Implement point allocation UI
-5. Add visual feedback (unlocked/locked states)
-6. Create skill preview system
+### Post-MVP Phase 2: Equipment Enhancements (2 weeks)
 
-**Deliverables:**
-- Interactive skill tree UI
-- Skill allocation interface
-- Visual skill tree paths
-- Skill descriptions and requirements
+**Equipment Sets:**
+- 15 equipment sets across themes
+- 2/4/5 piece bonuses
+- Set bonus UI indicators
 
-**Files to Create:**
-- `src/components/character/SkillTreeUI.jsx`
-- `src/components/character/SkillNode.jsx`
-- `src/components/character/SkillTooltip.jsx`
-- `src/styles/SkillTree.css`
+**Socket System:**
+- 7 gem types (Ruby, Sapphire, Topaz, Emerald, Amethyst, Diamond, Onyx)
+- 5 gem tiers
+- Socket operations (add, insert, remove, upgrade)
 
----
+**Item Upgrading:**
+- +1 to +10 upgrade levels
+- Exponential cost scaling
+- Visual upgrade indicators
 
-### Phase 3: Enhanced Skill Trees (Weeks 6-9)
+### Post-MVP Phase 3: Enhanced Inventory (1 week)
 
-#### Week 6-7: Active Skills Implementation
-**Tasks:**
-1. Implement all active skill abilities
-2. Create skill activation system
-3. Add cooldown tracking per skill
-4. Implement skill hotkeys
-5. Add skill visual effects
-6. Balance mana/stamina costs
+**Inventory Improvements:**
+- Tabbed organization (Equipment, Consumables, Materials, Quest, Junk)
+- Item filtering and sorting
+- Item comparison tooltips
+- Quick-slot system (1-6 hotkeys for consumables)
+- Item rarity visual indicators
 
-**Deliverables:**
-- All 15+ active skills working
-- Skill cooldown system
-- Visual effects for skills
-- Skill hotkey bindings
+### Post-MVP Phase 4: Character Customization (2 weeks)
 
-**Files to Create/Modify:**
-- `src/modules/character/SkillActivation.js`
-- `src/data/skills/activeSkills.js`
-- `src/components/effects/SkillEffects.jsx`
+**Character Creation:**
+- Name selection
+- Appearance customization (8 skin tones, 12 hairstyles, 10 colors, 8 facial features)
+- Starting class selection (5 classes)
+- Background selection (flavor bonuses)
 
-#### Week 8: Passive Skills Implementation
-**Tasks:**
-1. Implement all passive skill effects
-2. Add stat modification system
-3. Create buff/debuff application
-4. Add passive effect stacking
-5. Implement condition-based passives
+**In-Game Customization:**
+- Barber building for appearance changes
+- Title system from achievements
+- Character rename tokens
 
-**Deliverables:**
-- All 50+ passive skills working
-- Stat calculation with passives
-- Conditional passive triggers
+### Post-MVP Phase 5: Advanced Features (2 weeks)
 
-**Files to Create:**
-- `src/modules/character/PassiveEffects.js`
-- `src/data/skills/passiveSkills.js`
+**Skill Loadouts:**
+- Save/load skill configurations
+- Quick-swap between builds
+- Preset sharing (future: community builds)
 
-#### Week 9: Ultimate Skills & Capstones
-**Tasks:**
-1. Implement capstone abilities
-2. Add ultimate skill mechanics
-3. Create special visual effects
-4. Add achievement triggers for capstones
-5. Balance ultimate abilities
+**Skill Preview Mode:**
+- Training dummy to test skills
+- Skill simulator before allocation
+- "Try before you buy" feature
 
-**Deliverables:**
-- 3 capstone abilities
-- Ultimate skill system
-- Special effects and animations
-
----
-
-### Phase 4: Enhanced Inventory (Weeks 10-11)
-
-#### Week 10: Inventory Improvements
-**Tasks:**
-1. Implement item categorization
-2. Add inventory tabs
-3. Create item filtering system
-4. Add item sorting options
-5. Implement quick-slots
-6. Add item comparison tooltips
-
-**Deliverables:**
-- Enhanced inventory UI
-- Tabbed organization
-- Filtering and sorting
-- Quick-slot system
-
-**Files to Modify:**
-- `src/components/InventoryUI.jsx`
-- `src/stores/useGameStore.js`
-- `src/styles/InventoryUI.css`
-
-#### Week 11: Item Enhancements
-**Tasks:**
-1. Implement item rarity system
-2. Add equipment set bonuses
-3. Create socket system
-4. Implement gem crafting
-5. Add item upgrade system
-6. Create visual rarity indicators
-
-**Deliverables:**
-- Item rarity tiers
-- Set bonus system
-- Socket and gem system
-- Item upgrading
-
-**Files to Create:**
-- `src/modules/items/RaritySystem.js`
-- `src/modules/items/SetBonuses.js`
-- `src/modules/items/SocketSystem.js`
-- `src/modules/items/ItemUpgrade.js`
-
----
-
-### Phase 5: Polish & Balance (Weeks 12-13)
-
-#### Week 12: Character Customization
-**Tasks:**
-1. Create character creation screen
-2. Implement appearance customization
-3. Add class selection UI
-4. Create character naming system
-5. Add title system
-6. Implement respec system
-
-**Deliverables:**
-- Character creation flow
-- Appearance customization
-- Class selection
-- Title system
-
-**Files to Create:**
-- `src/components/character/CharacterCreation.jsx`
-- `src/components/character/AppearanceEditor.jsx`
-- `src/components/character/ClassSelection.jsx`
-
-#### Week 13: Final Polish
-**Tasks:**
-1. Balance all skills and stats
-2. Performance optimization
-3. Add achievement integrations
-4. Create tutorial updates
-5. Fix bugs and edge cases
-6. Write documentation
-7. Comprehensive testing
-
-**Deliverables:**
-- Balanced gameplay
-- Bug-free experience
-- Updated tutorials
-- Complete documentation
+**Progression Visualization:**
+- Character timeline
+- Build evolution graph
+- Stats over time charts
 
 ---
 
@@ -1033,762 +1128,1616 @@ const statBonus = baseStats * (1 + (upgradeLevel * 0.1));
 src/
 ├── modules/
 │   └── character/
-│       ├── AttributeSystem.js       # Attribute management
-│       ├── CharacterManager.js      # Main character controller
-│       ├── SkillTreeSystem.js       # Skill tree logic
-│       ├── SkillNode.js             # Individual skill nodes
-│       ├── SkillActivation.js       # Active skill execution
-│       ├── PassiveEffects.js        # Passive skill effects
-│       ├── CharacterData.js         # Data schemas
-│       └── __tests__/               # Unit tests
+│       ├── AttributeSystem.js          # Core attribute logic
+│       ├── CharacterManager.js         # Main character controller
+│       ├── SkillTreeSystem.js          # Skill tree logic
+│       ├── SkillNode.js                # Individual skill node
+│       ├── SkillActivation.js          # Active skill execution
+│       ├── PassiveEffects.js           # Passive skill effects
+│       ├── DerivedStatsCalculator.js   # Stat formulas (NEW)
+│       ├── SaveVersionManager.js       # Save versioning (NEW)
+│       ├── CharacterData.js            # Data schemas
+│       └── __tests__/                  # Unit tests
+│
 ├── components/
 │   └── character/
-│       ├── CharacterSheet.jsx       # Main character UI
-│       ├── AttributePanel.jsx       # Attribute allocation
-│       ├── StatsDisplay.jsx         # Stat breakdown
-│       ├── SkillTreeUI.jsx          # Skill tree interface
-│       ├── SkillNode.jsx            # Skill node component
-│       ├── SkillTooltip.jsx         # Skill descriptions
-│       ├── CharacterCreation.jsx    # Character creator
-│       ├── AppearanceEditor.jsx     # Appearance customization
-│       └── ClassSelection.jsx       # Class picker
+│       ├── CharacterSheet.jsx          # Main character UI
+│       ├── AttributePanel.jsx          # Attribute allocation
+│       ├── StatsDisplay.jsx            # Stat breakdown
+│       ├── SkillTreeUI.jsx             # Skill tree interface
+│       ├── SkillNode.jsx               # Skill node component
+│       └── SkillTooltip.jsx            # Skill descriptions
+│
 ├── data/
 │   ├── skillTrees/
-│   │   ├── combatTree.json
-│   │   ├── magicTree.json
-│   │   └── utilityTree.json
-│   ├── skills/
-│   │   ├── activeSkills.js
-│   │   └── passiveSkills.js
-│   └── classes/
-│       └── classDefinitions.js
-└── styles/
-    ├── CharacterSheet.css
-    └── SkillTree.css
+│   │   ├── settlementTree.json         # MVP tree
+│   │   ├── explorerTree.json           # Post-MVP
+│   │   └── combatTree.json             # Post-MVP
+│   └── attributes/
+│       └── attributeDefinitions.js     # Attribute formulas
+│
+└── utils/
+    ├── integrations/
+    │   ├── CombatIntegration.js        # Combat system bridge
+    │   ├── SpellIntegration.js         # Spell system bridge
+    │   ├── NPCIntegration.js           # NPC system bridge
+    │   └── BuildingIntegration.js      # Building system bridge
+    └── performance/
+        └── StatCache.js                # Performance optimization
 ```
 
-### Integration with Existing Systems
+---
 
-#### Game Store Integration
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│            Character Manager (New)                  │
+│  - Manages attributes, skills, progression          │
+│  - Calculates derived stats                         │
+│  - Applies passive effects                          │
+└──────────────┬──────────────────────────────────────┘
+               │
+         Integration Layer
+               │
+     ┌─────────┼─────────┬──────────┬────────────┐
+     │         │         │          │            │
+     ▼         ▼         ▼          ▼            ▼
+┌─────────┐ ┌──────┐ ┌──────┐ ┌─────────┐ ┌─────────┐
+│ Combat  │ │Spells│ │ NPCs │ │Building │ │Resource │
+│ System  │ │      │ │      │ │ System  │ │ System  │
+└─────────┘ └──────┘ └──────┘ └─────────┘ └─────────┘
+│           │        │          │           │
+└───────────┴────────┴──────────┴───────────┘
+                     │
+                     ▼
+           ┌─────────────────┐
+           │   Game Store    │
+           │   (Zustand)     │
+           └─────────────────┘
+```
+
+---
+
+### Data Flow: Attribute → Derived Stat → Combat
+
 ```javascript
-// Extend useGameStore
-{
-  // New character state
-  character: {
-    name: 'Hero',
-    level: 1,
-    xp: 0,
-    attributes: {
-      strength: 10,
-      dexterity: 10,
-      intelligence: 10,
-      vitality: 10,
-      wisdom: 10,
-      luck: 10,
-    },
-    skillPoints: 0,
-    attributePoints: 0,
-    skills: {
-      combat: [],    // Allocated skill IDs
-      magic: [],
-      utility: []
-    },
-    class: null,      // Primary class
-    subClass: null,   // Secondary class
-    appearance: {},   // Customization data
-    titles: [],       // Earned titles
-    activeTitle: null
-  },
+// 1. Player levels up
+onLevelUp() {
+  player.level++;
+  player.attributePoints += 5;
+  player.skillPoints += 2;
+  player.xp = 0;
+  player.xpToNext = calculateXPForLevel(player.level + 1);
+}
 
-  // Actions
-  allocateAttribute: (attribute, points) => { ... },
-  allocateSkill: (tree, skillId, points) => { ... },
-  resetSkills: () => { ... },
-  resetAttributes: () => { ... },
-  setClass: (className) => { ... },
-  // ...
+// 2. Player allocates attributes
+allocateAttribute('leadership', 5);
+// → Updates character.attributes.leadership
+// → Triggers stat recalculation
+
+// 3. Derived stats calculated
+function calculateDerivedStats(attributes, skills, equipment) {
+  const cache = getStatCache(attributes, skills, equipment);
+  if (cache.valid) return cache.stats;
+
+  const stats = {
+    maxHealth: 100 + (attributes.endurance * 15),
+    maxMana: 100 + (attributes.magic * 8),
+    physicalDamage: baseWeapon + (attributes.combat * 1.5),
+    npcEfficiency: 1.0 + (attributes.leadership * 0.01),
+    buildingSpeed: 1.0 + (attributes.construction * 0.02),
+    // ... all other stats
+  };
+
+  // Apply passive skill bonuses
+  stats.npcEfficiency *= (1 + getSkillBonus('inspiringLeader'));
+
+  // Apply equipment bonuses
+  stats.maxHealth += equipment.armor.healthBonus;
+
+  updateStatCache(attributes, skills, equipment, stats);
+  return stats;
+}
+
+// 4. Combat uses derived stats
+function dealDamage(enemy) {
+  const stats = player.derivedStats;
+  let damage = stats.physicalDamage;
+
+  // Check crit
+  if (Math.random() * 100 < stats.critChance) {
+    damage *= (stats.critDamage / 100);
+  }
+
+  // Apply skill modifiers
+  if (hasSkill('powerStrike')) {
+    damage *= 1.10;
+  }
+
+  enemy.health -= damage;
+}
+
+// 5. Building placement uses derived stats
+function placeBuilding(buildingType) {
+  const stats = player.derivedStats;
+
+  // Apply construction speed
+  const placementTime = basePlacementTime / stats.buildingSpeed;
+
+  // Apply cost reduction
+  const cost = baseCost * (1 - stats.buildingCostReduction);
+
+  // Place building
+  createBuilding(buildingType, cost, placementTime);
 }
 ```
 
-#### Combat System Integration
+---
+
+## Save Versioning Strategy
+
+### Critical: Implement Save Versioning FIRST
+
+**Why First?**
+- Protects existing player saves
+- Enables safe iteration
+- Allows rollback if needed
+- Required for any data structure changes
+
+### Version Management System
+
 ```javascript
-// Modify damage calculation
-const calculateDamage = (player, equipment, skills) => {
-  const attributes = player.character.attributes;
+// src/persistence/SaveVersionManager.js
 
-  // Base damage from equipment
-  let damage = getTotalStats(player, equipment).damage;
+const CURRENT_VERSION = 2;
 
-  // Add attribute scaling
-  damage += attributes.strength * 2; // STR scaling
+const SAVE_VERSIONS = {
+  1: {
+    description: 'Original save format (pre-character system)',
+    schema: {
+      player: { health, stamina, level, xp, position, ... },
+      equipment: { ... },
+      inventory: { ... },
+      buildings: [ ... ],
+      npcs: [ ... ]
+    }
+  },
+  2: {
+    description: 'Character system (attributes, skills)',
+    schema: {
+      version: 2,
+      player: { health, stamina, level, xp, position, ... },
+      character: {
+        attributes: { leadership, construction, ... },
+        skillPoints, attributePoints,
+        skills: { settlement: [...] }
+      },
+      equipment: { ... },
+      inventory: { ... },
+      buildings: [ ... ],
+      npcs: [ ... ]
+    }
+  }
+};
 
-  // Add passive skill bonuses
-  const combatBonus = getSkillBonus('combat', 'damage');
-  damage *= (1 + combatBonus);
+class SaveVersionManager {
+  static migrate(saveData) {
+    const currentVersion = saveData.version || 1;
 
-  // Add class bonuses
-  if (player.character.class === 'Warrior') {
-    damage *= 1.1;
+    if (currentVersion === CURRENT_VERSION) {
+      return saveData;
+    }
+
+    // Backup original save
+    this.backupSave(saveData, currentVersion);
+
+    // Perform migrations
+    let migrated = saveData;
+    for (let v = currentVersion; v < CURRENT_VERSION; v++) {
+      migrated = this.migrateVersion(migrated, v, v + 1);
+    }
+
+    return migrated;
   }
 
-  return damage;
-};
+  static migrateVersion(data, fromVersion, toVersion) {
+    console.log(`Migrating save from v${fromVersion} to v${toVersion}`);
+
+    if (fromVersion === 1 && toVersion === 2) {
+      return this.migrateV1ToV2(data);
+    }
+
+    throw new Error(`Unknown migration path: v${fromVersion} → v${toVersion}`);
+  }
+
+  static migrateV1ToV2(oldSave) {
+    // Calculate retroactive points based on player level
+    const level = oldSave.player.level;
+    const retroAttributePoints = level * 5;
+    const retroSkillPoints = level * 2;
+
+    return {
+      version: 2,
+      player: oldSave.player,
+      character: {
+        attributes: {
+          leadership: 10,
+          construction: 10,
+          exploration: 10,
+          combat: 10,
+          magic: 10,
+          endurance: 10
+        },
+        attributePoints: retroAttributePoints,
+        skillPoints: retroSkillPoints,
+        skills: {
+          settlement: []
+        },
+        respecsUsed: 0,
+        respecsAvailable: 3
+      },
+      equipment: oldSave.equipment,
+      inventory: oldSave.inventory,
+      buildings: oldSave.buildings,
+      npcs: oldSave.npcs
+    };
+  }
+
+  static backupSave(saveData, version) {
+    const timestamp = Date.now();
+    const backupKey = `save_backup_v${version}_${timestamp}`;
+    localStorage.setItem(backupKey, JSON.stringify(saveData));
+    console.log(`Save backed up to ${backupKey}`);
+  }
+
+  static rollbackToVersion(version) {
+    // Find most recent backup of specified version
+    const backups = this.listBackups(version);
+    if (backups.length === 0) {
+      throw new Error(`No backups found for version ${version}`);
+    }
+
+    const latestBackup = backups[backups.length - 1];
+    const backupData = JSON.parse(localStorage.getItem(latestBackup));
+
+    // Restore backup
+    localStorage.setItem('gameState', JSON.stringify(backupData));
+    console.log(`Rolled back to ${latestBackup}`);
+
+    return backupData;
+  }
+
+  static listBackups(version) {
+    const keys = Object.keys(localStorage);
+    return keys
+      .filter(key => key.startsWith(`save_backup_v${version}_`))
+      .sort();
+  }
+
+  static validateSave(saveData) {
+    const version = saveData.version || 1;
+    const schema = SAVE_VERSIONS[version];
+
+    if (!schema) {
+      throw new Error(`Unknown save version: ${version}`);
+    }
+
+    // Validate required fields exist
+    if (version === 2) {
+      if (!saveData.character) return false;
+      if (!saveData.character.attributes) return false;
+      if (!saveData.character.skills) return false;
+    }
+
+    return true;
+  }
+}
+
+export default SaveVersionManager;
 ```
 
-#### Spell System Integration
+### Save/Load Integration
+
 ```javascript
-// Modify spell damage calculation
-const calculateSpellDamage = (spell, player) => {
-  const attributes = player.character.attributes;
+// In BrowserSaveManager or equivalent
+import SaveVersionManager from './SaveVersionManager';
 
-  let damage = spell.damage;
+function loadGame() {
+  const saveData = JSON.parse(localStorage.getItem('gameState'));
 
-  // Intelligence scaling
-  damage += damage * (attributes.intelligence * 0.05);
-
-  // Magic tree passive bonuses
-  const magicBonus = getSkillBonus('magic', 'spellDamage');
-  damage *= (1 + magicBonus);
-
-  // Check for unlocked spell upgrades
-  if (hasSkill('fireballMastery')) {
-    // Apply mastery bonuses
+  if (!saveData) {
+    return null; // No save found
   }
 
-  return damage;
-};
+  // Validate save
+  if (!SaveVersionManager.validateSave(saveData)) {
+    console.error('Invalid save file');
+    return null;
+  }
+
+  // Migrate if needed
+  const migrated = SaveVersionManager.migrate(saveData);
+
+  // Verify migration succeeded
+  if (!SaveVersionManager.validateSave(migrated)) {
+    console.error('Migration failed');
+    // Attempt rollback
+    return SaveVersionManager.rollbackToVersion(saveData.version || 1);
+  }
+
+  return migrated;
+}
+
+function saveGame(gameState) {
+  // Add version number
+  const versionedState = {
+    ...gameState,
+    version: CURRENT_VERSION
+  };
+
+  // Backup current save before overwriting
+  const existing = localStorage.getItem('gameState');
+  if (existing) {
+    const parsed = JSON.parse(existing);
+    SaveVersionManager.backupSave(parsed, parsed.version || 1);
+  }
+
+  // Save new state
+  localStorage.setItem('gameState', JSON.stringify(versionedState));
+}
 ```
 
-#### Achievement Integration
+### Recovery Mode
+
 ```javascript
-// Award skill points for achievements
-onAchievementUnlock: (achievementId) => {
-  if (achievement.rewards.skillPoints) {
-    addSkillPoints(achievement.rewards.skillPoints);
-  }
+// Add recovery UI for corrupted saves
+function enterRecoveryMode() {
+  console.warn('Entering recovery mode');
+
+  // List all backups
+  const allBackups = [];
+  const keys = Object.keys(localStorage);
+  keys.forEach(key => {
+    if (key.startsWith('save_backup_')) {
+      const data = JSON.parse(localStorage.getItem(key));
+      allBackups.push({
+        key,
+        version: data.version || 1,
+        level: data.player.level,
+        timestamp: key.split('_').pop()
+      });
+    }
+  });
+
+  // Show recovery UI
+  showRecoveryUI(allBackups);
+}
+
+function showRecoveryUI(backups) {
+  // UI to select backup to restore
+  // User can choose which backup to load
+  // Includes preview of backup data (level, playtime, etc.)
 }
 ```
 
 ---
 
-## Data Structures
+## Performance Budgets
 
-### Character Data Schema
+### Performance Requirements
+
+**Goal:** Character system should add <5% overhead to game performance.
+
+#### Stat Calculation Budget
+
+**Target:** <5ms per calculation
 
 ```javascript
-const CharacterSchema = {
-  // Identity
-  id: 'uuid-v4',
-  name: 'Hero',
-  createdAt: 1700000000000,
-  playTime: 3600000, // milliseconds
+// Benchmark stat calculation
+function benchmarkStatCalculation() {
+  const start = performance.now();
 
-  // Progression
-  level: 42,
-  xp: 8450,
-  xpToNext: 10000,
+  for (let i = 0; i < 1000; i++) {
+    calculateDerivedStats(mockAttributes, mockSkills, mockEquipment);
+  }
 
-  // Points
-  skillPoints: 3,
-  attributePoints: 5,
+  const end = performance.now();
+  const avgTime = (end - start) / 1000;
 
-  // Attributes
-  attributes: {
-    strength: 45,
-    dexterity: 38,
-    intelligence: 52,
-    vitality: 40,
-    wisdom: 35,
-    luck: 28
-  },
-
-  // Classes
-  primaryClass: 'Mage',
-  secondaryClass: 'Warrior',
-
-  // Skills (allocated nodes)
-  skills: {
-    combat: [
-      { id: 'powerStrike', points: 3, unlocked: true },
-      { id: 'whirlwind', points: 1, unlocked: true }
-    ],
-    magic: [
-      { id: 'arcaneKnowledge', points: 5, unlocked: true },
-      { id: 'fireball mastery', points: 1, unlocked: true }
-    ],
-    utility: []
-  },
-
-  // Appearance
-  appearance: {
-    skinTone: 2,
-    hairStyle: 5,
-    hairColor: 3,
-    facialFeatures: 1,
-    bodyType: 1
-  },
-
-  // Titles
-  titles: ['Dragonslayer', 'Archmage'],
-  activeTitle: 'Archmage',
-
-  // Stats snapshot (for quick access)
-  cachedStats: {
-    maxHealth: 900,
-    maxMana: 620,
-    maxStamina: 300,
-    damage: 85,
-    defense: 42,
-    // ... other derived stats
-  },
-
-  // Meta
-  respecsUsed: 1,
-  respecsAvailable: 2
-};
+  console.log(`Stat calculation: ${avgTime}ms per call`);
+  // Target: <5ms
+}
 ```
 
-### Skill Node Schema
+**Optimization Strategy:**
+- Cache derived stats
+- Only recalculate on changes
+- Use memoization
 
 ```javascript
-const SkillNodeSchema = {
-  id: 'powerStrike',
-  name: 'Power Strike',
-  description: 'Increases your melee damage',
-  tree: 'combat',
-  tier: 1,
+// Stat caching
+class StatCache {
+  constructor() {
+    this.cache = new Map();
+  }
 
-  // Requirements
-  requires: {
-    level: 1,
-    pointsInTree: 0,
-    prerequisites: [], // Other skill IDs
-    attributes: {
-      strength: 15 // Optional
-    }
-  },
+  getCacheKey(attributes, skills, equipment) {
+    // Create hash of inputs
+    return JSON.stringify({ attributes, skills, equipment });
+  }
 
-  // Cost
-  maxPoints: 5,
-  costPerPoint: 1,
+  get(attributes, skills, equipment) {
+    const key = this.getCacheKey(attributes, skills, equipment);
+    return this.cache.get(key);
+  }
 
-  // Effects
-  type: 'passive', // 'passive' | 'active'
-  effects: [
-    {
-      type: 'stat_bonus',
-      stat: 'meleeDamage',
-      value: 10,
-      valuePerPoint: 2, // +2% per additional point
-      valueType: 'percent' // 'percent' | 'flat'
-    }
-  ],
+  set(attributes, skills, equipment, stats) {
+    const key = this.getCacheKey(attributes, skills, equipment);
+    this.cache.set(key, {
+      stats,
+      timestamp: Date.now()
+    });
+  }
 
-  // Active skill properties (if applicable)
-  active: {
-    cooldown: 10,
-    manaCost: 0,
-    staminaCost: 30,
-    castTime: 0,
-    range: 5,
-    aoe: false
-  },
+  invalidate() {
+    this.cache.clear();
+  }
+}
 
-  // Visual
-  icon: 'sword-icon',
-  color: '#ff6b6b',
-  position: { x: 100, y: 50 } // Position in skill tree UI
-};
+const statCache = new StatCache();
+
+function calculateDerivedStats(attributes, skills, equipment) {
+  // Check cache first
+  const cached = statCache.get(attributes, skills, equipment);
+  if (cached && (Date.now() - cached.timestamp) < 1000) {
+    return cached.stats;
+  }
+
+  // Calculate stats
+  const stats = {
+    // ... calculations
+  };
+
+  // Cache result
+  statCache.set(attributes, skills, equipment, stats);
+
+  return stats;
+}
 ```
 
-### Equipment Set Schema
+---
+
+#### UI Render Budget
+
+**Character Sheet:** <8ms to open/render
+**Skill Tree:** <16ms (one frame at 60fps)
 
 ```javascript
-const EquipmentSetSchema = {
-  id: 'warriorsValor',
-  name: "Warrior's Valor Set",
-  description: 'A legendary set worn by ancient warriors',
+// Benchmark UI rendering
+function benchmarkUIRender() {
+  const start = performance.now();
 
-  pieces: [
-    { slot: 'helmet', itemId: 'warriorsHelm' },
-    { slot: 'armor', itemId: 'warriorsChest' },
-    { slot: 'gloves', itemId: 'warriorsGauntlets' },
-    { slot: 'boots', itemId: 'warriorsGreaves' },
-    { slot: 'offhand', itemId: 'warriorsShield' }
-  ],
+  // Render character sheet
+  render(<CharacterSheet player={mockPlayer} />);
 
-  bonuses: [
-    {
-      piecesRequired: 2,
-      effects: [
-        { stat: 'healthRegen', value: 20, valueType: 'percent' }
-      ]
-    },
-    {
-      piecesRequired: 4,
-      effects: [
-        { stat: 'maxHealth', value: 50, valueType: 'flat' },
-        { stat: 'damage', value: 10, valueType: 'percent' }
-      ]
-    },
-    {
-      piecesRequired: 5,
-      effects: [
-        { stat: 'maxHealth', value: 100, valueType: 'flat' },
-        { type: 'ability', abilityId: 'warriorsFury' }
-      ]
-    }
-  ]
+  const end = performance.now();
+  console.log(`Character sheet render: ${end - start}ms`);
+  // Target: <8ms
+}
+```
+
+**Optimization Strategy:**
+- Lazy load skill tree components
+- Virtual scrolling for long lists
+- React.memo for expensive components
+- Debounce stat updates
+
+```javascript
+// Optimized skill tree rendering
+const SkillTreeUI = React.memo(({ tree, allocatedSkills }) => {
+  // Only re-render when tree or skills change
+  return (
+    <div className="skill-tree">
+      {tree.tiers.map(tier => (
+        <SkillTier
+          key={tier.id}
+          tier={tier}
+          allocatedSkills={allocatedSkills}
+        />
+      ))}
+    </div>
+  );
+});
+
+// Lazy load skill tree data
+const SkillTreeContainer = () => {
+  const [treeData, setTreeData] = useState(null);
+
+  useEffect(() => {
+    // Load tree data asynchronously
+    import('../data/skillTrees/settlementTree.json')
+      .then(data => setTreeData(data));
+  }, []);
+
+  if (!treeData) return <LoadingSpinner />;
+
+  return <SkillTreeUI tree={treeData} />;
 };
 ```
 
 ---
 
-## Balance Considerations
+#### Memory Budget
 
-### Attribute Point Economy
+**Target:** <20MB additional memory for character system
 
-**Points per Level:** 5
-**Total Points by Level 50:** 245 points
-**Starting Points:** 60 (10 in each attribute)
-**Final Distribution Example:** 305 total points
+```javascript
+// Monitor memory usage
+function monitorMemory() {
+  if (performance.memory) {
+    const used = performance.memory.usedJSHeapSize / 1024 / 1024;
+    console.log(`Memory usage: ${used.toFixed(2)} MB`);
+  }
+}
 
-**Soft Caps:**
-- 50 points: Diminishing returns start
-- 100 points: 50% effectiveness
-- 150+ points: 25% effectiveness
+// Log memory before and after character system initialization
+monitorMemory(); // Before
+initializeCharacterSystem();
+monitorMemory(); // After
+// Target: <20MB increase
+```
 
-**Respec Costs:**
-- First respec: 500 gold
-- Second respec: 2,000 gold + 10 essence
-- Third respec: 5,000 gold + 50 essence + 5 crystals
-- Limit: 5 respecs per tier
-
-### Skill Point Economy
-
-**Points per Level:** 1
-**Bonus Sources:**
-- Major quests: 1-3 points
-- Achievements: 1 point each (~20 available)
-- Events: Rare chance for 1 point
-
-**Total Available (Level 50):** ~70-80 points
-**Maximum Spent:** Cannot max all trees (forces choices)
-
-### Combat Balance Targets
-
-**Damage Scaling:**
-- Level 1: 10-20 damage
-- Level 10: 50-80 damage
-- Level 25: 150-250 damage
-- Level 50: 500-800 damage
-
-**Health Scaling:**
-- Level 1: 100 HP
-- Level 10: 300-400 HP
-- Level 25: 700-1000 HP
-- Level 50: 1500-2500 HP
-
-**Enemy Difficulty Scaling:**
-- Enemies scale with player level
-- Boss enemies: 3-5x player HP
-- Elite enemies: 2x player HP
-- Normal enemies: 0.5-1x player HP
-
-### Skill Power Budget
-
-**Tier 1 Skills:** 10-20% power budget
-**Tier 2 Skills:** 25-35% power budget
-**Tier 3 Skills:** 40-50% power budget
-**Tier 4 Skills:** 60-75% power budget
-**Tier 5 Capstones:** 100% power budget (game-changing)
-
-**Active vs Passive:**
-- Active skills: Higher power, gated by cooldowns
-- Passive skills: Lower power, always active
-- Ultimate skills: Extreme power, long cooldowns (60-180s)
+**Optimization Strategy:**
+- Unload unused tree data
+- Clear stat cache periodically
+- Optimize JSON data structures
 
 ---
 
-## UI/UX Design
+### Performance Monitoring
 
-### Character Sheet Design
+```javascript
+// Add performance tracking
+class PerformanceMonitor {
+  static trackOperation(name, operation) {
+    const start = performance.now();
+    const result = operation();
+    const end = performance.now();
 
-**Layout Philosophy:**
-- **Left Panel:** Character identity and attributes (input)
-- **Center Panel:** Derived stats (calculated output)
-- **Right Panel:** Secondary stats and progression
+    const duration = end - start;
 
-**Design Principles:**
-1. **Clarity** - Clear stat names and values
-2. **Feedback** - Immediate visual feedback on changes
-3. **Tooltips** - Explain everything with hover tooltips
-4. **Comparison** - Show before/after for changes
-5. **Mobile-First** - Responsive design for all screen sizes
+    // Log if exceeds budget
+    const budgets = {
+      'stat_calculation': 5,
+      'ui_render': 8,
+      'skill_allocation': 10
+    };
 
-### Skill Tree Design
+    if (duration > budgets[name]) {
+      console.warn(`Performance warning: ${name} took ${duration}ms (budget: ${budgets[name]}ms)`);
+    }
 
-**Visual Style:**
-- Node-based tree structure
-- Connected paths showing progression
-- Color coding by tree (red=combat, blue=magic, green=utility)
-- Locked/unlocked visual states
-- Animated selection effects
+    return result;
+  }
+}
 
-**Interaction Design:**
-- **Click** - Select skill node
-- **Hover** - Show detailed tooltip
-- **Right-click** - Refund point (if possible)
-- **Shift-click** - Allocate multiple points
-- **Path highlighting** - Show available paths from current position
+// Usage
+const stats = PerformanceMonitor.trackOperation('stat_calculation', () => {
+  return calculateDerivedStats(attributes, skills, equipment);
+});
+```
 
-**Mobile Considerations:**
-- Pinch to zoom
-- Tap for tooltip
-- Long-press for multi-allocation
-- Bottom drawer for skill details
+---
 
-### Inventory UI Improvements
+## Revised Balance
 
-**Visual Improvements:**
-- Item rarity color coding
-- Set item highlighting
-- Socket visualization
-- Upgrade level indicators (+1, +2, etc.)
-- Quick visual comparison icons
+### Fixed: Linear Scaling Instead of Exponential
 
-**Interaction Improvements:**
-- **Drag-and-drop** - Equip/unequip items
-- **Quick equip** - Double-click to equip
-- **Quick use** - Right-click consumables
-- **Quick sell** - Shift-click for vendor trash
-- **Lock items** - Prevent accidental deletion
+**Problem with Original Plan:**
+```
+Level 1:  10-20 damage
+Level 50: 500-800 damage
+
+Issue: 40x increase = extreme number inflation
+- Early game items become worthless
+- Enemy scaling must match (numbers get huge)
+- Hard to balance
+```
+
+**New Linear + Percentage Scaling:**
+```
+Level 1:  10 base damage
+Level 10: 15 base damage + 30% from skills = 19.5 damage (2x)
+Level 25: 25 base damage + 80% from skills = 45 damage (4.5x)
+Level 50: 50 base damage + 150% from skills = 125 damage (12.5x)
+
+Much more manageable! 12.5x instead of 40x.
+```
+
+### Damage Scaling Formula
+
+```javascript
+function calculateDamage(player) {
+  // 1. Base damage (grows linearly with level)
+  const baseDamage = 10 + (player.level * 0.8);
+  // Level 1: 10.8
+  // Level 25: 30
+  // Level 50: 50
+
+  // 2. Attribute scaling (additive)
+  const attributeBonus = player.attributes.combat * 1.5;
+  // 50 combat = +75 damage
+
+  // 3. Equipment scaling (additive)
+  const equipmentBonus = player.equipment.weapon.damage;
+  // Weapon damage: 10-50 depending on tier
+
+  // 4. Skill multipliers (percentage)
+  let skillMultiplier = 1.0;
+  if (hasSkill('powerStrike', 5)) {
+    skillMultiplier += 0.20; // +20%
+  }
+  if (hasSkill('weaponMastery', 3)) {
+    skillMultiplier += 0.15; // +15%
+  }
+  // Max skill bonuses: ~150% (2.5x multiplier)
+
+  // 5. Final damage
+  const finalDamage = (baseDamage + attributeBonus + equipmentBonus) * skillMultiplier;
+
+  return finalDamage;
+}
+
+// Examples:
+// Level 1 (10 combat, no weapon, no skills):
+// (10.8 + 15 + 0) * 1.0 = 25.8 damage
+
+// Level 25 (40 combat, 25 weapon, some skills):
+// (30 + 60 + 25) * 1.35 = 155 damage
+
+// Level 50 (80 combat, 50 weapon, max skills):
+// (50 + 120 + 50) * 1.50 = 330 damage
+
+// Total scaling: 25 → 330 = 13.2x (much better than 40x!)
+```
+
+### Enemy Scaling
+
+**Enemies scale similarly:**
+```javascript
+function createEnemy(type, playerLevel) {
+  const baseStats = ENEMY_TYPES[type];
+
+  // Scale with player level (0.8x multiplier)
+  const scaledHealth = baseStats.health + (playerLevel * baseStats.health * 0.02);
+  const scaledDamage = baseStats.damage + (playerLevel * baseStats.damage * 0.02);
+
+  return {
+    ...baseStats,
+    health: scaledHealth,
+    damage: scaledDamage,
+    level: playerLevel
+  };
+}
+
+// Example: Slime
+// Level 1:  30 HP, 5 damage
+// Level 25: 45 HP, 7.5 damage
+// Level 50: 60 HP, 10 damage
+
+// Boss enemies: 3-5x player stats
+// Elite enemies: 2x player stats
+// Normal enemies: 0.8-1.2x player stats
+```
+
+### Attribute Scaling Curves
+
+```javascript
+// Soft caps for diminishing returns
+function getAttributeBonus(attributeName, value) {
+  let effectiveValue;
+
+  if (value <= 50) {
+    effectiveValue = value; // 100% effective
+  } else if (value <= 100) {
+    effectiveValue = 50 + (value - 50) * 0.75; // 75% effective
+  } else if (value <= 150) {
+    effectiveValue = 87.5 + (value - 100) * 0.50; // 50% effective
+  } else {
+    effectiveValue = 112.5 + (value - 150) * 0.25; // 25% effective
+  }
+
+  return effectiveValue;
+}
+
+// Example: Leadership at 120
+// 50 at 100% = 50
+// 50 at 75% = 37.5
+// 20 at 50% = 10
+// Total: 97.5 effective (instead of 120 with no diminishing returns)
+
+// This encourages balanced builds instead of single-stat stacking
+```
+
+### XP Curve
+
+```javascript
+function calculateXPForLevel(level) {
+  // Smooth exponential curve
+  return Math.floor(100 * Math.pow(1.15, level - 1));
+}
+
+// Level requirements:
+// Level 2:  100 XP
+// Level 5:  175 XP
+// Level 10: 404 XP
+// Level 20: 1,637 XP
+// Level 30: 6,621 XP
+// Level 40: 26,786 XP
+// Level 50: 108,366 XP
+
+// Total XP to reach level 50: ~500,000 XP
+```
+
+### Resource Costs Scaling
+
+```javascript
+// Buildings scale with tier, not level
+const BUILDING_COSTS = {
+  FARM: {
+    TIER1: { wood: 50, stone: 20 },
+    TIER2: { wood: 150, stone: 80, gold: 100 },
+    TIER3: { wood: 400, stone: 250, gold: 500, essence: 10 }
+  }
+};
+
+// Attribute bonuses reduce costs
+function calculateBuildingCost(buildingType, tier, player) {
+  const baseCost = BUILDING_COSTS[buildingType][tier];
+  const reduction = Math.min(0.30, player.attributes.construction * 0.01);
+
+  const finalCost = {};
+  for (const [resource, amount] of Object.entries(baseCost)) {
+    finalCost[resource] = Math.floor(amount * (1 - reduction));
+  }
+
+  return finalCost;
+}
+
+// Example: Tier 2 Farm with 60 Construction
+// Base: 150 wood, 80 stone, 100 gold
+// Reduction: 30% (capped)
+// Final: 105 wood, 56 stone, 70 gold
+```
+
+---
+
+## Revised Timeline
+
+### MVP Timeline: 4-5 Weeks
+
+```
+Phase 0: Integration Audit         (Week 1)
+  ↓
+Phase 1: Core Attributes            (Week 2)
+  ↓
+Phase 2: Settlement Skill Tree      (Week 3)
+  ↓
+Phase 3: Character UI               (Week 4)
+  ↓
+Phase 4: Testing & Polish           (Week 5)
+  ↓
+=== MVP RELEASE ===
+```
+
+### Detailed MVP Phase Breakdown
+
+#### Phase 0: Integration Audit (Week 1)
+**Days 1-2:** Map all touchpoints
+**Day 3:** Write integration tests
+**Day 4:** Design migration strategy
+**Day 5:** API design and risk assessment
+
+**Deliverables:**
+- ✅ Integration map
+- ✅ Integration test suite (failing tests)
+- ✅ Save version manager
+- ✅ API specifications
+
+---
+
+#### Phase 1: Core Attributes (Week 2)
+**Days 1-2:** Attribute system backend
+**Day 3:** Derived stats calculator
+**Day 4:** Integration with existing systems
+**Day 5:** Save/load with versioning
+
+**Files Created:**
+- `src/modules/character/AttributeSystem.js`
+- `src/modules/character/DerivedStatsCalculator.js`
+- `src/persistence/SaveVersionManager.js`
+- `src/utils/integrations/CombatIntegration.js`
+- `src/utils/integrations/NPCIntegration.js`
+
+**Deliverables:**
+- ✅ 6 attributes working
+- ✅ Stat calculations correct
+- ✅ Save v1 → v2 migration working
+- ✅ Integration tests passing
+
+---
+
+#### Phase 2: Settlement Skill Tree (Week 3)
+**Days 1-2:** Skill tree system backend
+**Day 3:** Passive skill effects
+**Day 4:** Active skill activation
+**Day 5:** Skill data (JSON)
+
+**Files Created:**
+- `src/modules/character/SkillTreeSystem.js`
+- `src/modules/character/SkillNode.js`
+- `src/modules/character/PassiveEffects.js`
+- `src/modules/character/SkillActivation.js`
+- `src/data/skillTrees/settlementTree.json`
+
+**Deliverables:**
+- ✅ 30 settlement skills defined
+- ✅ Passive effects applying
+- ✅ Active skills working (Rally Cry, etc.)
+- ✅ Skill point allocation logic
+
+---
+
+#### Phase 3: Character UI (Week 4)
+**Days 1-2:** Character sheet component
+**Day 3:** Attribute allocation UI
+**Day 4:** Skill tree visualization
+**Day 5:** Polish and mobile responsiveness
+
+**Files Created:**
+- `src/components/character/CharacterSheet.jsx`
+- `src/components/character/AttributePanel.jsx`
+- `src/components/character/StatsDisplay.jsx`
+- `src/components/character/SkillTreeUI.jsx`
+- `src/styles/CharacterSheet.css`
+
+**Deliverables:**
+- ✅ Character sheet UI (press 'C')
+- ✅ Attribute allocation interface
+- ✅ Skill tree interface
+- ✅ Stat tooltips
+- ✅ Mobile-responsive design
+
+---
+
+#### Phase 4: Testing & Polish (Week 5)
+**Days 1-2:** Bug fixing
+**Day 3:** Balance testing
+**Day 4:** Performance optimization
+**Day 5:** Documentation and tutorial updates
+
+**Deliverables:**
+- ✅ All integration tests passing
+- ✅ Performance budgets met
+- ✅ Balance feels good
+- ✅ Tutorial updated for character system
+- ✅ Documentation complete
+
+---
+
+### Post-MVP Timeline
+
+**Post-MVP Phase 1:** Explorer + Combat Trees (3 weeks)
+**Post-MVP Phase 2:** Equipment Enhancements (2 weeks)
+**Post-MVP Phase 3:** Enhanced Inventory (1 week)
+**Post-MVP Phase 4:** Character Customization (2 weeks)
+**Post-MVP Phase 5:** Advanced Features (2 weeks)
+
+**Total Post-MVP:** 10 weeks
+
+**Grand Total:** 5 weeks (MVP) + 10 weeks (Post-MVP) = 15 weeks
 
 ---
 
 ## Testing Strategy
 
+### Test-Driven Integration (Phase 0)
+
+**Write integration tests FIRST:**
+
+```javascript
+// src/modules/character/__tests__/AttributeIntegration.test.js
+
+describe('Attribute System Integration', () => {
+  test('Leadership attribute increases NPC efficiency', () => {
+    const player = createPlayer();
+    player.character.attributes.leadership = 50;
+
+    const npc = createNPC();
+    const efficiency = calculateNPCEfficiency(npc, player);
+
+    expect(efficiency).toBe(1.50); // 150% efficiency
+  });
+
+  test('Construction attribute reduces building costs', () => {
+    const player = createPlayer();
+    player.character.attributes.construction = 60;
+
+    const cost = calculateBuildingCost('FARM', player);
+
+    // Base cost: 100 wood
+    // 60 construction = 30% reduction (capped)
+    expect(cost.wood).toBe(70);
+  });
+
+  test('Combat attribute scales physical damage', () => {
+    const player = createPlayer();
+    player.character.attributes.combat = 40;
+
+    const damage = calculatePhysicalDamage(player);
+
+    // Base: 10 + (40 * 1.5) = 70
+    expect(damage).toBe(70);
+  });
+
+  test('Magic attribute scales spell damage', () => {
+    const player = createPlayer();
+    player.character.attributes.magic = 50;
+
+    const spell = { baseDamage: 20 };
+    const damage = calculateSpellDamage(spell, player);
+
+    // 20 * (1 + (50 * 0.02)) = 20 * 2.0 = 40
+    expect(damage).toBe(40);
+  });
+});
+```
+
 ### Unit Tests
 
-**Attribute System Tests:**
 ```javascript
+// src/modules/character/__tests__/AttributeSystem.test.js
+
 describe('AttributeSystem', () => {
-  test('calculates derived stats correctly', () => {
-    const attrs = { strength: 50, dexterity: 30, ... };
-    const stats = calculateDerivedStats(attrs);
-    expect(stats.meleeDamage).toBe(110); // 10 base + (50 * 2)
-  });
-
-  test('respects soft caps', () => {
-    const attrs = { strength: 150, ... };
-    const bonus = getAttributeBonus('strength', 150);
-    expect(bonus).toBeLessThan(150 * 2); // Diminishing returns
-  });
-
-  test('allocates points correctly', () => {
+  test('allocates attribute points correctly', () => {
     const character = createCharacter();
-    allocateAttribute(character, 'strength', 5);
-    expect(character.attributes.strength).toBe(15);
-    expect(character.attributePoints).toBe(0);
+    const attributeSystem = new AttributeSystem(character);
+
+    attributeSystem.allocate('leadership', 5);
+
+    expect(character.attributes.leadership).toBe(15); // 10 + 5
+    expect(character.attributePoints).toBe(0); // 5 - 5
+  });
+
+  test('prevents over-allocation', () => {
+    const character = createCharacter();
+    character.attributePoints = 3;
+    const attributeSystem = new AttributeSystem(character);
+
+    expect(() => {
+      attributeSystem.allocate('combat', 5);
+    }).toThrow('Not enough attribute points');
+  });
+
+  test('applies soft caps correctly', () => {
+    const character = createCharacter();
+    character.attributes.strength = 120;
+
+    const effectiveValue = getAttributeBonus('strength', 120);
+
+    // 50 * 1.0 + 50 * 0.75 + 20 * 0.50 = 97.5
+    expect(effectiveValue).toBe(97.5);
+  });
+
+  test('calculates derived stats correctly', () => {
+    const character = createCharacter();
+    character.attributes.endurance = 50;
+
+    const maxHealth = calculateMaxHealth(character.attributes);
+
+    // 100 + (50 * 15) = 850
+    expect(maxHealth).toBe(850);
   });
 });
 ```
 
-**Skill Tree Tests:**
+### Skill Tree Tests
+
 ```javascript
+// src/modules/character/__tests__/SkillTreeSystem.test.js
+
 describe('SkillTreeSystem', () => {
+  test('allocates skill points correctly', () => {
+    const character = createCharacter();
+    character.skillPoints = 5;
+    const skillTree = new SkillTreeSystem(character);
+
+    skillTree.allocateSkill('settlement', 'efficientBuilder', 1);
+
+    expect(character.skills.settlement).toContainEqual({
+      id: 'efficientBuilder',
+      points: 1
+    });
+    expect(character.skillPoints).toBe(4);
+  });
+
   test('validates prerequisites', () => {
-    const canAllocate = checkSkillRequirements('whirlwind', character);
-    expect(canAllocate).toBe(false); // Requires 5 points in combat tree
+    const character = createCharacter();
+    const skillTree = new SkillTreeSystem(character);
+
+    // Try to allocate tier 2 skill without prerequisites
+    expect(() => {
+      skillTree.allocateSkill('settlement', 'masterBuilder', 2);
+    }).toThrow('Prerequisites not met');
   });
 
-  test('applies passive effects', () => {
-    allocateSkill(character, 'powerStrike', 3);
-    const damage = calculateMeleeDamage(character);
-    expect(damage).toBeGreaterThan(baseDamage);
+  test('validates tier requirements', () => {
+    const character = createCharacter();
+    character.level = 5; // Too low for tier 2
+    const skillTree = new SkillTreeSystem(character);
+
+    expect(() => {
+      skillTree.allocateSkill('settlement', 'masterBuilder', 2);
+    }).toThrow('Level too low for this skill');
   });
 
-  test('tracks skill points correctly', () => {
-    const initialPoints = character.skillPoints;
-    allocateSkill(character, 'arcaneKnowledge', 1);
-    expect(character.skillPoints).toBe(initialPoints - 1);
+  test('applies passive skill effects', () => {
+    const character = createCharacter();
+    const skillTree = new SkillTreeSystem(character);
+
+    skillTree.allocateSkill('settlement', 'inspiringLeader', 1);
+
+    const npcEfficiency = calculateNPCEfficiency(character);
+
+    // Base 1.0 + 5% from skill = 1.05
+    expect(npcEfficiency).toBe(1.05);
   });
 });
 ```
 
-### Integration Tests
+### Save Migration Tests
 
-**Combat Integration:**
-- Test attribute scaling in combat
-- Test passive skill bonuses apply
-- Test active skills execute correctly
-- Test ultimate abilities work
+```javascript
+// src/persistence/__tests__/SaveVersionManager.test.js
 
-**UI Integration:**
-- Test character sheet displays correctly
-- Test skill allocation UI works
-- Test stat recalculation on changes
-- Test save/load preserves character data
+describe('SaveVersionManager', () => {
+  test('migrates v1 to v2 correctly', () => {
+    const v1Save = {
+      player: { level: 10, health: 100, xp: 1000 }
+    };
 
-### Manual Testing Checklist
+    const v2Save = SaveVersionManager.migrate(v1Save);
 
-**Character Progression:**
-- [ ] Level up awards correct points
-- [ ] Attributes allocate correctly
-- [ ] Skills allocate correctly
-- [ ] Stats calculate correctly
-- [ ] Respecs work properly
+    expect(v2Save.version).toBe(2);
+    expect(v2Save.character).toBeDefined();
+    expect(v2Save.character.attributePoints).toBe(50); // 10 levels * 5 points
+    expect(v2Save.character.skillPoints).toBe(20); // 10 levels * 2 points
+  });
 
-**UI/UX:**
-- [ ] Character sheet opens (C key)
-- [ ] Skill tree navigates smoothly
-- [ ] Tooltips display correctly
-- [ ] Mobile layout works
-- [ ] Performance is acceptable
+  test('backs up save before migration', () => {
+    const v1Save = {
+      player: { level: 5, health: 100 }
+    };
 
-**Balance:**
-- [ ] Early game feels balanced
-- [ ] Mid game progression smooth
-- [ ] Late game not overpowered
-- [ ] Skill choices feel meaningful
-- [ ] No obvious exploits
+    SaveVersionManager.migrate(v1Save);
 
----
+    const backups = SaveVersionManager.listBackups(1);
+    expect(backups.length).toBeGreaterThan(0);
+  });
 
-## Timeline & Resources
+  test('validates save structure', () => {
+    const validSave = {
+      version: 2,
+      character: { attributes: {}, skills: {} }
+    };
 
-### Estimated Timeline
+    const isValid = SaveVersionManager.validateSave(validSave);
+    expect(isValid).toBe(true);
+  });
 
-| Phase | Duration | Dependencies |
-|-------|----------|--------------|
-| Phase 1: Foundation | 2-3 weeks | None |
-| Phase 2: Menus & UI | 2 weeks | Phase 1 complete |
-| Phase 3: Skill Trees | 3-4 weeks | Phase 1 complete |
-| Phase 4: Inventory | 1-2 weeks | Phase 1 complete |
-| Phase 5: Polish | 1-2 weeks | All phases complete |
-| **Total** | **9-13 weeks** | - |
+  test('rolls back to previous version', () => {
+    const v1Save = { player: { level: 5 } };
+    SaveVersionManager.backupSave(v1Save, 1);
 
-### Resource Requirements
+    const rolledBack = SaveVersionManager.rollbackToVersion(1);
 
-**Developer Time:**
-- Backend systems: 4-5 weeks
-- UI development: 3-4 weeks
-- Balance/testing: 2-3 weeks
-- **Total:** 9-12 weeks full-time
+    expect(rolledBack.player.level).toBe(5);
+  });
+});
+```
 
-**Assets Needed:**
-- Skill tree icons: 100+ icons
-- UI layouts: 5-6 screens
-- Sound effects: 20+ sounds (skill activation, levelup, etc.)
-- Particle effects: 10+ effects
+### Performance Tests
 
-**External Dependencies:**
-- None (uses existing systems)
+```javascript
+// src/modules/character/__tests__/Performance.test.js
 
-### Milestones
+describe('Performance Tests', () => {
+  test('stat calculation completes in <5ms', () => {
+    const start = performance.now();
 
-**Milestone 1: Attributes Working (Week 3)**
-- Attributes allocatable
-- Stats scale with attributes
-- Save/load working
+    for (let i = 0; i < 1000; i++) {
+      calculateDerivedStats(mockAttributes, mockSkills, mockEquipment);
+    }
 
-**Milestone 2: UI Complete (Week 5)**
-- Character sheet functional
-- Skill tree UI working
-- All menus accessible
+    const end = performance.now();
+    const avgTime = (end - start) / 1000;
 
-**Milestone 3: Skills Complete (Week 9)**
-- All skills implemented
-- Passive effects working
-- Active skills functional
+    expect(avgTime).toBeLessThan(5);
+  });
 
-**Milestone 4: Feature Complete (Week 11)**
-- Inventory enhanced
-- Sets and sockets working
-- All features integrated
+  test('skill tree render completes in <16ms', () => {
+    const start = performance.now();
 
-**Milestone 5: Release Ready (Week 13)**
-- Balanced gameplay
-- Bugs fixed
-- Documentation complete
+    render(<SkillTreeUI tree={mockTree} />);
+
+    const end = performance.now();
+    const renderTime = end - start;
+
+    expect(renderTime).toBeLessThan(16);
+  });
+
+  test('character sheet opens in <8ms', () => {
+    const start = performance.now();
+
+    render(<CharacterSheet player={mockPlayer} />);
+
+    const end = performance.now();
+    const renderTime = end - start;
+
+    expect(renderTime).toBeLessThan(8);
+  });
+});
+```
 
 ---
 
-## Success Metrics
+## Risk Mitigation
 
-### Player Engagement Metrics
+### Technical Risks & Solutions
 
-**Primary Metrics:**
-- Average play session length: +30%
-- Player retention (7-day): +25%
-- Number of characters created per player: 2+
+#### Risk 1: Breaking Existing Combat
+**Severity:** High
+**Probability:** Medium
 
-**Secondary Metrics:**
-- Skill tree exploration rate: 80%+ of players allocate skills
-- Character sheet open rate: 90%+ of players view stats
-- Respec usage: 30%+ of players respec at least once
+**Mitigation:**
+- Feature flag: `ENABLE_CHARACTER_SYSTEM=false` in config
+- Gradual rollout: Enable for testing, disable for production initially
+- Integration tests catch regressions
+- Keep old stat calculations as fallback
 
-### Feature Adoption Metrics
+**Contingency:**
+- Immediate rollback via feature flag
+- Revert to pre-character system build
+- Restore saves from backups
 
-**Attribute System:**
-- 95%+ of players allocate attributes
-- Average time to first allocation: <5 minutes
-- Attribute respecs per player: 0.5 average
+---
 
-**Skill Trees:**
-- 90%+ of players allocate skills
-- Average skills unlocked per playthrough: 25-30
-- Most popular tree: Track and analyze
-- Capstone reach rate: 40%+ of players
+#### Risk 2: Save File Corruption
+**Severity:** Critical
+**Probability:** Low
 
-**Inventory System:**
-- Item comparison usage: 70%+ of players
-- Quick-slot usage: 60%+ of players
-- Set bonus achievement: 30%+ of players
+**Mitigation:**
+- Save versioning system (Phase 0)
+- Automatic backups before every save
+- Validation before and after migration
+- Recovery mode UI
 
-### Technical Metrics
+**Contingency:**
+- Recovery mode lists all backups
+- Manual restore from backup
+- Support tool to fix corrupted saves
 
-**Performance:**
-- Character sheet load time: <100ms
-- Skill tree render time: <50ms
-- Stat calculation time: <10ms
+---
+
+#### Risk 3: Performance Regression
+**Severity:** Medium
+**Probability:** Low
+
+**Mitigation:**
+- Performance budgets defined upfront
+- Stat caching system
+- Performance tests in CI/CD
+- Profiling during development
+
+**Contingency:**
+- Identify bottlenecks with profiler
+- Optimize hot paths
+- Disable expensive features if needed
+
+---
+
+#### Risk 4: Balance Issues
+**Severity:** Medium
+**Probability:** High
+
+**Mitigation:**
+- Data-driven configs (easy to adjust)
+- Balance testing with varied builds
+- Community beta testing
+- Configurable multipliers
+
+**Contingency:**
+- Hot-fix config values without code changes
+- Respec tokens for affected players
+- Balance patch within 48 hours
+
+---
+
+#### Risk 5: Scope Creep
+**Severity:** High
+**Probability:** High
+
+**Mitigation:**
+- MVP scope clearly defined
+- Feature lock after Phase 0
+- Post-MVP roadmap for additional features
+- Regular progress reviews
+
+**Contingency:**
+- Cut non-MVP features ruthlessly
+- Ship MVP first, iterate later
+- Prioritize based on player feedback
+
+---
+
+### UX Risks & Solutions
+
+#### Risk 6: Complexity Overwhelm
+**Severity:** High
+**Probability:** Medium
+
+**Mitigation:**
+- Progressive unlocking (skills unlock as you level)
+- Enhanced tutorial system
+- Tooltips on everything
+- Recommended builds for new players
+
+**Contingency:**
+- Add "Simple Mode" toggle (auto-allocate points)
+- In-game build guides
+- Community build library
+
+---
+
+#### Risk 7: Mobile UX Issues
+**Severity:** Medium
+**Probability:** Medium
+
+**Mitigation:**
+- Mobile-first design
+- Touch-friendly UI elements
+- Simplified mobile layouts
+- Early mobile testing
+
+**Contingency:**
+- Separate mobile skill tree UI
+- Swipe gestures for navigation
+- Bottom-sheet menus
+
+---
+
+## Missing Features (Added)
+
+### Feature 1: Skill Loadouts
+
+**Description:** Save and quickly swap between different skill configurations.
+
+**Use Cases:**
+- Dungeon build (Explorer tree focused)
+- Boss fight build (Combat tree focused)
+- Settlement build (Settlement tree focused)
+- Hybrid builds
+
+**Implementation (Post-MVP):**
+```javascript
+// Skill loadout system
+class SkillLoadoutManager {
+  saveLoadout(name, character) {
+    const loadout = {
+      name,
+      attributes: { ...character.attributes },
+      skills: { ...character.skills },
+      timestamp: Date.now()
+    };
+
+    character.loadouts = character.loadouts || [];
+    character.loadouts.push(loadout);
+
+    return loadout;
+  }
+
+  loadLoadout(character, loadoutName) {
+    const loadout = character.loadouts.find(l => l.name === loadoutName);
+    if (!loadout) throw new Error('Loadout not found');
+
+    // Calculate respec cost
+    const cost = this.calculateRespecCost(character);
+
+    // Apply loadout
+    character.attributes = { ...loadout.attributes };
+    character.skills = { ...loadout.skills };
+
+    // Recalculate derived stats
+    recalculateStats(character);
+
+    return loadout;
+  }
+
+  shareLoadout(loadout) {
+    // Generate shareable code
+    const compressed = compressLoadout(loadout);
+    const code = encodeBase64(compressed);
+    return code;
+  }
+
+  importLoadout(code) {
+    const compressed = decodeBase64(code);
+    const loadout = decompressLoadout(compressed);
+    return loadout;
+  }
+}
+```
+
+**UI:**
+- Loadout manager in character sheet
+- Quick-swap dropdown (Ctrl+1, Ctrl+2, Ctrl+3 for hotkeys)
+- Share/import via code
+- Community build library (future)
+
+---
+
+### Feature 2: Skill Preview Mode
+
+**Description:** Test skills before committing points.
+
+**Implementation (Post-MVP):**
+```javascript
+// Training dummy system
+class TrainingDummy {
+  constructor() {
+    this.health = 1000;
+    this.maxHealth = 1000;
+    this.damageLog = [];
+  }
+
+  reset() {
+    this.health = this.maxHealth;
+    this.damageLog = [];
+  }
+
+  takeDamage(damage, source) {
+    this.health -= damage;
+    this.damageLog.push({
+      damage,
+      source,
+      timestamp: Date.now()
+    });
+  }
+
+  getDPS() {
+    if (this.damageLog.length === 0) return 0;
+
+    const firstHit = this.damageLog[0].timestamp;
+    const lastHit = this.damageLog[this.damageLog.length - 1].timestamp;
+    const duration = (lastHit - firstHit) / 1000;
+
+    const totalDamage = this.damageLog.reduce((sum, hit) => sum + hit.damage, 0);
+
+    return totalDamage / duration;
+  }
+}
+
+// Skill simulator
+class SkillSimulator {
+  previewSkill(character, skillId, points) {
+    // Create temporary character with skill allocated
+    const tempCharacter = cloneDeep(character);
+    allocateSkill(tempCharacter, skillId, points);
+
+    // Calculate stats with skill
+    const statsWithSkill = calculateDerivedStats(tempCharacter);
+
+    // Calculate stats without skill
+    const statsWithout = calculateDerivedStats(character);
+
+    // Show difference
+    return {
+      statsWithSkill,
+      statsWithout,
+      difference: calculateDifference(statsWithSkill, statsWithout)
+    };
+  }
+}
+```
+
+**UI:**
+- Training dummy building in settlement
+- Skill preview tooltip (shows stats with/without skill)
+- DPS meter
+- Skill comparison mode
+
+---
+
+### Feature 3: Progression Visualization
+
+**Description:** Show players their character's journey over time.
+
+**Implementation (Post-MVP):**
+```javascript
+// Track character progression
+class ProgressionTracker {
+  constructor(character) {
+    this.character = character;
+    this.snapshots = [];
+  }
+
+  takeSnapshot() {
+    const snapshot = {
+      level: this.character.level,
+      attributes: { ...this.character.attributes },
+      skills: { ...this.character.skills },
+      stats: calculateDerivedStats(this.character),
+      timestamp: Date.now()
+    };
+
+    this.snapshots.push(snapshot);
+    return snapshot;
+  }
+
+  getProgressionGraph(statName) {
+    return this.snapshots.map(snapshot => ({
+      level: snapshot.level,
+      value: snapshot.stats[statName],
+      timestamp: snapshot.timestamp
+    }));
+  }
+
+  getBuildEvolution() {
+    return this.snapshots.map(snapshot => ({
+      level: snapshot.level,
+      attributes: snapshot.attributes,
+      skills: snapshot.skills,
+      timestamp: snapshot.timestamp
+    }));
+  }
+}
+```
+
+**UI:**
+- Progression tab in character sheet
+- Timeline visualization
+- Stat graphs (damage, health, etc. over time)
+- Build evolution tree
+- Milestones and achievements
+
+**Visualizations:**
+- Line graph: Stat values over time
+- Radar chart: Attribute distribution at different levels
+- Tree diagram: Skill allocation history
+- Heatmap: Most-used abilities
+
+---
+
+## Conclusion: Ship MVP, Then Iterate
+
+### Why This Approach Works
+
+**Benefits of MVP-First:**
+1. **Faster Validation** - Test core systems with real players
+2. **Reduced Risk** - Smaller scope = fewer bugs
+3. **Player Feedback** - Learn what players actually want
+4. **Iterative Improvement** - Add features based on data
+5. **Avoid Over-Engineering** - Build what's needed, not what's imagined
+
+### MVP Success Criteria
+
+**Shipping MVP if:**
+- ✅ Attributes affect gameplay meaningfully
+- ✅ Settlement skill tree provides 10+ hours of progression
+- ✅ Character sheet UI is intuitive
+- ✅ Save/load works flawlessly
+- ✅ Performance budgets met
+- ✅ No critical bugs
+
+### Post-MVP Roadmap Priority
+
+**Based on Player Feedback:**
+1. If players love settlement building → Expand Settlement tree first
+2. If players want more combat depth → Add Combat tree
+3. If players want exploration → Add Explorer tree
+4. If players want customization → Add appearance system
+
+**Data-Driven Decisions:**
+- Track which skills are most used
+- Monitor respec frequency
+- Measure engagement with skill tree
+- Survey players on desired features
+
+---
+
+## Final Thoughts
+
+This revised plan addresses all major concerns from Claude Opus:
+- ✅ **Reduced scope by 50%** - MVP in 5 weeks instead of 13
+- ✅ **Added Phase 0** - Integration audit prevents technical debt
+- ✅ **Game-specific attributes** - Aligned with settlement/exploration gameplay
+- ✅ **Simplified abilities** - Max 8 active abilities
+- ✅ **Fixed scaling** - Linear + percentage instead of exponential
+- ✅ **Save versioning** - Protected player data from day one
+- ✅ **Performance budgets** - Clear optimization targets
+- ✅ **Missing features added** - Loadouts, preview mode, progression viz
+
+**Key Philosophy:**
+> "Ship 30 amazing skills instead of 90 mediocre ones."
+
+**Next Steps:**
+1. Review and approve revised plan
+2. Start Phase 0: Integration Audit
+3. Build MVP (Weeks 1-5)
+4. Gather player feedback
+5. Iterate based on data
+
+---
+
+## Appendix: Quick Reference
+
+### MVP Scope Summary
+
+**Included:**
+- 6 game-specific attributes
+- Settlement skill tree (30 nodes)
+- Basic character sheet UI
+- Save versioning system
+- Core integrations
+
+**Excluded (Post-MVP):**
+- Explorer and Combat trees
+- Equipment sets and sockets
+- Item rarity tiers
+- Character customization
+- Class system
+- Advanced features
+
+### Timeline Summary
+
+**MVP:** 5 weeks
+**Post-MVP:** 10 weeks (optional, iterative)
+**Total:** 5-15 weeks depending on scope
+
+### Performance Budget Summary
+
+- Stat calculation: <5ms
+- Character sheet render: <8ms
+- Skill tree render: <16ms
 - Memory overhead: <20MB
 
-**Quality:**
-- Bug reports: <5 critical bugs at launch
-- Test coverage: 80%+ for character systems
-- Save/load success rate: 99.9%+
+### Contact & Review
 
----
+**Document Status:** ✅ Ready for Review (v2.0 with Claude Opus feedback)
+**Next Review Date:** Upon MVP completion
+**Maintained By:** Development Team
 
-## Risk Assessment & Mitigation
-
-### Technical Risks
-
-**Risk 1: Performance Impact**
-- **Severity:** Medium
-- **Probability:** Low
-- **Mitigation:** Profile early, optimize calculations, cache derived stats
-- **Contingency:** Implement lazy loading for UI components
-
-**Risk 2: Save File Compatibility**
-- **Severity:** High
-- **Probability:** Medium
-- **Mitigation:** Implement migration system, extensive testing
-- **Contingency:** Provide manual save conversion tool
-
-**Risk 3: Balance Issues**
-- **Severity:** Medium
-- **Probability:** High
-- **Mitigation:** Extensive playtesting, data-driven configs
-- **Contingency:** Hot-fix system for quick balance adjustments
-
-### Scope Risks
-
-**Risk 4: Feature Creep**
-- **Severity:** High
-- **Probability:** High
-- **Mitigation:** Strict feature lock after Phase 1, MVP approach
-- **Contingency:** Move additional features to post-launch updates
-
-**Risk 5: Timeline Overrun**
-- **Severity:** Medium
-- **Probability:** Medium
-- **Mitigation:** Buffer time in estimates, weekly progress reviews
-- **Contingency:** Cut optional features (class system, item sockets)
-
-### UX Risks
-
-**Risk 6: Complexity Overwhelm**
-- **Severity:** High
-- **Probability:** Medium
-- **Mitigation:** Progressive unlocking, enhanced tutorial system
-- **Contingency:** Add "simplified mode" toggle
-
-**Risk 7: Mobile UX Issues**
-- **Severity:** Medium
-- **Probability:** Medium
-- **Mitigation:** Mobile-first design, early mobile testing
-- **Contingency:** Separate mobile UI layout
-
----
-
-## Next Steps
-
-### Immediate Actions (Before Implementation)
-
-1. **Review & Approve Plan** (1 day)
-   - Stakeholder review
-   - Feedback incorporation
-   - Final approval
-
-2. **Create Detailed Specs** (2-3 days)
-   - Detailed attribute formulas
-   - Complete skill tree definitions
-   - UI mockups and wireframes
-
-3. **Setup Development Environment** (1 day)
-   - Create feature branch
-   - Setup test framework
-   - Create placeholder files
-
-4. **Begin Phase 1** (Week 1)
-   - Start with AttributeSystem.js
-   - Update game store
-   - Write unit tests
-
-### Long-Term Roadmap
-
-**Post-Launch Enhancements:**
-- Talent presets/"builds" sharing
-- Cloud save for character data
-- Leaderboards by build type
-- Seasonal skill tree modifications
-- New skill trees (exploration, crafting, etc.)
-- Advanced class system (prestige classes)
-
----
-
-## Appendix
-
-### Reference Links
-
-**Current Architecture:**
-- See [ARCHITECTURE.md](../../ARCHITECTURE.md)
-- See [DEVELOPMENT_GUIDE.md](../../DEVELOPMENT_GUIDE.md)
-
-**Related Systems:**
-- Equipment system: `src/utils/equipmentStats.js`
-- Spell system: `src/data/spells.js`
-- Inventory UI: `src/components/InventoryUI.jsx`
-- Player entity: `src/modules/player/PlayerEntity.js`
-
-**Similar Implementations:**
-- Diablo 3 skill system (inspiration)
-- Path of Exile skill tree (complexity reference)
-- World of Warcraft talent trees (UX reference)
-
-### Glossary
-
-- **Attribute:** Core character stat (STR, DEX, INT, VIT, WIS, LCK)
-- **Derived Stat:** Calculated stat based on attributes (health, damage, etc.)
-- **Skill Node:** Individual skill in skill tree
-- **Skill Point:** Currency for unlocking skills
-- **Capstone:** Final, powerful skill in each tree
-- **Respec:** Reset character points for reallocation
-- **Set Bonus:** Bonus for equipping multiple pieces of same equipment set
+For questions or feedback on this revised plan, open a GitHub Discussion or Issue.
 
 ---
 
 ## Version History
 
 - **v1.0** (2025-11-21) - Initial plan created
-- Future versions will be tracked here
+- **v2.0** (2025-11-21) - Major revision incorporating Claude Opus feedback
+  - Reduced scope to MVP-first approach
+  - Added Phase 0: Integration Audit
+  - Redesigned attributes (game-specific)
+  - Redesigned skill trees (gameplay-aligned)
+  - Simplified active abilities (8 max)
+  - Fixed exponential scaling
+  - Added save versioning strategy
+  - Added performance budgets
+  - Added missing features (loadouts, preview, visualization)
 
 ---
 
-**Document Status:** ✅ Ready for Review
-**Next Review Date:** Upon implementation start
-**Maintained By:** Development Team
-
-For questions or suggestions, open a GitHub Discussion or Issue.
+**Last Updated:** 2025-11-21
+**Version:** 2.0 (Claude Opus Revision)
+**Status:** 🟢 Ready for Implementation

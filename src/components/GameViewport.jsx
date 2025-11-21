@@ -283,6 +283,7 @@ function GameViewport({
 
   // Monster AI system
   const monsterAIRef = useRef(null);
+  const previousMonsterStatesRef = useRef(new Map()); // Track AI state changes
   if (monsterAIRef.current === null) {
     monsterAIRef.current = new MonsterAI();
   }
@@ -1193,10 +1194,23 @@ function GameViewport({
             };
             monsterAIRef.current.updateAll(monstersRef.current, gameState, elapsed);
 
-            // CRITICAL: Notify Zustand store of monster state changes
-            // AI modifies monsters in-place, but Zustand needs immutable updates
-            // Create new array reference to trigger reactivity
-            useGameStore.setState({ enemies: [...monstersRef.current] });
+            // CRITICAL: Only notify Zustand when monster states actually change
+            // Check if any monster AI state changed since last frame
+            let stateChanged = false;
+            const currentStates = previousMonsterStatesRef.current;
+
+            for (const monster of monstersRef.current) {
+              const prevState = currentStates.get(monster.id);
+              if (prevState !== monster.aiState) {
+                stateChanged = true;
+                currentStates.set(monster.id, monster.aiState);
+              }
+            }
+
+            // Only trigger Zustand update if states changed (not every frame!)
+            if (stateChanged) {
+              useGameStore.setState({ enemies: [...monstersRef.current] });
+            }
           }
 
           // Update monster positions before rendering
@@ -1213,6 +1227,8 @@ function GameViewport({
                 // eslint-disable-next-line no-console
                 console.log(`🗑️ Removing ${monster.name} after death animation (${((now - monster.deathTime) / 1000).toFixed(1)}s ago)`);
                 useGameStore.getState().removeMonster(monster.id);
+                // Clean up state tracking
+                previousMonsterStatesRef.current.delete(monster.id);
               }
             });
           }

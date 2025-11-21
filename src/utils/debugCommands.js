@@ -8,6 +8,7 @@
 
 import { Monster } from '../entities/Monster.js';
 import useGameStore from '../stores/useGameStore.js';
+import './testMonsterAI.js'; // Import test suite
 
 /**
  * Initialize debug commands
@@ -182,6 +183,13 @@ export function initDebugCommands() {
   window.debug.teleportPlayer = (x = 10, z = 10) => {
     const player = useGameStore.getState().player;
     useGameStore.getState().setPlayerPosition([x, player.position[1], z]);
+
+    // CRITICAL: Also update PlayerEntity if it exists (used by Monster AI!)
+    if (window.playerEntity) {
+      window.playerEntity.position.x = x;
+      window.playerEntity.position.z = z;
+    }
+
     console.log(`🚀 Teleported player to (${x}, ${z})`);
   };
 
@@ -191,9 +199,30 @@ export function initDebugCommands() {
    */
   window.debug.getPlayerPos = () => {
     const player = useGameStore.getState().player;
-    const pos = { x: player.position[0], z: player.position[2] };
-    console.log(`📍 Player position: (${pos.x.toFixed(1)}, ${pos.z.toFixed(1)})`);
-    return pos;
+    const storePos = { x: player.position[0], z: player.position[2] };
+
+    console.log(`📍 Player Position:`);
+    console.log(`   Store:  (${storePos.x.toFixed(1)}, ${storePos.z.toFixed(1)})`);
+
+    if (window.playerEntity) {
+      const entityPos = window.playerEntity.position;
+      console.log(`   Entity: (${entityPos.x.toFixed(1)}, ${entityPos.z.toFixed(1)}) ← AI uses this!`);
+
+      // Check if they match
+      const diff = Math.sqrt(
+        Math.pow(storePos.x - entityPos.x, 2) +
+        Math.pow(storePos.z - entityPos.z, 2)
+      );
+      if (diff > 0.1) {
+        console.warn(`   ⚠️  WARNING: Store and Entity positions differ by ${diff.toFixed(2)} tiles!`);
+      } else {
+        console.log(`   ✅ Synchronized`);
+      }
+    } else {
+      console.warn(`   ⚠️  PlayerEntity not found (GameViewport not running?)`);
+    }
+
+    return storePos;
   };
 
   /**
@@ -314,15 +343,22 @@ Manage Monsters:
 Utility:
   debug.getPlayerPos()
   debug.teleportPlayer(x, z)
-  debug.checkMonsterPipeline()  👈 NEW! Check if monsters are rendering
+  debug.checkMonsterPipeline()
+
+Testing (NEW!):
+  testMonsterAI.quick()         // Quick verification test
+  testMonsterAI.runAll()        // Full automated test suite
+  testMonsterAI.aggro()         // Test aggro detection
+  testMonsterAI.patrol()        // Test patrol behavior
+  testMonsterAI.attack()        // Test attack behavior
+  testMonsterAI.flee()          // Test flee behavior
 
 Examples:
+  testMonsterAI.quick()  // Run quick test
   debug.checkMonsterPipeline()  // Diagnose rendering issues
   debug.testAI('SLIME')  // Watch monster chase and attack!
   debug.spawnPatrolMonster('GOBLIN', 15, 15, 8, 2)  // Patrol in 8x8 square
   debug.spawnNearPlayer('GOBLIN', 8, 2)  // Spawn 8 tiles away
-  debug.spawnMonster('SLIME', 10, 10, 1)
-  debug.spawnMonsterCircle('GOBLIN', 5, 15, 15, 8, 2)
 
 Monster Types: SLIME, GOBLIN, WOLF, SKELETON, ORC
 Modifiers: ELITE, FAST, TANK, BERSERKER

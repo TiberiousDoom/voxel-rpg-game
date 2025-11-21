@@ -168,14 +168,14 @@ export const useTerrainRenderer = (options = {}) => {
         }
 
         if (!tilesByColor.has(colorKey)) {
-          tilesByColor.set(colorKey, { color, tiles: [] });
+          tilesByColor.set(colorKey, { color, height, tiles: [] });
         }
         tilesByColor.get(colorKey).tiles.push({ x, z });
       }
     }
 
     // Render tiles grouped by color (minimizes state changes)
-    tilesByColor.forEach(({ color, tiles }) => {
+    tilesByColor.forEach(({ color, height, tiles }) => {
       ctx.fillStyle = color;
 
       tiles.forEach(({ x, z }) => {

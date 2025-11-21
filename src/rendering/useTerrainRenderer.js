@@ -3,17 +3,68 @@
  *
  * Renders procedurally generated terrain with:
  * - Color-coded height visualization
+ * - Biome-based coloring
  * - Chunk-based rendering with viewport culling
- * - Biome-based coloring (Phase 2+)
  * - Performance optimized for 60 FPS
  *
  * Part of Phase 1: Core Terrain Generation System
+ * Enhanced in Phase 2: Biome Visualization
  */
 
 import { useCallback, useRef, useMemo } from 'react';
 
 /**
- * Get terrain tile color based on height
+ * Biome color palette
+ * Maps biome types to RGB colors
+ */
+const BiomeColors = {
+  ocean: 'rgb(0, 105, 148)',        // Deep blue
+  beach: 'rgb(238, 214, 175)',      // Sandy beige
+  plains: 'rgb(124, 252, 0)',       // Bright green
+  forest: 'rgb(34, 139, 34)',       // Forest green
+  desert: 'rgb(210, 180, 140)',     // Tan
+  tundra: 'rgb(230, 230, 250)',     // Light lavender
+  mountains: 'rgb(139, 137, 137)',  // Gray
+  hills: 'rgb(107, 142, 35)'        // Olive green
+};
+
+/**
+ * Water rendering constants
+ */
+const WaterColor = 'rgba(30, 144, 255, 0.7)';  // Dodger blue with transparency
+const DeepWaterColor = 'rgba(0, 105, 148, 0.8)';  // Deeper blue
+const WaterLevel = 3;  // Tiles at or below this height are underwater
+
+/**
+ * Get terrain tile color based on biome
+ *
+ * @param {string} biome - Biome type
+ * @param {number} height - Height value for shading variation
+ * @param {number} minHeight - Minimum height (default: 0)
+ * @param {number} maxHeight - Maximum height (default: 10)
+ * @returns {string} RGB color string
+ */
+const getBiomeColor = (biome, height, minHeight = 0, maxHeight = 10) => {
+  const baseColor = BiomeColors[biome] || BiomeColors.plains;
+
+  // Add height-based shading for depth (±15% brightness)
+  const heightRatio = (height - minHeight) / (maxHeight - minHeight);
+  const shadeFactor = 0.85 + (heightRatio * 0.3); // 0.85 to 1.15
+
+  // Parse RGB and apply shading
+  const match = baseColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (match) {
+    const r = Math.min(255, Math.floor(parseInt(match[1]) * shadeFactor));
+    const g = Math.min(255, Math.floor(parseInt(match[2]) * shadeFactor));
+    const b = Math.min(255, Math.floor(parseInt(match[3]) * shadeFactor));
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  return baseColor;
+};
+
+/**
+ * Get terrain tile color based on height only (Phase 1 style)
  * Uses green gradient from dark (low) to light (high)
  *
  * @param {number} height - Height value (0-10)
@@ -41,10 +92,10 @@ const getHeightColor = (height, minHeight = 0, maxHeight = 10) => {
  *
  * @param {object} options - Rendering options
  * @param {number} options.tileSize - Size of each tile in pixels
- * @param {boolean} options.showGrid - Show height values on tiles (default: false)
  * @param {boolean} options.showHeightNumbers - Show numeric height values (default: false)
  * @param {number} options.minHeight - Minimum terrain height (default: 0)
  * @param {number} options.maxHeight - Maximum terrain height (default: 10)
+ * @param {string} options.colorMode - 'height' or 'biome' (default: 'biome')
  * @returns {object} Rendering functions
  */
 export const useTerrainRenderer = (options = {}) => {
@@ -52,22 +103,26 @@ export const useTerrainRenderer = (options = {}) => {
     tileSize = 40,
     showHeightNumbers = false,
     minHeight = 0,
-    maxHeight = 10
+    maxHeight = 10,
+    colorMode = 'biome'  // 'height' or 'biome'
   } = options;
 
   // Cache for tile colors to avoid recalculation
   const colorCacheRef = useRef(new Map());
 
   /**
-   * Get cached color for height value
+   * Get cached color for tile (height-based or biome-based)
    */
-  const getCachedColor = useCallback((height) => {
-    const key = `${height}`;
+  const getCachedColor = useCallback((height, biome = null) => {
+    const key = colorMode === 'biome' ? `${biome}_${height}` : `${height}`;
     if (!colorCacheRef.current.has(key)) {
-      colorCacheRef.current.set(key, getHeightColor(height, minHeight, maxHeight));
+      const color = colorMode === 'biome' && biome
+        ? getBiomeColor(biome, height, minHeight, maxHeight)
+        : getHeightColor(height, minHeight, maxHeight);
+      colorCacheRef.current.set(key, color);
     }
     return colorCacheRef.current.get(key);
-  }, [minHeight, maxHeight]);
+  }, [minHeight, maxHeight, colorMode]);
 
   /**
    * Render terrain within viewport bounds
@@ -76,9 +131,10 @@ export const useTerrainRenderer = (options = {}) => {
    * @param {TerrainManager} terrainManager - Terrain manager instance
    * @param {function} worldToCanvas - World to canvas coordinate converter
    * @param {object} viewportBounds - Visible area {left, right, top, bottom}
+   * @param {object} worldGenerator - World generator for biome data (optional)
    * @returns {number} Number of tiles rendered
    */
-  const renderTerrain = useCallback((ctx, terrainManager, worldToCanvas, viewportBounds) => {
+  const renderTerrain = useCallback((ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator = null) => {
     if (!ctx || !terrainManager || !worldToCanvas) return 0;
 
     let tilesRendered = 0;
@@ -92,23 +148,34 @@ export const useTerrainRenderer = (options = {}) => {
     ctx.save();
 
     // Batch rendering for performance
-    // Group tiles by height to minimize fillStyle changes
-    const tilesByHeight = new Map();
+    // Group tiles by color key (height or biome+height)
+    const tilesByColor = new Map();
 
     for (let z = startZ; z <= endZ; z++) {
       for (let x = startX; x <= endX; x++) {
         const height = terrainManager.getHeight(x, z);
 
-        if (!tilesByHeight.has(height)) {
-          tilesByHeight.set(height, []);
+        // Get biome if in biome mode and worldGenerator available
+        let colorKey;
+        let color;
+        if (colorMode === 'biome' && worldGenerator) {
+          const biome = worldGenerator.getBiome(x, z);
+          colorKey = `${biome}_${height}`;
+          color = getCachedColor(height, biome);
+        } else {
+          colorKey = `${height}`;
+          color = getCachedColor(height);
         }
-        tilesByHeight.get(height).push({ x, z });
+
+        if (!tilesByColor.has(colorKey)) {
+          tilesByColor.set(colorKey, { color, tiles: [] });
+        }
+        tilesByColor.get(colorKey).tiles.push({ x, z });
       }
     }
 
-    // Render tiles grouped by height (minimizes state changes)
-    tilesByHeight.forEach((tiles, height) => {
-      const color = getCachedColor(height);
+    // Render tiles grouped by color (minimizes state changes)
+    tilesByColor.forEach(({ color, tiles }) => {
       ctx.fillStyle = color;
 
       tiles.forEach(({ x, z }) => {
@@ -143,7 +210,7 @@ export const useTerrainRenderer = (options = {}) => {
     ctx.restore();
 
     return tilesRendered;
-  }, [tileSize, showHeightNumbers, getCachedColor]);
+  }, [tileSize, showHeightNumbers, getCachedColor, colorMode]);
 
   /**
    * Render terrain chunk borders (debug visualization)
@@ -246,10 +313,84 @@ export const useTerrainRenderer = (options = {}) => {
     ctx.restore();
   }, [minHeight, maxHeight, getCachedColor]);
 
+  /**
+   * Render water overlay on terrain
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {TerrainManager} terrainManager - Terrain manager instance
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   * @param {object} viewportBounds - Visible area {left, right, top, bottom}
+   * @returns {number} Number of water tiles rendered
+   */
+  const renderWater = useCallback((ctx, terrainManager, worldToCanvas, viewportBounds) => {
+    if (!ctx || !terrainManager || !worldToCanvas) return 0;
+
+    let waterTilesRendered = 0;
+
+    // Render only visible tiles (viewport culling)
+    const startX = Math.max(0, viewportBounds.left);
+    const endX = Math.min(terrainManager.config.chunkSize * 100, viewportBounds.right);
+    const startZ = Math.max(0, viewportBounds.top);
+    const endZ = Math.min(terrainManager.config.chunkSize * 100, viewportBounds.bottom);
+
+    ctx.save();
+
+    // Batch water tiles by depth for performance
+    const shallowWaterTiles = [];
+    const deepWaterTiles = [];
+
+    for (let z = startZ; z <= endZ; z++) {
+      for (let x = startX; x <= endX; x++) {
+        const height = terrainManager.getHeight(x, z);
+
+        // Render water if below water level
+        if (height <= WaterLevel) {
+          const canvasPos = worldToCanvas(x, z);
+
+          // Skip if outside canvas bounds
+          if (canvasPos.x < -tileSize || canvasPos.y < -tileSize ||
+              canvasPos.x > ctx.canvas.width || canvasPos.y > ctx.canvas.height) {
+            continue;
+          }
+
+          // Categorize by depth
+          if (height <= 1) {
+            deepWaterTiles.push(canvasPos);
+          } else {
+            shallowWaterTiles.push(canvasPos);
+          }
+        }
+      }
+    }
+
+    // Render deep water (darker blue)
+    if (deepWaterTiles.length > 0) {
+      ctx.fillStyle = DeepWaterColor;
+      deepWaterTiles.forEach(pos => {
+        ctx.fillRect(pos.x, pos.y, tileSize, tileSize);
+        waterTilesRendered++;
+      });
+    }
+
+    // Render shallow water (lighter blue)
+    if (shallowWaterTiles.length > 0) {
+      ctx.fillStyle = WaterColor;
+      shallowWaterTiles.forEach(pos => {
+        ctx.fillRect(pos.x, pos.y, tileSize, tileSize);
+        waterTilesRendered++;
+      });
+    }
+
+    ctx.restore();
+
+    return waterTilesRendered;
+  }, [tileSize]);
+
   // Return memoized functions
   return useMemo(() => ({
     renderTerrain,
+    renderWater,
     renderChunkBorders,
     renderHeightLegend
-  }), [renderTerrain, renderChunkBorders, renderHeightLegend]);
+  }), [renderTerrain, renderWater, renderChunkBorders, renderHeightLegend]);
 };

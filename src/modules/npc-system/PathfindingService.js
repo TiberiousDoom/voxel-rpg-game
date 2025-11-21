@@ -44,11 +44,18 @@ class PathfindingService {
   /**
    * Initialize pathfinding service
    * @param {GridManager} gridManager - Grid manager for collision checking
+   * @param {TerrainSystem} terrainSystem - Optional terrain system for height-aware pathfinding (Phase 2)
    */
-  constructor(gridManager) {
+  constructor(gridManager, terrainSystem = null) {
     this.gridManager = gridManager;
     this.gridSize = gridManager.gridSize;
     this.gridHeight = gridManager.gridHeight;
+    this.terrainSystem = terrainSystem;
+
+    // Terrain pathfinding config (Phase 2)
+    this.maxSlopeHeight = 2;  // Max height difference for traversal (steeper = blocked)
+    this.slopeCostMultiplier = 3;  // Cost multiplier for uphill movement
+    this.waterCostMultiplier = 5;  // Cost multiplier for water tiles
 
     // Movement directions (8-directional + up/down)
     // Format: [dx, dy, dz]
@@ -111,13 +118,56 @@ class PathfindingService {
   }
 
   /**
+   * Get terrain movement cost between two positions (Phase 2)
+   * @param {number} fromX - Start X
+   * @param {number} fromZ - Start Z
+   * @param {number} toX - End X
+   * @param {number} toZ - End Z
+   * @returns {number} Movement cost multiplier (1 = normal, higher = more expensive)
+   */
+  getTerrainCost(fromX, fromZ, toX, toZ) {
+    if (!this.terrainSystem) return 1;  // No terrain system, normal cost
+
+    try {
+      const fromHeight = this.terrainSystem.getHeight(fromX, fromZ);
+      const toHeight = this.terrainSystem.getHeight(toX, toZ);
+      const heightDiff = toHeight - fromHeight;
+
+      // Check if slope is too steep (impassable)
+      if (Math.abs(heightDiff) > this.maxSlopeHeight) {
+        return Infinity;  // Blocked
+      }
+
+      // Base cost
+      let cost = 1;
+
+      // Uphill movement is more expensive
+      if (heightDiff > 0) {
+        cost *= this.slopeCostMultiplier;
+      }
+
+      // Water movement is expensive (height <= 3)
+      if (toHeight <= 3) {
+        cost *= this.waterCostMultiplier;
+      }
+
+      return cost;
+    } catch (e) {
+      // If terrain query fails, use default cost
+      return 1;
+    }
+  }
+
+  /**
    * Check if a position is walkable
    * @param {number} x - X coordinate
    * @param {number} y - Y coordinate
    * @param {number} z - Z coordinate
+   * @param {number} fromX - Previous X position (for terrain slope check)
+   * @param {number} fromZ - Previous Z position (for terrain slope check)
    * @returns {boolean} True if walkable
    */
-  isWalkable(x, y, z) {
+  isWalkable(x, y, z, fromX = null, fromZ = null) {
     // Check bounds
     const bounds = this.gridManager.validateBounds(x, y, z);
     if (!bounds.valid) {
@@ -129,13 +179,21 @@ class PathfindingService {
       return false;
     }
 
+    // Check terrain slope (Phase 2)
+    if (this.terrainSystem && fromX !== null && fromZ !== null) {
+      const terrainCost = this.getTerrainCost(fromX, fromZ, x, z);
+      if (terrainCost === Infinity) {
+        return false;  // Too steep
+      }
+    }
+
     return true;
   }
 
   /**
    * Get neighbors of a node
    * @param {PathNode} node - Current node
-   * @returns {Array<PathNode>} Valid neighbor nodes
+   * @returns {Array<PathNode>} Valid neighbor nodes with terrain cost
    */
   getNeighbors(node) {
     const neighbors = [];
@@ -145,8 +203,14 @@ class PathfindingService {
       const newY = node.y + dy;
       const newZ = node.z + dz;
 
-      if (this.isWalkable(newX, newY, newZ)) {
-        neighbors.push(new PathNode(newX, newY, newZ, node));
+      // Pass parent position for terrain slope checking (Phase 2)
+      if (this.isWalkable(newX, newY, newZ, node.x, node.z)) {
+        const neighbor = new PathNode(newX, newY, newZ, node);
+
+        // Calculate terrain cost for this move (Phase 2)
+        neighbor.terrainCost = this.getTerrainCost(node.x, node.z, newX, newZ);
+
+        neighbors.push(neighbor);
       }
     }
 
@@ -191,8 +255,8 @@ class PathfindingService {
     const goalY = Math.floor(goal.y);
     const goalZ = Math.floor(goal.z);
 
-    // Check if start and goal are valid
-    if (!this.isWalkable(startX, startY, startZ)) {
+    // Check if start and goal are valid (no from position for initial check)
+    if (!this.isWalkable(startX, startY, startZ, null, null)) {
       console.warn(`[PathfindingService] Start position (${startX}, ${startY}, ${startZ}) is not walkable`);
       return null;
     }
@@ -202,7 +266,7 @@ class PathfindingService {
     let actualGoalY = goalY;
     let actualGoalZ = goalZ;
 
-    if (!this.isWalkable(goalX, goalY, goalZ)) {
+    if (!this.isWalkable(goalX, goalY, goalZ, null, null)) {
       // Try to find a nearby walkable cell
       const nearbyWalkable = this.findNearbyWalkableCell(goalX, goalY, goalZ, 3);
       if (nearbyWalkable) {
@@ -272,12 +336,15 @@ class PathfindingService {
           continue;
         }
 
-        // Calculate cost
+        // Calculate cost with terrain multiplier (Phase 2)
         const moveCost = this.euclideanDistance(
           current.x, current.y, current.z,
           neighbor.x, neighbor.y, neighbor.z
         );
-        const tentativeG = current.g + moveCost;
+
+        // Apply terrain cost multiplier (uphill, water, etc.)
+        const terrainMultiplier = neighbor.terrainCost || 1;
+        const tentativeG = current.g + (moveCost * terrainMultiplier);
 
         // Check if this path is better
         const existingNode = openSet.find(n => n.getKey() === neighborKey);
@@ -335,16 +402,16 @@ class PathfindingService {
           const checkX = x + dx;
           const checkZ = z + dz;
 
-          // Check same level first
-          if (this.isWalkable(checkX, y, checkZ)) {
+          // Check same level first (no from position for nearby check)
+          if (this.isWalkable(checkX, y, checkZ, null, null)) {
             return { x: checkX, y: y, z: checkZ };
           }
 
           // Check one level up/down
-          if (this.isWalkable(checkX, y + 1, checkZ)) {
+          if (this.isWalkable(checkX, y + 1, checkZ, null, null)) {
             return { x: checkX, y: y + 1, z: checkZ };
           }
-          if (this.isWalkable(checkX, y - 1, checkZ)) {
+          if (this.isWalkable(checkX, y - 1, checkZ, null, null)) {
             return { x: checkX, y: y - 1, z: checkZ };
           }
         }
@@ -407,7 +474,8 @@ class PathfindingService {
       const y = Math.floor(start.y + dy * t);
       const z = Math.floor(start.z + dz * t);
 
-      if (!this.isWalkable(x, y, z)) {
+      // Check walkability without from position (line of sight check)
+      if (!this.isWalkable(x, y, z, null, null)) {
         return false;
       }
     }

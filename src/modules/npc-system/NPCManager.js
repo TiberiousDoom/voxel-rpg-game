@@ -263,23 +263,24 @@ class NPCManager {
    * @param {TownManager} townManager - Town system integration
    * @param {GridManager} gridManager - Grid system for pathfinding (optional)
    */
-  constructor(townManager, gridManager = null) {
+  constructor(townManager, gridManager = null, terrainSystem = null) {
     if (!townManager) {
       throw new Error('NPCManager requires TownManager');
     }
 
     this.townManager = townManager;
     this.gridManager = gridManager;
+    this.terrainSystem = terrainSystem;
     this.npcs = new Map(); // id -> NPC
     this.npcIdCounter = 0;
     this.buildingsMap = new Map(); // buildingId -> building (for NPC movement)
 
-    // Initialize pathfinding service if grid manager provided
+    // Initialize pathfinding service if grid manager provided (Phase 2: terrain-aware)
     this.pathfindingService = null;
     if (gridManager) {
-      this.pathfindingService = new PathfindingService(gridManager);
+      this.pathfindingService = new PathfindingService(gridManager, terrainSystem);
       // eslint-disable-next-line no-console
-      console.log('[NPCManager] Pathfinding service initialized');
+      console.log('[NPCManager] Pathfinding service initialized', terrainSystem ? 'with terrain awareness' : '');
     }
 
     // NPC groups by status

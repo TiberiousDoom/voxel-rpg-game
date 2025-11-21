@@ -19,6 +19,8 @@
  *   { id, type: 'pathResult', path, stats, cached }
  */
 
+/* eslint-disable no-restricted-globals */
+
 /**
  * PathNode class for A* algorithm
  */

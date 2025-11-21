@@ -345,10 +345,10 @@ function GameViewport({
   // Terrain Renderer integration
   const { renderTerrain, renderChunkBorders } = useTerrainRenderer({
     tileSize: TILE_SIZE,
-    showGrid: false,
     showHeightNumbers: false,
     minHeight: 0,
-    maxHeight: 10
+    maxHeight: 10,
+    colorMode: 'biome'  // Use biome-based coloring (Phase 2)
   });
 
   // Player movement controller
@@ -657,7 +657,8 @@ function GameViewport({
     if (terrainSystemRef.current) {
       try {
         const terrainManager = terrainSystemRef.current.getTerrainManager();
-        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds);
+        const worldGenerator = terrainSystemRef.current.getWorldGenerator();
+        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator);
       } catch (e) {
         // Log terrain rendering errors for debugging
         console.error('Terrain rendering error:', e);

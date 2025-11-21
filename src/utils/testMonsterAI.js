@@ -362,13 +362,11 @@ async function testFleeBehavior() {
   const damageNeeded = monster.health - targetHealth;
   window.debug.damageMonster(monster.id, damageNeeded);
 
-  // Check for FLEE state within 1 second (using waitFor helper)
-  const enteredFlee = await waitFor(() => {
-    monster = getMonster(monsterId);
-    return monster.aiState === 'FLEE';
-  }, 1000, 50);
+  // Wait for AI to process the damage and potentially enter FLEE state
+  await new Promise(resolve => setTimeout(resolve, 300));
 
-  monster = getMonster(monsterId); // Get final state for logging
+  monster = getMonster(monsterId);
+  const enteredFlee = monster.aiState === 'FLEE';
   runner.addResult(
     'Enters FLEE at Low Health',
     enteredFlee,

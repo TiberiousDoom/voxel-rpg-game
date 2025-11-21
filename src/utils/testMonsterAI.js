@@ -66,28 +66,6 @@ class TestRunner {
 }
 
 /**
- * Wait for a condition to be true
- * @param {Function} condition - Function that returns boolean
- * @param {number} timeout - Timeout in ms
- * @param {number} interval - Check interval in ms
- * @returns {Promise<boolean>}
- */
-function waitFor(condition, timeout = 5000, interval = 100) {
-  return new Promise((resolve) => {
-    const startTime = Date.now();
-    const checkInterval = setInterval(() => {
-      if (condition()) {
-        clearInterval(checkInterval);
-        resolve(true);
-      } else if (Date.now() - startTime > timeout) {
-        clearInterval(checkInterval);
-        resolve(false);
-      }
-    }, interval);
-  });
-}
-
-/**
  * Calculate distance between two positions
  */
 function distance(pos1, pos2) {
@@ -566,7 +544,7 @@ Run tests from console:
   `);
 }
 
-export default {
+const testMonsterAIModule = {
   runAllTests,
   quickTest,
   testMonsterSpawning,
@@ -576,3 +554,5 @@ export default {
   testFleeBehavior,
   testMultipleMonsters
 };
+
+export default testMonsterAIModule;

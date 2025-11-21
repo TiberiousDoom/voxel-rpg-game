@@ -85,6 +85,7 @@ export class Monster {
     // State
     this.alive = true;
     this.spawnTime = Date.now();
+    this.deathTime = null; // Set when monster dies for fade animation
   }
 
   /**
@@ -167,10 +168,15 @@ export class Monster {
     const actualDamage = Math.max(1, amount - this.defense);
     this.health -= actualDamage;
 
+    // eslint-disable-next-line no-console
+    console.log(`🩸 ${this.name} took ${actualDamage} damage (${this.health}/${this.maxHealth} HP)`);
+
     if (this.health <= 0) {
       this.health = 0;
       this.alive = false;
       this.aiState = 'DEATH';
+      // eslint-disable-next-line no-console
+      console.log(`💀 ${this.name} died!`);
       this.die();
       return true;
     }
@@ -180,6 +186,8 @@ export class Monster {
       const healthPercent = this.health / this.maxHealth;
       if (healthPercent <= this.fleeHealthPercent) {
         this.aiState = 'FLEE';
+        // eslint-disable-next-line no-console
+        console.log(`🏃 ${this.name} is fleeing!`);
       }
     }
 
@@ -191,6 +199,7 @@ export class Monster {
    */
   die() {
     this.animationState = 'death';
+    this.deathTime = Date.now(); // Set death time for fade animation
     // Loot drop logic will be handled by the game system
   }
 

@@ -101,15 +101,18 @@ function DeveloperTab() {
   const handleTestAI = (type) => {
     try {
       const playerPos = getPlayerPosition();
-      // Spawn monster 15 tiles away to test aggro range
+      // Spawn monster far away (20 tiles) to test aggro range
+      // You need to walk toward it to trigger CHASE behavior
       const monster = new Monster(type,
-        { x: playerPos.x + 15, z: playerPos.z },
+        { x: playerPos.x + 20, z: playerPos.z },
         { level: monsterLevel, modifier: selectedModifier }
       );
       spawnMonster(monster);
       const modText = selectedModifier ? ` ${selectedModifier}` : '';
       // eslint-disable-next-line no-console
-      console.log(`✅ AI Test: Spawned${modText} ${type} 15 tiles away (aggro test)`);
+      console.log(`✅ AI Test: Spawned${modText} ${type} 20 tiles away`);
+      // eslint-disable-next-line no-console
+      console.log(`   💡 Walk toward it to trigger aggro! Aggro range: ${monster.aggroRange} tiles`);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn test monster:', error);
@@ -120,13 +123,14 @@ function DeveloperTab() {
   const handleSpawnPatrol = (type) => {
     try {
       const playerPos = getPlayerPosition();
-      const x = playerPos.x + spawnDistance;
+      // Spawn far enough away to avoid immediate aggro (20 tiles)
+      const x = playerPos.x + 20;
       const z = playerPos.z;
 
       const monster = new Monster(type, { x, z }, { level: monsterLevel, modifier: selectedModifier });
 
-      // Create square patrol path
-      const pathSize = 5;
+      // Create square patrol path centered on spawn point
+      const pathSize = 8;
       monster.patrolPath = [
         { x: x, z: z },
         { x: x + pathSize, z: z },
@@ -135,13 +139,17 @@ function DeveloperTab() {
       ];
 
       monster.currentWaypointIndex = 0;
+      // CRITICAL: Set AI state to PATROL so it doesn't start in IDLE
+      monster.aiState = 'PATROL';
 
       spawnMonster(monster);
       const modText = selectedModifier ? ` ${selectedModifier}` : '';
       // eslint-disable-next-line no-console
       console.log(`✅ Spawned patrolling${modText} ${type} (Level ${monsterLevel}) at (${x.toFixed(1)}, ${z.toFixed(1)})`);
       // eslint-disable-next-line no-console
-      console.log(`   Path: ${pathSize}x${pathSize} square`);
+      console.log(`   Path: ${pathSize}x${pathSize} square, 20 tiles away`);
+      // eslint-disable-next-line no-console
+      console.log(`   💡 Walk toward it to test aggro detection during patrol!`);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('❌ Failed to spawn patrol monster:', error);
@@ -378,19 +386,23 @@ function DeveloperTab() {
         <div className="tips-list">
           <div className="tip-item">
             <span className="tip-icon">🎯</span>
-            <span className="tip-text">Monsters spawn at set distance from player</span>
+            <span className="tip-text">Regular spawns use the Distance slider (3-20 tiles)</span>
+          </div>
+          <div className="tip-item">
+            <span className="tip-icon">🧪</span>
+            <span className="tip-text">AI Test spawns monster 20 tiles away - walk toward it to trigger aggro</span>
           </div>
           <div className="tip-item">
             <span className="tip-icon">🚶</span>
-            <span className="tip-text">Patrol monsters walk in a square until player gets close</span>
+            <span className="tip-text">Patrol spawns 20 tiles away, walks 8x8 square at half speed</span>
           </div>
           <div className="tip-item">
             <span className="tip-icon">⚔️</span>
-            <span className="tip-text">Walk close to trigger aggro and combat</span>
+            <span className="tip-text">Each monster type has different aggro range (10-15 tiles)</span>
           </div>
           <div className="tip-item">
             <span className="tip-icon">🏃</span>
-            <span className="tip-text">Move away to test chase AI behavior</span>
+            <span className="tip-text">Patrol monsters will chase you if you get too close!</span>
           </div>
           <div className="tip-item">
             <span className="tip-icon">💚</span>

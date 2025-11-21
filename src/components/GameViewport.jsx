@@ -24,6 +24,7 @@ import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
 import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.js';
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
+import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
 import './GameViewport.css';
 
 /**
@@ -1025,6 +1026,19 @@ function GameViewport({
           // Update monster positions before rendering
           if (monsterRenderer && monstersRef.current) {
             monsterRenderer.updatePositions(monstersRef.current, elapsed);
+          }
+
+          // Clean up dead monsters after fade animation completes (1 second)
+          if (monstersRef.current && monstersRef.current.length > 0) {
+            const now = Date.now();
+            monstersRef.current.forEach(monster => {
+              if (!monster.alive && monster.deathTime && (now - monster.deathTime > 1000)) {
+                // Monster has finished death animation, remove from store
+                // eslint-disable-next-line no-console
+                console.log(`🗑️ Removing ${monster.name} after death animation (${((now - monster.deathTime) / 1000).toFixed(1)}s ago)`);
+                useGameStore.getState().removeMonster(monster.id);
+              }
+            });
           }
 
           // Draw viewport with safe error handling

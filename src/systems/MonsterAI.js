@@ -9,6 +9,8 @@
  * - DEATH: Dead, no updates
  */
 
+import useGameStore from '../stores/useGameStore.js';
+
 /**
  * Calculate distance between two positions
  * @param {Object} pos1 - First position {x, z}
@@ -339,12 +341,15 @@ export class MonsterAI {
     // Deal damage to player
     const damage = monster.damage;
 
-    // Update player health
-    player.health = Math.max(0, player.health - damage);
+    // Update player health through store action (proper reactivity)
+    useGameStore.getState().dealDamageToPlayer(damage);
+
+    // Get updated player health for logging
+    const newHealth = useGameStore.getState().player.health;
 
     // Log attack (for debugging)
     // eslint-disable-next-line no-console
-    console.log(`🗡️ ${monster.type} attacked player for ${damage} damage! Player HP: ${player.health}/${player.maxHealth}`);
+    console.log(`🗡️ ${monster.type} attacked player for ${damage} damage! Player HP: ${newHealth}/${player.maxHealth}`);
 
     // Spawn damage number (if system exists)
     if (window.debug && window.debug.spawnDamageNumber) {
@@ -355,7 +360,7 @@ export class MonsterAI {
     monster.animationState = 'attack';
 
     // Check if player died
-    if (player.health <= 0) {
+    if (newHealth <= 0) {
       // eslint-disable-next-line no-console
       console.log('💀 Player died!');
       // Game over logic will be handled by game manager

@@ -1,0 +1,226 @@
+/**
+ * TerrainToolsPanel.css - Styling for Terrain Tools Panel
+ * Phase 4: Terrain Job System
+ */
+
+.terrain-tools-panel {
+  background-color: rgba(40, 40, 40, 0.95);
+  border: 2px solid #555;
+  border-radius: 8px;
+  padding: 12px;
+  width: 220px;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #666;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #FFF;
+}
+
+.selection-indicator {
+  font-size: 11px;
+  color: #FFD700;
+  font-weight: bold;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.tool-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tool-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px;
+  background-color: #2A2A2A;
+  border: 2px solid #555;
+  border-radius: 6px;
+  color: #CCC;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool-button:hover {
+  background-color: #3A3A3A;
+  border-color: #777;
+  transform: translateY(-2px);
+}
+
+.tool-button.active {
+  background-color: #4A7C59;
+  border-color: #5FA777;
+  color: #FFF;
+}
+
+.tool-button.active:hover {
+  background-color: #5A8C69;
+}
+
+.tool-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.tool-name {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.priority-selector {
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: #2A2A2A;
+  border-radius: 4px;
+}
+
+.priority-selector label {
+  display: block;
+  font-size: 12px;
+  color: #CCC;
+  margin-bottom: 4px;
+}
+
+.priority-selector select {
+  width: 100%;
+  padding: 6px;
+  background-color: #1A1A1A;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #FFF;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.priority-selector select:hover {
+  border-color: #777;
+}
+
+.selection-info {
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: #2A2A2A;
+  border-radius: 4px;
+  border: 1px solid #444;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: #AAA;
+  font-weight: bold;
+}
+
+.info-value {
+  color: #FFF;
+}
+
+.tool-instructions {
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: #1A3A2A;
+  border: 1px solid #2A5A3A;
+  border-radius: 4px;
+}
+
+.tool-instructions p {
+  margin: 0 0 6px 0;
+  font-size: 11px;
+  color: #CCC;
+  line-height: 1.4;
+}
+
+.tool-instructions p:last-child {
+  margin-bottom: 0;
+}
+
+.tool-instructions strong {
+  color: #5FA777;
+}
+
+.cancel-button {
+  width: 100%;
+  padding: 8px;
+  background-color: #8A3A3A;
+  border: 2px solid #AA5A5A;
+  border-radius: 6px;
+  color: #FFF;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button:hover {
+  background-color: #9A4A4A;
+  border-color: #BA6A6A;
+}
+
+.tool-info {
+  padding: 12px;
+  text-align: center;
+}
+
+.tool-info p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #AAA;
+}
+
+.tool-info p:last-child {
+  margin-bottom: 0;
+}
+
+.help-text {
+  font-size: 11px !important;
+  color: #888 !important;
+  font-style: italic;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .terrain-tools-panel {
+    width: 180px;
+    padding: 10px;
+  }
+
+  .tool-button {
+    padding: 8px 6px;
+  }
+
+  .tool-icon {
+    font-size: 20px;
+  }
+
+  .tool-name {
+    font-size: 11px;
+  }
+}

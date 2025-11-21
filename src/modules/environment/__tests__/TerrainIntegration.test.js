@@ -246,7 +246,6 @@ describe('TerrainSystem Integration', () => {
     it('should unload chunks when moving viewport', () => {
       // Load chunks at origin
       terrainSystem.update(0, 0, 800, 600);
-      const initialActive = terrainSystem.getStats().chunks.chunksActive;
 
       // Move far away (chunks at origin should unload)
       // Note: Chunks have a delay before unloading (60 frames by default)
@@ -256,7 +255,7 @@ describe('TerrainSystem Integration', () => {
       }
 
       const stats = terrainSystem.getStats();
-      // Verify chunks were unloaded (fewer active chunks than initially)
+      // Verify chunks were unloaded after moving far away
       expect(stats.chunks.chunksUnloaded).toBeGreaterThan(0);
     });
 

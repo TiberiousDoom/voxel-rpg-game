@@ -161,6 +161,58 @@ export class TerrainSystem {
   }
 
   /**
+   * Calculate flatten cost for building placement preview (Phase 3)
+   * @param {number} startX - Top-left X
+   * @param {number} startZ - Top-left Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @param {number} targetHeight - Height to flatten to (default: average)
+   * @returns {object} {targetHeight, totalHeightDiff, cellsAffected, maxHeightDiff, avgHeightDiff}
+   */
+  calculateFlattenCost(startX, startZ, width, depth, targetHeight = null) {
+    return this.terrainManager.calculateFlattenCost(startX, startZ, width, depth, targetHeight);
+  }
+
+  /**
+   * Raise terrain in a region (Phase 3: Terrain Editing Tools)
+   * @param {number} startX - Top-left X
+   * @param {number} startZ - Top-left Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @param {number} amount - Amount to raise (default: 1)
+   * @returns {object} {success, cellsChanged, minHeight, maxHeight}
+   */
+  raiseRegion(startX, startZ, width, depth, amount = 1) {
+    return this.terrainManager.raiseRegion(startX, startZ, width, depth, amount);
+  }
+
+  /**
+   * Lower terrain in a region (Phase 3: Terrain Editing Tools)
+   * @param {number} startX - Top-left X
+   * @param {number} startZ - Top-left Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @param {number} amount - Amount to lower (default: 1)
+   * @returns {object} {success, cellsChanged, minHeight, maxHeight}
+   */
+  lowerRegion(startX, startZ, width, depth, amount = 1) {
+    return this.terrainManager.lowerRegion(startX, startZ, width, depth, amount);
+  }
+
+  /**
+   * Smooth terrain in a region (Phase 3: Terrain Editing Tools)
+   * @param {number} startX - Top-left X
+   * @param {number} startZ - Top-left Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @param {number} iterations - Number of smoothing passes (default: 1)
+   * @returns {object} {success, cellsChanged, iterations}
+   */
+  smoothRegion(startX, startZ, width, depth, iterations = 1) {
+    return this.terrainManager.smoothRegion(startX, startZ, width, depth, iterations);
+  }
+
+  /**
    * Track an entity for chunk loading
    * @param {string} entityId - Entity ID
    * @param {number} x - Tile X coordinate

@@ -216,6 +216,198 @@ export class TerrainManager {
   }
 
   /**
+   * Calculate the cost of flattening a region (Phase 3: Building Placement Preview)
+   * Does not modify terrain, only calculates what would happen
+   *
+   * @param {number} startX - Top-left X coordinate
+   * @param {number} startZ - Top-left Z coordinate
+   * @param {number} width - Region width in tiles
+   * @param {number} depth - Region depth in tiles
+   * @param {number} targetHeight - Height to flatten to (default: average height of region)
+   * @returns {object} {targetHeight, totalHeightDiff, cellsAffected, maxHeightDiff}
+   */
+  calculateFlattenCost(startX, startZ, width, depth, targetHeight = null) {
+    // If no target height specified, use average
+    if (targetHeight === null) {
+      targetHeight = this.getRegionAverageHeight(startX, startZ, width, depth);
+    }
+
+    let totalHeightDiff = 0;
+    let cellsAffected = 0;
+    let maxHeightDiff = 0;
+
+    for (let z = startZ; z < startZ + depth; z++) {
+      for (let x = startX; x < startX + width; x++) {
+        const currentHeight = this.getHeight(x, z);
+        const heightDiff = Math.abs(currentHeight - targetHeight);
+
+        if (heightDiff > 0) {
+          totalHeightDiff += heightDiff;
+          cellsAffected++;
+          maxHeightDiff = Math.max(maxHeightDiff, heightDiff);
+        }
+      }
+    }
+
+    return {
+      targetHeight,
+      totalHeightDiff: Math.round(totalHeightDiff * 100) / 100,  // Round to 2 decimals
+      cellsAffected,
+      maxHeightDiff: Math.round(maxHeightDiff * 100) / 100,
+      avgHeightDiff: cellsAffected > 0
+        ? Math.round((totalHeightDiff / cellsAffected) * 100) / 100
+        : 0
+    };
+  }
+
+  /**
+   * Raise terrain in a region (Phase 3: Terrain Editing Tools)
+   * @param {number} startX - Top-left X coordinate
+   * @param {number} startZ - Top-left Z coordinate
+   * @param {number} width - Region width in tiles
+   * @param {number} depth - Region depth in tiles
+   * @param {number} amount - Amount to raise (default: 1)
+   * @returns {object} {success: boolean, cellsChanged: number, minHeight: number, maxHeight: number}
+   */
+  raiseRegion(startX, startZ, width, depth, amount = 1) {
+    let cellsChanged = 0;
+    let minHeight = Infinity;
+    let maxHeight = -Infinity;
+
+    for (let z = startZ; z < startZ + depth; z++) {
+      for (let x = startX; x < startX + width; x++) {
+        const currentHeight = this.getHeight(x, z);
+        const newHeight = Math.min(this.config.maxHeight, currentHeight + amount);
+
+        if (newHeight !== currentHeight) {
+          this.setHeight(x, z, newHeight);
+          cellsChanged++;
+        }
+
+        minHeight = Math.min(minHeight, newHeight);
+        maxHeight = Math.max(maxHeight, newHeight);
+      }
+    }
+
+    return {
+      success: true,
+      cellsChanged,
+      minHeight,
+      maxHeight
+    };
+  }
+
+  /**
+   * Lower terrain in a region (Phase 3: Terrain Editing Tools)
+   * @param {number} startX - Top-left X coordinate
+   * @param {number} startZ - Top-left Z coordinate
+   * @param {number} width - Region width in tiles
+   * @param {number} depth - Region depth in tiles
+   * @param {number} amount - Amount to lower (default: 1)
+   * @returns {object} {success: boolean, cellsChanged: number, minHeight: number, maxHeight: number}
+   */
+  lowerRegion(startX, startZ, width, depth, amount = 1) {
+    let cellsChanged = 0;
+    let minHeight = Infinity;
+    let maxHeight = -Infinity;
+
+    for (let z = startZ; z < startZ + depth; z++) {
+      for (let x = startX; x < startX + width; x++) {
+        const currentHeight = this.getHeight(x, z);
+        const newHeight = Math.max(this.config.minHeight, currentHeight - amount);
+
+        if (newHeight !== currentHeight) {
+          this.setHeight(x, z, newHeight);
+          cellsChanged++;
+        }
+
+        minHeight = Math.min(minHeight, newHeight);
+        maxHeight = Math.max(maxHeight, newHeight);
+      }
+    }
+
+    return {
+      success: true,
+      cellsChanged,
+      minHeight,
+      maxHeight
+    };
+  }
+
+  /**
+   * Smooth terrain in a region (Phase 3: Terrain Editing Tools)
+   * Averages each tile with its neighbors to create smoother transitions
+   *
+   * @param {number} startX - Top-left X coordinate
+   * @param {number} startZ - Top-left Z coordinate
+   * @param {number} width - Region width in tiles
+   * @param {number} depth - Region depth in tiles
+   * @param {number} iterations - Number of smoothing passes (default: 1)
+   * @returns {object} {success: boolean, cellsChanged: number}
+   */
+  smoothRegion(startX, startZ, width, depth, iterations = 1) {
+    let totalCellsChanged = 0;
+
+    for (let iter = 0; iter < iterations; iter++) {
+      // Store new heights in temporary map to avoid affecting calculations mid-pass
+      const newHeights = new Map();
+
+      for (let z = startZ; z < startZ + depth; z++) {
+        for (let x = startX; x < startX + width; x++) {
+          // Average with 4-directional neighbors
+          const neighbors = [
+            { dx: 0, dz: 0 },   // Center
+            { dx: -1, dz: 0 },  // Left
+            { dx: 1, dz: 0 },   // Right
+            { dx: 0, dz: -1 },  // Top
+            { dx: 0, dz: 1 }    // Bottom
+          ];
+
+          let totalHeight = 0;
+          let count = 0;
+
+          for (const { dx, dz } of neighbors) {
+            const nx = x + dx;
+            const nz = z + dz;
+            try {
+              const height = this.getHeight(nx, nz);
+              totalHeight += height;
+              count++;
+            } catch (e) {
+              // Ignore out-of-bounds neighbors
+            }
+          }
+
+          const avgHeight = count > 0 ? totalHeight / count : this.getHeight(x, z);
+          newHeights.set(`${x},${z}`, avgHeight);
+        }
+      }
+
+      // Apply new heights
+      for (let z = startZ; z < startZ + depth; z++) {
+        for (let x = startX; x < startX + width; x++) {
+          const key = `${x},${z}`;
+          if (newHeights.has(key)) {
+            const currentHeight = this.getHeight(x, z);
+            const newHeight = newHeights.get(key);
+
+            if (Math.abs(newHeight - currentHeight) > 0.01) {
+              this.setHeight(x, z, newHeight);
+              totalCellsChanged++;
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      success: true,
+      cellsChanged: totalCellsChanged,
+      iterations
+    };
+  }
+
+  /**
    * Generate a chunk at the specified chunk coordinates
    * @private
    * @param {number} chunkX - Chunk X coordinate

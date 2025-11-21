@@ -36,6 +36,12 @@ const DeepWaterColor = 'rgba(0, 105, 148, 0.8)';  // Deeper blue
 const WaterLevel = 3;  // Tiles at or below this height are underwater
 
 /**
+ * River rendering constants (Phase 3)
+ */
+const RiverColor = 'rgba(64, 164, 223, 0.85)';  // Bright flowing water blue
+const RiverWidth = 2;  // Pixels wider than standard tile for visibility
+
+/**
  * Get terrain tile color based on biome
  *
  * @param {string} biome - Biome type
@@ -61,6 +67,86 @@ const getBiomeColor = (biome, height, minHeight = 0, maxHeight = 10) => {
   }
 
   return baseColor;
+};
+
+/**
+ * Blend biome colors at boundaries for smooth transitions (Phase 3)
+ *
+ * @param {number} x - Tile X coordinate
+ * @param {number} z - Tile Z coordinate
+ * @param {string} centerBiome - Center tile biome
+ * @param {number} height - Height value for shading
+ * @param {object} worldGenerator - World generator for biome queries
+ * @param {number} minHeight - Minimum height
+ * @param {number} maxHeight - Maximum height
+ * @param {number} blendRadius - Radius for blending (default: 2)
+ * @returns {string} Blended RGB color string
+ */
+const getBlendedBiomeColor = (x, z, centerBiome, height, worldGenerator, minHeight = 0, maxHeight = 10, blendRadius = 2) => {
+  if (!worldGenerator) {
+    return getBiomeColor(centerBiome, height, minHeight, maxHeight);
+  }
+
+  // Sample surrounding tiles (4-directional neighbors)
+  const neighbors = [
+    { dx: -1, dz: 0 },  // Left
+    { dx: 1, dz: 0 },   // Right
+    { dx: 0, dz: -1 },  // Top
+    { dx: 0, dz: 1 }    // Bottom
+  ];
+
+  // Collect biomes of neighbors within blend radius
+  const neighborBiomes = [];
+  for (const { dx, dz } of neighbors) {
+    for (let dist = 1; dist <= blendRadius; dist++) {
+      const nx = x + dx * dist;
+      const nz = z + dz * dist;
+      try {
+        const neighborBiome = worldGenerator.getBiome(nx, nz);
+        if (neighborBiome !== centerBiome) {
+          neighborBiomes.push({ biome: neighborBiome, distance: dist });
+        }
+      } catch (e) {
+        // Ignore out-of-bounds tiles
+      }
+    }
+  }
+
+  // If no different biomes nearby, return regular color (no blending needed)
+  if (neighborBiomes.length === 0) {
+    return getBiomeColor(centerBiome, height, minHeight, maxHeight);
+  }
+
+  // Parse center biome color
+  const centerColor = getBiomeColor(centerBiome, height, minHeight, maxHeight);
+  const centerMatch = centerColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!centerMatch) return centerColor;
+
+  let r = parseInt(centerMatch[1]);
+  let g = parseInt(centerMatch[2]);
+  let b = parseInt(centerMatch[3]);
+  let totalWeight = 1.0;  // Center tile weight
+
+  // Blend with neighbor biomes (closer neighbors have more influence)
+  for (const { biome, distance } of neighborBiomes) {
+    const neighborColor = getBiomeColor(biome, height, minHeight, maxHeight);
+    const neighborMatch = neighborColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (neighborMatch) {
+      // Weight decreases with distance (1/distance)
+      const weight = 1.0 / (distance * distance * 2);  // Reduced influence for smoother blending
+      r += parseInt(neighborMatch[1]) * weight;
+      g += parseInt(neighborMatch[2]) * weight;
+      b += parseInt(neighborMatch[3]) * weight;
+      totalWeight += weight;
+    }
+  }
+
+  // Normalize by total weight
+  r = Math.min(255, Math.floor(r / totalWeight));
+  g = Math.min(255, Math.floor(g / totalWeight));
+  b = Math.min(255, Math.floor(b / totalWeight));
+
+  return `rgb(${r}, ${g}, ${b})`;
 };
 
 /**
@@ -96,6 +182,7 @@ const getHeightColor = (height, minHeight = 0, maxHeight = 10) => {
  * @param {number} options.minHeight - Minimum terrain height (default: 0)
  * @param {number} options.maxHeight - Maximum terrain height (default: 10)
  * @param {string} options.colorMode - 'height' or 'biome' (default: 'biome')
+ * @param {boolean} options.blendBiomes - Enable biome color blending at boundaries (Phase 3, default: true)
  * @returns {object} Rendering functions
  */
 export const useTerrainRenderer = (options = {}) => {
@@ -104,7 +191,8 @@ export const useTerrainRenderer = (options = {}) => {
     showHeightNumbers = false,
     minHeight = 0,
     maxHeight = 10,
-    colorMode = 'biome'  // 'height' or 'biome'
+    colorMode = 'biome',  // 'height' or 'biome'
+    blendBiomes = true    // Enable biome blending (Phase 3)
   } = options;
 
   // Cache for tile colors to avoid recalculation
@@ -147,70 +235,103 @@ export const useTerrainRenderer = (options = {}) => {
 
     ctx.save();
 
-    // Batch rendering for performance
-    // Group tiles by color key (height or biome+height)
-    const tilesByColor = new Map();
-
-    for (let z = startZ; z <= endZ; z++) {
-      for (let x = startX; x <= endX; x++) {
-        const height = terrainManager.getHeight(x, z);
-
-        // Get biome if in biome mode and worldGenerator available
-        let colorKey;
-        let color;
-        if (colorMode === 'biome' && worldGenerator) {
+    // Phase 3: Biome blending mode (per-tile rendering for smooth transitions)
+    if (colorMode === 'biome' && blendBiomes && worldGenerator) {
+      for (let z = startZ; z <= endZ; z++) {
+        for (let x = startX; x <= endX; x++) {
+          const height = terrainManager.getHeight(x, z);
           const biome = worldGenerator.getBiome(x, z);
-          colorKey = `${biome}_${height}`;
-          color = getCachedColor(height, biome);
-        } else {
-          colorKey = `${height}`;
-          color = getCachedColor(height);
-        }
 
-        if (!tilesByColor.has(colorKey)) {
-          tilesByColor.set(colorKey, { color, height, tiles: [] });
+          // Get blended color at biome boundaries
+          const color = getBlendedBiomeColor(x, z, biome, height, worldGenerator, minHeight, maxHeight);
+
+          const canvasPos = worldToCanvas(x, z);
+
+          // Only render if within canvas bounds
+          if (canvasPos.x < -tileSize || canvasPos.y < -tileSize ||
+              canvasPos.x > ctx.canvas.width || canvasPos.y > ctx.canvas.height) {
+            continue;
+          }
+
+          ctx.fillStyle = color;
+          ctx.fillRect(canvasPos.x, canvasPos.y, tileSize, tileSize);
+          tilesRendered++;
+
+          // Optional: Show height numbers (performance impact)
+          if (showHeightNumbers) {
+            ctx.fillStyle = '#000000';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(height.toFixed(1), canvasPos.x + tileSize / 2, canvasPos.y + tileSize / 2 + 3);
+          }
         }
-        tilesByColor.get(colorKey).tiles.push({ x, z });
       }
-    }
+    } else {
+      // Batch rendering for performance (original Phase 1/2 behavior)
+      // Group tiles by color key (height or biome+height)
+      const tilesByColor = new Map();
 
-    // Render tiles grouped by color (minimizes state changes)
-    tilesByColor.forEach(({ color, height, tiles }) => {
-      ctx.fillStyle = color;
+      for (let z = startZ; z <= endZ; z++) {
+        for (let x = startX; x <= endX; x++) {
+          const height = terrainManager.getHeight(x, z);
 
-      tiles.forEach(({ x, z }) => {
-        const canvasPos = worldToCanvas(x, z);
+          // Get biome if in biome mode and worldGenerator available
+          let colorKey;
+          let color;
+          if (colorMode === 'biome' && worldGenerator) {
+            const biome = worldGenerator.getBiome(x, z);
+            colorKey = `${biome}_${height}`;
+            color = getCachedColor(height, biome);
+          } else {
+            colorKey = `${height}`;
+            color = getCachedColor(height);
+          }
 
-        // Only render if within canvas bounds (additional culling)
-        if (canvasPos.x < -tileSize || canvasPos.y < -tileSize ||
-            canvasPos.x > ctx.canvas.width || canvasPos.y > ctx.canvas.height) {
-          return;
+          if (!tilesByColor.has(colorKey)) {
+            tilesByColor.set(colorKey, { color, height, tiles: [] });
+          }
+          tilesByColor.get(colorKey).tiles.push({ x, z });
         }
+      }
 
-        ctx.fillRect(canvasPos.x, canvasPos.y, tileSize, tileSize);
-        tilesRendered++;
+      // Render tiles grouped by color (minimizes state changes)
+      tilesByColor.forEach(({ color, height, tiles }) => {
+        ctx.fillStyle = color;
 
-        // Optional: Show height numbers (performance impact)
-        if (showHeightNumbers) {
-          ctx.save();
-          ctx.fillStyle = '#000000';
-          ctx.font = '10px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(
-            height.toString(),
-            canvasPos.x + tileSize / 2,
-            canvasPos.y + tileSize / 2
-          );
-          ctx.restore();
-        }
+        tiles.forEach(({ x, z }) => {
+          const canvasPos = worldToCanvas(x, z);
+
+          // Only render if within canvas bounds (additional culling)
+          if (canvasPos.x < -tileSize || canvasPos.y < -tileSize ||
+              canvasPos.x > ctx.canvas.width || canvasPos.y > ctx.canvas.height) {
+            return;
+          }
+
+          ctx.fillRect(canvasPos.x, canvasPos.y, tileSize, tileSize);
+          tilesRendered++;
+
+          // Optional: Show height numbers (performance impact)
+          if (showHeightNumbers) {
+            ctx.save();
+            ctx.fillStyle = '#000000';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(
+              height.toString(),
+              canvasPos.x + tileSize / 2,
+              canvasPos.y + tileSize / 2
+            );
+            ctx.restore();
+          }
+        });
       });
-    });
+    }
 
     ctx.restore();
 
     return tilesRendered;
-  }, [tileSize, showHeightNumbers, getCachedColor, colorMode]);
+  }, [tileSize, showHeightNumbers, getCachedColor, colorMode, blendBiomes, minHeight, maxHeight]);
 
   /**
    * Render terrain chunk borders (debug visualization)
@@ -386,11 +507,64 @@ export const useTerrainRenderer = (options = {}) => {
     return waterTilesRendered;
   }, [tileSize]);
 
+  /**
+   * Render rivers on terrain (Phase 3)
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Array<Array<{x, z}>>} rivers - Array of river paths
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   * @param {object} viewportBounds - Visible area {left, right, top, bottom}
+   * @returns {number} Number of river tiles rendered
+   */
+  const renderRivers = useCallback((ctx, rivers, worldToCanvas, viewportBounds) => {
+    if (!ctx || !rivers || rivers.length === 0 || !worldToCanvas) return 0;
+
+    let riverTilesRendered = 0;
+
+    ctx.save();
+    ctx.fillStyle = RiverColor;
+
+    // Render each river path
+    for (const riverPath of rivers) {
+      if (!riverPath || riverPath.length === 0) continue;
+
+      for (const tile of riverPath) {
+        // Only render visible tiles (viewport culling)
+        if (tile.x < viewportBounds.left || tile.x > viewportBounds.right ||
+            tile.z < viewportBounds.top || tile.z > viewportBounds.bottom) {
+          continue;
+        }
+
+        const canvasPos = worldToCanvas(tile.x, tile.z);
+
+        // Skip if outside canvas bounds
+        if (canvasPos.x < -tileSize || canvasPos.y < -tileSize ||
+            canvasPos.x > ctx.canvas.width || canvasPos.y > ctx.canvas.height) {
+          continue;
+        }
+
+        // Render river tile slightly larger for visibility
+        ctx.fillRect(
+          canvasPos.x - RiverWidth / 2,
+          canvasPos.y - RiverWidth / 2,
+          tileSize + RiverWidth,
+          tileSize + RiverWidth
+        );
+        riverTilesRendered++;
+      }
+    }
+
+    ctx.restore();
+
+    return riverTilesRendered;
+  }, [tileSize]);
+
   // Return memoized functions
   return useMemo(() => ({
     renderTerrain,
     renderWater,
+    renderRivers,
     renderChunkBorders,
     renderHeightLegend
-  }), [renderTerrain, renderWater, renderChunkBorders, renderHeightLegend]);
+  }), [renderTerrain, renderWater, renderRivers, renderChunkBorders, renderHeightLegend]);
 };

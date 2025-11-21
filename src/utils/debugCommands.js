@@ -8,6 +8,7 @@
 
 import { Monster } from '../entities/Monster.js';
 import useGameStore from '../stores/useGameStore.js';
+import './testMonsterAI.js'; // Import test suite
 
 /**
  * Initialize debug commands
@@ -314,15 +315,22 @@ Manage Monsters:
 Utility:
   debug.getPlayerPos()
   debug.teleportPlayer(x, z)
-  debug.checkMonsterPipeline()  👈 NEW! Check if monsters are rendering
+  debug.checkMonsterPipeline()
+
+Testing (NEW!):
+  testMonsterAI.quick()         // Quick verification test
+  testMonsterAI.runAll()        // Full automated test suite
+  testMonsterAI.aggro()         // Test aggro detection
+  testMonsterAI.patrol()        // Test patrol behavior
+  testMonsterAI.attack()        // Test attack behavior
+  testMonsterAI.flee()          // Test flee behavior
 
 Examples:
+  testMonsterAI.quick()  // Run quick test
   debug.checkMonsterPipeline()  // Diagnose rendering issues
   debug.testAI('SLIME')  // Watch monster chase and attack!
   debug.spawnPatrolMonster('GOBLIN', 15, 15, 8, 2)  // Patrol in 8x8 square
   debug.spawnNearPlayer('GOBLIN', 8, 2)  // Spawn 8 tiles away
-  debug.spawnMonster('SLIME', 10, 10, 1)
-  debug.spawnMonsterCircle('GOBLIN', 5, 15, 15, 8, 2)
 
 Monster Types: SLIME, GOBLIN, WOLF, SKELETON, ORC
 Modifiers: ELITE, FAST, TANK, BERSERKER

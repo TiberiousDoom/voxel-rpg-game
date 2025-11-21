@@ -16,7 +16,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
+import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
+import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
@@ -273,6 +275,19 @@ function GameViewport({
     monsterAIRef.current = new MonsterAI();
   }
 
+  // Terrain system - Initialize once
+  const terrainSystemRef = useRef(null);
+  if (terrainSystemRef.current === null) {
+    terrainSystemRef.current = new TerrainSystem({
+      seed: 12345, // Fixed seed for consistent world
+      preset: 'DEFAULT',
+      chunkSize: 32,
+      tileSize: TILE_SIZE,
+      chunkLoadRadius: 2,
+      maxLoadedChunks: 100
+    });
+  }
+
   if (enablePlayerMovement && playerRef.current === null) {
     try {
       playerRef.current = new PlayerEntity({ x: 25, z: 25 }); // Start in center of 50x50 grid
@@ -325,6 +340,15 @@ function GameViewport({
     showHealthBars: !isMobile, // Hide health bars on mobile
     enableAnimations: true,
     debugMode: debugMode
+  });
+
+  // Terrain Renderer integration
+  const { renderTerrain, renderChunkBorders } = useTerrainRenderer({
+    tileSize: TILE_SIZE,
+    showGrid: false,
+    showHeightNumbers: false,
+    minHeight: 0,
+    maxHeight: 10
   });
 
   // Player movement controller
@@ -629,6 +653,17 @@ function GameViewport({
       ctx.restore();
     }
 
+    // Render terrain (BEFORE buildings for correct layering)
+    let tilesRendered = 0;
+    if (terrainSystemRef.current) {
+      try {
+        const terrainManager = terrainSystemRef.current.getTerrainManager();
+        tilesRendered = renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds);
+      } catch (e) {
+        // Silently handle terrain rendering errors
+      }
+    }
+
     // WF3: Render buildings using new BuildingRenderer with viewport culling (use ref!)
     const visibleBuildingCount = renderBuildingsWF3(ctx, buildingsRef.current, worldToCanvas, viewportBounds);
 
@@ -656,6 +691,16 @@ function GameViewport({
     // WF4: Render pathfinding visualization in debug mode (use ref!)
     if (debugModeRef.current) {
       npcRenderer.renderPaths(ctx, visibleNPCs, worldToCanvas);
+
+      // Render chunk borders in debug mode
+      if (terrainSystemRef.current) {
+        try {
+          const chunkManager = terrainSystemRef.current.getChunkManager();
+          renderChunkBorders(ctx, chunkManager, worldToCanvas, 32);
+        } catch (e) {
+          // Silently handle chunk border rendering errors
+        }
+      }
     }
 
     // Render interaction prompts (use refs!)
@@ -684,7 +729,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
 
   /**
    * Handle canvas click for placement (mouse and touch)
@@ -938,6 +983,15 @@ function GameViewport({
         const frameStartTime = performance.now();
 
         try {
+          // Update terrain chunk loading based on camera position
+          if (terrainSystemRef.current && getOffset) {
+            const offset = getOffset() || { x: 0, y: 0 };
+            // Camera position in world pixels (inverse of offset)
+            const cameraX = -offset.x;
+            const cameraZ = -offset.y;
+            terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT);
+          }
+
           // Update NPC positions before rendering (use ref to avoid loop recreation)
           if (npcRenderer && npcsRef.current) {
             npcRenderer.updatePositions(npcsRef.current, elapsed);

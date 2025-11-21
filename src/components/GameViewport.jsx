@@ -285,6 +285,7 @@ function GameViewport({
       chunkLoadRadius: 2,
       maxLoadedChunks: 100
     });
+    console.log('Terrain system initialized:', terrainSystemRef.current);
   }
 
   if (enablePlayerMovement && playerRef.current === null) {
@@ -658,7 +659,8 @@ function GameViewport({
         const terrainManager = terrainSystemRef.current.getTerrainManager();
         renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds);
       } catch (e) {
-        // Silently handle terrain rendering errors
+        // Log terrain rendering errors for debugging
+        console.error('Terrain rendering error:', e);
       }
     }
 

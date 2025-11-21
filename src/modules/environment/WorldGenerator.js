@@ -325,6 +325,110 @@ export class WorldGenerator {
       biomeTypes: Object.values(BiomeType)
     };
   }
+
+  /**
+   * Generate rivers (Phase 2: River generation)
+   * Rivers flow from high elevations to low elevations/water
+   *
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @param {number} riverCount - Number of rivers to generate (default: 3)
+   * @returns {Array<Array<{x, z}>>} Array of river paths
+   */
+  generateRivers(startX, startZ, width, depth, riverCount = 3) {
+    const rivers = [];
+    const riverSourceNoise = new NoiseGenerator(this.seed + 100);
+
+    // Find potential river sources (high elevation points)
+    for (let i = 0; i < riverCount; i++) {
+      // Use noise to deterministically pick river source
+      const sourceX = startX + Math.floor(riverSourceNoise.noise(i * 100, 0) * width);
+      const sourceZ = startZ + Math.floor(riverSourceNoise.noise(i * 100, 1000) * depth);
+
+      const sourceHeight = this.generateHeight(sourceX, sourceZ);
+
+      // Only start rivers from high elevations (above water level + 3)
+      if (sourceHeight > 6) {
+        const riverPath = this.traceRiverPath(sourceX, sourceZ, 500);
+        if (riverPath.length > 5) {  // Only include rivers with reasonable length
+          rivers.push(riverPath);
+        }
+      }
+    }
+
+    return rivers;
+  }
+
+  /**
+   * Trace a river path from source to water/lowest point
+   * Rivers flow downhill following steepest descent
+   *
+   * @param {number} startX - Starting X coordinate
+   * @param {number} startZ - Starting Z coordinate
+   * @param {number} maxLength - Maximum river length (prevents infinite loops)
+   * @returns {Array<{x, z}>} River path as array of positions
+   */
+  traceRiverPath(startX, startZ, maxLength = 500) {
+    const path = [];
+    let currentX = startX;
+    let currentZ = startZ;
+    const visited = new Set();
+
+    for (let i = 0; i < maxLength; i++) {
+      // Add current position to path
+      path.push({ x: currentX, z: currentZ });
+      visited.add(`${currentX},${currentZ}`);
+
+      const currentHeight = this.generateHeight(currentX, currentZ);
+
+      // Stop if reached water (height <= 3)
+      if (currentHeight <= 3) {
+        break;
+      }
+
+      // Find steepest downhill neighbor (8-directional)
+      const neighbors = [
+        { x: currentX + 1, z: currentZ, dx: 1, dz: 0 },
+        { x: currentX - 1, z: currentZ, dx: -1, dz: 0 },
+        { x: currentX, z: currentZ + 1, dx: 0, dz: 1 },
+        { x: currentX, z: currentZ - 1, dx: 0, dz: -1 },
+        { x: currentX + 1, z: currentZ + 1, dx: 1, dz: 1 },
+        { x: currentX - 1, z: currentZ + 1, dx: -1, dz: 1 },
+        { x: currentX + 1, z: currentZ - 1, dx: 1, dz: -1 },
+        { x: currentX - 1, z: currentZ - 1, dx: -1, dz: -1 }
+      ];
+
+      let steepestNeighbor = null;
+      let steepestDrop = 0;
+
+      for (const neighbor of neighbors) {
+        const key = `${neighbor.x},${neighbor.z}`;
+        if (visited.has(key)) continue;  // Skip visited tiles
+
+        const neighborHeight = this.generateHeight(neighbor.x, neighbor.z);
+        const heightDrop = currentHeight - neighborHeight;
+
+        // Find steepest downhill path
+        if (heightDrop > steepestDrop) {
+          steepestDrop = heightDrop;
+          steepestNeighbor = neighbor;
+        }
+      }
+
+      // If no downhill path found, river ends here
+      if (!steepestNeighbor) {
+        break;
+      }
+
+      // Move to steepest downhill neighbor
+      currentX = steepestNeighbor.x;
+      currentZ = steepestNeighbor.z;
+    }
+
+    return path;
+  }
 }
 
 /**

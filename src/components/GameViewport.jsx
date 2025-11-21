@@ -1027,6 +1027,11 @@ function GameViewport({
               buildings: buildingsRef.current || []
             };
             monsterAIRef.current.updateAll(monstersRef.current, gameState, elapsed);
+
+            // CRITICAL: Notify Zustand store of monster state changes
+            // AI modifies monsters in-place, but Zustand needs immutable updates
+            // Create new array reference to trigger reactivity
+            useGameStore.setState({ enemies: [...monstersRef.current] });
           }
 
           // Update monster positions before rendering

@@ -285,6 +285,7 @@ function GameViewport({
       chunkLoadRadius: 2,
       maxLoadedChunks: 100
     });
+    // eslint-disable-next-line no-console
     console.log('Terrain system initialized:', terrainSystemRef.current);
   }
 
@@ -743,7 +744,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
 
   /**
    * Handle canvas click for placement (mouse and touch)

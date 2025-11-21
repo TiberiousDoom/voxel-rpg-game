@@ -357,20 +357,22 @@ async function testFleeBehavior() {
     canFlee ? 'Goblin has canFlee: true' : 'Goblin cannot flee'
   );
 
-  // Test 2: Damage to low health
+  // Test 2: Damage to low health and check state immediately
   const targetHealth = monster.maxHealth * 0.25; // Below 30% threshold
   const damageNeeded = monster.health - targetHealth;
   window.debug.damageMonster(monster.id, damageNeeded);
 
-  // Wait for AI to process
-  await new Promise(resolve => setTimeout(resolve, 300));
+  // Check for FLEE state within 1 second (using waitFor helper)
+  const enteredFlee = await waitFor(() => {
+    monster = getMonster(monsterId);
+    return monster.aiState === 'FLEE';
+  }, 1000, 50);
 
-  monster = getMonster(monsterId);
-  const enteredFlee = monster.aiState === 'FLEE';
+  monster = getMonster(monsterId); // Get final state for logging
   runner.addResult(
     'Enters FLEE at Low Health',
     enteredFlee,
-    enteredFlee ? `Monster entered ${monster.aiState} state at ${monster.health}/${monster.maxHealth} HP` : `Monster in ${monster.aiState} at ${monster.health}/${monster.maxHealth} HP`
+    enteredFlee ? `Monster entered FLEE state at ${monster.health}/${monster.maxHealth} HP` : `Monster in ${monster.aiState} at ${monster.health}/${monster.maxHealth} HP (expected FLEE)`
   );
 
   // Test 3: Monster moves away from player
@@ -409,8 +411,8 @@ async function testMultipleMonsters() {
   window.debug.clearMonsters();
   window.debug.teleportPlayer(25, 25);
 
-  // Spawn 10 monsters in a circle
-  window.debug.spawnMonsterCircle('SLIME', 10, 25, 25, 15, 1);
+  // Spawn 10 monsters in a circle (8 tile radius = within aggro range of 10)
+  window.debug.spawnMonsterCircle('SLIME', 10, 25, 25, 8, 1);
 
   // Test 1: All spawned
   const store = useGameStore.getState();
@@ -421,11 +423,12 @@ async function testMultipleMonsters() {
     allSpawned ? `${store.enemies.length} monsters spawned` : `Only ${store.enemies.length}/10 spawned`
   );
 
-  // Test 2: Move player close to trigger aggro
-  window.debug.teleportPlayer(25, 25);
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Test 2: Wait for monsters to detect player (already at center)
+  // Give enough time for all monsters to run AI update (100ms interval × 10 monsters)
+  await new Promise(resolve => setTimeout(resolve, 1000));
 
-  const chasingCount = store.enemies.filter(m => m.aiState === 'CHASE' || m.aiState === 'ATTACK').length;
+  const freshEnemies = useGameStore.getState().enemies;
+  const chasingCount = freshEnemies.filter(m => m.aiState === 'CHASE' || m.aiState === 'ATTACK').length;
   const someChasing = chasingCount > 0;
   runner.addResult(
     'Some Monsters Chase',

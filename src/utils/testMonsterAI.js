@@ -75,6 +75,15 @@ function distance(pos1, pos2) {
 }
 
 /**
+ * Get fresh monster reference from store by ID
+ * Tests must use this instead of holding stale references
+ */
+function getMonster(monsterId) {
+  const store = useGameStore.getState();
+  return store.enemies.find(m => m.id === monsterId);
+}
+
+/**
  * Test monster spawning
  */
 async function testMonsterSpawning() {
@@ -139,9 +148,11 @@ async function testAggroDetection() {
   window.debug.teleportPlayer(25, 25);
 
   // Spawn monster 20 tiles away (outside aggro range)
-  const monster = window.debug.spawnMonster('SLIME', 45, 25, 1);
+  const spawnedMonster = window.debug.spawnMonster('SLIME', 45, 25, 1);
+  const monsterId = spawnedMonster.id;
 
   // Test 1: Monster starts in IDLE
+  let monster = getMonster(monsterId);
   const startsIdle = monster.aiState === 'IDLE';
   runner.addResult(
     'Initial State IDLE',
@@ -151,6 +162,7 @@ async function testAggroDetection() {
 
   // Test 2: Monster doesn't chase when far away
   await new Promise(resolve => setTimeout(resolve, 500));
+  monster = getMonster(monsterId);
   const staysIdle = monster.aiState === 'IDLE';
   runner.addResult(
     'Stays IDLE When Far',
@@ -164,6 +176,7 @@ async function testAggroDetection() {
   // Wait for AI to detect player (AI updates every 100ms)
   await new Promise(resolve => setTimeout(resolve, 300));
 
+  monster = getMonster(monsterId);
   const chasingNow = monster.aiState === 'CHASE';
   runner.addResult(
     'Enters CHASE When Close',
@@ -174,6 +187,7 @@ async function testAggroDetection() {
   // Test 4: Monster moves toward player
   const startPos = { x: monster.position.x, z: monster.position.z };
   await new Promise(resolve => setTimeout(resolve, 500));
+  monster = getMonster(monsterId);
   const endPos = { x: monster.position.x, z: monster.position.z };
 
   const moved = distance(startPos, endPos) > 0.1;
@@ -199,9 +213,11 @@ async function testPatrolBehavior() {
   window.debug.teleportPlayer(0, 0); // Far from patrol area
 
   // Spawn patrol monster far away
-  const monster = window.debug.spawnPatrolMonster('GOBLIN', 40, 40, 8, 1);
+  const spawnedMonster = window.debug.spawnPatrolMonster('GOBLIN', 40, 40, 8, 1);
+  const monsterId = spawnedMonster.id;
 
   // Test 1: Monster starts in PATROL state
+  let monster = getMonster(monsterId);
   const startsPatrol = monster.aiState === 'PATROL';
   runner.addResult(
     'Initial State PATROL',
@@ -220,6 +236,7 @@ async function testPatrolBehavior() {
   // Test 3: Monster moves along path
   const startPos = { x: monster.position.x, z: monster.position.z };
   await new Promise(resolve => setTimeout(resolve, 1000));
+  monster = getMonster(monsterId);
   const endPos = { x: monster.position.x, z: monster.position.z };
 
   const moved = distance(startPos, endPos) > 0.5;
@@ -231,9 +248,11 @@ async function testPatrolBehavior() {
 
   // Test 4: Patrol → Chase transition
   // Move player near monster
+  monster = getMonster(monsterId);
   window.debug.teleportPlayer(monster.position.x + 5, monster.position.z);
   await new Promise(resolve => setTimeout(resolve, 300));
 
+  monster = getMonster(monsterId);
   const switchedToChase = monster.aiState === 'CHASE';
   runner.addResult(
     'PATROL → CHASE Transition',
@@ -245,6 +264,7 @@ async function testPatrolBehavior() {
   window.debug.teleportPlayer(0, 0); // Move far away
   await new Promise(resolve => setTimeout(resolve, 500));
 
+  monster = getMonster(monsterId);
   const returnedToPatrol = monster.aiState === 'IDLE' || monster.aiState === 'PATROL';
   runner.addResult(
     'Returns to IDLE/PATROL',
@@ -325,9 +345,11 @@ async function testFleeBehavior() {
   window.debug.teleportPlayer(25, 25);
 
   // Spawn goblin (has canFlee: true)
-  const monster = window.debug.spawnMonster('GOBLIN', 27, 25, 1);
+  const spawnedMonster = window.debug.spawnMonster('GOBLIN', 27, 25, 1);
+  const monsterId = spawnedMonster.id;
 
   // Test 1: Goblin can flee
+  let monster = getMonster(monsterId);
   const canFlee = monster.canFlee === true;
   runner.addResult(
     'Monster Can Flee',
@@ -343,6 +365,7 @@ async function testFleeBehavior() {
   // Wait for AI to process
   await new Promise(resolve => setTimeout(resolve, 300));
 
+  monster = getMonster(monsterId);
   const enteredFlee = monster.aiState === 'FLEE';
   runner.addResult(
     'Enters FLEE at Low Health',
@@ -354,6 +377,7 @@ async function testFleeBehavior() {
   if (enteredFlee) {
     const startDist = distance(monster.position, { x: 25, z: 25 });
     await new Promise(resolve => setTimeout(resolve, 500));
+    monster = getMonster(monsterId);
     const endDist = distance(monster.position, { x: 25, z: 25 });
 
     const movingAway = endDist > startDist;

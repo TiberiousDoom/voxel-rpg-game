@@ -29,6 +29,13 @@ const BiomeColors = {
 };
 
 /**
+ * Water rendering constants
+ */
+const WaterColor = 'rgba(30, 144, 255, 0.7)';  // Dodger blue with transparency
+const DeepWaterColor = 'rgba(0, 105, 148, 0.8)';  // Deeper blue
+const WaterLevel = 3;  // Tiles at or below this height are underwater
+
+/**
  * Get terrain tile color based on biome
  *
  * @param {string} biome - Biome type
@@ -306,10 +313,84 @@ export const useTerrainRenderer = (options = {}) => {
     ctx.restore();
   }, [minHeight, maxHeight, getCachedColor]);
 
+  /**
+   * Render water overlay on terrain
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {TerrainManager} terrainManager - Terrain manager instance
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   * @param {object} viewportBounds - Visible area {left, right, top, bottom}
+   * @returns {number} Number of water tiles rendered
+   */
+  const renderWater = useCallback((ctx, terrainManager, worldToCanvas, viewportBounds) => {
+    if (!ctx || !terrainManager || !worldToCanvas) return 0;
+
+    let waterTilesRendered = 0;
+
+    // Render only visible tiles (viewport culling)
+    const startX = Math.max(0, viewportBounds.left);
+    const endX = Math.min(terrainManager.config.chunkSize * 100, viewportBounds.right);
+    const startZ = Math.max(0, viewportBounds.top);
+    const endZ = Math.min(terrainManager.config.chunkSize * 100, viewportBounds.bottom);
+
+    ctx.save();
+
+    // Batch water tiles by depth for performance
+    const shallowWaterTiles = [];
+    const deepWaterTiles = [];
+
+    for (let z = startZ; z <= endZ; z++) {
+      for (let x = startX; x <= endX; x++) {
+        const height = terrainManager.getHeight(x, z);
+
+        // Render water if below water level
+        if (height <= WaterLevel) {
+          const canvasPos = worldToCanvas(x, z);
+
+          // Skip if outside canvas bounds
+          if (canvasPos.x < -tileSize || canvasPos.y < -tileSize ||
+              canvasPos.x > ctx.canvas.width || canvasPos.y > ctx.canvas.height) {
+            continue;
+          }
+
+          // Categorize by depth
+          if (height <= 1) {
+            deepWaterTiles.push(canvasPos);
+          } else {
+            shallowWaterTiles.push(canvasPos);
+          }
+        }
+      }
+    }
+
+    // Render deep water (darker blue)
+    if (deepWaterTiles.length > 0) {
+      ctx.fillStyle = DeepWaterColor;
+      deepWaterTiles.forEach(pos => {
+        ctx.fillRect(pos.x, pos.y, tileSize, tileSize);
+        waterTilesRendered++;
+      });
+    }
+
+    // Render shallow water (lighter blue)
+    if (shallowWaterTiles.length > 0) {
+      ctx.fillStyle = WaterColor;
+      shallowWaterTiles.forEach(pos => {
+        ctx.fillRect(pos.x, pos.y, tileSize, tileSize);
+        waterTilesRendered++;
+      });
+    }
+
+    ctx.restore();
+
+    return waterTilesRendered;
+  }, [tileSize]);
+
   // Return memoized functions
   return useMemo(() => ({
     renderTerrain,
+    renderWater,
     renderChunkBorders,
     renderHeightLegend
-  }), [renderTerrain, renderChunkBorders, renderHeightLegend]);
+  }), [renderTerrain, renderWater, renderChunkBorders, renderHeightLegend]);
 };

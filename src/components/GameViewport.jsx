@@ -343,7 +343,7 @@ function GameViewport({
   });
 
   // Terrain Renderer integration
-  const { renderTerrain, renderChunkBorders } = useTerrainRenderer({
+  const { renderTerrain, renderWater, renderChunkBorders } = useTerrainRenderer({
     tileSize: TILE_SIZE,
     showHeightNumbers: false,
     minHeight: 0,
@@ -659,6 +659,9 @@ function GameViewport({
         const terrainManager = terrainSystemRef.current.getTerrainManager();
         const worldGenerator = terrainSystemRef.current.getWorldGenerator();
         renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator);
+
+        // Render water on top of terrain (Phase 2: Water System)
+        renderWater(ctx, terrainManager, worldToCanvas, viewportBounds);
       } catch (e) {
         // Log terrain rendering errors for debugging
         console.error('Terrain rendering error:', e);

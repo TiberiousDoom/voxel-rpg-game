@@ -183,6 +183,13 @@ export function initDebugCommands() {
   window.debug.teleportPlayer = (x = 10, z = 10) => {
     const player = useGameStore.getState().player;
     useGameStore.getState().setPlayerPosition([x, player.position[1], z]);
+
+    // CRITICAL: Also update PlayerEntity if it exists (used by Monster AI!)
+    if (window.playerEntity) {
+      window.playerEntity.position.x = x;
+      window.playerEntity.position.z = z;
+    }
+
     console.log(`🚀 Teleported player to (${x}, ${z})`);
   };
 
@@ -192,9 +199,30 @@ export function initDebugCommands() {
    */
   window.debug.getPlayerPos = () => {
     const player = useGameStore.getState().player;
-    const pos = { x: player.position[0], z: player.position[2] };
-    console.log(`📍 Player position: (${pos.x.toFixed(1)}, ${pos.z.toFixed(1)})`);
-    return pos;
+    const storePos = { x: player.position[0], z: player.position[2] };
+
+    console.log(`📍 Player Position:`);
+    console.log(`   Store:  (${storePos.x.toFixed(1)}, ${storePos.z.toFixed(1)})`);
+
+    if (window.playerEntity) {
+      const entityPos = window.playerEntity.position;
+      console.log(`   Entity: (${entityPos.x.toFixed(1)}, ${entityPos.z.toFixed(1)}) ← AI uses this!`);
+
+      // Check if they match
+      const diff = Math.sqrt(
+        Math.pow(storePos.x - entityPos.x, 2) +
+        Math.pow(storePos.z - entityPos.z, 2)
+      );
+      if (diff > 0.1) {
+        console.warn(`   ⚠️  WARNING: Store and Entity positions differ by ${diff.toFixed(2)} tiles!`);
+      } else {
+        console.log(`   ✅ Synchronized`);
+      }
+    } else {
+      console.warn(`   ⚠️  PlayerEntity not found (GameViewport not running?)`);
+    }
+
+    return storePos;
   };
 
   /**

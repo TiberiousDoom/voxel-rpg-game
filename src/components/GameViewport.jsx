@@ -293,6 +293,12 @@ function GameViewport({
   if (enablePlayerMovement && playerRef.current === null) {
     try {
       playerRef.current = new PlayerEntity({ x: 25, z: 25 }); // Start in center of 50x50 grid
+
+      // Expose playerEntity for debug commands (needed for teleportPlayer)
+      if (typeof window !== 'undefined') {
+        window.playerEntity = playerRef.current;
+      }
+
       playerRendererRef.current = new PlayerRenderer({
         tileSize: TILE_SIZE,
         showHealthBar: true,

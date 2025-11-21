@@ -17,14 +17,17 @@ import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
+import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Phase 4: Job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
+import { TerrainJobQueue } from '../modules/terrain-jobs/TerrainJobQueue.js'; // Phase 4: Job queue
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
 import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.js';
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
+import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Phase 4: Terrain tools UI
 import './GameViewport.css';
 
 /**
@@ -352,6 +355,37 @@ function GameViewport({
     maxHeight: 10,
     colorMode: 'biome'  // Use biome-based coloring (Phase 2)
   });
+
+  // Phase 4: Terrain Job Queue - Initialize once with terrain system
+  const terrainJobQueueRef = useRef(null);
+  if (terrainJobQueueRef.current === null && terrainSystemRef.current) {
+    terrainJobQueueRef.current = new TerrainJobQueue(terrainSystemRef.current);
+  }
+
+  // Phase 4: Job Renderer integration
+  const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
+
+  // Phase 4: Terrain tool state
+  const [terrainToolMode, setTerrainToolMode] = useState(null); // null, 'flatten', 'raise', 'lower', 'smooth'
+  const [jobPriority, setJobPriority] = useState(5); // 1-10
+  const [selectionStart, setSelectionStart] = useState(null); // {x, z} world coords
+  const [selectionEnd, setSelectionEnd] = useState(null); // {x, z} world coords
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [activeJobs, setActiveJobs] = useState([]); // Active terrain jobs for rendering
+
+  // Phase 4: Update active jobs from queue
+  useEffect(() => {
+    if (!terrainJobQueueRef.current) return;
+
+    // Update active jobs every 100ms for rendering
+    const intervalId = setInterval(() => {
+      const queue = terrainJobQueueRef.current;
+      const jobs = [...queue.pendingJobs, ...queue.activeJobs];
+      setActiveJobs(jobs);
+    }, 100);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
@@ -730,6 +764,37 @@ function GameViewport({
         const isValid = true; // Placeholder - should check collision/placement rules
         renderPlacementPreview(ctx, hoveredPositionRef.current, selectedBuildingTypeRef.current, isValid, worldToCanvas);
       }
+
+      // Phase 4: Render terrain job overlays
+      if (activeJobs && activeJobs.length > 0) {
+        renderJobOverlays(ctx, activeJobs, worldToCanvas, TILE_SIZE);
+      }
+
+      // Phase 4: Render job selection overlay (while player is selecting area)
+      if (terrainToolMode && isSelecting && selectionStart && selectionEnd) {
+        // Convert world coordinates to canvas coordinates
+        const startCanvas = worldToCanvas(selectionStart.x, selectionStart.z);
+        const endCanvas = worldToCanvas(selectionEnd.x + 1, selectionEnd.z + 1);
+
+        // Calculate selection info for preview
+        const width = Math.abs(selectionEnd.x - selectionStart.x) + 1;
+        const depth = Math.abs(selectionEnd.z - selectionStart.z) + 1;
+        const tiles = width * depth;
+
+        // Calculate estimated time (simplified - use same logic as JobTimeCalculator)
+        const baseTime = tiles * 1000; // 1 second per tile average
+        const minutes = Math.floor(baseTime / 60000);
+        const seconds = Math.floor((baseTime % 60000) / 1000);
+        const estimatedTime = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
+        renderJobSelection(ctx, startCanvas, endCanvas, terrainToolMode, { tiles, estimatedTime });
+      }
+
+      // Phase 4: Render job statistics overlay (top-right corner)
+      if (terrainJobQueueRef.current) {
+        const stats = terrainJobQueueRef.current.getStatistics();
+        renderJobStatistics(ctx, stats);
+      }
     } catch (error) {
       // Don't update state in render loop - causes severe FPS drops!
       // Just draw error message on canvas
@@ -745,7 +810,100 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, activeJobs, terrainToolMode, isSelecting, selectionStart, selectionEnd]);
+
+  /**
+   * Phase 4: Terrain tool selection handlers
+   */
+  const handleTerrainToolMouseDown = (e) => {
+    if (!canvasRef.current || !terrainToolMode) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = CANVAS_WIDTH / rect.width;
+    const scaleY = CANVAS_HEIGHT / rect.height;
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    const gridPos = canvasToWorld(canvasX, canvasY);
+
+    // Start selection
+    setSelectionStart(gridPos);
+    setSelectionEnd(gridPos);
+    setIsSelecting(true);
+  };
+
+  const handleTerrainToolMouseMove = (e) => {
+    if (!canvasRef.current || !terrainToolMode || !isSelecting || !selectionStart) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = CANVAS_WIDTH / rect.width;
+    const scaleY = CANVAS_HEIGHT / rect.height;
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    const gridPos = canvasToWorld(canvasX, canvasY);
+
+    // Update selection end
+    setSelectionEnd(gridPos);
+  };
+
+  const handleTerrainToolMouseUp = (e) => {
+    if (!canvasRef.current || !terrainToolMode || !selectionStart || !selectionEnd) {
+      setIsSelecting(false);
+      return;
+    }
+
+    // Calculate job area
+    const x = Math.min(selectionStart.x, selectionEnd.x);
+    const z = Math.min(selectionStart.z, selectionEnd.z);
+    const width = Math.abs(selectionEnd.x - selectionStart.x) + 1;
+    const depth = Math.abs(selectionEnd.z - selectionStart.z) + 1;
+
+    // Don't create job if area is too small (just a click)
+    if (width === 1 && depth === 1) {
+      setIsSelecting(false);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      return;
+    }
+
+    // Create terrain job
+    if (terrainJobQueueRef.current) {
+      try {
+        // Calculate target value for flatten (average height)
+        let targetValue = null;
+        if (terrainToolMode === 'flatten') {
+          let sum = 0;
+          let count = 0;
+          for (let dx = 0; dx < width; dx++) {
+            for (let dz = 0; dz < depth; dz++) {
+              sum += terrainSystemRef.current.getHeight(x + dx, z + dz);
+              count++;
+            }
+          }
+          targetValue = Math.round(sum / count);
+        }
+
+        const job = terrainJobQueueRef.current.addJob({
+          type: terrainToolMode,
+          area: { x, z, width, depth },
+          priority: jobPriority,
+          targetValue
+        });
+
+        // eslint-disable-next-line no-console
+        console.log('Created terrain job:', job);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error creating terrain job:', error);
+      }
+    }
+
+    // Reset selection
+    setIsSelecting(false);
+    setSelectionStart(null);
+    setSelectionEnd(null);
+  };
 
   /**
    * Handle canvas click for placement (mouse and touch)
@@ -756,6 +914,9 @@ function GameViewport({
 
   const handleCanvasClick = (e) => {
     if (!canvasRef.current) return;
+
+    // Phase 4: Terrain tool mode takes precedence - handled by mousedown/mouseup
+    if (terrainToolMode) return;
 
     // Ignore if it was a long press (handled separately)
     if (isLongPress) {
@@ -902,6 +1063,12 @@ function GameViewport({
    */
   const handleCanvasMouseMove = (e) => {
     if (!canvasRef.current) return;
+
+    // Phase 4: Handle terrain tool selection dragging
+    if (terrainToolMode && isSelecting) {
+      handleTerrainToolMouseMove(e);
+      return;
+    }
 
     // Throttle: Only update at most every 16ms (60 FPS)
     const now = Date.now();
@@ -1128,7 +1295,43 @@ function GameViewport({
         onTouchEnd={handleTouchEnd}
         onMouseMove={handleCanvasMouseMove}
         onMouseLeave={handleCanvasMouseLeave}
+        onMouseDown={handleTerrainToolMouseDown}
+        onMouseUp={handleTerrainToolMouseUp}
       />
+
+      {/* Phase 4: Terrain Tools Panel */}
+      {!selectedBuildingType && (
+        <div style={{
+          position: 'absolute',
+          top: '60px',
+          left: '10px',
+          zIndex: 1000
+        }}>
+          <TerrainToolsPanel
+            activeTool={terrainToolMode}
+            priority={jobPriority}
+            onToolSelect={setTerrainToolMode}
+            onPriorityChange={setJobPriority}
+            isSelecting={isSelecting}
+            selectionInfo={
+              selectionStart && selectionEnd
+                ? {
+                    width: Math.abs(selectionEnd.x - selectionStart.x) + 1,
+                    depth: Math.abs(selectionEnd.z - selectionStart.z) + 1,
+                    tiles: (Math.abs(selectionEnd.x - selectionStart.x) + 1) * (Math.abs(selectionEnd.z - selectionStart.z) + 1),
+                    estimatedTime: (() => {
+                      const tiles = (Math.abs(selectionEnd.x - selectionStart.x) + 1) * (Math.abs(selectionEnd.z - selectionStart.z) + 1);
+                      const baseTime = tiles * 1000;
+                      const minutes = Math.floor(baseTime / 60000);
+                      const seconds = Math.floor((baseTime % 60000) / 1000);
+                      return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                    })()
+                  }
+                : null
+            }
+          />
+        </div>
+      )}
 
       {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
       {debugMode && (

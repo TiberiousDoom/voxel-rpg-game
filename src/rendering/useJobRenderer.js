@@ -110,7 +110,6 @@ export const useJobRenderer = () => {
 
     // Draw preview info if provided
     if (previewInfo) {
-      const padding = 8;
       const infoY = y - 40;
 
       // Background

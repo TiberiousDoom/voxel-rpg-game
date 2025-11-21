@@ -17,14 +17,18 @@ import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
+import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
+import { TerrainJobQueue } from '../modules/terrain-jobs/TerrainJobQueue.js'; // Terrain job queue
+import { JobTimeCalculator } from '../modules/terrain-jobs/JobTimeCalculator.js'; // Job time calculator
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
 import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.js';
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
+import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
 import './GameViewport.css';
 
 /**
@@ -205,6 +209,14 @@ function GameViewport({
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
 
+  // Terrain job system state
+  const [activeTool, setActiveTool] = useState(null); // 'flatten', 'raise', 'lower', 'smooth', or null
+  const [jobPriority, setJobPriority] = useState(5); // 1-10
+  const [selectionStart, setSelectionStart] = useState(null); // {x, y} canvas coords
+  const [selectionEnd, setSelectionEnd] = useState(null); // {x, y} canvas coords
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [jobs, setJobs] = useState([]); // Array of TerrainJob instances
+
   // Debug state for mobile diagnostics (always shown on mobile)
   const [debugInfo, setDebugInfo] = useState({
     canvasReady: false,
@@ -290,6 +302,16 @@ function GameViewport({
     console.log('Terrain system initialized:', terrainSystemRef.current);
   }
 
+  // Terrain job queue - Initialize once
+  const jobQueueRef = useRef(null);
+  const timeCalculatorRef = useRef(null);
+  if (jobQueueRef.current === null && terrainSystemRef.current) {
+    timeCalculatorRef.current = new JobTimeCalculator(terrainSystemRef.current);
+    jobQueueRef.current = new TerrainJobQueue(terrainSystemRef.current);
+    // eslint-disable-next-line no-console
+    console.log('Terrain job queue initialized:', jobQueueRef.current);
+  }
+
   if (enablePlayerMovement && playerRef.current === null) {
     try {
       playerRef.current = new PlayerEntity({ x: 25, z: 25 }); // Start in center of 50x50 grid
@@ -358,6 +380,9 @@ function GameViewport({
     maxHeight: 10,
     colorMode: 'biome'  // Use biome-based coloring (Phase 2)
   });
+
+  // Terrain Job Renderer integration
+  const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
 
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
@@ -736,6 +761,47 @@ function GameViewport({
         const isValid = true; // Placeholder - should check collision/placement rules
         renderPlacementPreview(ctx, hoveredPositionRef.current, selectedBuildingTypeRef.current, isValid, worldToCanvas);
       }
+
+      // Terrain job overlays (show existing jobs)
+      if (jobs && jobs.length > 0) {
+        renderJobOverlays(ctx, jobs, worldToCanvas, TILE_SIZE);
+      }
+
+      // Terrain job selection overlay (show current selection being dragged)
+      if (activeTool && selectionStart && selectionEnd) {
+        // Calculate selection info for preview
+        const start = canvasToWorld(selectionStart.x, selectionStart.y);
+        const end = canvasToWorld(selectionEnd.x, selectionEnd.y);
+        const width = Math.abs(end.x - start.x) + 1;
+        const depth = Math.abs(end.z - start.z) + 1;
+        const tiles = width * depth;
+
+        // Estimate time using time calculator
+        let estimatedTime = '?';
+        if (timeCalculatorRef.current && terrainSystemRef.current) {
+          const area = {
+            x: Math.min(start.x, end.x),
+            z: Math.min(start.z, end.z),
+            width,
+            depth
+          };
+          const timeMs = timeCalculatorRef.current.estimateTime(activeTool, area);
+          estimatedTime = JobTimeCalculator.formatTime(timeMs);
+        }
+
+        renderJobSelection(ctx, selectionStart, selectionEnd, activeTool, {
+          tiles,
+          width,
+          depth,
+          estimatedTime
+        });
+      }
+
+      // Job statistics overlay (top-right corner)
+      if (jobQueueRef.current) {
+        const stats = jobQueueRef.current.getStatistics();
+        renderJobStatistics(ctx, stats);
+      }
     } catch (error) {
       // Don't update state in render loop - causes severe FPS drops!
       // Just draw error message on canvas
@@ -751,7 +817,96 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld]);
+
+  /**
+   * Terrain tool handlers
+   */
+  const handleToolSelect = React.useCallback((tool) => {
+    setActiveTool(tool);
+    if (!tool) {
+      // Cancel any selection in progress
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      setIsSelecting(false);
+    }
+  }, []);
+
+  const handlePriorityChange = React.useCallback((priority) => {
+    setJobPriority(priority);
+  }, []);
+
+  const handleMouseDown = React.useCallback((e) => {
+    if (!activeTool || !canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = CANVAS_WIDTH / rect.width;
+    const scaleY = CANVAS_HEIGHT / rect.height;
+
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    setSelectionStart({ x: canvasX, y: canvasY });
+    setSelectionEnd({ x: canvasX, y: canvasY });
+    setIsSelecting(true);
+  }, [activeTool]);
+
+  const handleMouseMoveSelection = React.useCallback((e) => {
+    if (!isSelecting || !selectionStart || !canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = CANVAS_WIDTH / rect.width;
+    const scaleY = CANVAS_HEIGHT / rect.height;
+
+    const canvasX = (e.clientX - rect.left) * scaleX;
+    const canvasY = (e.clientY - rect.top) * scaleY;
+
+    setSelectionEnd({ x: canvasX, y: canvasY });
+  }, [isSelecting, selectionStart]);
+
+  const handleMouseUp = React.useCallback((e) => {
+    if (!isSelecting || !selectionStart || !selectionEnd || !activeTool) {
+      setIsSelecting(false);
+      return;
+    }
+
+    // Convert canvas selection to world coordinates
+    const start = canvasToWorld(selectionStart.x, selectionStart.y);
+    const end = canvasToWorld(selectionEnd.x, selectionEnd.y);
+
+    // Calculate area
+    const minX = Math.min(start.x, end.x);
+    const maxX = Math.max(start.x, end.x);
+    const minZ = Math.min(start.z, end.z);
+    const maxZ = Math.max(start.z, end.z);
+
+    const area = {
+      x: minX,
+      z: minZ,
+      width: maxX - minX + 1,
+      depth: maxZ - minZ + 1
+    };
+
+    // Create job if area is valid (at least 1x1)
+    if (area.width > 0 && area.depth > 0 && jobQueueRef.current) {
+      const job = jobQueueRef.current.addJob({
+        type: activeTool,
+        area,
+        priority: jobPriority
+      });
+
+      // Update jobs state
+      setJobs(prevJobs => [...prevJobs, job]);
+
+      // eslint-disable-next-line no-console
+      console.log('Created terrain job:', job);
+    }
+
+    // Reset selection
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setIsSelecting(false);
+  }, [isSelecting, selectionStart, selectionEnd, activeTool, jobPriority, canvasToWorld]);
 
   /**
    * Handle canvas click for placement (mouse and touch)
@@ -762,6 +917,11 @@ function GameViewport({
 
   const handleCanvasClick = (e) => {
     if (!canvasRef.current) return;
+
+    // Ignore if terrain tool is active (handled by mousedown/mouseup)
+    if (activeTool) {
+      return;
+    }
 
     // Ignore if it was a long press (handled separately)
     if (isLongPress) {
@@ -904,12 +1064,17 @@ function GameViewport({
   };
 
   /**
-   * Handle canvas mouse move for hover (throttled for performance)
+   * Handle canvas mouse move for hover and selection (throttled for performance)
    */
   const handleCanvasMouseMove = (e) => {
     if (!canvasRef.current) return;
 
-    // Throttle: Only update at most every 16ms (60 FPS)
+    // Handle selection dragging (if active)
+    if (isSelecting && selectionStart) {
+      handleMouseMoveSelection(e);
+    }
+
+    // Throttle hover updates: Only update at most every 16ms (60 FPS)
     const now = Date.now();
     if (now - lastHoverUpdateRef.current < 16) {
       return;
@@ -1132,9 +1297,44 @@ function GameViewport({
         onClick={handleCanvasClick}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
         onMouseMove={handleCanvasMouseMove}
         onMouseLeave={handleCanvasMouseLeave}
       />
+
+      {/* Terrain Tools Panel */}
+      {!selectedBuildingType && (
+        <div style={{ position: 'fixed', left: '10px', bottom: '10px', zIndex: 1000 }}>
+          <TerrainToolsPanel
+            activeTool={activeTool}
+            priority={jobPriority}
+            onToolSelect={handleToolSelect}
+            onPriorityChange={handlePriorityChange}
+            isSelecting={isSelecting}
+            selectionInfo={
+              selectionStart && selectionEnd
+                ? {
+                    width: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).x - canvasToWorld(selectionStart.x, selectionStart.y).x) + 1,
+                    depth: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).z - canvasToWorld(selectionStart.x, selectionStart.y).z) + 1,
+                    tiles: (Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).x - canvasToWorld(selectionStart.x, selectionStart.y).x) + 1) *
+                           (Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).z - canvasToWorld(selectionStart.x, selectionStart.y).z) + 1),
+                    estimatedTime: timeCalculatorRef.current && activeTool
+                      ? JobTimeCalculator.formatTime(
+                          timeCalculatorRef.current.estimateTime(activeTool, {
+                            x: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).x, canvasToWorld(selectionEnd.x, selectionEnd.y).x),
+                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionEnd.y).z),
+                            width: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).x - canvasToWorld(selectionStart.x, selectionStart.y).x) + 1,
+                            depth: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).z - canvasToWorld(selectionStart.x, selectionStart.y).z) + 1
+                          })
+                        )
+                      : '?'
+                  }
+                : null
+            }
+          />
+        </div>
+      )}
 
       {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
       {debugMode && (

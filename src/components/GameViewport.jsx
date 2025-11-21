@@ -653,11 +653,10 @@ function GameViewport({
     }
 
     // Render terrain (BEFORE buildings for correct layering)
-    let tilesRendered = 0;
     if (terrainSystemRef.current) {
       try {
         const terrainManager = terrainSystemRef.current.getTerrainManager();
-        tilesRendered = renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds);
+        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds);
       } catch (e) {
         // Silently handle terrain rendering errors
       }

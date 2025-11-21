@@ -19,7 +19,7 @@
  *   const biome = generator.getBiome(x, z);
  */
 
-import { NoiseGenerator, NoisePresets } from './NoiseGenerator.js';
+import { NoiseGenerator } from './NoiseGenerator.js';
 
 /**
  * Biome types based on temperature and moisture

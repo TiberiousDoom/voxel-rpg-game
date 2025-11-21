@@ -50,7 +50,6 @@ const getHeightColor = (height, minHeight = 0, maxHeight = 10) => {
 export const useTerrainRenderer = (options = {}) => {
   const {
     tileSize = 40,
-    showGrid = false,
     showHeightNumbers = false,
     minHeight = 0,
     maxHeight = 10

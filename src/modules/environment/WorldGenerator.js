@@ -344,8 +344,8 @@ export class WorldGenerator {
     // Find potential river sources (high elevation points)
     for (let i = 0; i < riverCount; i++) {
       // Use noise to deterministically pick river source
-      const sourceX = startX + Math.floor(riverSourceNoise.noise(i * 100, 0) * width);
-      const sourceZ = startZ + Math.floor(riverSourceNoise.noise(i * 100, 1000) * depth);
+      const sourceX = startX + Math.floor(riverSourceNoise.height(i * 100, 0, { scale: 1.0 }) * width);
+      const sourceZ = startZ + Math.floor(riverSourceNoise.height(i * 100, 1000, { scale: 1.0 }) * depth);
 
       const sourceHeight = this.generateHeight(sourceX, sourceZ);
 

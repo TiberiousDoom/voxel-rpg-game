@@ -36,7 +36,8 @@ class NPC {
       farming: 1.0,
       crafting: 1.0,
       defense: 1.0,
-      general: 1.0
+      general: 1.0,
+      terrain_work: data.terrain_work || 1.0  // Phase 4: Terrain job system
     };
     this.happiness = data.happiness || 50;
     this.morale = data.morale || 0;
@@ -50,6 +51,9 @@ class NPC {
     this.isMoving = false;
     this.isWorking = false;
     this.isResting = false;
+
+    // Phase 4: Terrain job system
+    this.currentTerrainJob = null;  // ID of terrain job being worked on
 
     // Pathfinding state
     this.currentPath = null; // Array of waypoints

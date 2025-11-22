@@ -28,6 +28,15 @@ class IdleTaskManager {
     this.taskHistory = []; // Completed tasks log
     this.taskQueue = new Map(); // npcId -> [pending tasks]
 
+    // Task rewards configuration
+    this.taskRewards = {
+      WANDER: { happiness: 0.5, restNeed: 2 },
+      REST: { happiness: 1.0, fatigue: -20 },
+      SOCIALIZE: { happiness: 2.0, socialNeed: 15 },
+      INSPECT: { happiness: 0.5 },
+      EXPLORE: { happiness: 1.5, restNeed: 3 }
+    };
+
     // Configuration
     this.config = {
       maxHistorySize: 1000,
@@ -41,6 +50,7 @@ class IdleTaskManager {
       totalTasksAssigned: 0,
       totalTasksCompleted: 0,
       totalTasksCancelled: 0,
+      tasksCompleted: {}, // Track completions by type
       taskTypeCount: {}
     };
   }
@@ -49,11 +59,16 @@ class IdleTaskManager {
    * Assign a task to an idle NPC
    * @param {Object} npc - NPC object
    * @param {Object} options - Task assignment options
-   * @returns {IdleTask|null} Assigned task or null
+   * @returns {IdleTask|boolean} Assigned task or boolean based on usage
    */
   assignTask(npc, options = {}) {
     if (!npc || !npc.id) {
-      return null;
+      return false;
+    }
+
+    // Don't assign task if NPC is working
+    if (npc.isWorking) {
+      return false;
     }
 
     // Check if NPC already has an active task
@@ -64,12 +79,15 @@ class IdleTaskManager {
     // Determine best task for NPC based on state
     const taskType = this._selectBestTask(npc, options);
     if (!taskType) {
-      return null;
+      return false;
     }
 
     // Create task with NPC-specific data
     const taskData = this._createTaskData(npc, taskType);
     const task = new IdleTask(taskType, taskData);
+
+    // Add rewards to task
+    task.rewards = this.taskRewards[taskType] || {};
 
     // Start the task
     if (task.start()) {
@@ -79,7 +97,7 @@ class IdleTaskManager {
       return task;
     }
 
-    return null;
+    return false;
   }
 
   /**
@@ -280,6 +298,12 @@ class IdleTaskManager {
 
     // Update stats
     this.stats.totalTasksCompleted++;
+
+    // Track completion by type
+    if (!this.stats.tasksCompleted[task.type]) {
+      this.stats.tasksCompleted[task.type] = 0;
+    }
+    this.stats.tasksCompleted[task.type]++;
   }
 
   /**
@@ -351,16 +375,46 @@ class IdleTaskManager {
    * @returns {Object} Statistics object
    */
   getStatistics() {
+    // Calculate average task duration
+    let totalDuration = 0;
+    let durationCount = 0;
+    for (const entry of this.taskHistory) {
+      if (entry.duration) {
+        totalDuration += entry.duration;
+        durationCount++;
+      }
+    }
+    const averageTaskDuration = durationCount > 0 ? totalDuration / durationCount : 0;
+
     return {
       activeTasks: this.activeTasks.size,
-      totalAssigned: this.stats.totalTasksAssigned,
+      totalTasksAssigned: this.stats.totalTasksAssigned,
       totalCompleted: this.stats.totalTasksCompleted,
       totalCancelled: this.stats.totalTasksCancelled,
+      tasksCompleted: { ...this.stats.tasksCompleted },
       taskTypeDistribution: { ...this.stats.taskTypeCount },
+      averageTaskDuration,
       completionRate: this.stats.totalTasksAssigned > 0
         ? (this.stats.totalTasksCompleted / this.stats.totalTasksAssigned * 100).toFixed(1)
         : 0
     };
+  }
+
+  /**
+   * Get an NPC's active task (alias for getCurrentTask)
+   * @param {string} npcId - NPC ID
+   * @returns {IdleTask|null} Current task or null
+   */
+  getActiveTask(npcId) {
+    return this.getCurrentTask(npcId);
+  }
+
+  /**
+   * Reset idle task manager (clear tasks and reset stats)
+   */
+  reset() {
+    this.clearAllTasks();
+    this.resetStatistics();
   }
 
   /**
@@ -435,6 +489,7 @@ class IdleTaskManager {
       totalTasksAssigned: 0,
       totalTasksCompleted: 0,
       totalTasksCancelled: 0,
+      tasksCompleted: {},
       taskTypeCount: {}
     };
     this.taskHistory = [];

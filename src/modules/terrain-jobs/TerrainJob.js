@@ -68,12 +68,11 @@ export class TerrainJob {
    */
   constructor(options) {
     // Validate required fields
-    if (!options.id) throw new Error('Job ID is required');
     if (!options.type) throw new Error('Job type is required');
     if (!options.area) throw new Error('Job area is required');
 
     // Basic properties
-    this.id = options.id;
+    this.id = options.id || TerrainJob._generateId();
     this.type = options.type;
     this.area = {
       x: options.area.x,
@@ -340,5 +339,17 @@ export class TerrainJob {
     job.completedAt = data.completedAt;
 
     return job;
+  }
+
+  /**
+   * Generate unique job ID
+   * @private
+   * @returns {number} Unique job ID
+   */
+  static _generateId() {
+    if (!TerrainJob._idCounter) {
+      TerrainJob._idCounter = 1;
+    }
+    return TerrainJob._idCounter++;
   }
 }

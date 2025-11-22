@@ -1127,6 +1127,87 @@ class ModuleOrchestrator {
     return { ...this.gameState };
   }
 
+  /**
+   * Add resources to storage
+   * @param {Object} resources - Resources to add {food, wood, stone, gold, etc.}
+   */
+  addResources(resources) {
+    if (!resources || typeof resources !== 'object') {
+      return { success: false, message: 'Invalid resources object' };
+    }
+
+    for (const [resource, amount] of Object.entries(resources)) {
+      if (amount > 0) {
+        this.storage.addResource(resource, amount);
+      }
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * Validate building placement without actually placing
+   * @param {Object} building - Building to validate
+   * @returns {Object} Validation result
+   */
+  validateBuildingPlacement(building) {
+    if (!building || !building.type || !building.position) {
+      return { success: false, message: 'Building missing required fields' };
+    }
+
+    // Check if position is within grid bounds
+    const gridSize = this.grid.gridSize || 128;
+    const { x, z } = building.position;
+    if (x < 0 || x >= gridSize || z < 0 || z >= gridSize) {
+      return { success: false, message: 'Position out of bounds' };
+    }
+
+    // Check if position is occupied
+    const occupied = this.grid.isPositionOccupied(building.position);
+    if (occupied) {
+      return { success: false, message: 'Position already occupied' };
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * Process building construction (checks resources and places building)
+   * @param {Object} buildingRequest - Building construction request
+   * @returns {Object} Construction result
+   */
+  async processBuildingConstruction(buildingRequest) {
+    if (!buildingRequest || !buildingRequest.type) {
+      return { success: false, message: 'Invalid building request' };
+    }
+
+    // Validate building type
+    let config;
+    try {
+      config = this.buildingConfig.getConfig(buildingRequest.type);
+      if (!config) {
+        return { success: false, message: `Unknown building type: ${buildingRequest.type}` };
+      }
+    } catch (err) {
+      return { success: false, message: `BuildingConfig error: ${err.message}` };
+    }
+
+    // Create building object
+    const building = {
+      id: buildingRequest.id || `${buildingRequest.type.toLowerCase()}_${Date.now()}`,
+      type: buildingRequest.type,
+      position: buildingRequest.position || { x: 0, y: 0, z: 0 },
+      tier: buildingRequest.tier || this.gameState.currentTier,
+      state: 'CONSTRUCTION',
+      constructionProgress: 0
+    };
+
+    // Place the building using existing placeBuilding method
+    const result = this.placeBuilding(building);
+
+    return result;
+  }
+
   // ============================================
   // PHASE 3D: TUTORIAL SYSTEM HELPER METHODS
   // ============================================

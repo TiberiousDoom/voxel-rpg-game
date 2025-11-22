@@ -87,13 +87,28 @@ const NPCDetailCard = ({ npc, building, onClose, onUnassign, onAssign }) => {
    * Get productivity value
    */
   const getProductivity = () => {
+    // If NPC has skillMultiplier from character system, use that
+    if (npc.skillMultiplier) {
+      return Math.round(npc.skillMultiplier * 100);
+    }
     return npc.productivity !== undefined
       ? Math.round(npc.productivity * 100)
       : 100;
   };
 
+  /**
+   * Get Leadership bonus percentage
+   */
+  const getLeadershipBonus = () => {
+    if (npc.leadershipBonus !== undefined && npc.leadershipBonus > 0) {
+      return Math.round(npc.leadershipBonus * 100);
+    }
+    return 0;
+  };
+
   const moraleValue = getMoraleValue();
   const healthValue = npc.health || 100;
+  const leadershipBonus = getLeadershipBonus();
 
   return (
     <div className="npc-detail-card">
@@ -175,6 +190,21 @@ const NPCDetailCard = ({ npc, building, onClose, onUnassign, onAssign }) => {
               }}
             />
           </div>
+          {leadershipBonus > 0 && (
+            <div
+              style={{
+                fontSize: '0.75rem',
+                color: '#fbbf24',
+                marginTop: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>⚡</span>
+              <span>Leadership Bonus: +{leadershipBonus}%</span>
+            </div>
+          )}
         </div>
       </div>
 

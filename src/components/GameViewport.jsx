@@ -302,7 +302,7 @@ function GameViewport({
       const initialMonsters = spawnManagerRef.current.populateAllZones();
       if (initialMonsters.length > 0) {
         initialMonsters.forEach(monster => {
-          useGameStore.getState().addMonster(monster);
+          useGameStore.getState().spawnMonster(monster);
         });
         zonesPopulated.current = true;
       }
@@ -1258,7 +1258,7 @@ function GameViewport({
             if (newMonsters.length > 0) {
               // Add new monsters to the game
               newMonsters.forEach(monster => {
-                useGameStore.getState().addMonster(monster);
+                useGameStore.getState().spawnMonster(monster);
               });
               monstersRef.current.push(...newMonsters);
             }

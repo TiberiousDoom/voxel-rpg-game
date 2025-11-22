@@ -15,6 +15,8 @@
  * - NPC System (NPCManager, NPCAssignment)
  */
 
+import { BuildingIntegration } from '../utils/integrations/BuildingIntegration.js';
+
 class ModuleOrchestrator {
   /**
    * Initialize orchestrator with all modules
@@ -121,6 +123,9 @@ class ModuleOrchestrator {
       });
     }
 
+    // Character System Integration: Reference to character for Construction bonuses
+    this.character = null;
+
     // Game state
     this.tickCount = 0;
     this.isPaused = false;
@@ -175,6 +180,14 @@ class ModuleOrchestrator {
         console.warn(`ModuleOrchestrator: Optional module '${module}' not provided`);
       }
     }
+  }
+
+  /**
+   * Set character reference (for Construction attribute bonuses)
+   * @param {object} character - Character data with attributes
+   */
+  setCharacter(character) {
+    this.character = character;
   }
 
   /**
@@ -799,8 +812,30 @@ class ModuleOrchestrator {
       return { success: false, message: `BuildingConfig error: ${err.message}` };
     }
 
+    // Calculate building cost with Construction bonuses
+    const baseCost = config.cost || {};
+    const cost = this.character
+      ? BuildingIntegration.calculateBuildingCost(
+          { baseCost, type: building.type, category: config.category },
+          this.character
+        )
+      : baseCost;
+
+    // Apply Construction bonuses to building properties
+    if (this.character) {
+      building.maxHealth = BuildingIntegration.calculateBuildingHealth(
+        { maxHealth: config.health || 100 },
+        this.character
+      );
+      building.health = building.maxHealth;
+      building.constructionBonus = this.character.attributes?.construction || 0;
+      building.quality = BuildingIntegration.calculateBuildingQuality(this.character);
+    } else {
+      building.maxHealth = config.health || 100;
+      building.health = building.maxHealth;
+    }
+
     // Check if player has enough resources
-    const cost = config.cost || {};
     const currentResources = this.storage.getStorage();
 
     for (const [resource, amount] of Object.entries(cost)) {

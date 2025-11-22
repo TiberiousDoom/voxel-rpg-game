@@ -43,6 +43,7 @@ const initializeCanvas = (canvas, width, height) => {
   canvas.height = height;
 
   // Detect mobile device
+  // eslint-disable-next-line no-unused-vars
   const isMobileDevice = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
                         window.innerWidth <= 768 ||
                         ('ontouchstart' in window);

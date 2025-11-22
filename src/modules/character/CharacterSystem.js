@@ -412,6 +412,7 @@ export const createCharacterActions = (set, get) => ({
   resetSkillTree: (treeId) => {
     set((state) => {
       const character = { ...state.character };
+      // eslint-disable-next-line no-unused-vars
       const result = skillTreeSystem.respecTree(character, treeId);
 
       return { character };
@@ -422,6 +423,7 @@ export const createCharacterActions = (set, get) => ({
   resetAllSkills: () => {
     set((state) => {
       const character = { ...state.character };
+      // eslint-disable-next-line no-unused-vars
       const result = skillTreeSystem.respecAll(character);
 
       return { character };

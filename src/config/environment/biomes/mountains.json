@@ -1,0 +1,96 @@
+{
+  "id": "mountains",
+  "name": "Mountains",
+  "description": "Towering peaks with steep cliffs and rocky terrain",
+
+  "temperature": -0.2,
+  "moisture": 0.1,
+
+  "heightRange": [7, 10],
+  "heightVariation": 3,
+
+  "terrainColors": {
+    "grass": "rgb(139, 137, 137)",
+    "dirt": "rgb(119, 117, 117)",
+    "stone": "rgb(96, 96, 96)"
+  },
+
+  "props": [
+    {
+      "type": "rock",
+      "density": 0.35,
+      "variants": ["boulder", "cliff_rock", "mountain_stone"],
+      "minDistance": 2
+    },
+    {
+      "type": "pine_tree",
+      "density": 0.08,
+      "variants": ["mountain_pine"],
+      "minDistance": 5
+    },
+    {
+      "type": "ore_vein",
+      "density": 0.12,
+      "variants": ["iron_vein", "gold_vein", "crystal_vein"],
+      "minDistance": 6
+    },
+    {
+      "type": "moss",
+      "density": 0.1,
+      "variants": ["cliff_moss"],
+      "minDistance": 2
+    }
+  ],
+
+  "structures": [
+    {
+      "type": "mountain_cave",
+      "rarity": 0.015,
+      "minDistance": 80
+    },
+    {
+      "type": "dwarven_ruin",
+      "rarity": 0.005,
+      "minDistance": 180
+    },
+    {
+      "type": "dragon_lair",
+      "rarity": 0.001,
+      "minDistance": 400
+    }
+  ],
+
+  "monsters": [
+    {
+      "type": "mountain_goat",
+      "spawnChance": 0.04,
+      "groupSize": [2, 5]
+    },
+    {
+      "type": "harpy",
+      "spawnChance": 0.05,
+      "groupSize": [1, 3]
+    },
+    {
+      "type": "troll",
+      "spawnChance": 0.03,
+      "groupSize": [1, 2]
+    },
+    {
+      "type": "dragon",
+      "spawnChance": 0.001,
+      "groupSize": [1, 1]
+    }
+  ],
+
+  "musicTheme": "mountain_peaks",
+
+  "ambientSounds": ["wind_gust", "eagle_cry", "rockfall"],
+
+  "weatherProbabilities": {
+    "clear": 0.4,
+    "cloudy": 0.3,
+    "snow": 0.2,
+    "storm": 0.1
+  }
+}

@@ -19,6 +19,7 @@ import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Mons
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
+import { SpawnManager } from '../systems/SpawnManager.js'; // Spawn system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
 import { TerrainJobQueue } from '../modules/terrain-jobs/TerrainJobQueue.js'; // Terrain job queue
 import { JobTimeCalculator } from '../modules/terrain-jobs/JobTimeCalculator.js'; // Job time calculator
@@ -43,6 +44,7 @@ const initializeCanvas = (canvas, width, height) => {
   canvas.height = height;
 
   // Detect mobile device
+  // eslint-disable-next-line no-unused-vars
   const isMobileDevice = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
                         window.innerWidth <= 768 ||
                         ('ontouchstart' in window);
@@ -287,6 +289,26 @@ function GameViewport({
     monsterAIRef.current = new MonsterAI();
   }
 
+  // Spawn system - Initialize once
+  const spawnManagerRef = useRef(null);
+  const zonesPopulated = useRef(false);
+  if (spawnManagerRef.current === null) {
+    spawnManagerRef.current = new SpawnManager();
+  }
+
+  // Populate spawn zones once on startup
+  useEffect(() => {
+    if (spawnManagerRef.current && !zonesPopulated.current) {
+      const initialMonsters = spawnManagerRef.current.populateAllZones();
+      if (initialMonsters.length > 0) {
+        initialMonsters.forEach(monster => {
+          useGameStore.getState().addMonster(monster);
+        });
+        zonesPopulated.current = true;
+      }
+    }
+  }, []);
+
   // Terrain system - Initialize once
   const terrainSystemRef = useRef(null);
   if (terrainSystemRef.current === null) {
@@ -319,6 +341,7 @@ function GameViewport({
       // Expose playerEntity for debug commands (needed for teleportPlayer)
       if (typeof window !== 'undefined') {
         window.playerEntity = playerRef.current;
+        window.spawnManager = spawnManagerRef.current;
       }
 
       playerRendererRef.current = new PlayerRenderer({
@@ -1229,8 +1252,20 @@ function GameViewport({
           });
         }
 
-        // Draw viewport with safe error handling
-        drawViewport(ctx);
+          // Update spawn system - spawn new monsters as needed
+          if (spawnManagerRef.current && monstersRef.current) {
+            const newMonsters = spawnManagerRef.current.update(monstersRef.current, elapsed);
+            if (newMonsters.length > 0) {
+              // Add new monsters to the game
+              newMonsters.forEach(monster => {
+                useGameStore.getState().addMonster(monster);
+              });
+              monstersRef.current.push(...newMonsters);
+            }
+          }
+
+          // Draw viewport with safe error handling
+          drawViewport(ctx);
 
         // Track performance metrics
         const frameEndTime = performance.now();

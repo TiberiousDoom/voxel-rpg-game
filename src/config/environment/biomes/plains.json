@@ -19,31 +19,31 @@
     {
       "type": "tree",
       "density": 0.05,
-      "variants": ["oak"],
+      "variants": ["tree_oak", "tree_birch"],
       "minDistance": 3
     },
     {
       "type": "bush",
       "density": 0.08,
-      "variants": ["bush"],
+      "variants": ["bush", "bush_berry"],
       "minDistance": 2
     },
     {
       "type": "flower",
       "density": 0.15,
-      "variants": ["wildflower", "daisy"],
+      "variants": ["flower_wildflower", "flower_daisy"],
       "minDistance": 1
     },
     {
       "type": "grass_clump",
       "density": 0.2,
-      "variants": ["grass"],
+      "variants": ["grass_clump"],
       "minDistance": 1
     },
     {
       "type": "rock",
       "density": 0.03,
-      "variants": ["small_rock"],
+      "variants": ["rock_small"],
       "minDistance": 4
     }
   ],

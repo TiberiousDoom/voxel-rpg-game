@@ -1,0 +1,467 @@
+/**
+ * SkillTreeUI.css
+ * Styles for the skill tree interface
+ */
+
+.skill-tree-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  color: #e0e0e0;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Header */
+.skill-tree-header {
+  border-bottom: 2px solid #fbbf24;
+  padding-bottom: 15px;
+}
+
+.skill-tree-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.8rem;
+  color: #fbbf24;
+}
+
+.skill-tree-description {
+  margin: 0 0 12px 0;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.skill-points-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+}
+
+.points-label {
+  color: #a0a0a0;
+}
+
+.points-value {
+  color: #fbbf24;
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+.reset-button {
+  margin-left: auto;
+  padding: 6px 12px;
+  background: #ef4444;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.reset-button:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Tiers */
+.skill-tree-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.skill-tier {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.tier-header {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+  padding-bottom: 10px;
+}
+
+.tier-header h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.2rem;
+  color: #fbbf24;
+}
+
+.tier-requirements {
+  font-size: 0.8rem;
+  color: #a0a0a0;
+}
+
+/* Skills Grid */
+.tier-skills {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+/* Skill Node */
+.skill-node {
+  position: relative;
+  background: linear-gradient(135deg, #2a2a3e 0%, #1f1f2e 100%);
+  border: 2px solid #444;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.skill-node:hover {
+  transform: translateY(-2px);
+  border-color: #fbbf24;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+.skill-node.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.skill-node.locked:hover {
+  transform: none;
+  border-color: #444;
+  box-shadow: none;
+}
+
+.skill-node.allocated {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #065f46 0%, #064e3b 100%);
+}
+
+.skill-node.maxed {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, #78350f 0%, #65280a 100%);
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+}
+
+.skill-node.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+/* Skill Icon */
+.skill-icon {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+/* Skill Name */
+.skill-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+/* Skill Points Badge */
+.skill-points-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fbbf24;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* Skill Type Badge */
+.skill-type-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.skill-type-badge.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.skill-type-badge.capstone {
+  background: #fbbf24;
+  color: #000;
+}
+
+/* Allocation Buttons */
+.skill-node-actions {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.allocate-btn,
+.deallocate-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.allocate-btn {
+  background: #10b981;
+  color: white;
+}
+
+.allocate-btn:hover {
+  background: #059669;
+  transform: scale(1.1);
+}
+
+.deallocate-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.deallocate-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Skill Details Panel */
+.skill-details-panel {
+  position: fixed;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.skill-details-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #fbbf24;
+  padding-bottom: 12px;
+}
+
+.skill-details-icon {
+  font-size: 2.5rem;
+}
+
+.skill-details-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #fbbf24;
+  flex: 1;
+}
+
+.skill-type-label {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.skill-details-description {
+  color: #d1d5db;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.skill-details-info {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.info-value {
+  color: #fbbf24;
+  font-weight: bold;
+}
+
+/* Prerequisites */
+.skill-prerequisites {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.prerequisites-label {
+  display: block;
+  color: #ef4444;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.skill-prerequisites ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #d1d5db;
+}
+
+.skill-prerequisites li {
+  margin-bottom: 4px;
+}
+
+/* Activation Info */
+.skill-activation-info {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.skill-activation-info h4 {
+  margin: 0 0 10px 0;
+  color: #3b82f6;
+  font-size: 1rem;
+}
+
+.activation-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activation-row {
+  display: flex;
+  justify-content: space-between;
+  color: #d1d5db;
+  font-size: 0.9rem;
+}
+
+.activation-row span:first-child {
+  color: #9ca3af;
+}
+
+.activation-row span:last-child {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+/* Locked Message */
+.skill-locked-message {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px;
+  color: #fca5a5;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Scrollbar */
+.skill-tree-ui::-webkit-scrollbar,
+.skill-details-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.skill-tree-ui::-webkit-scrollbar-track,
+.skill-details-panel::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.skill-tree-ui::-webkit-scrollbar-thumb,
+.skill-details-panel::-webkit-scrollbar-thumb {
+  background: #fbbf24;
+  border-radius: 4px;
+}
+
+.skill-tree-ui::-webkit-scrollbar-thumb:hover,
+.skill-details-panel::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .skill-tree-ui {
+    padding: 15px;
+  }
+
+  .tier-skills {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+
+  .skill-node {
+    min-height: 100px;
+    padding: 8px;
+  }
+
+  .skill-icon {
+    font-size: 1.5rem;
+  }
+
+  .skill-name {
+    font-size: 0.75rem;
+  }
+
+  .skill-details-panel {
+    position: fixed;
+    right: 10px;
+    left: 10px;
+    top: auto;
+    bottom: 10px;
+    transform: none;
+    width: auto;
+    max-height: 50vh;
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "SLIME": {
+    "goldReward": [5, 15],
+    "lootChance": 0.3,
+    "itemTypes": [
+      { "type": "WEAPON", "weight": 50, "rarityBonus": 0 },
+      { "type": "BOOTS", "weight": 30, "rarityBonus": 0 },
+      { "type": "RING", "weight": 20, "rarityBonus": 0 }
+    ]
+  },
+  "GOBLIN": {
+    "goldReward": [10, 25],
+    "lootChance": 0.4,
+    "itemTypes": [
+      { "type": "WEAPON", "weight": 40, "rarityBonus": 0.05 },
+      { "type": "ARMOR", "weight": 30, "rarityBonus": 0.05 },
+      { "type": "HELMET", "weight": 20, "rarityBonus": 0.05 },
+      { "type": "RING", "weight": 10, "rarityBonus": 0.05 }
+    ]
+  },
+  "WOLF": {
+    "goldReward": [15, 35],
+    "lootChance": 0.35,
+    "itemTypes": [
+      { "type": "ARMOR", "weight": 50, "rarityBonus": 0.05 },
+      { "type": "BOOTS", "weight": 40, "rarityBonus": 0.05 },
+      { "type": "AMULET", "weight": 10, "rarityBonus": 0.05 }
+    ]
+  },
+  "SKELETON": {
+    "goldReward": [20, 50],
+    "lootChance": 0.45,
+    "itemTypes": [
+      { "type": "WEAPON", "weight": 35, "rarityBonus": 0.1 },
+      { "type": "ARMOR", "weight": 30, "rarityBonus": 0.1 },
+      { "type": "HELMET", "weight": 20, "rarityBonus": 0.1 },
+      { "type": "RING", "weight": 10, "rarityBonus": 0.1 },
+      { "type": "AMULET", "weight": 5, "rarityBonus": 0.1 }
+    ]
+  },
+  "ORC": {
+    "goldReward": [30, 80],
+    "lootChance": 0.5,
+    "itemTypes": [
+      { "type": "WEAPON", "weight": 40, "rarityBonus": 0.15 },
+      { "type": "ARMOR", "weight": 35, "rarityBonus": 0.15 },
+      { "type": "HELMET", "weight": 15, "rarityBonus": 0.15 },
+      { "type": "RING", "weight": 5, "rarityBonus": 0.15 },
+      { "type": "AMULET", "weight": 5, "rarityBonus": 0.15 }
+    ]
+  },
+  "ELITE": {
+    "goldMultiplier": 3.0,
+    "lootChance": 0.8,
+    "rarityBonus": 0.2,
+    "guaranteedDrops": 1
+  },
+  "BOSS": {
+    "goldMultiplier": 10.0,
+    "lootChance": 1.0,
+    "rarityBonus": 0.5,
+    "guaranteedDrops": 3
+  }
+}

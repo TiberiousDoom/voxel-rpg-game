@@ -21,6 +21,8 @@ import DefenseTab from './tabs/DefenseTab';
 import ActionsTab from './tabs/ActionsTab';
 import DeveloperTab from './tabs/DeveloperTab';
 import CharacterSystemUI from './ui/CharacterSystemUI';
+import ActiveSkillBar from './ui/ActiveSkillBar';
+import { activeSkillSystem } from '../modules/character/CharacterSystem';
 import './GameScreen.css';
 
 /**
@@ -95,6 +97,32 @@ function GameScreen() {
       ]);
     }
   }, [gameState.achievements]);
+
+  // Update active skill system (cooldowns and buff durations)
+  useEffect(() => {
+    let lastTime = performance.now();
+    let animationFrameId;
+
+    const updateLoop = (currentTime) => {
+      const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+      lastTime = currentTime;
+
+      // Update active skill system
+      if (activeSkillSystem && !gameState.isPaused) {
+        activeSkillSystem.update(deltaTime);
+      }
+
+      animationFrameId = requestAnimationFrame(updateLoop);
+    };
+
+    animationFrameId = requestAnimationFrame(updateLoop);
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [gameState.isPaused]);
 
   // Event handlers
   const handleAssignNPC = (npcId, buildingId) => {
@@ -466,6 +494,9 @@ function GameScreen() {
 
       {/* Character System UI (Character Sheet + Notifications) */}
       <CharacterSystemUI />
+
+      {/* Active Skill Bar (Bottom HUD for active skills) */}
+      <ActiveSkillBar />
 
       {/* Toast */}
       {toastMessage && (

@@ -17,6 +17,7 @@ import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
+import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
@@ -385,6 +386,14 @@ function GameViewport({
   // Terrain Job Renderer integration
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
 
+  // Prop Renderer integration (Phase 3)
+  const { renderProps, renderPropHighlight, renderDebugInfo } = usePropRenderer({
+    tileSize: TILE_SIZE,
+    enableLOD: true,
+    enableBatching: true,
+    showPropHealth: debugMode // Show health bars in debug mode
+  });
+
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
 
@@ -709,6 +718,34 @@ function GameViewport({
       } catch (e) {
         // Log terrain rendering errors for debugging
         console.error('Terrain rendering error:', e);
+      }
+    }
+
+    // Phase 3: Render props (AFTER terrain, BEFORE buildings for correct layering)
+    if (terrainSystemRef.current) {
+      try {
+        // Get visible props in viewport
+        const visibleProps = terrainSystemRef.current.getPropsInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        // Render props with LOD and batching
+        const propStats = renderProps(
+          ctx,
+          visibleProps,
+          worldToCanvas,
+          { x: -offset.x, z: -offset.y }, // camera position
+          viewportBounds
+        );
+
+        // Store prop metrics
+        perfRef.current.currentMetrics.visibleProps = propStats.propsRendered;
+        perfRef.current.currentMetrics.totalProps = propStats.totalProps;
+      } catch (e) {
+        console.error('Prop rendering error:', e);
       }
     }
 

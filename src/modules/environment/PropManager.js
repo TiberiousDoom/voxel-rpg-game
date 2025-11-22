@@ -455,9 +455,12 @@ export class PropManager {
     for (let chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
       for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
         const chunkKey = `${chunkX},${chunkZ}`;
-        const chunkProps = this.chunkProps.get(chunkKey);
+        let chunkProps = this.chunkProps.get(chunkKey);
 
-        if (!chunkProps) continue;
+        // Lazy generation: Generate props if chunk doesn't have them yet
+        if (!chunkProps) {
+          chunkProps = this.generatePropsForChunk(chunkX, chunkZ);
+        }
 
         // Filter props in region
         for (const prop of chunkProps) {

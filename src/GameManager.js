@@ -41,6 +41,11 @@ import DungeonCombatEngine from './modules/expedition/DungeonCombatEngine';
 // Phase 4: Defense/Raid System
 import RaidEventManager from './modules/defense/RaidEventManager';
 import DefenseCombatEngine from './modules/defense/DefenseCombatEngine';
+// Phase 4: Terrain Job System
+import { TerrainSystem } from './modules/environment/TerrainSystem';
+import { TerrainJobQueue } from './modules/terrain-jobs/TerrainJobQueue';
+import { JobTimeCalculator } from './modules/terrain-jobs/JobTimeCalculator';
+import { TerrainWorkerBehavior } from './modules/terrain-jobs/TerrainWorkerBehavior';
 
 /**
  * GameManager - Main game controller
@@ -161,8 +166,18 @@ export default class GameManager extends EventEmitter {
     // Create TownManager
     const townManager = new TownManager(buildingConfig);
 
-    // Create NPCManager (requires TownManager, optional GridManager for pathfinding)
-    const npcManager = new NPCManager(townManager, grid);
+    // Phase 4: Terrain System
+    const terrainSystem = new TerrainSystem({
+      seed: 12345,
+      preset: 'DEFAULT',
+      chunkSize: 32,
+      tileSize: 32,
+      chunkLoadRadius: 2,
+      maxLoadedChunks: 100
+    });
+
+    // Create NPCManager (requires TownManager, optional GridManager for pathfinding, optional TerrainSystem)
+    const npcManager = new NPCManager(townManager, grid, terrainSystem);
 
     // Create real SpatialPartitioning
     const spatial = new SpatialPartitioning(100, 50, 10);
@@ -221,6 +236,11 @@ export default class GameManager extends EventEmitter {
     const raidEventManager = new RaidEventManager(npcManager);
     const defenseCombatEngine = new DefenseCombatEngine(npcManager, npcSkillSystem, npcEquipmentManager);
 
+    // Phase 4: Terrain Job System
+    const jobTimeCalculator = new JobTimeCalculator(terrainSystem);
+    const terrainJobQueue = new TerrainJobQueue(terrainSystem);
+    const terrainWorkerBehavior = new TerrainWorkerBehavior(npcManager, terrainJobQueue);
+
     return {
       grid: grid,
       spatial: spatial,
@@ -255,7 +275,12 @@ export default class GameManager extends EventEmitter {
       expeditionManager: expeditionManager,
       dungeonCombatEngine: dungeonCombatEngine,
       raidEventManager: raidEventManager,
-      defenseCombatEngine: defenseCombatEngine
+      defenseCombatEngine: defenseCombatEngine,
+      // Phase 4: Terrain Job System
+      terrainSystem: terrainSystem,
+      jobTimeCalculator: jobTimeCalculator,
+      terrainJobQueue: terrainJobQueue,
+      terrainWorkerBehavior: terrainWorkerBehavior
     };
   }
 
@@ -957,6 +982,22 @@ export default class GameManager extends EventEmitter {
       isPaused: this.gameState === GameManager.GAME_STATE.PAUSED,
       orchestrator: this.orchestrator
     };
+  }
+
+  /**
+   * Get terrain job queue (Phase 4)
+   * @returns {TerrainJobQueue} Job queue instance
+   */
+  getTerrainJobQueue() {
+    return this.orchestrator?.terrainJobQueue || null;
+  }
+
+  /**
+   * Get terrain system (Phase 4)
+   * @returns {TerrainSystem} Terrain system instance
+   */
+  getTerrainSystem() {
+    return this.orchestrator?.terrainSystem || null;
   }
 
   /**

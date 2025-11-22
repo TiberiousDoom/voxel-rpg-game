@@ -92,6 +92,12 @@ class ModuleOrchestrator {
     this.raidEventManager = modules.raidEventManager || null;
     this.defenseCombatEngine = modules.defenseCombatEngine || null;
 
+    // Phase 4: Terrain Job System
+    this.terrainSystem = modules.terrainSystem || null;
+    this.jobTimeCalculator = modules.jobTimeCalculator || null;
+    this.terrainJobQueue = modules.terrainJobQueue || null;
+    this.terrainWorkerBehavior = modules.terrainWorkerBehavior || null;
+
     // Phase 3C: Achievement bonuses (multiplicative)
     this.achievementBonuses = {
       production: 1.0,

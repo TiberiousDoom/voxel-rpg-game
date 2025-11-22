@@ -10,6 +10,7 @@
  */
 
 /* eslint-disable no-console */
+
 import { SaveVersionManager, SAVE_VERSION } from './SaveVersionManager';
 
 /**

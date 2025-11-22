@@ -1153,136 +1153,131 @@ function GameViewport({
     let animationId = null;
     let initialRenderAttempts = 0;
     const maxInitialAttempts = 60; // Try for 1 second
-    let lastFrameTime = 0;
+    let lastFrameTime = performance.now();
 
     // Detect mobile for appropriate frame rate
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
                      window.innerWidth <= 768 ||
                      ('ontouchstart' in window);
-    const targetFPS = isMobile ? 45 : 60; // Increased mobile FPS to 45 for better responsiveness
-    const frameInterval = 1000 / targetFPS;
 
     const animate = (currentTime) => {
-      // Throttle to target FPS
-      const elapsed = currentTime - lastFrameTime;
+      // Calculate delta time for smooth updates
+      const deltaTime = (currentTime - lastFrameTime) / 1000; // Convert to seconds
+      lastFrameTime = currentTime;
+      const frameStartTime = performance.now();
 
-      if (elapsed > frameInterval) {
-        lastFrameTime = currentTime - (elapsed % frameInterval);
-        const frameStartTime = performance.now();
+      try {
+        // Update terrain chunk loading based on camera position
+        if (terrainSystemRef.current && getOffset) {
+          const offset = getOffset() || { x: 0, y: 0 };
+          // Camera position in world pixels (inverse of offset)
+          const cameraX = -offset.x;
+          const cameraZ = -offset.y;
+          terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
 
-        try {
-          // Update terrain chunk loading based on camera position
-          if (terrainSystemRef.current && getOffset) {
-            const offset = getOffset() || { x: 0, y: 0 };
-            // Camera position in world pixels (inverse of offset)
-            const cameraX = -offset.x;
-            const cameraZ = -offset.y;
-            terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT);
-          }
+        // Update NPC positions before rendering (use ref to avoid loop recreation)
+        if (npcRenderer && npcsRef.current) {
+          npcRenderer.updatePositions(npcsRef.current, deltaTime * 1000); // Convert back to ms
+        }
 
-          // Update NPC positions before rendering (use ref to avoid loop recreation)
-          if (npcRenderer && npcsRef.current) {
-            npcRenderer.updatePositions(npcsRef.current, elapsed);
-          }
+        // Update monster AI before rendering
+        if (monsterAIRef.current && monstersRef.current && monstersRef.current.length > 0 && playerRef.current) {
+          const gameState = {
+            player: playerRef.current,
+            npcs: npcsRef.current || [],
+            buildings: buildingsRef.current || []
+          };
+          monsterAIRef.current.updateAll(monstersRef.current, gameState, deltaTime * 1000); // Convert back to ms
 
-          // Update monster AI before rendering
-          if (monsterAIRef.current && monstersRef.current && monstersRef.current.length > 0 && playerRef.current) {
-            const gameState = {
-              player: playerRef.current,
-              npcs: npcsRef.current || [],
-              buildings: buildingsRef.current || []
-            };
-            monsterAIRef.current.updateAll(monstersRef.current, gameState, elapsed);
+          // CRITICAL: Only notify Zustand when monster states actually change
+          // Check if any monster AI state changed since last frame
+          let stateChanged = false;
+          const currentStates = previousMonsterStatesRef.current;
 
-            // CRITICAL: Only notify Zustand when monster states actually change
-            // Check if any monster AI state changed since last frame
-            let stateChanged = false;
-            const currentStates = previousMonsterStatesRef.current;
-
-            for (const monster of monstersRef.current) {
-              const prevState = currentStates.get(monster.id);
-              if (prevState !== monster.aiState) {
-                stateChanged = true;
-                currentStates.set(monster.id, monster.aiState);
-              }
-            }
-
-            // Only trigger Zustand update if states changed (not every frame!)
-            if (stateChanged) {
-              useGameStore.setState({ enemies: [...monstersRef.current] });
+          for (const monster of monstersRef.current) {
+            const prevState = currentStates.get(monster.id);
+            if (prevState !== monster.aiState) {
+              stateChanged = true;
+              currentStates.set(monster.id, monster.aiState);
             }
           }
 
-          // Update monster positions before rendering
-          if (monsterRenderer && monstersRef.current) {
-            monsterRenderer.updatePositions(monstersRef.current, elapsed);
+          // Only trigger Zustand update if states changed (not every frame!)
+          if (stateChanged) {
+            useGameStore.setState({ enemies: [...monstersRef.current] });
           }
+        }
 
-          // Clean up dead monsters after fade animation completes (1 second)
-          if (monstersRef.current && monstersRef.current.length > 0) {
-            const now = Date.now();
-            monstersRef.current.forEach(monster => {
-              if (!monster.alive && monster.deathTime && (now - monster.deathTime > 1000)) {
-                // Monster has finished death animation, remove from store
-                // eslint-disable-next-line no-console
-                console.log(`🗑️ Removing ${monster.name} after death animation (${((now - monster.deathTime) / 1000).toFixed(1)}s ago)`);
-                useGameStore.getState().removeMonster(monster.id);
-                // Clean up state tracking
-                previousMonsterStatesRef.current.delete(monster.id);
-              }
-            });
-          }
+        // Update monster positions before rendering
+        if (monsterRenderer && monstersRef.current) {
+          monsterRenderer.updatePositions(monstersRef.current, deltaTime * 1000); // Convert back to ms
+        }
 
-          // Draw viewport with safe error handling
-          drawViewport(ctx);
-
-          // Track performance metrics
-          const frameEndTime = performance.now();
-          const frameTime = frameEndTime - frameStartTime;
-
-          perfRef.current.frameCount++;
-          perfRef.current.frameTimes.push(frameTime);
-          if (perfRef.current.frameTimes.length > 60) {
-            perfRef.current.frameTimes.shift();
-          }
-
+        // Clean up dead monsters after fade animation completes (1 second)
+        if (monstersRef.current && monstersRef.current.length > 0) {
           const now = Date.now();
-          if (now - perfRef.current.lastFpsUpdate >= 1000) {
-            const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
-            const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
+          monstersRef.current.forEach(monster => {
+            if (!monster.alive && monster.deathTime && (now - monster.deathTime > 1000)) {
+              // Monster has finished death animation, remove from store
+              // eslint-disable-next-line no-console
+              console.log(`🗑️ Removing ${monster.name} after death animation (${((now - monster.deathTime) / 1000).toFixed(1)}s ago)`);
+              useGameStore.getState().removeMonster(monster.id);
+              // Clean up state tracking
+              previousMonsterStatesRef.current.delete(monster.id);
+            }
+          });
+        }
 
-            // Update state only once per second (not every frame!)
-            setPerfMetrics({
-              fps,
-              frameTime: avgFrameTime.toFixed(2),
-              isMobile,
-              canvasWidth: CANVAS_WIDTH,
-              canvasHeight: CANVAS_HEIGHT,
-              ...perfRef.current.currentMetrics
-            });
+        // Draw viewport with safe error handling
+        drawViewport(ctx);
 
-            perfRef.current.frameCount = 0;
-            perfRef.current.lastFpsUpdate = now;
-          }
+        // Track performance metrics
+        const frameEndTime = performance.now();
+        const frameTime = frameEndTime - frameStartTime;
 
-          // Track initial render attempts (no state updates!)
-          if (initialRenderAttempts < maxInitialAttempts) {
-            initialRenderAttempts++;
-          }
+        perfRef.current.frameCount++;
+        perfRef.current.frameTimes.push(frameTime);
+        if (perfRef.current.frameTimes.length > 60) {
+          perfRef.current.frameTimes.shift();
+        }
 
-        } catch (error) {
-          // Don't log or setState in animation loop - kills FPS!
-          // Just draw error on canvas
-          try {
-            ctx.fillStyle = '#ff0000';
-            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '20px Arial';
-            ctx.textAlign = 'left';
-            ctx.fillText(`Render Error: ${error.message}`, 10, 30);
-          } catch (e) {
-            // Silent failure - can't even draw error
-          }
+        const now = Date.now();
+        if (now - perfRef.current.lastFpsUpdate >= 1000) {
+          const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
+          const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
+
+          // Update state only once per second (not every frame!)
+          setPerfMetrics({
+            fps,
+            frameTime: avgFrameTime.toFixed(2),
+            isMobile,
+            canvasWidth: CANVAS_WIDTH,
+            canvasHeight: CANVAS_HEIGHT,
+            ...perfRef.current.currentMetrics
+          });
+
+          perfRef.current.frameCount = 0;
+          perfRef.current.lastFpsUpdate = now;
+        }
+
+        // Track initial render attempts (no state updates!)
+        if (initialRenderAttempts < maxInitialAttempts) {
+          initialRenderAttempts++;
+        }
+
+      } catch (error) {
+        // Don't log or setState in animation loop - kills FPS!
+        // Just draw error on canvas
+        try {
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '20px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(`Render Error: ${error.message}`, 10, 30);
+        } catch (e) {
+          // Silent failure - can't even draw error
         }
       }
 

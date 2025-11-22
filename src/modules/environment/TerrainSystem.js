@@ -17,6 +17,8 @@
 import { WorldGenerator, WorldPresets } from './WorldGenerator.js';
 import { TerrainManager } from './TerrainManager.js';
 import { ChunkManager } from './ChunkManager.js';
+import { BiomeManager } from './BiomeManager.js';
+import biomeConfigs from '../../config/environment/biomeConfigs.js';
 
 export class TerrainSystem {
   /**
@@ -44,12 +46,24 @@ export class TerrainSystem {
       chunkSize,
       tileSize,
       chunkLoadRadius,
-      maxLoadedChunks
+      maxLoadedChunks,
+      useBiomeManager: options.useBiomeManager !== false  // Phase 2: Enable by default
     };
 
-    // Initialize world generator with preset
+    // Phase 2: Initialize BiomeManager
+    this.biomeManager = null;
+    if (this.config.useBiomeManager) {
+      this.biomeManager = new BiomeManager(seed, biomeConfigs, {
+        useVoronoi: true,
+        voronoiSpacing: 128,
+        distortionStrength: 20,
+        blendRadius: 3
+      });
+    }
+
+    // Initialize world generator with preset and biome manager
     const worldConfig = WorldPresets[preset] || WorldPresets.DEFAULT;
-    this.worldGenerator = new WorldGenerator(seed, worldConfig);
+    this.worldGenerator = new WorldGenerator(seed, worldConfig, this.biomeManager);
 
     // Initialize terrain manager
     this.terrainManager = new TerrainManager(this.worldGenerator, {
@@ -316,5 +330,13 @@ export class TerrainSystem {
    */
   getWorldGenerator() {
     return this.worldGenerator;
+  }
+
+  /**
+   * Get biome manager (for direct access) - Phase 2
+   * @returns {BiomeManager|null}
+   */
+  getBiomeManager() {
+    return this.biomeManager;
   }
 }

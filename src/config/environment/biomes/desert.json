@@ -1,0 +1,90 @@
+{
+  "id": "desert",
+  "name": "Desert",
+  "description": "Arid wasteland with sand dunes and sparse vegetation",
+
+  "temperature": 0.8,
+  "moisture": -0.6,
+
+  "heightRange": [3, 5],
+  "heightVariation": 1,
+
+  "terrainColors": {
+    "grass": "rgb(210, 180, 140)",
+    "dirt": "rgb(194, 178, 128)",
+    "stone": "rgb(160, 144, 119)"
+  },
+
+  "props": [
+    {
+      "type": "cactus",
+      "density": 0.08,
+      "variants": ["saguaro", "barrel_cactus"],
+      "minDistance": 4
+    },
+    {
+      "type": "dead_bush",
+      "density": 0.12,
+      "variants": ["tumbleweed", "dead_shrub"],
+      "minDistance": 3
+    },
+    {
+      "type": "rock",
+      "density": 0.15,
+      "variants": ["sandstone", "desert_rock"],
+      "minDistance": 2
+    },
+    {
+      "type": "bones",
+      "density": 0.03,
+      "variants": ["skeleton"],
+      "minDistance": 6
+    }
+  ],
+
+  "structures": [
+    {
+      "type": "desert_ruin",
+      "rarity": 0.012,
+      "minDistance": 100
+    },
+    {
+      "type": "oasis",
+      "rarity": 0.005,
+      "minDistance": 200
+    },
+    {
+      "type": "pyramid",
+      "rarity": 0.002,
+      "minDistance": 300
+    }
+  ],
+
+  "monsters": [
+    {
+      "type": "scorpion",
+      "spawnChance": 0.07,
+      "groupSize": [2, 4]
+    },
+    {
+      "type": "snake",
+      "spawnChance": 0.05,
+      "groupSize": [1, 2]
+    },
+    {
+      "type": "bandit",
+      "spawnChance": 0.03,
+      "groupSize": [2, 5]
+    }
+  ],
+
+  "musicTheme": "desert_winds",
+
+  "ambientSounds": ["wind", "distant_howl", "sand_shift"],
+
+  "weatherProbabilities": {
+    "clear": 0.8,
+    "cloudy": 0.15,
+    "sandstorm": 0.05
+  }
+}

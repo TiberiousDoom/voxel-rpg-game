@@ -1254,7 +1254,7 @@ function GameViewport({
 
           // Update spawn system - spawn new monsters as needed
           if (spawnManagerRef.current && monstersRef.current) {
-            const newMonsters = spawnManagerRef.current.update(monstersRef.current, elapsed);
+            const newMonsters = spawnManagerRef.current.update(monstersRef.current, deltaTime * 1000); // Convert back to ms
             if (newMonsters.length > 0) {
               // Add new monsters to the game
               newMonsters.forEach(monster => {

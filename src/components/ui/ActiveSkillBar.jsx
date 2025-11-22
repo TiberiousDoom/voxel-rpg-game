@@ -9,7 +9,11 @@ import React, { useState, useEffect } from 'react';
 import useGameStore from '../../stores/useGameStore';
 import './ActiveSkillBar.css';
 
+// Hotkey mapping (constant)
+const HOTKEYS = ['1', '2', '3', '4', '5', '6'];
+
 const ActiveSkillBar = () => {
+  // eslint-disable-next-line no-unused-vars
   const character = useGameStore((state) => state.character);
   const getActiveSkills = useGameStore((state) => state.getActiveSkills);
   const activateActiveSkill = useGameStore((state) => state.activateActiveSkill);
@@ -21,9 +25,6 @@ const ActiveSkillBar = () => {
   const [cooldowns, setCooldowns] = useState({});
   const [activeBuffs, setActiveBuffs] = useState([]);
   const [feedback, setFeedback] = useState(null);
-
-  // Hotkey mapping
-  const HOTKEYS = ['1', '2', '3', '4', '5', '6'];
 
   // Update active skills and cooldowns every 100ms
   useEffect(() => {
@@ -53,21 +54,12 @@ const ActiveSkillBar = () => {
     return () => clearInterval(interval);
   }, [getActiveSkills, getActiveSkillCooldown, getActiveBuffs]);
 
-  // Handle hotkey presses
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      const hotkeyIndex = HOTKEYS.indexOf(e.key);
-      if (hotkeyIndex !== -1 && hotkeyIndex < activeSkills.length) {
-        const skill = activeSkills[hotkeyIndex];
-        handleActivate(skill);
-      }
-    };
+  const showFeedback = React.useCallback((message, type) => {
+    setFeedback({ message, type });
+    setTimeout(() => setFeedback(null), 2000);
+  }, []);
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [activeSkills]);
-
-  const handleActivate = (skill) => {
+  const handleActivate = React.useCallback((skill) => {
     if (!activateActiveSkill) return;
 
     const validation = canActivateSkill(skill.treeId, skill.skillId);
@@ -82,12 +74,21 @@ const ActiveSkillBar = () => {
     } else {
       showFeedback(result.message, 'error');
     }
-  };
+  }, [activateActiveSkill, canActivateSkill, showFeedback]);
 
-  const showFeedback = (message, type) => {
-    setFeedback({ message, type });
-    setTimeout(() => setFeedback(null), 2000);
-  };
+  // Handle hotkey presses
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      const hotkeyIndex = HOTKEYS.indexOf(e.key);
+      if (hotkeyIndex !== -1 && hotkeyIndex < activeSkills.length) {
+        const skill = activeSkills[hotkeyIndex];
+        handleActivate(skill);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [activeSkills, handleActivate]);
 
   const formatCooldown = (seconds) => {
     if (seconds <= 0) return 'Ready';

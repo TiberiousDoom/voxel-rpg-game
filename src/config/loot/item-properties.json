@@ -1,0 +1,86 @@
+{
+  "LIFESTEAL": {
+    "name": "Lifesteal",
+    "description": "Heal for {value}% of damage dealt",
+    "valueRange": [5, 15],
+    "format": "percent",
+    "applicableTo": ["WEAPON"]
+  },
+  "CRITICAL_CHANCE": {
+    "name": "Critical Strike",
+    "description": "+{value}% critical strike chance",
+    "valueRange": [5, 20],
+    "format": "percent",
+    "applicableTo": ["WEAPON", "RING", "AMULET"]
+  },
+  "EXTRA_GOLD": {
+    "name": "Gold Find",
+    "description": "+{value}% gold from monsters",
+    "valueRange": [10, 30],
+    "format": "percent",
+    "applicableTo": ["RING", "AMULET"]
+  },
+  "THORNS": {
+    "name": "Thorns",
+    "description": "Reflect {value} damage to attackers",
+    "valueRange": [5, 20],
+    "format": "flat",
+    "applicableTo": ["ARMOR", "HELMET"]
+  },
+  "HEALTH_BONUS": {
+    "name": "Vitality",
+    "description": "+{value} max health",
+    "valueRange": [20, 100],
+    "format": "flat",
+    "applicableTo": ["ARMOR", "HELMET", "BOOTS"]
+  },
+  "SPEED_BONUS": {
+    "name": "Swiftness",
+    "description": "+{value}% movement speed",
+    "valueRange": [5, 15],
+    "format": "percent",
+    "applicableTo": ["BOOTS"]
+  },
+  "ATTACK_SPEED": {
+    "name": "Haste",
+    "description": "+{value}% attack speed",
+    "valueRange": [10, 25],
+    "format": "percent",
+    "applicableTo": ["WEAPON", "RING"]
+  },
+  "CRITICAL_DAMAGE": {
+    "name": "Critical Power",
+    "description": "+{value}% critical damage",
+    "valueRange": [20, 50],
+    "format": "percent",
+    "applicableTo": ["WEAPON", "AMULET"]
+  },
+  "ARMOR_PENETRATION": {
+    "name": "Penetration",
+    "description": "Ignore {value} enemy armor",
+    "valueRange": [5, 15],
+    "format": "flat",
+    "applicableTo": ["WEAPON"]
+  },
+  "DAMAGE_REDUCTION": {
+    "name": "Fortitude",
+    "description": "Reduce incoming damage by {value}%",
+    "valueRange": [3, 10],
+    "format": "percent",
+    "applicableTo": ["ARMOR", "HELMET"]
+  },
+  "HEALTH_REGEN": {
+    "name": "Regeneration",
+    "description": "Regenerate {value} health per second",
+    "valueRange": [2, 10],
+    "format": "flat",
+    "applicableTo": ["RING", "AMULET", "ARMOR"]
+  },
+  "MANA_BONUS": {
+    "name": "Wisdom",
+    "description": "+{value} max mana",
+    "valueRange": [20, 80],
+    "format": "flat",
+    "applicableTo": ["HELMET", "AMULET", "RING"]
+  }
+}

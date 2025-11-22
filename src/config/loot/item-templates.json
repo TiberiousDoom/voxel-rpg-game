@@ -1,0 +1,140 @@
+{
+  "WEAPON": {
+    "SWORD": {
+      "name": "Sword",
+      "baseStats": {
+        "damage": 10
+      },
+      "iconPath": "assets/icons/weapons/sword.png"
+    },
+    "AXE": {
+      "name": "Axe",
+      "baseStats": {
+        "damage": 15
+      },
+      "iconPath": "assets/icons/weapons/axe.png"
+    },
+    "DAGGER": {
+      "name": "Dagger",
+      "baseStats": {
+        "damage": 7
+      },
+      "iconPath": "assets/icons/weapons/dagger.png"
+    },
+    "MACE": {
+      "name": "Mace",
+      "baseStats": {
+        "damage": 12
+      },
+      "iconPath": "assets/icons/weapons/mace.png"
+    },
+    "SPEAR": {
+      "name": "Spear",
+      "baseStats": {
+        "damage": 11
+      },
+      "iconPath": "assets/icons/weapons/spear.png"
+    }
+  },
+  "ARMOR": {
+    "LEATHER_ARMOR": {
+      "name": "Leather Armor",
+      "baseStats": {
+        "armor": 15
+      },
+      "iconPath": "assets/icons/armor/leather.png"
+    },
+    "CHAIN_ARMOR": {
+      "name": "Chain Armor",
+      "baseStats": {
+        "armor": 25
+      },
+      "iconPath": "assets/icons/armor/chain.png"
+    },
+    "PLATE_ARMOR": {
+      "name": "Plate Armor",
+      "baseStats": {
+        "armor": 40
+      },
+      "iconPath": "assets/icons/armor/plate.png"
+    }
+  },
+  "HELMET": {
+    "LEATHER_HELMET": {
+      "name": "Leather Helmet",
+      "baseStats": {
+        "armor": 8
+      },
+      "iconPath": "assets/icons/helmet/leather.png"
+    },
+    "CHAIN_HELMET": {
+      "name": "Chain Helmet",
+      "baseStats": {
+        "armor": 12
+      },
+      "iconPath": "assets/icons/helmet/chain.png"
+    },
+    "PLATE_HELMET": {
+      "name": "Plate Helmet",
+      "baseStats": {
+        "armor": 20
+      },
+      "iconPath": "assets/icons/helmet/plate.png"
+    }
+  },
+  "BOOTS": {
+    "LEATHER_BOOTS": {
+      "name": "Leather Boots",
+      "baseStats": {
+        "armor": 5
+      },
+      "iconPath": "assets/icons/boots/leather.png"
+    },
+    "CHAIN_BOOTS": {
+      "name": "Chain Boots",
+      "baseStats": {
+        "armor": 8
+      },
+      "iconPath": "assets/icons/boots/chain.png"
+    },
+    "PLATE_BOOTS": {
+      "name": "Plate Boots",
+      "baseStats": {
+        "armor": 12
+      },
+      "iconPath": "assets/icons/boots/plate.png"
+    }
+  },
+  "RING": {
+    "SIMPLE_RING": {
+      "name": "Ring",
+      "baseStats": {
+        "health": 20
+      },
+      "iconPath": "assets/icons/accessories/ring.png"
+    },
+    "POWER_RING": {
+      "name": "Power Ring",
+      "baseStats": {
+        "damage": 5
+      },
+      "iconPath": "assets/icons/accessories/power_ring.png"
+    }
+  },
+  "AMULET": {
+    "SIMPLE_AMULET": {
+      "name": "Amulet",
+      "baseStats": {
+        "health": 30
+      },
+      "iconPath": "assets/icons/accessories/amulet.png"
+    },
+    "PROTECTION_AMULET": {
+      "name": "Protection Amulet",
+      "baseStats": {
+        "armor": 10
+      },
+      "iconPath": "assets/icons/accessories/protection_amulet.png"
+    }
+  }
+}

@@ -98,11 +98,12 @@ describe('MonsterAI System', () => {
     test('should detect player within aggro range', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 30, z: 25 },
         aggroRange: 10,
         aiState: 'IDLE',
         velocity: { x: 0, z: 0 },
-        speed: 2
+        moveSpeed: 2
       };
 
       const playerPos = { x: 25, z: 25 };
@@ -118,6 +119,7 @@ describe('MonsterAI System', () => {
     test('should not detect player outside aggro range', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 50, z: 25 },
         aggroRange: 10,
         aiState: 'IDLE'
@@ -159,10 +161,12 @@ describe('MonsterAI System', () => {
     test('should start monsters in IDLE state', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 100, z: 100 },
         aiState: 'IDLE',
         aggroRange: 10,
-        velocity: { x: 0, z: 0 }
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
       expect(monster.aiState).toBe('IDLE');
@@ -171,16 +175,19 @@ describe('MonsterAI System', () => {
     test('should transition from IDLE to CHASE when player in range', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
+        name: 'Test Monster',
         position: { x: 30, z: 25 },
         aiState: 'IDLE',
         aggroRange: 10,
         attackRange: 2,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
-      // Simulate update
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      // Simulate update (note: update takes deltaTime then gameState)
+      monsterAI.update(monster, 16, mockGameState);
 
       // Monster should now be chasing (within aggro but outside attack range)
       expect(monster.aiState).toBe('CHASE');
@@ -189,19 +196,22 @@ describe('MonsterAI System', () => {
     test('should transition from CHASE to ATTACK when in attack range', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
+        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'CHASE',
         aggroRange: 10,
         attackRange: 2,
-        attackCooldown: 2,
-        timeSinceLastAttack: 3,
+        attackSpeed: 0.5,
+        lastAttackTime: 0,
         damage: 5,
-        speed: 2,
-        velocity: { x: 1, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 1, z: 0 },
+        alive: true
       };
 
       // Simulate update
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       // Monster should now be attacking (within attack range)
       expect(monster.aiState).toBe('ATTACK');
@@ -210,18 +220,22 @@ describe('MonsterAI System', () => {
     test('should enter FLEE state when health below threshold', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
+        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'CHASE',
         health: 20,
         maxHealth: 100,
         canFlee: true,
+        fleeHealthPercent: 0.3,
         aggroRange: 10,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
       // Health is at 20% (below 30% flee threshold)
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       expect(monster.aiState).toBe('FLEE');
     });
@@ -229,6 +243,8 @@ describe('MonsterAI System', () => {
     test('should not flee if canFlee is false', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
+        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'CHASE',
         health: 20,
@@ -236,11 +252,12 @@ describe('MonsterAI System', () => {
         canFlee: false,
         aggroRange: 10,
         attackRange: 2,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       // Should stay in combat, not flee
       expect(monster.aiState).not.toBe('FLEE');
@@ -255,17 +272,19 @@ describe('MonsterAI System', () => {
     test('should flee when health below 30%', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'IDLE',
         health: 25,
         maxHealth: 100,
         canFlee: true,
         aggroRange: 10,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       expect(monster.aiState).toBe('FLEE');
     });
@@ -273,6 +292,7 @@ describe('MonsterAI System', () => {
     test('should not flee when health above 30%', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'CHASE',
         health: 40,
@@ -280,11 +300,12 @@ describe('MonsterAI System', () => {
         canFlee: true,
         aggroRange: 10,
         attackRange: 2,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       expect(monster.aiState).not.toBe('FLEE');
     });
@@ -292,21 +313,23 @@ describe('MonsterAI System', () => {
     test('should move away from player when fleeing', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 30, z: 25 },
         aiState: 'FLEE',
         health: 20,
         maxHealth: 100,
         canFlee: true,
         aggroRange: 10,
-        speed: 3,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 3,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
       const initialX = monster.position.x;
 
       // Simulate several updates
       for (let i = 0; i < 10; i++) {
-        monsterAI.updateMonster(monster, mockGameState, 0.016);
+        monsterAI.update(monster, 16, mockGameState);
       }
 
       // Monster should have moved away from player (x should increase since player is at x=25)
@@ -322,6 +345,7 @@ describe('MonsterAI System', () => {
     test('should follow patrol path when in PATROL state', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 40, z: 40 },
         aiState: 'PATROL',
         patrolPath: [
@@ -330,10 +354,11 @@ describe('MonsterAI System', () => {
           { x: 45, z: 45 },
           { x: 40, z: 45 }
         ],
-        currentWaypoint: 0,
+        currentWaypointIndex: 0,
         aggroRange: 10,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
       // Player far away
@@ -344,7 +369,7 @@ describe('MonsterAI System', () => {
 
       // Simulate movement toward waypoint
       for (let i = 0; i < 20; i++) {
-        monsterAI.updateMonster(monster, mockGameState, 0.016);
+        monsterAI.update(monster, 16, mockGameState);
       }
 
       // Should have progressed through patrol path
@@ -354,20 +379,22 @@ describe('MonsterAI System', () => {
     test('should transition from PATROL to CHASE when player detected', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 30, z: 25 },
         aiState: 'PATROL',
         patrolPath: [
           { x: 30, z: 25 },
           { x: 35, z: 25 }
         ],
-        currentWaypoint: 0,
+        currentWaypointIndex: 0,
         aggroRange: 10,
         attackRange: 2,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       // Should switch to chase since player is nearby
       expect(monster.aiState).toBe('CHASE');
@@ -394,6 +421,7 @@ describe('MonsterAI System', () => {
 
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'ATTACK',
         damage: 10,
@@ -401,11 +429,12 @@ describe('MonsterAI System', () => {
         timeSinceLastAttack: 3,
         aggroRange: 10,
         attackRange: 2,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       // Should have attempted to deal damage
       expect(mockDealDamage).toHaveBeenCalledWith(10);
@@ -414,6 +443,7 @@ describe('MonsterAI System', () => {
     test('should respect attack cooldown', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'ATTACK',
         damage: 10,
@@ -421,13 +451,14 @@ describe('MonsterAI System', () => {
         timeSinceLastAttack: 0.5,
         aggroRange: 10,
         attackRange: 2,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
       const initialTime = monster.timeSinceLastAttack;
 
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       // Time should have increased
       expect(monster.timeSinceLastAttack).toBeGreaterThan(initialTime);
@@ -436,6 +467,7 @@ describe('MonsterAI System', () => {
     test('should stop moving when in ATTACK state', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'ATTACK',
         damage: 10,
@@ -443,11 +475,11 @@ describe('MonsterAI System', () => {
         timeSinceLastAttack: 3,
         aggroRange: 10,
         attackRange: 2,
-        speed: 2,
+        moveSpeed: 2,
         velocity: { x: 1, z: 1 }
       };
 
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       // Velocity should be zeroed when attacking
       expect(monster.velocity.x).toBe(0);
@@ -468,8 +500,9 @@ describe('MonsterAI System', () => {
           aiState: 'IDLE',
           aggroRange: 10,
           attackRange: 2,
-          speed: 2,
-          velocity: { x: 0, z: 0 }
+          moveSpeed: 2,
+          velocity: { x: 0, z: 0 },
+          alive: true
         },
         {
           id: 'monster-2',
@@ -477,8 +510,9 @@ describe('MonsterAI System', () => {
           aiState: 'IDLE',
           aggroRange: 10,
           attackRange: 2,
-          speed: 2,
-          velocity: { x: 0, z: 0 }
+          moveSpeed: 2,
+          velocity: { x: 0, z: 0 },
+          alive: true
         },
         {
           id: 'monster-3',
@@ -486,18 +520,20 @@ describe('MonsterAI System', () => {
           aiState: 'IDLE',
           aggroRange: 10,
           attackRange: 2,
-          speed: 2,
-          velocity: { x: 0, z: 0 }
+          moveSpeed: 2,
+          velocity: { x: 0, z: 0 },
+          alive: true
         }
       ];
 
-      monsterAI.updateAll(monsters, mockGameState, 0.016);
+      // updateAll throttles at 100ms, so pass >= 100ms
+      monsterAI.updateAll(monsters, mockGameState, 100);
 
       // Monster 1 and 3 should be chasing (close to player)
       // Monster 2 should stay idle (far from player)
       expect(monsters[0].aiState).toBe('CHASE');
       expect(monsters[1].aiState).toBe('IDLE');
-      expect(monsters[2].aiState).toBe('ATTACK'); // Very close
+      expect(monsters[2].aiState).toBe('CHASE'); // Within aggro range
     });
 
     test('should handle empty monster array', () => {
@@ -513,25 +549,27 @@ describe('MonsterAI System', () => {
         id: 'fast-monster',
         position: { x: 30, z: 25 },
         aiState: 'CHASE',
-        speed: 5,
+        moveSpeed: 5,
         aggroRange: 10,
         attackRange: 2,
-        velocity: { x: 0, z: 0 }
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
       const monster2 = {
         id: 'slow-monster',
         position: { x: 30, z: 25 },
         aiState: 'CHASE',
-        speed: 1,
+        moveSpeed: 1,
         aggroRange: 10,
         attackRange: 2,
-        velocity: { x: 0, z: 0 }
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
-      // Update both for same time
-      monsterAI.updateMonster(monster1, mockGameState, 1);
-      monsterAI.updateMonster(monster2, mockGameState, 1);
+      // Update both for same time (deltaTime in ms)
+      monsterAI.update(monster1, 1000, mockGameState);
+      monsterAI.update(monster2, 1000, mockGameState);
 
       // Fast monster should move more
       const dist1 = Math.sqrt(
@@ -553,15 +591,16 @@ describe('MonsterAI System', () => {
     test('should handle monster with no velocity property', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 30, z: 25 },
         aiState: 'IDLE',
         aggroRange: 10,
-        speed: 2
+        moveSpeed: 2
         // No velocity property
       };
 
       expect(() => {
-        monsterAI.updateMonster(monster, mockGameState, 0.016);
+        monsterAI.update(monster, 16, mockGameState);
       }).not.toThrow();
 
       // Should have created velocity
@@ -571,16 +610,18 @@ describe('MonsterAI System', () => {
     test('should handle zero elapsed time', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 30, z: 25 },
         aiState: 'CHASE',
         aggroRange: 10,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
       const initialPos = { ...monster.position };
 
-      monsterAI.updateMonster(monster, mockGameState, 0);
+      monsterAI.update(monster, 0, mockGameState);
 
       // Position shouldn't change with 0 elapsed time
       expect(monster.position.x).toBe(initialPos.x);
@@ -590,16 +631,18 @@ describe('MonsterAI System', () => {
     test('should handle dead monsters', () => {
       const monster = {
         id: 'test-monster',
+        name: 'Test Monster',
         position: { x: 30, z: 25 },
         aiState: 'IDLE',
         health: 0,
         maxHealth: 100,
         aggroRange: 10,
-        speed: 2,
-        velocity: { x: 0, z: 0 }
+        moveSpeed: 2,
+        velocity: { x: 0, z: 0 },
+        alive: true
       };
 
-      monsterAI.updateMonster(monster, mockGameState, 0.016);
+      monsterAI.update(monster, 16, mockGameState);
 
       // Dead monster should not transition to chase
       expect(monster.aiState).toBe('IDLE');

@@ -387,6 +387,8 @@ function GameScreen() {
           onAssignNPC={handleAssignNPC}
           onUnassignNPC={handleUnassignNPC}
           onAutoAssign={handleAutoAssign}
+          onSpawnNPC={(role) => actions.spawnNPC(role)}
+          maxPopulation={gameState.maxPopulation || 100}
         />
       </ModalWrapper>
 

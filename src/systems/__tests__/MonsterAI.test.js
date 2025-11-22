@@ -176,7 +176,6 @@ describe('MonsterAI System', () => {
       const monster = {
         id: 'test-monster',
         name: 'Test Monster',
-        name: 'Test Monster',
         position: { x: 30, z: 25 },
         aiState: 'IDLE',
         aggroRange: 10,
@@ -196,7 +195,6 @@ describe('MonsterAI System', () => {
     test('should transition from CHASE to ATTACK when in attack range', () => {
       const monster = {
         id: 'test-monster',
-        name: 'Test Monster',
         name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'CHASE',
@@ -221,7 +219,6 @@ describe('MonsterAI System', () => {
       const monster = {
         id: 'test-monster',
         name: 'Test Monster',
-        name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'CHASE',
         health: 20,
@@ -243,7 +240,6 @@ describe('MonsterAI System', () => {
     test('should not flee if canFlee is false', () => {
       const monster = {
         id: 'test-monster',
-        name: 'Test Monster',
         name: 'Test Monster',
         position: { x: 26, z: 25 },
         aiState: 'CHASE',
@@ -365,7 +361,7 @@ describe('MonsterAI System', () => {
       mockPlayer.position.x = 0;
       mockPlayer.position.z = 0;
 
-      const initialWaypoint = monster.currentWaypoint;
+      const initialWaypoint = monster.currentWaypointIndex;
 
       // Simulate movement toward waypoint
       for (let i = 0; i < 20; i++) {
@@ -373,7 +369,7 @@ describe('MonsterAI System', () => {
       }
 
       // Should have progressed through patrol path
-      expect(monster.currentWaypoint).toBeGreaterThanOrEqual(initialWaypoint);
+      expect(monster.currentWaypointIndex).toBeGreaterThanOrEqual(initialWaypoint);
     });
 
     test('should transition from PATROL to CHASE when player detected', () => {
@@ -425,8 +421,8 @@ describe('MonsterAI System', () => {
         position: { x: 26, z: 25 },
         aiState: 'ATTACK',
         damage: 10,
-        attackCooldown: 2,
-        timeSinceLastAttack: 3,
+        attackSpeed: 0.5, // 0.5 attacks per second
+        lastAttackTime: Date.now() - 5000, // Last attacked 5 seconds ago (should be ready)
         aggroRange: 10,
         attackRange: 2,
         moveSpeed: 2,
@@ -447,8 +443,8 @@ describe('MonsterAI System', () => {
         position: { x: 26, z: 25 },
         aiState: 'ATTACK',
         damage: 10,
-        attackCooldown: 2,
-        timeSinceLastAttack: 0.5,
+        attackSpeed: 0.5, // 0.5 attacks per second = 2 second cooldown
+        lastAttackTime: Date.now() - 100, // Just attacked 100ms ago (still on cooldown)
         aggroRange: 10,
         attackRange: 2,
         moveSpeed: 2,
@@ -456,12 +452,13 @@ describe('MonsterAI System', () => {
         alive: true
       };
 
-      const initialTime = monster.timeSinceLastAttack;
+      const initialTime = monster.lastAttackTime;
 
       monsterAI.update(monster, 16, mockGameState);
 
-      // Time should have increased
-      expect(monster.timeSinceLastAttack).toBeGreaterThan(initialTime);
+      // lastAttackTime should NOT change because cooldown hasn't elapsed
+      // (cooldown is 2000ms, only 100ms+16ms have passed)
+      expect(monster.lastAttackTime).toBe(initialTime);
     });
 
     test('should stop moving when in ATTACK state', () => {
@@ -471,12 +468,13 @@ describe('MonsterAI System', () => {
         position: { x: 26, z: 25 },
         aiState: 'ATTACK',
         damage: 10,
-        attackCooldown: 2,
-        timeSinceLastAttack: 3,
+        attackSpeed: 0.5,
+        lastAttackTime: 0,
         aggroRange: 10,
         attackRange: 2,
         moveSpeed: 2,
-        velocity: { x: 1, z: 1 }
+        velocity: { x: 1, z: 1 },
+        alive: true
       };
 
       monsterAI.update(monster, 16, mockGameState);
@@ -496,6 +494,7 @@ describe('MonsterAI System', () => {
       const monsters = [
         {
           id: 'monster-1',
+          name: 'Test Monster',
           position: { x: 30, z: 25 },
           aiState: 'IDLE',
           aggroRange: 10,
@@ -506,6 +505,7 @@ describe('MonsterAI System', () => {
         },
         {
           id: 'monster-2',
+          name: 'Test Monster',
           position: { x: 100, z: 100 },
           aiState: 'IDLE',
           aggroRange: 10,
@@ -516,6 +516,7 @@ describe('MonsterAI System', () => {
         },
         {
           id: 'monster-3',
+          name: 'Test Monster',
           position: { x: 26, z: 25 },
           aiState: 'IDLE',
           aggroRange: 10,
@@ -547,6 +548,7 @@ describe('MonsterAI System', () => {
     test('should handle monsters with different speeds', () => {
       const monster1 = {
         id: 'fast-monster',
+        name: 'Fast Monster',
         position: { x: 30, z: 25 },
         aiState: 'CHASE',
         moveSpeed: 5,
@@ -558,6 +560,7 @@ describe('MonsterAI System', () => {
 
       const monster2 = {
         id: 'slow-monster',
+        name: 'Slow Monster',
         position: { x: 30, z: 25 },
         aiState: 'CHASE',
         moveSpeed: 1,

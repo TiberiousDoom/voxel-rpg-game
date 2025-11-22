@@ -40,9 +40,11 @@ export class WorldGenerator {
    * Create a world generator
    * @param {number} seed - World seed for deterministic generation
    * @param {object} config - Generation configuration
+   * @param {BiomeManager} biomeManager - Optional biome manager for Phase 2 (Voronoi-based biomes)
    */
-  constructor(seed = Date.now(), config = {}) {
+  constructor(seed = Date.now(), config = {}, biomeManager = null) {
     this.seed = seed;
+    this.biomeManager = biomeManager;
     this.config = {
       // Height generation
       heightScale: config.heightScale || 0.02,     // Lower = larger features
@@ -150,13 +152,19 @@ export class WorldGenerator {
 
   /**
    * Determine biome at world coordinates
-   * Uses temperature, moisture, and elevation
+   * Uses BiomeManager if available (Phase 2), otherwise temperature×moisture (Phase 1)
    *
    * @param {number} x - World X coordinate
    * @param {number} z - World Z coordinate
    * @returns {string} Biome type (from BiomeType enum)
    */
   getBiome(x, z) {
+    // Phase 2: Use BiomeManager if available (Voronoi-based biomes)
+    if (this.biomeManager) {
+      return this.biomeManager.getBiomeAt(x, z);
+    }
+
+    // Phase 1: Fallback to temperature×moisture approach
     // Get normalized height (0-1)
     const height = this.generateHeight(x, z);
     const normalizedHeight = (height - this.config.minHeight) /

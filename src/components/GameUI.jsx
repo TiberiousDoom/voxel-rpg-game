@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 import { getTotalStats } from '../utils/equipmentStats';
+import StatBarWithTooltip from './ui/StatBarWithTooltip';
+import { useStatBreakdown } from '../hooks/useStatBreakdown';
 
 /**
  * GameUI component - HTML overlay for game interface
@@ -13,6 +15,7 @@ const GameUI = () => {
   const inventory = useGameStore((state) => state.inventory);
   const gameState = useGameStore((state) => state.gameState);
   const [isMobile, setIsMobile] = useState(false);
+  const statBreakdowns = useStatBreakdown();
 
   // Detect mobile device
   useEffect(() => {
@@ -135,109 +138,44 @@ const GameUI = () => {
         }}
       >
         {/* Health bar */}
-        <div style={{ marginBottom: isMobile ? '8px' : '10px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '5px',
-              fontSize: isMobile ? '0.85rem' : '1rem',
-            }}
-          >
-            <Heart size={isMobile ? 16 : 20} style={{ marginRight: isMobile ? '4px' : '8px', color: '#ff6b6b' }} />
-            <span>
-              {player.health} / {player.maxHealth}
-            </span>
-          </div>
-          <div
-            style={{
-              width: '100%',
-              height: isMobile ? '14px' : '20px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '10px',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${(player.health / player.maxHealth) * 100}%`,
-                height: '100%',
-                background: 'linear-gradient(90deg, #ff6b6b, #ff8787)',
-                transition: 'width 0.3s',
-              }}
-            />
-          </div>
-        </div>
+        <StatBarWithTooltip
+          icon={<Heart />}
+          iconColor="#ff6b6b"
+          label="Health"
+          current={player.health}
+          max={player.maxHealth}
+          gradientColors={['#ff6b6b', '#ff8787']}
+          statName="health"
+          breakdown={statBreakdowns.health}
+          isMobile={isMobile}
+        />
 
         {/* Mana bar */}
-        <div style={{ marginBottom: isMobile ? '8px' : '10px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '5px',
-              fontSize: isMobile ? '0.85rem' : '1rem',
-            }}
-          >
-            <Zap size={isMobile ? 16 : 20} style={{ marginRight: isMobile ? '4px' : '8px', color: '#4dabf7' }} />
-            <span>
-              {Math.round(player.mana)} / {player.maxMana}
-            </span>
-          </div>
-          <div
-            style={{
-              width: '100%',
-              height: isMobile ? '14px' : '20px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '10px',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${(player.mana / player.maxMana) * 100}%`,
-                height: '100%',
-                background: 'linear-gradient(90deg, #4dabf7, #74c0fc)',
-                transition: 'width 0.3s',
-              }}
-            />
-          </div>
-        </div>
+        <StatBarWithTooltip
+          icon={<Zap />}
+          iconColor="#4dabf7"
+          label="Mana"
+          current={Math.round(player.mana)}
+          max={player.maxMana}
+          gradientColors={['#4dabf7', '#74c0fc']}
+          statName="mana"
+          breakdown={statBreakdowns.mana}
+          isMobile={isMobile}
+        />
 
         {/* Stamina bar */}
         {!isMobile && (
-        <div style={{ marginBottom: '10px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '5px',
-            }}
-          >
-            <Activity size={20} style={{ marginRight: '8px', color: '#51cf66' }} />
-            <span>
-              {Math.round(player.stamina)} / {player.maxStamina}
-            </span>
-          </div>
-          <div
-            style={{
-              width: '100%',
-              height: '20px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '10px',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${(player.stamina / player.maxStamina) * 100}%`,
-                height: '100%',
-                background: 'linear-gradient(90deg, #51cf66, #8ce99a)',
-                transition: 'width 0.3s',
-              }}
-            />
-          </div>
-        </div>
+          <StatBarWithTooltip
+            icon={<Activity />}
+            iconColor="#51cf66"
+            label="Stamina"
+            current={Math.round(player.stamina)}
+            max={player.maxStamina}
+            gradientColors={['#51cf66', '#8ce99a']}
+            statName="stamina"
+            breakdown={statBreakdowns.stamina}
+            isMobile={false}
+          />
         )}
 
         {/* Rage bar */}

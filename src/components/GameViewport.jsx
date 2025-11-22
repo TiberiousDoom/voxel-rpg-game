@@ -49,15 +49,14 @@ const initializeCanvas = (canvas, width, height) => {
 
   // Try multiple context configurations
   // CRITICAL: Never use willReadFrequently:true - it DISABLES GPU acceleration!
+  // Try desynchronized on both mobile and desktop for smoother rendering
   let ctx = null;
-  const contextConfigs = isMobileDevice ? [
-    // Mobile: Use desynchronized for better performance (no flashing on mobile)
+  const contextConfigs = [
+    // Try desynchronized first for smoother rendering (modern browsers handle this well)
     { alpha: false, desynchronized: true },
+    // Fallback to standard config
     { alpha: false },
-    {}
-  ] : [
-    // Desktop: Skip desynchronized to prevent flashing/tearing
-    { alpha: false },
+    // Final fallback with minimal config
     {}
   ];
 
@@ -569,8 +568,9 @@ function GameViewport({
         throw new Error('Invalid canvas context');
       }
 
-      // Clear canvas
-      ctx.fillStyle = '#FFFFFF';
+      // Clear canvas with neutral background to prevent flashing
+      // Using a light gray instead of white reduces visual flashing
+      ctx.fillStyle = '#F5F5F5';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
       // Get camera offset with better fallback

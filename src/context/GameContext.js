@@ -18,6 +18,7 @@
 
 import React, { createContext, useContext } from 'react';
 import useGameManager from '../hooks/useGameManager';
+import { useCharacterSync } from '../hooks/useCharacterSync';
 
 /**
  * Create the game context
@@ -30,6 +31,9 @@ const GameContext = createContext(null);
  */
 export function GameProvider({ children, config = {} }) {
   const gameManagerData = useGameManager(config);
+
+  // Sync character data to NPCManager for Leadership bonuses
+  useCharacterSync(gameManagerData.gameManager);
 
   return (
     <GameContext.Provider value={gameManagerData}>

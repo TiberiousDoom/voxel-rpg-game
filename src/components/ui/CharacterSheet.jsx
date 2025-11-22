@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import useGameStore from '../../stores/useGameStore';
 import { getAllAttributeInfos } from '../../modules/character/CharacterSystem';
+import SkillTreeUI from './SkillTreeUI';
 import './CharacterSheet.css';
 
 const CharacterSheet = ({ isOpen, onClose }) => {
@@ -155,7 +156,7 @@ const CharacterSheet = ({ isOpen, onClose }) => {
             className={`tab-button ${activeTab === 'skills' ? 'active' : ''}`}
             onClick={() => setActiveTab('skills')}
           >
-            Skills (Coming Soon)
+            Skills
           </button>
           <button
             className={`tab-button ${activeTab === 'stats' ? 'active' : ''}`}
@@ -190,11 +191,7 @@ const CharacterSheet = ({ isOpen, onClose }) => {
 
           {activeTab === 'skills' && (
             <div className="skills-tab">
-              <div className="coming-soon">
-                <h2>🌟 Skill Trees Coming Soon</h2>
-                <p>Settlement, Explorer, and Combat skill trees will be available in the next update!</p>
-                <p>You currently have <strong>{character.skillPoints}</strong> skill points saved.</p>
-              </div>
+              <SkillTreeUI treeId="settlement" />
             </div>
           )}
 

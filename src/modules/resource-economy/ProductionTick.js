@@ -193,11 +193,16 @@ class ProductionTick {
       building.position.z
     );
 
-    // Final production = base × staffing × (1 + skillBonus) × combatBonus × aura × morale
-    let multiplier = staffingMultiplier * (1 + skillBonus) * combatBonus * auraBonus * moraleMultiplier;
+    // Apply character skill tree bonuses
+    const skillTreeResourceBonus = gameState?.skillEffects?.resourceProduction || 0;
+    const skillTreeEfficiencyBonus = gameState?.skillEffects?.buildingEfficiency || 0;
+    const skillTreeMultiplier = 1.0 + skillTreeResourceBonus + skillTreeEfficiencyBonus;
 
-    // Hard cap at 2.0x
-    multiplier = Math.min(multiplier, 2.0);
+    // Final production = base × staffing × (1 + skillBonus) × combatBonus × aura × morale × skillTree
+    let multiplier = staffingMultiplier * (1 + skillBonus) * combatBonus * auraBonus * moraleMultiplier * skillTreeMultiplier;
+
+    // Hard cap at 3.0x (raised from 2.0x to accommodate skill tree bonuses)
+    multiplier = Math.min(multiplier, 3.0);
 
     result.baseMultiplier = multiplier.toFixed(3);
     result.staffingMultiplier = staffingMultiplier.toFixed(3);

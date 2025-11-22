@@ -20,12 +20,12 @@ import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terr
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
+import { SpawnManager } from '../systems/SpawnManager.js'; // Spawn system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
 import { PropHarvestingSystem } from '../modules/environment/PropHarvestingSystem.js'; // Phase 3A: Prop harvesting
 import { FloatingTextManager } from '../rendering/FloatingTextManager.js'; // Phase 3A: Floating text
 import { TerrainJobQueue } from '../modules/terrain-jobs/TerrainJobQueue.js'; // Terrain job queue
 import { JobTimeCalculator } from '../modules/terrain-jobs/JobTimeCalculator.js'; // Job time calculator
-import { TerrainWorkerBehavior } from '../modules/terrain-jobs/TerrainWorkerBehavior.js'; // Terrain worker behavior
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';
@@ -47,21 +47,21 @@ const initializeCanvas = (canvas, width, height) => {
   canvas.height = height;
 
   // Detect mobile device
+  // eslint-disable-next-line no-unused-vars
   const isMobileDevice = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
                         window.innerWidth <= 768 ||
                         ('ontouchstart' in window);
 
   // Try multiple context configurations
   // CRITICAL: Never use willReadFrequently:true - it DISABLES GPU acceleration!
+  // Try desynchronized on both mobile and desktop for smoother rendering
   let ctx = null;
-  const contextConfigs = isMobileDevice ? [
-    // Mobile: Use desynchronized for better performance (no flashing on mobile)
+  const contextConfigs = [
+    // Try desynchronized first for smoother rendering (modern browsers handle this well)
     { alpha: false, desynchronized: true },
+    // Fallback to standard config
     { alpha: false },
-    {}
-  ] : [
-    // Desktop: Skip desynchronized to prevent flashing/tearing
-    { alpha: false },
+    // Final fallback with minimal config
     {}
   ];
 
@@ -287,9 +287,30 @@ function GameViewport({
 
   // Monster AI system
   const monsterAIRef = useRef(null);
+  const previousMonsterStatesRef = useRef(new Map()); // Track AI state changes
   if (monsterAIRef.current === null) {
     monsterAIRef.current = new MonsterAI();
   }
+
+  // Spawn system - Initialize once
+  const spawnManagerRef = useRef(null);
+  const zonesPopulated = useRef(false);
+  if (spawnManagerRef.current === null) {
+    spawnManagerRef.current = new SpawnManager();
+  }
+
+  // Populate spawn zones once on startup
+  useEffect(() => {
+    if (spawnManagerRef.current && !zonesPopulated.current) {
+      const initialMonsters = spawnManagerRef.current.populateAllZones();
+      if (initialMonsters.length > 0) {
+        initialMonsters.forEach(monster => {
+          useGameStore.getState().spawnMonster(monster);
+        });
+        zonesPopulated.current = true;
+      }
+    }
+  }, []);
 
   // Terrain system - Initialize once
   const terrainSystemRef = useRef(null);
@@ -370,6 +391,7 @@ function GameViewport({
       // Expose playerEntity for debug commands (needed for teleportPlayer)
       if (typeof window !== 'undefined') {
         window.playerEntity = playerRef.current;
+        window.spawnManager = spawnManagerRef.current;
       }
 
       playerRendererRef.current = new PlayerRenderer({
@@ -436,6 +458,7 @@ function GameViewport({
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
 
   // Prop Renderer integration (Phase 3 & 3A)
+  // eslint-disable-next-line no-unused-vars
   const { renderProps, renderPropHighlight, renderHarvestProgress, renderFloatingText, renderDebugInfo } = usePropRenderer({
     tileSize: TILE_SIZE,
     enableLOD: true,
@@ -459,6 +482,7 @@ function GameViewport({
       interactionRange * 2,
       interactionRange * 2
     ).filter(prop => prop.harvestable);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerRef.current?.x, playerRef.current?.z]);
 
   // Player interaction system
@@ -661,8 +685,9 @@ function GameViewport({
         throw new Error('Invalid canvas context');
       }
 
-      // Clear canvas
-      ctx.fillStyle = '#FFFFFF';
+      // Clear canvas with neutral background to prevent flashing
+      // Using a light gray instead of white reduces visual flashing
+      ctx.fillStyle = '#F5F5F5';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
       // Get camera offset with better fallback
@@ -984,7 +1009,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight]);
 
   /**
    * Terrain tool handlers
@@ -1319,64 +1344,97 @@ function GameViewport({
     let animationId = null;
     let initialRenderAttempts = 0;
     const maxInitialAttempts = 60; // Try for 1 second
-    let lastFrameTime = 0;
+    let lastFrameTime = performance.now();
 
     // Detect mobile for appropriate frame rate
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
                      window.innerWidth <= 768 ||
                      ('ontouchstart' in window);
-    const targetFPS = isMobile ? 45 : 60; // Increased mobile FPS to 45 for better responsiveness
-    const frameInterval = 1000 / targetFPS;
 
     const animate = (currentTime) => {
-      // Throttle to target FPS
-      const elapsed = currentTime - lastFrameTime;
+      // Calculate delta time for smooth updates
+      const deltaTime = (currentTime - lastFrameTime) / 1000; // Convert to seconds
+      lastFrameTime = currentTime;
+      const frameStartTime = performance.now();
 
-      if (elapsed > frameInterval) {
-        lastFrameTime = currentTime - (elapsed % frameInterval);
-        const frameStartTime = performance.now();
+      try {
+        // Verify canvas is still valid before rendering
+        if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) {
+          animationId = requestAnimationFrame(animate);
+          return;
+        }
+        // Update terrain chunk loading based on camera position
+        if (terrainSystemRef.current && getOffset) {
+          const offset = getOffset() || { x: 0, y: 0 };
+          // Camera position in world pixels (inverse of offset)
+          const cameraX = -offset.x;
+          const cameraZ = -offset.y;
+          terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
 
-        try {
-          // Update terrain chunk loading based on camera position
-          if (terrainSystemRef.current && getOffset) {
-            const offset = getOffset() || { x: 0, y: 0 };
-            // Camera position in world pixels (inverse of offset)
-            const cameraX = -offset.x;
-            const cameraZ = -offset.y;
-            terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT);
+        // Update NPC positions before rendering (use ref to avoid loop recreation)
+        if (npcRenderer && npcsRef.current) {
+          npcRenderer.updatePositions(npcsRef.current, deltaTime * 1000); // Convert back to ms
+        }
+
+        // Update monster AI before rendering
+        if (monsterAIRef.current && monstersRef.current && monstersRef.current.length > 0 && playerRef.current) {
+          const gameState = {
+            player: playerRef.current,
+            npcs: npcsRef.current || [],
+            buildings: buildingsRef.current || []
+          };
+          monsterAIRef.current.updateAll(monstersRef.current, gameState, deltaTime * 1000); // Convert back to ms
+
+          // CRITICAL: Only notify Zustand when monster states actually change
+          // Check if any monster AI state changed since last frame
+          let stateChanged = false;
+          const currentStates = previousMonsterStatesRef.current;
+
+          for (const monster of monstersRef.current) {
+            const prevState = currentStates.get(monster.id);
+            if (prevState !== monster.aiState) {
+              stateChanged = true;
+              currentStates.set(monster.id, monster.aiState);
+            }
           }
 
-          // Update NPC positions before rendering (use ref to avoid loop recreation)
-          if (npcRenderer && npcsRef.current) {
-            npcRenderer.updatePositions(npcsRef.current, elapsed);
+          // Only trigger Zustand update if states changed (not every frame!)
+          if (stateChanged) {
+            useGameStore.setState({ enemies: [...monstersRef.current] });
           }
+        }
 
-          // Update monster AI before rendering
-          if (monsterAIRef.current && monstersRef.current && monstersRef.current.length > 0 && playerRef.current) {
-            const gameState = {
-              player: playerRef.current,
-              npcs: npcsRef.current || [],
-              buildings: buildingsRef.current || []
-            };
-            monsterAIRef.current.updateAll(monstersRef.current, gameState, elapsed);
-          }
+        // Update monster positions before rendering
+        if (monsterRenderer && monstersRef.current) {
+          monsterRenderer.updatePositions(monstersRef.current, deltaTime * 1000); // Convert back to ms
+        }
 
-          // Update monster positions before rendering
-          if (monsterRenderer && monstersRef.current) {
-            monsterRenderer.updatePositions(monstersRef.current, elapsed);
-          }
+        // Clean up dead monsters after fade animation completes (1 second)
+        if (monstersRef.current && monstersRef.current.length > 0) {
+          const now = Date.now();
+          monstersRef.current.forEach(monster => {
+            if (!monster.alive && monster.deathTime && (now - monster.deathTime > 1000)) {
+              // Monster has finished death animation, remove from store
+              // eslint-disable-next-line no-console
+              console.log(`🗑️ Removing ${monster.name} after death animation (${((now - monster.deathTime) / 1000).toFixed(1)}s ago)`);
+              useGameStore.getState().removeMonster(monster.id);
+              // Clean up state tracking
+              previousMonsterStatesRef.current.delete(monster.id);
+            }
+          });
+        }
 
-          // Clean up dead monsters after fade animation completes (1 second)
-          if (monstersRef.current && monstersRef.current.length > 0) {
-            const now = Date.now();
-            monstersRef.current.forEach(monster => {
-              if (!monster.alive && monster.deathTime && (now - monster.deathTime > 1000)) {
-                // Monster has finished death animation, remove from store
-                // eslint-disable-next-line no-console
-                console.log(`🗑️ Removing ${monster.name} after death animation (${((now - monster.deathTime) / 1000).toFixed(1)}s ago)`);
-                useGameStore.getState().removeMonster(monster.id);
-              }
-            });
+          // Update spawn system - spawn new monsters as needed
+          if (spawnManagerRef.current && monstersRef.current) {
+            const newMonsters = spawnManagerRef.current.update(monstersRef.current, deltaTime * 1000); // Convert back to ms
+            if (newMonsters.length > 0) {
+              // Add new monsters to the game
+              newMonsters.forEach(monster => {
+                useGameStore.getState().spawnMonster(monster);
+              });
+              monstersRef.current.push(...newMonsters);
+            }
           }
 
           // Phase 3A: Update prop harvesting system
@@ -1392,53 +1450,52 @@ function GameViewport({
           // Draw viewport with safe error handling
           drawViewport(ctx);
 
-          // Track performance metrics
-          const frameEndTime = performance.now();
-          const frameTime = frameEndTime - frameStartTime;
+        // Track performance metrics
+        const frameEndTime = performance.now();
+        const frameTime = frameEndTime - frameStartTime;
 
-          perfRef.current.frameCount++;
-          perfRef.current.frameTimes.push(frameTime);
-          if (perfRef.current.frameTimes.length > 60) {
-            perfRef.current.frameTimes.shift();
-          }
+        perfRef.current.frameCount++;
+        perfRef.current.frameTimes.push(frameTime);
+        if (perfRef.current.frameTimes.length > 60) {
+          perfRef.current.frameTimes.shift();
+        }
 
-          const now = Date.now();
-          if (now - perfRef.current.lastFpsUpdate >= 1000) {
-            const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
-            const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
+        const now = Date.now();
+        if (now - perfRef.current.lastFpsUpdate >= 1000) {
+          const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
+          const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
 
-            // Update state only once per second (not every frame!)
-            setPerfMetrics({
-              fps,
-              frameTime: avgFrameTime.toFixed(2),
-              isMobile,
-              canvasWidth: CANVAS_WIDTH,
-              canvasHeight: CANVAS_HEIGHT,
-              ...perfRef.current.currentMetrics
-            });
+          // Update state only once per second (not every frame!)
+          setPerfMetrics({
+            fps,
+            frameTime: avgFrameTime.toFixed(2),
+            isMobile,
+            canvasWidth: CANVAS_WIDTH,
+            canvasHeight: CANVAS_HEIGHT,
+            ...perfRef.current.currentMetrics
+          });
 
-            perfRef.current.frameCount = 0;
-            perfRef.current.lastFpsUpdate = now;
-          }
+          perfRef.current.frameCount = 0;
+          perfRef.current.lastFpsUpdate = now;
+        }
 
-          // Track initial render attempts (no state updates!)
-          if (initialRenderAttempts < maxInitialAttempts) {
-            initialRenderAttempts++;
-          }
+        // Track initial render attempts (no state updates!)
+        if (initialRenderAttempts < maxInitialAttempts) {
+          initialRenderAttempts++;
+        }
 
-        } catch (error) {
-          // Don't log or setState in animation loop - kills FPS!
-          // Just draw error on canvas
-          try {
-            ctx.fillStyle = '#ff0000';
-            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '20px Arial';
-            ctx.textAlign = 'left';
-            ctx.fillText(`Render Error: ${error.message}`, 10, 30);
-          } catch (e) {
-            // Silent failure - can't even draw error
-          }
+      } catch (error) {
+        // Don't log or setState in animation loop - kills FPS!
+        // Just draw error on canvas
+        try {
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '20px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(`Render Error: ${error.message}`, 10, 30);
+        } catch (e) {
+          // Silent failure - can't even draw error
         }
       }
 
@@ -1454,7 +1511,10 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset, npcRenderer, npcs, buildings, monsterRenderer]);
+    // Minimal dependencies - only re-initialize if core rendering setup changes
+    // We use refs for data (npcsRef, buildingsRef, etc.) so don't need them here
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="game-viewport">

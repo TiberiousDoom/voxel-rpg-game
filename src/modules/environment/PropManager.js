@@ -116,6 +116,7 @@ class PoissonDiscSampler {
     const activeList = [];
 
     // Helper: Get grid cell
+    // eslint-disable-next-line no-unused-vars
     const getCell = (x, y) => {
       const cellX = Math.floor(x / cellSize);
       const cellY = Math.floor(y / cellSize);

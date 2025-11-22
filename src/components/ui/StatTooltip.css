@@ -1,0 +1,217 @@
+/**
+ * StatTooltip.css
+ * Styles for stat breakdown tooltips
+ */
+
+.stat-tooltip {
+  position: absolute;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #4a5568;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 220px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+  z-index: 2500;
+  pointer-events: none;
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Positioning */
+.stat-tooltip-right {
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.stat-tooltip-left {
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.stat-tooltip-top {
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.stat-tooltip-bottom {
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Header */
+.stat-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stat-tooltip-icon {
+  font-size: 18px;
+}
+
+.stat-tooltip-title {
+  flex: 1;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #fbbf24;
+}
+
+.stat-tooltip-total {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Divider */
+.stat-tooltip-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #4a5568, transparent);
+  margin: 8px 0;
+}
+
+/* Breakdown */
+.stat-tooltip-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-tooltip-section-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #a0aec0;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.stat-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.stat-tooltip-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stat-tooltip-label {
+  color: #cbd5e0;
+  font-size: 12px;
+}
+
+.stat-tooltip-value {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.stat-tooltip-value.positive {
+  color: #10b981;
+}
+
+.stat-tooltip-value.negative {
+  color: #ef4444;
+}
+
+.stat-tooltip-value.special {
+  color: #8b5cf6;
+}
+
+/* Bonus type colors */
+.attribute-bonus {
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.equipment-bonus {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.skill-bonus {
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.multiplier {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+/* Warning */
+.stat-tooltip-warning {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fbbf24;
+}
+
+/* Tip */
+.stat-tooltip-tip {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(74, 85, 104, 0.5);
+  font-size: 11px;
+  color: #a0aec0;
+  text-align: center;
+}
+
+.stat-tooltip-tip kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(251, 191, 36, 0.2);
+  border: 1px solid #fbbf24;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: #fbbf24;
+  margin: 0 3px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stat-tooltip {
+    min-width: 180px;
+    font-size: 12px;
+    padding: 10px;
+  }
+
+  .stat-tooltip-header {
+    gap: 6px;
+  }
+
+  .stat-tooltip-icon {
+    font-size: 16px;
+  }
+
+  .stat-tooltip-total {
+    font-size: 16px;
+  }
+
+  .stat-tooltip-label,
+  .stat-tooltip-value {
+    font-size: 11px;
+  }
+}

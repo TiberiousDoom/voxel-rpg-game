@@ -379,11 +379,13 @@ export class BiomeManager {
    * @returns {Array<{biome: string, weight: number}>} Biomes with weights
    */
   getBlendedBiomes(x, z) {
+    // eslint-disable-next-line no-unused-vars
     const centerBiome = this.getBiomeAt(x, z);
     const blendRadius = this.config.blendRadius;
 
     // Sample surrounding tiles in a circle
     const biomeCounts = new Map();
+    // eslint-disable-next-line no-unused-vars
     const totalSamples = (blendRadius * 2 + 1) * (blendRadius * 2 + 1);
 
     for (let dz = -blendRadius; dz <= blendRadius; dz++) {

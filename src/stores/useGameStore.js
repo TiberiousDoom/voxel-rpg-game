@@ -1,4 +1,10 @@
 import { create } from 'zustand';
+import {
+  getDefaultCharacterData,
+  createCharacterActions,
+  grantLevelUpPoints,
+  calculateDerivedStats,
+} from '../modules/character/CharacterSystem';
 
 const useGameStore = create((set, get) => ({
   // Game state
@@ -46,6 +52,9 @@ const useGameStore = create((set, get) => ({
     statusEffects: [], // Array of {type, duration, value}
     spellCooldowns: {}, // Track cooldowns per spell id
   },
+
+  // Character system (attributes and skills)
+  character: getDefaultCharacterData(),
 
   // Equipment
   equipment: {
@@ -365,19 +374,36 @@ const useGameStore = create((set, get) => ({
       if (newXP >= xpToNext) {
         // Level up
         const newLevel = state.player.level + 1;
+
+        // Grant character system points (5 attribute, 2 skill per level)
+        const updatedCharacter = grantLevelUpPoints(state.character, newLevel);
+
+        // Calculate new derived stats
+        const derivedStats = calculateDerivedStats(
+          updatedCharacter,
+          { ...state.player, level: newLevel },
+          state.equipment
+        );
+
         return {
           player: {
             ...state.player,
             level: newLevel,
             xp: newXP - xpToNext,
             xpToNext: Math.floor(xpToNext * 1.5),
-            skillPoints: state.player.skillPoints + 3,
-            maxHealth: state.player.maxHealth + 20,
-            health: state.player.maxHealth + 20,
-            maxMana: state.player.maxMana + 15,
-            mana: state.player.maxMana + 15,
-            damage: state.player.damage + 2,
+            // Update stats with derived values
+            maxHealth: derivedStats.maxHealth,
+            health: derivedStats.maxHealth, // Fully heal on level up
+            maxMana: derivedStats.maxMana,
+            mana: derivedStats.maxMana, // Fully restore mana on level up
+            maxStamina: derivedStats.maxStamina,
+            stamina: derivedStats.maxStamina, // Fully restore stamina on level up
+            damage: derivedStats.damage,
+            defense: derivedStats.defense,
+            critChance: derivedStats.critChance,
+            speed: derivedStats.speed,
           },
+          character: updatedCharacter,
         };
       }
 
@@ -501,6 +527,7 @@ const useGameStore = create((set, get) => ({
         isGrounded: true,
         spellCooldowns: {},
       },
+      character: getDefaultCharacterData(),
       enemies: [],
       projectiles: [],
       targetMarkers: [],
@@ -509,6 +536,9 @@ const useGameStore = create((set, get) => ({
       xpOrbs: [],
       particleEffects: [],
     }),
+
+  // Character system actions
+  ...createCharacterActions(set, get),
 }));
 
 export default useGameStore;

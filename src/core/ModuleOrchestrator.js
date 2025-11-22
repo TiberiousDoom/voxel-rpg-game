@@ -16,6 +16,7 @@
  */
 
 import { BuildingIntegration } from '../utils/integrations/BuildingIntegration.js';
+import { calculateDerivedStats } from '../modules/character/CharacterSystem.js';
 
 class ModuleOrchestrator {
   /**
@@ -685,6 +686,14 @@ class ModuleOrchestrator {
     this.gameState.population = this.npcManager.getStatistics();
     this.gameState.currentTier = this.gameState.currentTier || 'SURVIVAL'; // Current tier
     this.gameState.npcManager = this.npcManager; // NPC manager reference for achievement tracking
+
+    // Calculate and include skill effects from character system
+    if (this.character && this.player) {
+      const derivedStats = calculateDerivedStats(this.character, this.player, this.equipment || {});
+      this.gameState.skillEffects = derivedStats.skillEffects || {};
+    } else {
+      this.gameState.skillEffects = {};
+    }
   }
 
   /**

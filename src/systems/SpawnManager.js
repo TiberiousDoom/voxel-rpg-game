@@ -8,6 +8,8 @@
  * - Elite/modified monster spawns
  */
 
+/* eslint-disable no-console */
+
 import { Monster } from '../entities/Monster.js';
 import SPAWN_ZONES from '../config/monsters/spawn-zones.json';
 import MONSTER_MODIFIERS from '../config/monsters/monster-modifiers.json';

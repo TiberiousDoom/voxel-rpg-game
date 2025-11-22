@@ -19,25 +19,25 @@
     {
       "type": "cactus",
       "density": 0.08,
-      "variants": ["saguaro", "barrel_cactus"],
+      "variants": ["cactus_saguaro", "cactus_barrel"],
       "minDistance": 4
     },
     {
-      "type": "dead_bush",
+      "type": "bush",
       "density": 0.12,
-      "variants": ["tumbleweed", "dead_shrub"],
+      "variants": ["bush_dead"],
       "minDistance": 3
     },
     {
       "type": "rock",
       "density": 0.15,
-      "variants": ["sandstone", "desert_rock"],
+      "variants": ["rock_desert"],
       "minDistance": 2
     },
     {
       "type": "bones",
       "density": 0.03,
-      "variants": ["skeleton"],
+      "variants": ["bones_skeleton"],
       "minDistance": 6
     }
   ],

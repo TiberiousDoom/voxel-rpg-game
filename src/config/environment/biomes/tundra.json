@@ -17,27 +17,27 @@
 
   "props": [
     {
-      "type": "pine_tree",
+      "type": "tree",
       "density": 0.12,
-      "variants": ["snow_pine", "frozen_pine"],
+      "variants": ["tree_pine"],
       "minDistance": 4
     },
     {
-      "type": "ice_rock",
+      "type": "rock",
       "density": 0.18,
-      "variants": ["ice_boulder", "frozen_rock"],
+      "variants": ["rock_ice"],
       "minDistance": 3
     },
     {
-      "type": "frozen_bush",
+      "type": "bush",
       "density": 0.08,
-      "variants": ["frozen_shrub"],
+      "variants": ["bush_dead"],
       "minDistance": 3
     },
     {
       "type": "ice_crystal",
       "density": 0.05,
-      "variants": ["crystal"],
+      "variants": ["ice_crystal"],
       "minDistance": 5
     }
   ],

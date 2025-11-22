@@ -19,25 +19,25 @@
     {
       "type": "rock",
       "density": 0.35,
-      "variants": ["boulder", "cliff_rock", "mountain_stone"],
+      "variants": ["rock_large", "rock_small"],
       "minDistance": 2
     },
     {
-      "type": "pine_tree",
+      "type": "tree",
       "density": 0.08,
-      "variants": ["mountain_pine"],
+      "variants": ["tree_pine"],
       "minDistance": 5
     },
     {
       "type": "ore_vein",
       "density": 0.12,
-      "variants": ["iron_vein", "gold_vein", "crystal_vein"],
+      "variants": ["ore_iron", "ore_gold", "ore_crystal"],
       "minDistance": 6
     },
     {
-      "type": "moss",
+      "type": "grass_clump",
       "density": 0.1,
-      "variants": ["cliff_moss"],
+      "variants": ["grass_clump"],
       "minDistance": 2
     }
   ],

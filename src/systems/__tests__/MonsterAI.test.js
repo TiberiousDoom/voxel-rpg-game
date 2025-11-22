@@ -215,7 +215,7 @@ describe('MonsterAI System', () => {
       expect(monster.aiState).toBe('ATTACK');
     });
 
-    test.skip('should enter FLEE state when health below threshold', () => {
+    test('should enter FLEE state when health below threshold', () => {
       const monster = {
         id: 'test-monster',
         name: 'Test Monster',
@@ -264,7 +264,7 @@ describe('MonsterAI System', () => {
   // FLEE BEHAVIOR TESTS
   // ============================================
 
-  describe.skip('Flee Behavior', () => {
+  describe('Flee Behavior', () => {
     test('should flee when health below 30%', () => {
       const monster = {
         id: 'test-monster',

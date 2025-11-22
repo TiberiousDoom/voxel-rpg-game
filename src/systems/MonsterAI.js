@@ -107,6 +107,22 @@ export class MonsterAI {
       console.log(`🎯 ${monster.name} detected player at distance ${distToPlayer.toFixed(1)} tiles (aggro range: ${monster.aggroRange})`);
     }
 
+    // Check for flee condition (before state machine)
+    // Monster will flee if:
+    // 1. Can flee (canFlee property is true)
+    // 2. Health is below flee threshold (default 30%)
+    // 3. Not already fleeing
+    if (monster.canFlee && monster.aiState !== 'FLEE' && monster.aiState !== 'DEATH') {
+      const healthPercent = monster.health / monster.maxHealth;
+      const fleeThreshold = monster.fleeHealthPercent || 0.3;
+
+      if (healthPercent < fleeThreshold) {
+        // eslint-disable-next-line no-console
+        console.log(`🏃 ${monster.name} is fleeing! (${Math.round(healthPercent * 100)}% health)`);
+        monster.aiState = 'FLEE';
+      }
+    }
+
     // State machine
     switch (monster.aiState) {
       case 'IDLE':

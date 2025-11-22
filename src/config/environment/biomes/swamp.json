@@ -17,39 +17,39 @@
 
   "props": [
     {
-      "type": "dead_tree",
+      "type": "tree",
       "density": 0.3,
-      "variants": ["swamp_tree", "willow"],
+      "variants": ["tree_swamp", "tree_dead"],
       "minDistance": 3
     },
     {
-      "type": "reeds",
+      "type": "reed",
       "density": 0.25,
-      "variants": ["cattails", "tall_grass"],
+      "variants": ["reed_cattail"],
       "minDistance": 1
     },
     {
-      "type": "lily_pad",
+      "type": "lily",
       "density": 0.15,
-      "variants": ["water_lily"],
+      "variants": ["lily_water"],
       "minDistance": 2
     },
     {
       "type": "mushroom",
       "density": 0.2,
-      "variants": ["poison_mushroom", "glowing_mushroom"],
+      "variants": ["mushroom_poison", "mushroom_glowing"],
       "minDistance": 2
     },
     {
-      "type": "murky_water",
-      "density": 0.4,
-      "variants": ["puddle", "pond"],
+      "type": "grass_clump",
+      "density": 0.2,
+      "variants": ["grass_clump"],
       "minDistance": 1
     },
     {
       "type": "vine",
       "density": 0.18,
-      "variants": ["hanging_moss"],
+      "variants": ["vine_hanging"],
       "minDistance": 2
     }
   ],

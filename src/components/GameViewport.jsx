@@ -409,6 +409,7 @@ function GameViewport({
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
 
   // Prop Renderer integration (Phase 3)
+  // eslint-disable-next-line no-unused-vars
   const { renderProps, renderPropHighlight, renderDebugInfo } = usePropRenderer({
     tileSize: TILE_SIZE,
     enableLOD: true,
@@ -878,7 +879,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps]);
 
   /**
    * Terrain tool handlers

@@ -387,7 +387,12 @@
 }
 
 /* Skills Tab */
-.skills-tab, .stats-tab {
+.skills-tab {
+  padding: 0;
+  margin: 0;
+}
+
+.stats-tab {
   padding: 20px 0;
 }
 

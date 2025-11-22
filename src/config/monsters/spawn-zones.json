@@ -1,0 +1,90 @@
+{
+  "FOREST_ZONE_1": {
+    "name": "Forest Clearing",
+    "position": { "x": 50, "z": 50 },
+    "radius": 30,
+    "monsterTypes": [
+      { "type": "SLIME", "weight": 50 },
+      { "type": "GOBLIN", "weight": 30 },
+      { "type": "WOLF", "weight": 20 }
+    ],
+    "minLevel": 1,
+    "maxLevel": 3,
+    "maxPopulation": 10,
+    "respawnTime": 30000,
+    "groupSpawnChance": 0.3,
+    "groupSize": [2, 4],
+    "eliteSpawnChance": 0.1,
+    "enabled": true
+  },
+  "FOREST_ZONE_2": {
+    "name": "Deep Forest",
+    "position": { "x": 150, "z": 150 },
+    "radius": 40,
+    "monsterTypes": [
+      { "type": "WOLF", "weight": 40 },
+      { "type": "GOBLIN", "weight": 35 },
+      { "type": "SKELETON", "weight": 25 }
+    ],
+    "minLevel": 3,
+    "maxLevel": 5,
+    "maxPopulation": 15,
+    "respawnTime": 45000,
+    "groupSpawnChance": 0.4,
+    "groupSize": [2, 5],
+    "eliteSpawnChance": 0.15,
+    "enabled": true
+  },
+  "GRAVEYARD_ZONE": {
+    "name": "Haunted Graveyard",
+    "position": { "x": -100, "z": -100 },
+    "radius": 35,
+    "monsterTypes": [
+      { "type": "SKELETON", "weight": 60 },
+      { "type": "GOBLIN", "weight": 25 },
+      { "type": "SLIME", "weight": 15 }
+    ],
+    "minLevel": 4,
+    "maxLevel": 7,
+    "maxPopulation": 12,
+    "respawnTime": 40000,
+    "groupSpawnChance": 0.5,
+    "groupSize": [3, 6],
+    "eliteSpawnChance": 0.2,
+    "enabled": true
+  },
+  "ORC_CAMP": {
+    "name": "Orc Encampment",
+    "position": { "x": -150, "z": 150 },
+    "radius": 50,
+    "monsterTypes": [
+      { "type": "ORC", "weight": 60 },
+      { "type": "GOBLIN", "weight": 30 },
+      { "type": "WOLF", "weight": 10 }
+    ],
+    "minLevel": 5,
+    "maxLevel": 10,
+    "maxPopulation": 20,
+    "respawnTime": 60000,
+    "groupSpawnChance": 0.6,
+    "groupSize": [3, 8],
+    "eliteSpawnChance": 0.25,
+    "enabled": true
+  },
+  "STARTER_ZONE": {
+    "name": "Peaceful Meadow",
+    "position": { "x": 0, "z": 0 },
+    "radius": 20,
+    "monsterTypes": [
+      { "type": "SLIME", "weight": 100 }
+    ],
+    "minLevel": 1,
+    "maxLevel": 1,
+    "maxPopulation": 5,
+    "respawnTime": 20000,
+    "groupSpawnChance": 0.2,
+    "groupSize": [1, 2],
+    "eliteSpawnChance": 0.05,
+    "enabled": true
+  }
+}

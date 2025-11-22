@@ -1,132 +1,203 @@
 /**
- * TerrainToolsPanel.css - Styling for Terrain Tools Panel
+ * TerrainToolsPanel.css - Terrain Tools Panel with Blue Glassmorphism Theme
  * Phase 4: Terrain Job System
+ * Matches BuildMenu and other panel styles
  */
 
+/* Main Container */
 .terrain-tools-panel {
-  background-color: rgba(40, 40, 40, 0.95);
-  border: 2px solid #555;
-  border-radius: 8px;
-  padding: 12px;
-  width: 220px;
-  font-family: Arial, sans-serif;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.95) 100%);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: 240px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  position: relative;
 }
 
+/* Panel Header */
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #666;
+  padding: 16px;
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px 12px 0 0;
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 16px;
-  color: #FFF;
+  font-size: 15px;
+  font-weight: 700;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .selection-indicator {
   font-size: 11px;
-  color: #FFD700;
-  font-weight: bold;
+  font-weight: 600;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   animation: pulse 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.6));
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.98); }
 }
 
+/* Tool Buttons Grid */
 .tool-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 10px;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.3);
 }
 
 .tool-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 8px;
-  background-color: #2A2A2A;
-  border: 2px solid #555;
-  border-radius: 6px;
-  color: #CCC;
+  justify-content: center;
+  padding: 14px 10px;
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  color: #cbd5e0;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 72px;
+}
+
+.tool-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+  transition: left 0.5s ease;
 }
 
 .tool-button:hover {
-  background-color: #3A3A3A;
-  border-color: #777;
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(59, 130, 246, 0.4);
   transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+}
+
+.tool-button:hover::before {
+  left: 100%;
 }
 
 .tool-button.active {
-  background-color: #4A7C59;
-  border-color: #5FA777;
-  color: #FFF;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.3) 100%);
+  border-color: rgba(59, 130, 246, 0.6);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .tool-button.active:hover {
-  background-color: #5A8C69;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.5) 0%, rgba(37, 99, 235, 0.4) 100%);
+  border-color: rgba(59, 130, 246, 0.8);
+  transform: translateY(-2px);
+}
+
+.tool-button:active {
+  transform: scale(0.98) translateY(0);
 }
 
 .tool-icon {
-  font-size: 24px;
-  margin-bottom: 4px;
+  font-size: 28px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.tool-button.active .tool-icon {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
 }
 
 .tool-name {
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
+/* Priority Selector */
 .priority-selector {
-  margin-bottom: 12px;
-  padding: 8px;
-  background-color: #2A2A2A;
-  border-radius: 4px;
+  padding: 12px 16px;
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(59, 130, 246, 0.2);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .priority-selector label {
   display: block;
   font-size: 12px;
-  color: #CCC;
-  margin-bottom: 4px;
+  font-weight: 600;
+  color: #93c5fd;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .priority-selector select {
   width: 100%;
-  padding: 6px;
-  background-color: #1A1A1A;
-  border: 1px solid #555;
-  border-radius: 4px;
-  color: #FFF;
-  font-size: 12px;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .priority-selector select:hover {
-  border-color: #777;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(15, 23, 42, 0.9);
 }
 
+.priority-selector select:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Selection Info */
 .selection-info {
-  margin-bottom: 12px;
-  padding: 8px;
-  background-color: #2A2A2A;
-  border-radius: 4px;
-  border: 1px solid #444;
+  padding: 12px 16px;
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(59, 130, 246, 0.2);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  align-items: center;
+  margin-bottom: 6px;
   font-size: 12px;
 }
 
@@ -135,27 +206,32 @@
 }
 
 .info-label {
-  color: #AAA;
-  font-weight: bold;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 11px;
 }
 
 .info-value {
-  color: #FFF;
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 13px;
 }
 
+/* Tool Instructions */
 .tool-instructions {
-  margin-bottom: 12px;
-  padding: 8px;
-  background-color: #1A3A2A;
-  border: 1px solid #2A5A3A;
-  border-radius: 4px;
+  padding: 12px 16px;
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .tool-instructions p {
-  margin: 0 0 6px 0;
-  font-size: 11px;
-  color: #CCC;
-  line-height: 1.4;
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #cbd5e0;
+  line-height: 1.6;
 }
 
 .tool-instructions p:last-child {
@@ -163,36 +239,69 @@
 }
 
 .tool-instructions strong {
-  color: #5FA777;
+  color: #60a5fa;
+  font-weight: 700;
 }
 
+/* Cancel Button */
 .cancel-button {
-  width: 100%;
-  padding: 8px;
-  background-color: #8A3A3A;
-  border: 2px solid #AA5A5A;
-  border-radius: 6px;
-  color: #FFF;
+  width: calc(100% - 32px);
+  margin: 16px 16px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(220, 38, 38, 0.2) 100%);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  color: #fecaca;
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.cancel-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3), transparent);
+  transition: left 0.5s ease;
 }
 
 .cancel-button:hover {
-  background-color: #9A4A4A;
-  border-color: #BA6A6A;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.4) 0%, rgba(220, 38, 38, 0.3) 100%);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
 }
 
+.cancel-button:hover::before {
+  left: 100%;
+}
+
+.cancel-button:active {
+  transform: scale(0.98) translateY(0);
+}
+
+/* Tool Info (No Tool Selected) */
 .tool-info {
-  padding: 12px;
+  padding: 20px 16px;
   text-align: center;
+  background: rgba(30, 41, 59, 0.3);
 }
 
 .tool-info p {
   margin: 0 0 8px 0;
-  font-size: 12px;
-  color: #AAA;
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.6;
 }
 
 .tool-info p:last-child {
@@ -201,26 +310,129 @@
 
 .help-text {
   font-size: 11px !important;
-  color: #888 !important;
+  color: #64748b !important;
   font-style: italic;
 }
 
-/* Mobile adjustments */
-@media (max-width: 768px) {
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
   .terrain-tools-panel {
-    width: 180px;
-    padding: 10px;
+    width: 220px;
+  }
+
+  .tool-buttons {
+    padding: 14px;
+    gap: 8px;
   }
 
   .tool-button {
-    padding: 8px 6px;
+    padding: 12px 8px;
+    min-height: 68px;
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+  .terrain-tools-panel {
+    width: 200px;
+    border-radius: 0;
+    border-left: none;
+  }
+
+  .panel-header {
+    padding: 14px;
+  }
+
+  .panel-header h3 {
+    font-size: 14px;
+  }
+
+  .tool-buttons {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .tool-button {
+    padding: 10px 6px;
+    min-height: 64px;
   }
 
   .tool-icon {
-    font-size: 20px;
+    font-size: 24px;
+    margin-bottom: 4px;
   }
 
   .tool-name {
     font-size: 11px;
+  }
+
+  .priority-selector,
+  .selection-info,
+  .tool-instructions {
+    padding: 10px 12px;
+  }
+
+  .cancel-button {
+    width: calc(100% - 24px);
+    margin: 12px 12px;
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+}
+
+/* Responsive - Small Mobile */
+@media (max-width: 480px) {
+  .terrain-tools-panel {
+    width: 180px;
+  }
+
+  .tool-buttons {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .tool-button {
+    padding: 8px 4px;
+    min-height: 60px;
+  }
+
+  .tool-icon {
+    font-size: 22px;
+  }
+
+  .tool-name {
+    font-size: 10px;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .tool-button,
+  .tool-button::before,
+  .cancel-button,
+  .cancel-button::before,
+  .priority-selector select,
+  .selection-indicator {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.tool-button:focus-visible,
+.cancel-button:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.6);
+  outline-offset: 2px;
+}
+
+.priority-selector select:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.6);
+  outline-offset: 2px;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .terrain-tools-panel {
+    background: linear-gradient(180deg, rgba(10, 15, 30, 0.98) 0%, rgba(20, 25, 40, 0.95) 100%);
   }
 }

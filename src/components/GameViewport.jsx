@@ -22,6 +22,7 @@ import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
 import { TerrainJobQueue } from '../modules/terrain-jobs/TerrainJobQueue.js'; // Terrain job queue
 import { JobTimeCalculator } from '../modules/terrain-jobs/JobTimeCalculator.js'; // Job time calculator
+import { TerrainWorkerBehavior } from '../modules/terrain-jobs/TerrainWorkerBehavior.js'; // Terrain worker behavior
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
 import { PlayerRenderer } from '../modules/player/PlayerRenderer.js';
 import { usePlayerMovement } from '../modules/player/PlayerMovementController.js';

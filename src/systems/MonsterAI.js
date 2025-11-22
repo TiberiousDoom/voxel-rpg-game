@@ -7,9 +7,15 @@
  * - ATTACK: Attacking player when in range
  * - FLEE: Running away at low health (for certain monster types)
  * - DEATH: Dead, no updates
+ *
+ * Performance Optimization (Phase 1F):
+ * - Spatial partitioning for fast proximity queries
+ * - Update range limiting (only update monsters near player)
+ * - Configurable update intervals
  */
 
 import useGameStore from '../stores/useGameStore.js';
+import { SpatialGrid } from './SpatialGrid.js';
 
 /**
  * Calculate distance between two positions
@@ -49,10 +55,17 @@ function subtract(pos1, pos2) {
  * Handles AI behavior for all monsters
  */
 export class MonsterAI {
-  constructor() {
+  constructor(options = {}) {
     // AI update rate (to avoid updating every frame)
-    this.updateInterval = 100; // Update AI every 100ms
+    this.updateInterval = options.updateInterval || 100; // Update AI every 100ms
     this.lastUpdateTime = 0;
+
+    // Performance optimization (Phase 1F)
+    this.updateRange = options.updateRange || 100; // Only update monsters within this range of player
+    this.spatialGrid = options.enableSpatialGrid === true ? new SpatialGrid(20, 1000) : null;
+    this.enableRangeLimit = options.enableRangeLimit !== false;
+
+    console.log(`🤖 MonsterAI: Initialized with${this.enableRangeLimit ? '' : 'out'} range limiting (${this.updateRange} units)${this.spatialGrid ? ', spatial grid enabled' : ' (brute force)'}`);
   }
 
   /**
@@ -71,9 +84,38 @@ export class MonsterAI {
     const actualDeltaTime = this.lastUpdateTime;
     this.lastUpdateTime = 0;
 
-    // Update each living monster
-    for (const monster of monsters) {
-      if (!monster || !monster.alive) continue;
+    const player = gameState.player;
+    let monstersToUpdate = monsters;
+
+    // Performance optimization: Only update monsters near player
+    if (this.enableRangeLimit) {
+      if (this.spatialGrid) {
+        // Use spatial grid for efficient proximity query
+        this.spatialGrid.rebuild(monsters.filter(m => m && m.alive));
+
+        const nearbyIds = this.spatialGrid.getNearby(
+          player.position.x,
+          player.position.z,
+          this.updateRange
+        );
+
+        monstersToUpdate = monsters.filter(m => m && m.alive && nearbyIds.has(m.id));
+      } else {
+        // Fallback: Brute force distance check
+        const playerPos = { x: player.position.x, z: player.position.z };
+        monstersToUpdate = monsters.filter(m => {
+          if (!m || !m.alive) return false;
+          const dist = distance(m.position, playerPos);
+          return dist <= this.updateRange;
+        });
+      }
+    } else {
+      // No range limit: update all living monsters
+      monstersToUpdate = monsters.filter(m => m && m.alive);
+    }
+
+    // Update each monster in range
+    for (const monster of monstersToUpdate) {
       this.update(monster, actualDeltaTime, gameState);
     }
   }

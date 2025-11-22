@@ -1190,6 +1190,11 @@ function GameViewport({
       const frameStartTime = performance.now();
 
       try {
+        // Verify canvas is still valid before rendering
+        if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) {
+          animationId = requestAnimationFrame(animate);
+          return;
+        }
         // Update terrain chunk loading based on camera position
         if (terrainSystemRef.current && getOffset) {
           const offset = getOffset() || { x: 0, y: 0 };
@@ -1328,7 +1333,10 @@ function GameViewport({
         cancelAnimationFrame(animationId);
       }
     };
-  }, [drawViewport, getOffset, npcRenderer, npcs, buildings, monsterRenderer]);
+    // Minimal dependencies - only re-initialize if core rendering setup changes
+    // We use refs for data (npcsRef, buildingsRef, etc.) so don't need them here
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="game-viewport">

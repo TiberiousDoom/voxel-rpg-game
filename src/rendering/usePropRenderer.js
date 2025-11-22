@@ -409,6 +409,86 @@ export const usePropRenderer = (options = {}) => {
   }, [tileSize]);
 
   /**
+   * Render harvest progress bar
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Prop} prop - Prop being harvested
+   * @param {number} progress - Progress (0-1)
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   */
+  const renderHarvestProgress = useCallback((ctx, prop, progress, worldToCanvas) => {
+    if (!ctx || !prop || !worldToCanvas) return;
+
+    const canvasPos = worldToCanvas(prop.x, prop.z);
+    const barWidth = tileSize;
+    const barHeight = 6;
+    const barY = canvasPos.y - 10; // Above the prop
+
+    ctx.save();
+
+    // Background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(canvasPos.x, barY, barWidth, barHeight);
+
+    // Progress fill
+    const progressWidth = barWidth * Math.max(0, Math.min(1, progress));
+    const gradient = ctx.createLinearGradient(canvasPos.x, barY, canvasPos.x + progressWidth, barY);
+    gradient.addColorStop(0, '#4CAF50');
+    gradient.addColorStop(1, '#8BC34A');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(canvasPos.x, barY, progressWidth, barHeight);
+
+    // Border
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(canvasPos.x, barY, barWidth, barHeight);
+
+    // Percentage text
+    const percentage = Math.floor(progress * 100);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${percentage}%`, canvasPos.x + barWidth / 2, barY - 2);
+
+    ctx.restore();
+  }, [tileSize]);
+
+  /**
+   * Render floating text (for resource drops)
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {number} x - World X coordinate
+   * @param {number} z - World Z coordinate
+   * @param {string} text - Text to display
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   * @param {number} lifetime - Animation lifetime (0-1, where 1 is new)
+   * @param {string} color - Text color
+   */
+  const renderFloatingText = useCallback((ctx, x, z, text, worldToCanvas, lifetime = 1, color = '#FFD700') => {
+    if (!ctx || !worldToCanvas) return;
+
+    const canvasPos = worldToCanvas(x, z);
+
+    // Animate upward and fade out
+    const offsetY = (1 - lifetime) * 30; // Rise 30 pixels
+    const alpha = lifetime; // Fade out
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+
+    const textY = canvasPos.y - offsetY - 5;
+    ctx.strokeText(text, canvasPos.x + 20, textY);
+    ctx.fillText(text, canvasPos.x + 20, textY);
+
+    ctx.restore();
+  }, []);
+
+  /**
    * Render LOD debug info
    *
    * @param {CanvasRenderingContext2D} ctx - Canvas context
@@ -434,6 +514,8 @@ export const usePropRenderer = (options = {}) => {
   return useMemo(() => ({
     renderProps,
     renderPropHighlight,
+    renderHarvestProgress,
+    renderFloatingText,
     renderDebugInfo
-  }), [renderProps, renderPropHighlight, renderDebugInfo]);
+  }), [renderProps, renderPropHighlight, renderHarvestProgress, renderFloatingText, renderDebugInfo]);
 };

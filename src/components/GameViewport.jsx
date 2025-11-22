@@ -21,6 +21,8 @@ import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rende
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
+import { PropHarvestingSystem } from '../modules/environment/PropHarvestingSystem.js'; // Phase 3A: Prop harvesting
+import { FloatingTextManager } from '../rendering/FloatingTextManager.js'; // Phase 3A: Floating text
 import { TerrainJobQueue } from '../modules/terrain-jobs/TerrainJobQueue.js'; // Terrain job queue
 import { JobTimeCalculator } from '../modules/terrain-jobs/JobTimeCalculator.js'; // Job time calculator
 import { TerrainWorkerBehavior } from '../modules/terrain-jobs/TerrainWorkerBehavior.js'; // Terrain worker behavior
@@ -304,6 +306,53 @@ function GameViewport({
     console.log('Terrain system initialized:', terrainSystemRef.current);
   }
 
+  // Phase 3A: Prop harvesting system - Initialize once
+  const propHarvestingSystemRef = useRef(null);
+  const floatingTextManagerRef = useRef(null);
+  if (propHarvestingSystemRef.current === null && terrainSystemRef.current) {
+    const propManager = terrainSystemRef.current.propManager;
+    propHarvestingSystemRef.current = new PropHarvestingSystem(propManager, {
+      baseHarvestTime: 2000, // 2 seconds default
+      harvestRange: 2, // tiles
+      autoLootResources: true,
+      showFloatingText: true,
+    });
+
+    floatingTextManagerRef.current = new FloatingTextManager();
+
+    // Set callbacks for harvesting events
+    propHarvestingSystemRef.current.setCallbacks({
+      onHarvestComplete: (propId, prop, resources) => {
+        // Add resources to inventory
+        resources.forEach(resource => {
+          useGameStore.getState().addMaterial(resource.type, resource.amount);
+
+          // Add floating text
+          floatingTextManagerRef.current.addResourceGain(
+            prop.x,
+            prop.z,
+            resource.type,
+            resource.amount
+          );
+        });
+
+        // eslint-disable-next-line no-console
+        console.log(`✅ Harvested ${prop.type || prop.variant}:`, resources);
+      },
+      onHarvestStart: (propId, prop, duration) => {
+        // eslint-disable-next-line no-console
+        console.log(`🔨 Started harvesting ${prop.type || prop.variant} (${duration}ms)`);
+      },
+      onHarvestCancel: (propId, prop) => {
+        // eslint-disable-next-line no-console
+        console.log(`❌ Cancelled harvesting ${prop.type || prop.variant}`);
+      },
+    });
+
+    // eslint-disable-next-line no-console
+    console.log('Prop harvesting system initialized');
+  }
+
   // Terrain job queue - Initialize once
   const jobQueueRef = useRef(null);
   const timeCalculatorRef = useRef(null);
@@ -386,8 +435,8 @@ function GameViewport({
   // Terrain Job Renderer integration
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
 
-  // Prop Renderer integration (Phase 3)
-  const { renderProps, renderPropHighlight, renderDebugInfo } = usePropRenderer({
+  // Prop Renderer integration (Phase 3 & 3A)
+  const { renderProps, renderPropHighlight, renderHarvestProgress, renderFloatingText, renderDebugInfo } = usePropRenderer({
     tileSize: TILE_SIZE,
     enableLOD: true,
     enableBatching: true,
@@ -397,6 +446,21 @@ function GameViewport({
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
 
+  // Get nearby props for interaction (Phase 3A)
+  const nearbyProps = React.useMemo(() => {
+    if (!terrainSystemRef.current || !playerRef.current) return [];
+
+    const player = playerRef.current;
+    const interactionRange = 3; // tiles
+
+    return terrainSystemRef.current.getPropsInRegion(
+      player.x - interactionRange,
+      player.z - interactionRange,
+      interactionRange * 2,
+      interactionRange * 2
+    ).filter(prop => prop.harvestable);
+  }, [playerRef.current?.x, playerRef.current?.z]);
+
   // Player interaction system
   const { closestInteractable, canInteract } = usePlayerInteraction(
     playerRef.current,
@@ -405,6 +469,7 @@ function GameViewport({
       npcs,
       resources: [], // TODO: Add resources when implemented
       chests: buildings.filter(b => b.type === 'CHEST'), // Chests are buildings
+      props: nearbyProps, // Phase 3A: Harvestable props
       onBuildingInteract: onBuildingClick,
       onNPCInteract: (npc) => {
         // TODO: Open NPC dialog/interaction panel
@@ -420,6 +485,24 @@ function GameViewport({
         // TODO: Open chest inventory panel
         // eslint-disable-next-line no-console
         if (debugMode) console.log('Opening chest:', chest);
+      },
+      onPropInteract: (prop) => {
+        // Phase 3A: Start harvesting prop
+        if (propHarvestingSystemRef.current && prop.id) {
+          const isHarvesting = propHarvestingSystemRef.current.isHarvesting(prop.id);
+
+          if (isHarvesting) {
+            // Cancel if already harvesting
+            propHarvestingSystemRef.current.cancelHarvest(prop.id);
+          } else {
+            // Start harvesting
+            propHarvestingSystemRef.current.startHarvest(
+              prop.id,
+              prop,
+              playerRef.current
+            );
+          }
+        }
       },
       enabled: enablePlayerMovement,
     }
@@ -722,10 +805,11 @@ function GameViewport({
     }
 
     // Phase 3: Render props (AFTER terrain, BEFORE buildings for correct layering)
+    let visibleProps = [];
     if (terrainSystemRef.current) {
       try {
         // Get visible props in viewport
-        const visibleProps = terrainSystemRef.current.getPropsInRegion(
+        visibleProps = terrainSystemRef.current.getPropsInRegion(
           viewportBounds.left,
           viewportBounds.top,
           viewportBounds.right - viewportBounds.left,
@@ -746,6 +830,31 @@ function GameViewport({
         perfRef.current.currentMetrics.totalProps = propStats.totalProps;
       } catch (e) {
         console.error('Prop rendering error:', e);
+      }
+    }
+
+    // Phase 3A: Render prop highlights for nearby harvestable props
+    if (propHarvestingSystemRef.current && closestInteractableRef.current) {
+      try {
+        const interactable = closestInteractableRef.current;
+        // Highlight if it's a prop interaction
+        if (interactable.type === 'PROP' && interactable.object) {
+          renderPropHighlight(ctx, interactable.object, worldToCanvas, 'rgba(50, 255, 50, 0.5)');
+        }
+      } catch (e) {
+        // Silently handle highlight errors
+      }
+    }
+
+    // Phase 3A: Render harvest progress bars for props being harvested
+    if (propHarvestingSystemRef.current) {
+      try {
+        const activeHarvests = propHarvestingSystemRef.current.getActiveHarvests();
+        activeHarvests.forEach(harvest => {
+          renderHarvestProgress(ctx, harvest.prop, harvest.progress, worldToCanvas);
+        });
+      } catch (e) {
+        // Silently handle progress bar errors
       }
     }
 
@@ -771,6 +880,26 @@ function GameViewport({
     // Render player (use ref!)
     if (enablePlayerMovementRef.current && playerRef.current && playerRendererRef.current) {
       playerRendererRef.current.renderPlayer(ctx, playerRef.current, worldToCanvas);
+    }
+
+    // Phase 3A: Render floating text (resource gains, etc.)
+    if (floatingTextManagerRef.current) {
+      try {
+        const activeTexts = floatingTextManagerRef.current.getActiveTexts();
+        activeTexts.forEach(text => {
+          renderFloatingText(
+            ctx,
+            text.x + text.offsetX,
+            text.z + text.offsetZ,
+            text.text,
+            worldToCanvas,
+            text.lifetime,
+            text.color
+          );
+        });
+      } catch (e) {
+        // Silently handle floating text errors
+      }
     }
 
     // WF4: Render pathfinding visualization in debug mode (use ref!)
@@ -1248,6 +1377,16 @@ function GameViewport({
                 useGameStore.getState().removeMonster(monster.id);
               }
             });
+          }
+
+          // Phase 3A: Update prop harvesting system
+          if (propHarvestingSystemRef.current) {
+            propHarvestingSystemRef.current.update();
+          }
+
+          // Phase 3A: Update floating text animations
+          if (floatingTextManagerRef.current) {
+            floatingTextManagerRef.current.update();
           }
 
           // Draw viewport with safe error handling

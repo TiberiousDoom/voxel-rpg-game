@@ -420,6 +420,33 @@ const useGameStore = create((set, get) => ({
       },
     })),
 
+  addMaterial: (materialType, amount) =>
+    set((state) => ({
+      inventory: {
+        ...state.inventory,
+        materials: {
+          ...state.inventory.materials,
+          [materialType]: (state.inventory.materials[materialType] || 0) + amount,
+        },
+      },
+    })),
+
+  removeMaterial: (materialType, amount) =>
+    set((state) => {
+      const currentAmount = state.inventory.materials[materialType] || 0;
+      const newAmount = Math.max(0, currentAmount - amount);
+
+      return {
+        inventory: {
+          ...state.inventory,
+          materials: {
+            ...state.inventory.materials,
+            [materialType]: newAmount,
+          },
+        },
+      };
+    }),
+
   craftItem: (recipe, newMaterials) =>
     set((state) => {
       // Update materials

@@ -16,7 +16,7 @@
  */
 
 import { BuildingIntegration } from '../utils/integrations/BuildingIntegration.js';
-import { calculateDerivedStats } from '../modules/character/CharacterSystem.js';
+import { calculateDerivedStats, activeSkillSystem } from '../modules/character/CharacterSystem.js';
 
 class ModuleOrchestrator {
   /**
@@ -690,7 +690,19 @@ class ModuleOrchestrator {
     // Calculate and include skill effects from character system
     if (this.character && this.player) {
       const derivedStats = calculateDerivedStats(this.character, this.player, this.equipment || {});
-      this.gameState.skillEffects = derivedStats.skillEffects || {};
+      const passiveEffects = derivedStats.skillEffects || {};
+
+      // Get active buff effects
+      const activeBuffEffects = activeSkillSystem.getActiveBuffEffects();
+
+      // Merge passive and active effects
+      this.gameState.skillEffects = {};
+      for (const key in passiveEffects) {
+        this.gameState.skillEffects[key] = passiveEffects[key];
+      }
+      for (const key in activeBuffEffects) {
+        this.gameState.skillEffects[key] = (this.gameState.skillEffects[key] || 0) + activeBuffEffects[key];
+      }
     } else {
       this.gameState.skillEffects = {};
     }

@@ -12,6 +12,7 @@
 import { CombatIntegration } from '../../utils/integrations/CombatIntegration';
 import { SpellIntegration } from '../../utils/integrations/SpellIntegration';
 import skillTreeSystem from './SkillTreeSystem';
+import activeSkillSystem from './ActiveSkillSystem';
 
 /**
  * Default character data structure
@@ -457,6 +458,41 @@ export const createCharacterActions = (set, get) => ({
     return skillTreeSystem.canAllocateSkill(state.character, treeId, skillId);
   },
 
+  // ========== ACTIVE SKILLS ==========
+
+  // Activate an active skill
+  activateActiveSkill: (treeId, skillId) => {
+    const state = get();
+    const result = activeSkillSystem.activateSkill(state.character, treeId, skillId);
+
+    if (!result.success) {
+      console.warn('Failed to activate skill:', result.message);
+    }
+
+    return result;
+  },
+
+  // Check if active skill can be activated
+  canActivateSkill: (treeId, skillId) => {
+    const state = get();
+    return activeSkillSystem.canActivateSkill(state.character, treeId, skillId);
+  },
+
+  // Get active skill cooldown
+  getActiveSkillCooldown: (treeId, skillId) => {
+    return activeSkillSystem.getCooldown(treeId, skillId);
+  },
+
+  // Get all active buffs
+  getActiveBuffs: () => {
+    return activeSkillSystem.getActiveBuffs();
+  },
+
+  // Get aggregated buff effects
+  getActiveBuffEffects: () => {
+    return activeSkillSystem.getActiveBuffEffects();
+  },
+
   // Grant retroactive points (used during save migration)
   grantRetroactivePoints: (attributePoints, skillPoints) => {
     set((state) => ({
@@ -468,3 +504,8 @@ export const createCharacterActions = (set, get) => ({
     }));
   },
 });
+
+/**
+ * Export active skill system instance for game loop integration
+ */
+export { activeSkillSystem };

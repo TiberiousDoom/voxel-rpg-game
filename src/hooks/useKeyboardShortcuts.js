@@ -84,6 +84,7 @@ function shouldIgnoreShortcuts(element) {
  * @param {KeyboardEvent} event
  * @returns {string}
  */
+// eslint-disable-next-line no-unused-vars
 function getShortcutKey(event) {
   const parts = [];
 

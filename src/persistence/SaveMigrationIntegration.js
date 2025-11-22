@@ -9,6 +9,7 @@
  * - Backup creation before migration
  */
 
+/* eslint-disable no-console */
 import { SaveVersionManager, SAVE_VERSION } from './SaveVersionManager';
 
 /**
@@ -297,7 +298,7 @@ export function getMigrationStats() {
   return stats;
 }
 
-export default {
+const SaveMigrationIntegration = {
   migrateSaveIfNeeded,
   applyCharacterDataToStore,
   getMigrationNotification,
@@ -307,3 +308,5 @@ export default {
   restoreFromBackup,
   getMigrationStats,
 };
+
+export default SaveMigrationIntegration;

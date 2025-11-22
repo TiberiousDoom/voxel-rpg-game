@@ -12,6 +12,7 @@
  * - Validation at every step
  */
 
+/* eslint-disable no-console */
 const SAVE_VERSION = {
   V1: 1, // Original save format (no character system)
   V2: 2, // Character system with attributes and skills

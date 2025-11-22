@@ -13,7 +13,6 @@ const CharacterSheet = ({ isOpen, onClose }) => {
 
   const player = useGameStore((state) => state.player);
   const character = useGameStore((state) => state.character);
-  const equipment = useGameStore((state) => state.equipment);
   const allocateAttribute = useGameStore((state) => state.allocateAttribute);
   const getDerivedStats = useGameStore((state) => state.getDerivedStats);
 

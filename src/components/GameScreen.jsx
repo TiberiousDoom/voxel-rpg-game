@@ -20,6 +20,7 @@ import ExpeditionsTab from './tabs/ExpeditionsTab';
 import DefenseTab from './tabs/DefenseTab';
 import ActionsTab from './tabs/ActionsTab';
 import DeveloperTab from './tabs/DeveloperTab';
+import CharacterSystemUI from './ui/CharacterSystemUI';
 import './GameScreen.css';
 
 /**
@@ -460,6 +461,9 @@ function GameScreen() {
       >
         <DeveloperTab />
       </ModalWrapper>
+
+      {/* Character System UI (Character Sheet + Notifications) */}
+      <CharacterSystemUI />
 
       {/* Toast */}
       {toastMessage && (

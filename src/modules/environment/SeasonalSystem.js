@@ -406,6 +406,14 @@ export class SeasonalSystem {
   }
 
   /**
+   * Get current day in season
+   * @returns {number} Current day (0-based)
+   */
+  getCurrentDay() {
+    return this.currentDay;
+  }
+
+  /**
    * Get statistics
    */
   getStats() {

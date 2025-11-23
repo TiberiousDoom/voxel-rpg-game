@@ -18,6 +18,7 @@ import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
+import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { SpawnManager } from '../systems/SpawnManager.js'; // Spawn system
@@ -466,6 +467,13 @@ function GameViewport({
     showPropHealth: debugMode // Show health bars in debug mode
   });
 
+  // Structure Renderer integration (Phase 3D)
+  const { renderStructures, renderStructureHighlight, renderStructureEntrance, renderStructureLabel, renderLootSpawns, renderNPCSpawns } = useStructureRenderer({
+    tileSize: TILE_SIZE,
+    showBorders: true,
+    showDiscoveryOverlay: true
+  });
+
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
 
@@ -829,7 +837,39 @@ function GameViewport({
       }
     }
 
-    // Phase 3: Render props (AFTER terrain, BEFORE buildings for correct layering)
+    // Phase 3D: Render structures (AFTER terrain, BEFORE props)
+    if (terrainSystemRef.current) {
+      try {
+        // Get visible structures in viewport
+        const visibleStructures = terrainSystemRef.current.getStructuresInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        // Render structures
+        const structureStats = renderStructures(ctx, visibleStructures, worldToCanvas, viewportBounds);
+
+        // Render structure entrances in debug mode
+        if (debugModeRef.current) {
+          visibleStructures.forEach(structure => {
+            renderStructureEntrance(ctx, structure, worldToCanvas);
+            renderStructureLabel(ctx, structure, worldToCanvas);
+            renderLootSpawns(ctx, structure, worldToCanvas);
+            renderNPCSpawns(ctx, structure, worldToCanvas);
+          });
+        }
+
+        // Store structure metrics
+        perfRef.current.currentMetrics.visibleStructures = structureStats.structuresRendered;
+        perfRef.current.currentMetrics.totalStructures = visibleStructures.length;
+      } catch (e) {
+        console.error('Structure rendering error:', e);
+      }
+    }
+
+    // Phase 3: Render props (AFTER structures, BEFORE buildings for correct layering)
     let visibleProps = [];
     if (terrainSystemRef.current) {
       try {

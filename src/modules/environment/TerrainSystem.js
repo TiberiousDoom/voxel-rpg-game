@@ -19,8 +19,15 @@ import { TerrainManager } from './TerrainManager.js';
 import { ChunkManager } from './ChunkManager.js';
 import { BiomeManager } from './BiomeManager.js';
 import { PropManager } from './PropManager.js';
+import { StructureGenerator } from './structures/StructureGenerator.js'; // Phase 3D
+import { MicroBiomeSystem } from './MicroBiomeSystem.js'; // Phase 3C
+import { WeatherSystem } from './WeatherSystem.js'; // Phase 3C
+import { SeasonalSystem } from './SeasonalSystem.js'; // Phase 3C
+import { WaterBodySystem } from './WaterBodySystem.js'; // Phase 3B
+import { RiverSystem } from './RiverSystem.js'; // Phase 3B
 import biomeConfigs from '../../config/environment/biomeConfigs.js';
 import propDefinitions from '../../config/environment/propDefinitions.js';
+import structureTemplates from '../../config/environment/structures/structureTemplates.js'; // Phase 3D
 
 export class TerrainSystem {
   /**
@@ -94,6 +101,82 @@ export class TerrainSystem {
       }
     );
 
+    // Phase 3D: Initialize StructureGenerator
+    this.structureGenerator = new StructureGenerator(
+      this,              // terrainSystem (for height/biome queries)
+      this.biomeManager, // biomeManager (for biome-specific rules)
+      structureTemplates, // structure templates
+      {
+        chunkSize,
+        minStructureDistance: 50,
+        maxStructuresPerChunk: 2,
+        structureDensity: 0.3,
+        spawnProtectionRadius: 100
+      }
+    );
+
+    // Phase 3C: Initialize MicroBiomeSystem
+    this.microBiomeSystem = new MicroBiomeSystem(
+      this,              // terrainSystem
+      this.biomeManager, // biomeManager
+      {
+        chunkSize,
+        enabled: options.enableMicroBiomes !== false,
+        globalRarityMultiplier: 1.0,
+        minDistanceBetweenMicroBiomes: 20
+      }
+    );
+
+    // Phase 3C: Initialize WeatherSystem
+    this.weatherSystem = new WeatherSystem(
+      this.worldGenerator,
+      {
+        enableWeather: options.enableWeather !== false,
+        weatherChangeDuration: 120000, // 2 minutes
+        globalWeather: true
+      }
+    );
+
+    // Phase 3C: Initialize SeasonalSystem
+    this.seasonalSystem = new SeasonalSystem({
+      enabled: options.enableSeasons !== false,
+      dayLength: 600000, // 10 minutes per day
+      daysPerSeason: 30,
+      transitionDuration: 3,
+      autoProgress: true,
+      startSeason: 'spring'
+    });
+
+    // Phase 3B: Initialize WaterBodySystem
+    this.waterBodySystem = new WaterBodySystem(
+      this,              // terrainSystem
+      this.biomeManager, // biomeManager
+      {
+        chunkSize,
+        enabled: options.enableWaterBodies !== false,
+        waterLevel: 3,
+        globalRarityMultiplier: 1.0,
+        minDistanceBetweenWaterBodies: 30,
+        generateShores: true
+      }
+    );
+
+    // Phase 3B: Initialize RiverSystem
+    this.riverSystem = new RiverSystem(
+      this, // terrainSystem
+      {
+        enabled: options.enableRivers !== false,
+        riverDensity: 0.02,
+        minElevation: 6,
+        maxRiverLength: 200,
+        minRiverWidth: 1,
+        maxRiverWidth: 4,
+        flowAccumulation: true,
+        allowMerging: true,
+        regionSize: 128
+      }
+    );
+
     // Statistics
     this.stats = {
       updateCount: 0,
@@ -111,7 +194,7 @@ export class TerrainSystem {
    * @param {number} viewportHeight - Viewport height in pixels
    * @returns {object} Update statistics
    */
-  update(cameraX, cameraZ, viewportWidth, viewportHeight) {
+  update(cameraX, cameraZ, viewportWidth, viewportHeight, deltaTime = 16) {
     const startTime = performance.now();
 
     const result = this.chunkManager.update(
@@ -120,6 +203,15 @@ export class TerrainSystem {
       viewportWidth,
       viewportHeight
     );
+
+    // Phase 3C: Update weather and seasons
+    if (this.weatherSystem) {
+      this.weatherSystem.update(deltaTime);
+    }
+
+    if (this.seasonalSystem) {
+      this.seasonalSystem.update(deltaTime);
+    }
 
     const elapsed = performance.now() - startTime;
 
@@ -278,6 +370,12 @@ export class TerrainSystem {
       chunks: this.chunkManager.getStats(),
       world: this.worldGenerator.getInfo(),
       props: this.propManager.getStats(),
+      structures: this.structureGenerator?.getStats(),
+      microBiomes: this.microBiomeSystem?.getStats(), // Phase 3C
+      weather: this.weatherSystem?.getStats(), // Phase 3C
+      season: this.seasonalSystem?.getStats(), // Phase 3C
+      waterBodies: this.waterBodySystem?.getStats(), // Phase 3B
+      rivers: this.riverSystem?.getStats(), // Phase 3B
       system: this.stats
     };
   }
@@ -403,5 +501,244 @@ export class TerrainSystem {
    */
   removeProp(propId) {
     return this.propManager.removeProp(propId);
+  }
+
+  // ===== Phase 3D: Structure convenience methods =====
+
+  /**
+   * Get structures in a region - Phase 3D
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @returns {Array<Structure>} Structures in region
+   */
+  getStructuresInRegion(startX, startZ, width, depth) {
+    return this.structureGenerator.getStructuresInRegion(startX, startZ, width, depth);
+  }
+
+  /**
+   * Get structure at position - Phase 3D
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {Structure|null} Structure at position
+   */
+  getStructureAt(x, z) {
+    return this.structureGenerator.getStructureAt(x, z);
+  }
+
+  /**
+   * Get structure by ID - Phase 3D
+   * @param {string} structureId - Structure ID
+   * @returns {Structure|null} Structure instance
+   */
+  getStructureById(structureId) {
+    return this.structureGenerator.getStructureById(structureId);
+  }
+
+  /**
+   * Remove structure - Phase 3D
+   * @param {string} structureId - Structure ID
+   * @returns {boolean} True if removed
+   */
+  removeStructure(structureId) {
+    return this.structureGenerator.removeStructure(structureId);
+  }
+
+  // ===== Phase 3C: Micro-biome convenience methods =====
+
+  /**
+   * Get micro-biomes in a region - Phase 3C
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @returns {Array<MicroBiome>} Micro-biomes in region
+   */
+  getMicroBiomesInRegion(startX, startZ, width, depth) {
+    return this.microBiomeSystem.getMicroBiomesInRegion(startX, startZ, width, depth);
+  }
+
+  /**
+   * Get micro-biome at position - Phase 3C
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {MicroBiome|null} Micro-biome at position
+   */
+  getMicroBiomeAt(x, z) {
+    return this.microBiomeSystem.getMicroBiomeAt(x, z);
+  }
+
+  // ===== Phase 3C: Weather convenience methods =====
+
+  /**
+   * Get current weather - Phase 3C
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {string} Weather type
+   */
+  getWeather(x, z) {
+    return this.weatherSystem.getCurrentWeather(x, z);
+  }
+
+  /**
+   * Get weather effects - Phase 3C
+   * @returns {object} Weather effects
+   */
+  getWeatherEffects() {
+    return this.weatherSystem.getWeatherEffects();
+  }
+
+  /**
+   * Set weather manually - Phase 3C
+   * @param {string} weatherType - Weather type
+   */
+  setWeather(weatherType) {
+    return this.weatherSystem.setWeather(weatherType);
+  }
+
+  /**
+   * Get weather system - Phase 3C
+   * @returns {WeatherSystem} Weather system instance
+   */
+  getWeatherSystem() {
+    return this.weatherSystem;
+  }
+
+  // ===== Phase 3C: Season convenience methods =====
+
+  /**
+   * Get current season - Phase 3C
+   * @returns {string} Season type
+   */
+  getCurrentSeason() {
+    return this.seasonalSystem.currentSeason;
+  }
+
+  /**
+   * Get season info - Phase 3C
+   * @returns {object} Season information
+   */
+  getSeasonInfo() {
+    return this.seasonalSystem.getCurrentSeasonInfo();
+  }
+
+  /**
+   * Set season manually - Phase 3C
+   * @param {string} season - Season type
+   */
+  setSeason(season) {
+    return this.seasonalSystem.setSeason(season);
+  }
+
+  /**
+   * Get seasonal system - Phase 3C
+   * @returns {SeasonalSystem} Seasonal system instance
+   */
+  getSeasonalSystem() {
+    return this.seasonalSystem;
+  }
+
+  /**
+   * Get micro-biome system - Phase 3C
+   * @returns {MicroBiomeSystem} Micro-biome system instance
+   */
+  getMicroBiomeSystem() {
+    return this.microBiomeSystem;
+  }
+
+  // ===== Phase 3B: Water body convenience methods =====
+
+  /**
+   * Get water bodies in a region - Phase 3B
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @returns {Array<WaterBody>} Water bodies in region
+   */
+  getWaterBodiesInRegion(startX, startZ, width, depth) {
+    return this.waterBodySystem.getWaterBodiesInRegion(startX, startZ, width, depth);
+  }
+
+  /**
+   * Get water body at position - Phase 3B
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {WaterBody|null} Water body at position
+   */
+  getWaterBodyAt(x, z) {
+    return this.waterBodySystem.getWaterBodyAt(x, z);
+  }
+
+  /**
+   * Get water depth at position - Phase 3B
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {number} Water depth (0 if no water)
+   */
+  getWaterDepth(x, z) {
+    return this.waterBodySystem.getWaterDepthAt(x, z);
+  }
+
+  /**
+   * Check if position is water - Phase 3B
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {boolean} True if water
+   */
+  isWater(x, z) {
+    return this.waterBodySystem.isWater(x, z) || this.riverSystem.isRiver(x, z);
+  }
+
+  // ===== Phase 3B: River convenience methods =====
+
+  /**
+   * Get rivers in a region - Phase 3B
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @returns {Array<River>} Rivers in region
+   */
+  getRiversInRegion(startX, startZ, width, depth) {
+    return this.riverSystem.getRiversInRegion(startX, startZ, width, depth);
+  }
+
+  /**
+   * Get river at position - Phase 3B
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {River|null} River at position
+   */
+  getRiverAt(x, z) {
+    return this.riverSystem.getRiverAt(x, z);
+  }
+
+  /**
+   * Generate rivers for area - Phase 3B
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   */
+  generateRiversForArea(startX, startZ, width, depth) {
+    return this.riverSystem.generateRiversForArea(startX, startZ, width, depth);
+  }
+
+  /**
+   * Get water body system - Phase 3B
+   * @returns {WaterBodySystem} Water body system instance
+   */
+  getWaterBodySystem() {
+    return this.waterBodySystem;
+  }
+
+  /**
+   * Get river system - Phase 3B
+   * @returns {RiverSystem} River system instance
+   */
+  getRiverSystem() {
+    return this.riverSystem;
   }
 }

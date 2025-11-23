@@ -18,6 +18,7 @@ import LOOT_TABLES from '../config/loot/monster-loot-tables.json';
 export class LootTable {
   constructor() {
     this.lootGenerator = new LootGenerator();
+    // eslint-disable-next-line no-console
     console.log('💎 LootTable: Initialized');
   }
 

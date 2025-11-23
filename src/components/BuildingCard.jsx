@@ -8,9 +8,12 @@
  * - Description in tooltip, not always visible
  * - Building counter badge
  * - Better visual states
+ * - Construction attribute cost reduction display
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import useGameStore from '../stores/useGameStore';
+import { BuildingIntegration } from '../utils/integrations/BuildingIntegration';
 import './BuildingCard.css';
 
 // Resource icons map
@@ -31,8 +34,39 @@ function BuildingCard({
   buildingConfig = null,
   displayMode = 'compact' // 'compact' or 'detailed'
 }) {
+  const character = useGameStore((state) => state.character);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  // Calculate actual cost with Construction bonuses
+  const actualCost = useMemo(() => {
+    if (!building.cost || !character) {
+      return building.cost || {};
+    }
+
+    return BuildingIntegration.calculateBuildingCost(
+      {
+        baseCost: building.cost,
+        type: building.type,
+        category: building.category,
+      },
+      character
+    );
+  }, [building.cost, building.type, building.category, character]);
+
+  // Calculate cost savings percentage
+  const costSavings = useMemo(() => {
+    if (!building.cost || !character) return 0;
+
+    const baseCost = building.cost;
+    const totalBase = Object.values(baseCost).reduce((sum, val) => sum + val, 0);
+    const totalActual = Object.values(actualCost).reduce((sum, val) => sum + val, 0);
+
+    if (totalBase === 0) return 0;
+
+    const savingsPercent = ((totalBase - totalActual) / totalBase) * 100;
+    return Math.round(savingsPercent);
+  }, [building.cost, actualCost, character]);
 
   const handleMouseEnter = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -111,18 +145,24 @@ function BuildingCard({
         )}
 
         {/* Cost: Resource icons */}
-        {!isLocked && building.cost && Object.keys(building.cost).length > 0 && (
+        {!isLocked && actualCost && Object.keys(actualCost).length > 0 && (
           <div className="building-cost">
-            {Object.entries(building.cost)
+            {Object.entries(actualCost)
               .filter(([, amount]) => amount > 0)
               .map(([resource, amount]) => (
                 <div key={resource} className="cost-item" title={resource}>
                   <span className="cost-icon">
                     {RESOURCE_ICONS[resource.toLowerCase()] || '📦'}
                   </span>
-                  <span className="cost-amount">{amount}</span>
+                  <span className="cost-amount">{Math.ceil(amount)}</span>
                 </div>
               ))}
+            {costSavings > 0 && (
+              <div className="cost-savings" title={`${costSavings}% discount from Construction`}>
+                <span className="savings-icon">🔨</span>
+                <span className="savings-text">-{costSavings}%</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -147,18 +187,32 @@ function BuildingCard({
           <p className="tooltip-description">{details.description}</p>
 
           {/* Cost section */}
-          {building.cost && Object.keys(building.cost).length > 0 && (
+          {actualCost && Object.keys(actualCost).length > 0 && (
             <div className="tooltip-section">
               <h4 className="tooltip-section-title">Cost</h4>
               <ul className="tooltip-list">
-                {Object.entries(building.cost)
+                {Object.entries(actualCost)
                   .filter(([, amount]) => amount > 0)
-                  .map(([resource, amount]) => (
-                    <li key={resource}>
-                      {RESOURCE_ICONS[resource.toLowerCase()] || '📦'} {amount} {resource}
-                    </li>
-                  ))}
+                  .map(([resource, amount]) => {
+                    const baseCostAmount = building.cost?.[resource] || amount;
+                    const hasDiscount = baseCostAmount > amount;
+                    return (
+                      <li key={resource}>
+                        {RESOURCE_ICONS[resource.toLowerCase()] || '📦'}{' '}
+                        {hasDiscount && <span style={{ textDecoration: 'line-through', opacity: 0.6 }}>{Math.ceil(baseCostAmount)}</span>}{' '}
+                        <span style={{ color: hasDiscount ? '#34d399' : 'inherit', fontWeight: hasDiscount ? 'bold' : 'normal' }}>
+                          {Math.ceil(amount)}
+                        </span>{' '}
+                        {resource}
+                      </li>
+                    );
+                  })}
               </ul>
+              {costSavings > 0 && (
+                <div style={{ marginTop: '8px', padding: '4px 8px', backgroundColor: '#34d39920', borderRadius: '4px', fontSize: '0.85rem', color: '#34d399' }}>
+                  🔨 Construction Bonus: -{costSavings}% cost
+                </div>
+              )}
             </div>
           )}
 

@@ -66,28 +66,6 @@ class TestRunner {
 }
 
 /**
- * Wait for a condition to be true
- * @param {Function} condition - Function that returns boolean
- * @param {number} timeout - Timeout in ms
- * @param {number} interval - Check interval in ms
- * @returns {Promise<boolean>}
- */
-function waitFor(condition, timeout = 5000, interval = 100) {
-  return new Promise((resolve) => {
-    const startTime = Date.now();
-    const checkInterval = setInterval(() => {
-      if (condition()) {
-        clearInterval(checkInterval);
-        resolve(true);
-      } else if (Date.now() - startTime > timeout) {
-        clearInterval(checkInterval);
-        resolve(false);
-      }
-    }, interval);
-  });
-}
-
-/**
  * Calculate distance between two positions
  */
 function distance(pos1, pos2) {
@@ -384,13 +362,11 @@ async function testFleeBehavior() {
   const damageNeeded = monster.health - targetHealth;
   window.debug.damageMonster(monster.id, damageNeeded);
 
-  // Check for FLEE state within 1 second (using waitFor helper)
-  const enteredFlee = await waitFor(() => {
-    monster = getMonster(monsterId);
-    return monster.aiState === 'FLEE';
-  }, 1000, 50);
+  // Wait for AI to process the damage and potentially enter FLEE state
+  await new Promise(resolve => setTimeout(resolve, 300));
 
-  monster = getMonster(monsterId); // Get final state for logging
+  monster = getMonster(monsterId);
+  const enteredFlee = monster.aiState === 'FLEE';
   runner.addResult(
     'Enters FLEE at Low Health',
     enteredFlee,
@@ -593,7 +569,7 @@ Run tests from console:
   `);
 }
 
-export default {
+const testMonsterAIModule = {
   runAllTests,
   quickTest,
   testMonsterSpawning,
@@ -603,3 +579,5 @@ export default {
   testFleeBehavior,
   testMultipleMonsters
 };
+
+export default testMonsterAIModule;

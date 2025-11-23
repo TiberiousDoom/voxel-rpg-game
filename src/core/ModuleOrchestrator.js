@@ -15,6 +15,9 @@
  * - NPC System (NPCManager, NPCAssignment)
  */
 
+import { BuildingIntegration } from '../utils/integrations/BuildingIntegration.js';
+import { calculateDerivedStats, activeSkillSystem } from '../modules/character/CharacterSystem.js';
+
 class ModuleOrchestrator {
   /**
    * Initialize orchestrator with all modules
@@ -92,6 +95,12 @@ class ModuleOrchestrator {
     this.raidEventManager = modules.raidEventManager || null;
     this.defenseCombatEngine = modules.defenseCombatEngine || null;
 
+    // Phase 4: Terrain Job System
+    this.terrainSystem = modules.terrainSystem || null;
+    this.jobTimeCalculator = modules.jobTimeCalculator || null;
+    this.terrainJobQueue = modules.terrainJobQueue || null;
+    this.terrainWorkerBehavior = modules.terrainWorkerBehavior || null;
+
     // Phase 3C: Achievement bonuses (multiplicative)
     this.achievementBonuses = {
       production: 1.0,
@@ -114,6 +123,9 @@ class ModuleOrchestrator {
         this._applyAchievementReward(data);
       });
     }
+
+    // Character System Integration: Reference to character for Construction bonuses
+    this.character = null;
 
     // Game state
     this.tickCount = 0;
@@ -169,6 +181,14 @@ class ModuleOrchestrator {
         console.warn(`ModuleOrchestrator: Optional module '${module}' not provided`);
       }
     }
+  }
+
+  /**
+   * Set character reference (for Construction attribute bonuses)
+   * @param {object} character - Character data with attributes
+   */
+  setCharacter(character) {
+    this.character = character;
   }
 
   /**
@@ -672,6 +692,26 @@ class ModuleOrchestrator {
     this.gameState.population = this.npcManager.getStatistics();
     this.gameState.currentTier = this.gameState.currentTier || 'SURVIVAL'; // Current tier
     this.gameState.npcManager = this.npcManager; // NPC manager reference for achievement tracking
+
+    // Calculate and include skill effects from character system
+    if (this.character && this.player) {
+      const derivedStats = calculateDerivedStats(this.character, this.player, this.equipment || {});
+      const passiveEffects = derivedStats.skillEffects || {};
+
+      // Get active buff effects
+      const activeBuffEffects = activeSkillSystem.getActiveBuffEffects();
+
+      // Merge passive and active effects
+      this.gameState.skillEffects = {};
+      for (const key in passiveEffects) {
+        this.gameState.skillEffects[key] = passiveEffects[key];
+      }
+      for (const key in activeBuffEffects) {
+        this.gameState.skillEffects[key] = (this.gameState.skillEffects[key] || 0) + activeBuffEffects[key];
+      }
+    } else {
+      this.gameState.skillEffects = {};
+    }
   }
 
   /**
@@ -793,8 +833,30 @@ class ModuleOrchestrator {
       return { success: false, message: `BuildingConfig error: ${err.message}` };
     }
 
+    // Calculate building cost with Construction bonuses
+    const baseCost = config.cost || {};
+    const cost = this.character
+      ? BuildingIntegration.calculateBuildingCost(
+          { baseCost, type: building.type, category: config.category },
+          this.character
+        )
+      : baseCost;
+
+    // Apply Construction bonuses to building properties
+    if (this.character) {
+      building.maxHealth = BuildingIntegration.calculateBuildingHealth(
+        { maxHealth: config.health || 100 },
+        this.character
+      );
+      building.health = building.maxHealth;
+      building.constructionBonus = this.character.attributes?.construction || 0;
+      building.quality = BuildingIntegration.calculateBuildingQuality(this.character);
+    } else {
+      building.maxHealth = config.health || 100;
+      building.health = building.maxHealth;
+    }
+
     // Check if player has enough resources
-    const cost = config.cost || {};
     const currentResources = this.storage.getStorage();
 
     for (const [resource, amount] of Object.entries(cost)) {
@@ -1084,6 +1146,87 @@ class ModuleOrchestrator {
    */
   getGameState() {
     return { ...this.gameState };
+  }
+
+  /**
+   * Add resources to storage
+   * @param {Object} resources - Resources to add {food, wood, stone, gold, etc.}
+   */
+  addResources(resources) {
+    if (!resources || typeof resources !== 'object') {
+      return { success: false, message: 'Invalid resources object' };
+    }
+
+    for (const [resource, amount] of Object.entries(resources)) {
+      if (amount > 0) {
+        this.storage.addResource(resource, amount);
+      }
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * Validate building placement without actually placing
+   * @param {Object} building - Building to validate
+   * @returns {Object} Validation result
+   */
+  validateBuildingPlacement(building) {
+    if (!building || !building.type || !building.position) {
+      return { success: false, message: 'Building missing required fields' };
+    }
+
+    // Check if position is within grid bounds
+    const gridSize = this.grid.gridSize || 128;
+    const { x, z } = building.position;
+    if (x < 0 || x >= gridSize || z < 0 || z >= gridSize) {
+      return { success: false, message: 'Position out of bounds' };
+    }
+
+    // Check if position is occupied
+    const occupied = this.grid.isPositionOccupied(building.position);
+    if (occupied) {
+      return { success: false, message: 'Position already occupied' };
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * Process building construction (checks resources and places building)
+   * @param {Object} buildingRequest - Building construction request
+   * @returns {Object} Construction result
+   */
+  async processBuildingConstruction(buildingRequest) {
+    if (!buildingRequest || !buildingRequest.type) {
+      return { success: false, message: 'Invalid building request' };
+    }
+
+    // Validate building type
+    let config;
+    try {
+      config = this.buildingConfig.getConfig(buildingRequest.type);
+      if (!config) {
+        return { success: false, message: `Unknown building type: ${buildingRequest.type}` };
+      }
+    } catch (err) {
+      return { success: false, message: `BuildingConfig error: ${err.message}` };
+    }
+
+    // Create building object
+    const building = {
+      id: buildingRequest.id || `${buildingRequest.type.toLowerCase()}_${Date.now()}`,
+      type: buildingRequest.type,
+      position: buildingRequest.position || { x: 0, y: 0, z: 0 },
+      tier: buildingRequest.tier || this.gameState.currentTier,
+      state: 'CONSTRUCTION',
+      constructionProgress: 0
+    };
+
+    // Place the building using existing placeBuilding method
+    const result = this.placeBuilding(building);
+
+    return result;
   }
 
   // ============================================

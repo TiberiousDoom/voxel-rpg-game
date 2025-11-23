@@ -160,6 +160,18 @@ class GameEngine {
         this.tickTimer = 0;
       }
 
+      // Phase 4: Update terrain worker behavior (60 FPS for smooth NPC movement)
+      if (this.orchestrator.terrainWorkerBehavior) {
+        const deltaTimeSeconds = deltaTime / 1000;
+        this.orchestrator.terrainWorkerBehavior.update(deltaTimeSeconds);
+      }
+
+      // Update NPC movement (60 FPS for smooth movement)
+      if (this.orchestrator.npcManager && this.orchestrator.npcManager.updateMovement) {
+        const deltaTimeSeconds = deltaTime / 1000;
+        this.orchestrator.npcManager.updateMovement(deltaTimeSeconds);
+      }
+
       // Update frame metrics
       this._updateFrameMetrics(deltaTime);
     }

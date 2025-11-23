@@ -17,6 +17,10 @@
 import { WorldGenerator, WorldPresets } from './WorldGenerator.js';
 import { TerrainManager } from './TerrainManager.js';
 import { ChunkManager } from './ChunkManager.js';
+import { BiomeManager } from './BiomeManager.js';
+import { PropManager } from './PropManager.js';
+import biomeConfigs from '../../config/environment/biomeConfigs.js';
+import propDefinitions from '../../config/environment/propDefinitions.js';
 
 export class TerrainSystem {
   /**
@@ -44,12 +48,24 @@ export class TerrainSystem {
       chunkSize,
       tileSize,
       chunkLoadRadius,
-      maxLoadedChunks
+      maxLoadedChunks,
+      useBiomeManager: options.useBiomeManager !== false  // Phase 2: Enable by default
     };
 
-    // Initialize world generator with preset
+    // Phase 2: Initialize BiomeManager
+    this.biomeManager = null;
+    if (this.config.useBiomeManager) {
+      this.biomeManager = new BiomeManager(seed, biomeConfigs, {
+        useVoronoi: true,
+        voronoiSpacing: 128,
+        distortionStrength: 20,
+        blendRadius: 3
+      });
+    }
+
+    // Initialize world generator with preset and biome manager
     const worldConfig = WorldPresets[preset] || WorldPresets.DEFAULT;
-    this.worldGenerator = new WorldGenerator(seed, worldConfig);
+    this.worldGenerator = new WorldGenerator(seed, worldConfig, this.biomeManager);
 
     // Initialize terrain manager
     this.terrainManager = new TerrainManager(this.worldGenerator, {
@@ -65,6 +81,18 @@ export class TerrainSystem {
       chunkLoadRadius,
       maxLoadedChunks
     });
+
+    // Phase 3: Initialize PropManager
+    this.propManager = new PropManager(
+      this,              // terrainSystem (for height/biome queries)
+      this.biomeManager, // biomeManager (for biome-specific prop rules)
+      propDefinitions,   // prop type definitions
+      {
+        chunkSize,
+        minPropDistance: 2,
+        maxPropsPerChunk: 200
+      }
+    );
 
     // Statistics
     this.stats = {
@@ -249,6 +277,7 @@ export class TerrainSystem {
       terrain: this.terrainManager.getStats(),
       chunks: this.chunkManager.getStats(),
       world: this.worldGenerator.getInfo(),
+      props: this.propManager.getStats(),
       system: this.stats
     };
   }
@@ -316,5 +345,63 @@ export class TerrainSystem {
    */
   getWorldGenerator() {
     return this.worldGenerator;
+  }
+
+  /**
+   * Get biome manager (for direct access) - Phase 2
+   * @returns {BiomeManager|null}
+   */
+  getBiomeManager() {
+    return this.biomeManager;
+  }
+
+  /**
+   * Get prop manager (for direct access) - Phase 3
+   * @returns {PropManager}
+   */
+  getPropManager() {
+    return this.propManager;
+  }
+
+  /**
+   * Generate props for a chunk - Phase 3
+   * Call this when a chunk is loaded
+   * @param {number} chunkX - Chunk X coordinate
+   * @param {number} chunkZ - Chunk Z coordinate
+   * @returns {Array<Prop>} Generated props
+   */
+  generatePropsForChunk(chunkX, chunkZ) {
+    return this.propManager.generatePropsForChunk(chunkX, chunkZ);
+  }
+
+  /**
+   * Get props in a region - Phase 3
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @returns {Array<Prop>} Props in region
+   */
+  getPropsInRegion(startX, startZ, width, depth) {
+    return this.propManager.getPropsInRegion(startX, startZ, width, depth);
+  }
+
+  /**
+   * Get prop at position - Phase 3
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {Prop|null} Prop at position
+   */
+  getPropAt(x, z) {
+    return this.propManager.getPropAt(x, z);
+  }
+
+  /**
+   * Remove/harvest a prop - Phase 3
+   * @param {string} propId - Prop ID
+   * @returns {object} {success, resources, prop}
+   */
+  removeProp(propId) {
+    return this.propManager.removeProp(propId);
   }
 }

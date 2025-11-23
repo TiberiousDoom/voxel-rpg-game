@@ -1,0 +1,86 @@
+{
+  "id": "tundra",
+  "name": "Tundra",
+  "description": "Frozen wasteland with ice, snow, and hardy vegetation",
+
+  "temperature": -0.7,
+  "moisture": 0.2,
+
+  "heightRange": [3, 5],
+  "heightVariation": 1,
+
+  "terrainColors": {
+    "grass": "rgb(230, 230, 250)",
+    "dirt": "rgb(200, 200, 215)",
+    "stone": "rgb(180, 190, 200)"
+  },
+
+  "props": [
+    {
+      "type": "tree",
+      "density": 0.12,
+      "variants": ["tree_pine"],
+      "minDistance": 4
+    },
+    {
+      "type": "rock",
+      "density": 0.18,
+      "variants": ["rock_ice"],
+      "minDistance": 3
+    },
+    {
+      "type": "bush",
+      "density": 0.08,
+      "variants": ["bush_dead"],
+      "minDistance": 3
+    },
+    {
+      "type": "ice_crystal",
+      "density": 0.05,
+      "variants": ["ice_crystal"],
+      "minDistance": 5
+    }
+  ],
+
+  "structures": [
+    {
+      "type": "ice_cave",
+      "rarity": 0.01,
+      "minDistance": 120
+    },
+    {
+      "type": "frozen_ruin",
+      "rarity": 0.006,
+      "minDistance": 150
+    }
+  ],
+
+  "monsters": [
+    {
+      "type": "ice_wolf",
+      "spawnChance": 0.08,
+      "groupSize": [3, 6]
+    },
+    {
+      "type": "yeti",
+      "spawnChance": 0.02,
+      "groupSize": [1, 2]
+    },
+    {
+      "type": "frost_goblin",
+      "spawnChance": 0.04,
+      "groupSize": [2, 4]
+    }
+  ],
+
+  "musicTheme": "frozen_wasteland",
+
+  "ambientSounds": ["howling_wind", "ice_crack", "distant_roar"],
+
+  "weatherProbabilities": {
+    "clear": 0.3,
+    "cloudy": 0.2,
+    "snow": 0.4,
+    "blizzard": 0.1
+  }
+}

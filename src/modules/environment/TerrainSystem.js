@@ -19,8 +19,10 @@ import { TerrainManager } from './TerrainManager.js';
 import { ChunkManager } from './ChunkManager.js';
 import { BiomeManager } from './BiomeManager.js';
 import { PropManager } from './PropManager.js';
+import { StructureGenerator } from './structures/StructureGenerator.js'; // Phase 3D
 import biomeConfigs from '../../config/environment/biomeConfigs.js';
 import propDefinitions from '../../config/environment/propDefinitions.js';
+import structureTemplates from '../../config/environment/structures/structureTemplates.js'; // Phase 3D
 
 export class TerrainSystem {
   /**
@@ -91,6 +93,20 @@ export class TerrainSystem {
         chunkSize,
         minPropDistance: 2,
         maxPropsPerChunk: 200
+      }
+    );
+
+    // Phase 3D: Initialize StructureGenerator
+    this.structureGenerator = new StructureGenerator(
+      this,              // terrainSystem (for height/biome queries)
+      this.biomeManager, // biomeManager (for biome-specific rules)
+      structureTemplates, // structure templates
+      {
+        chunkSize,
+        minStructureDistance: 50,
+        maxStructuresPerChunk: 2,
+        structureDensity: 0.3,
+        spawnProtectionRadius: 100
       }
     );
 
@@ -403,5 +419,47 @@ export class TerrainSystem {
    */
   removeProp(propId) {
     return this.propManager.removeProp(propId);
+  }
+
+  // ===== Phase 3D: Structure convenience methods =====
+
+  /**
+   * Get structures in a region - Phase 3D
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @returns {Array<Structure>} Structures in region
+   */
+  getStructuresInRegion(startX, startZ, width, depth) {
+    return this.structureGenerator.getStructuresInRegion(startX, startZ, width, depth);
+  }
+
+  /**
+   * Get structure at position - Phase 3D
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {Structure|null} Structure at position
+   */
+  getStructureAt(x, z) {
+    return this.structureGenerator.getStructureAt(x, z);
+  }
+
+  /**
+   * Get structure by ID - Phase 3D
+   * @param {string} structureId - Structure ID
+   * @returns {Structure|null} Structure instance
+   */
+  getStructureById(structureId) {
+    return this.structureGenerator.getStructureById(structureId);
+  }
+
+  /**
+   * Remove structure - Phase 3D
+   * @param {string} structureId - Structure ID
+   * @returns {boolean} True if removed
+   */
+  removeStructure(structureId) {
+    return this.structureGenerator.removeStructure(structureId);
   }
 }

@@ -1,0 +1,62 @@
+{
+  "id": "stone_tower",
+  "name": "Abandoned Tower",
+  "type": "tower",
+  "width": 5,
+  "height": 5,
+  "biomes": ["plains", "mountains", "forest"],
+  "rarity": 0.25,
+  "requiresDryLand": true,
+  "maxHeightVariation": 2,
+  "tiles": [
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stairs", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "door", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true }
+  ],
+  "lootSpawns": [
+    {
+      "x": 2,
+      "z": 2,
+      "lootTable": "tower_rare",
+      "chance": 0.8
+    },
+    {
+      "x": 1,
+      "z": 1,
+      "lootTable": "ruins_common",
+      "chance": 0.5
+    }
+  ],
+  "npcSpawns": [],
+  "entrance": {
+    "x": 1,
+    "z": 4
+  },
+  "description": "Abandoned stone tower with stairs and valuable loot."
+}

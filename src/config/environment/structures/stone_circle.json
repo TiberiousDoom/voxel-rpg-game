@@ -1,0 +1,82 @@
+{
+  "id": "stone_circle",
+  "name": "Ancient Stone Circle",
+  "type": "monument",
+  "width": 7,
+  "height": 7,
+  "biomes": ["plains", "tundra"],
+  "rarity": 0.1,
+  "requiresDryLand": true,
+  "maxHeightVariation": 1,
+  "tiles": [
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "grass", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+
+    { "type": "pillar", "blocking": true },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "pillar", "blocking": true },
+
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "altar", "blocking": true },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+
+    { "type": "pillar", "blocking": true },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "pillar", "blocking": true },
+
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "grass", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "grass", "blocking": false },
+    { "type": "grass", "blocking": false }
+  ],
+  "lootSpawns": [
+    {
+      "x": 3,
+      "z": 3,
+      "lootTable": "monument_rare",
+      "chance": 0.9
+    }
+  ],
+  "npcSpawns": [],
+  "entrance": {
+    "x": 3,
+    "z": 6
+  },
+  "description": "Mysterious stone circle with central altar."
+}

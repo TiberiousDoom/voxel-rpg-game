@@ -13,6 +13,7 @@ export const INTERACTION_TYPES = {
   NPC: 'NPC',
   RESOURCE: 'RESOURCE',
   CHEST: 'CHEST',
+  PROP: 'PROP', // Phase 3A: Harvestable props (trees, rocks, etc.)
 };
 
 /**
@@ -27,6 +28,7 @@ export class PlayerInteractionSystem {
       onNPCInteract: null,
       onResourceInteract: null,
       onChestInteract: null,
+      onPropInteract: null, // Phase 3A: Prop harvesting
     };
   }
 
@@ -43,8 +45,9 @@ export class PlayerInteractionSystem {
    * @param {Array} npcs - List of NPCs
    * @param {Array} resources - List of resource nodes
    * @param {Array} chests - List of chests
+   * @param {Array} props - List of harvestable props (Phase 3A)
    */
-  updateNearbyInteractables(buildings = [], npcs = [], resources = [], chests = []) {
+  updateNearbyInteractables(buildings = [], npcs = [], resources = [], chests = [], props = []) {
     this.nearbyInteractables = [];
 
     // Check buildings
@@ -88,6 +91,21 @@ export class PlayerInteractionSystem {
           object: chest,
           position: chest.position,
         });
+      }
+    });
+
+    // Check props (Phase 3A: Harvestable props)
+    props.forEach(prop => {
+      // Props store coordinates as x, z (not position object)
+      if (prop && prop.x !== undefined && prop.z !== undefined && prop.harvestable) {
+        const propPosition = { x: prop.x, z: prop.z };
+        if (this.player.isInInteractionRange(propPosition)) {
+          this.nearbyInteractables.push({
+            type: INTERACTION_TYPES.PROP,
+            object: prop,
+            position: propPosition,
+          });
+        }
       }
     });
   }
@@ -157,6 +175,12 @@ export class PlayerInteractionSystem {
         }
         break;
 
+      case INTERACTION_TYPES.PROP:
+        if (this.callbacks.onPropInteract) {
+          this.callbacks.onPropInteract(closest.object);
+        }
+        break;
+
       default:
         // Unknown interaction type
         break;
@@ -179,10 +203,12 @@ export function usePlayerInteraction(player, {
   npcs = [],
   resources = [],
   chests = [],
+  props = [], // Phase 3A: Harvestable props
   onBuildingInteract,
   onNPCInteract,
   onResourceInteract,
   onChestInteract,
+  onPropInteract, // Phase 3A: Prop harvesting callback
   enabled = true,
 }) {
   const systemRef = useRef(null);
@@ -198,20 +224,21 @@ export function usePlayerInteraction(player, {
       onNPCInteract,
       onResourceInteract,
       onChestInteract,
+      onPropInteract,
     });
-  }, [player, onBuildingInteract, onNPCInteract, onResourceInteract, onChestInteract]);
+  }, [player, onBuildingInteract, onNPCInteract, onResourceInteract, onChestInteract, onPropInteract]);
 
   // Update nearby interactables
   useEffect(() => {
     if (!systemRef.current || !enabled) return;
 
     const intervalId = setInterval(() => {
-      systemRef.current.updateNearbyInteractables(buildings, npcs, resources, chests);
+      systemRef.current.updateNearbyInteractables(buildings, npcs, resources, chests, props);
       setNearbyInteractables(systemRef.current.getNearbyInteractables());
     }, 100); // Update 10 times per second
 
     return () => clearInterval(intervalId);
-  }, [player, buildings, npcs, resources, chests, enabled]);
+  }, [player, buildings, npcs, resources, chests, props, enabled]);
 
   // Handle E key for interaction
   const handleInteract = useCallback((event) => {

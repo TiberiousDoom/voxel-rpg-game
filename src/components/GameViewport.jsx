@@ -274,6 +274,7 @@ function GameViewport({
   const npcsRef = useRef(npcs);
   const buildingsRef = useRef(buildings);
   const monstersRef = useRef(monsters);
+  const lootDropsRef = useRef([]); // Loot drops from store
   const hoveredPositionRef = useRef(hoveredPosition);
   const selectedBuildingTypeRef = useRef(selectedBuildingType);
   const debugModeRef = useRef(debugMode);
@@ -281,17 +282,21 @@ function GameViewport({
   const canInteractRef = useRef(null); // Will be set below after usePlayerInteraction
   const closestInteractableRef = useRef(null); // Will be set below after usePlayerInteraction
 
+  // Subscribe to loot drops from store
+  const lootDrops = useGameStore((state) => state.lootDrops);
+
   // Update refs when props change (prevents useCallback recreation)
   useEffect(() => {
     npcsRef.current = npcs;
     buildingsRef.current = buildings;
     monstersRef.current = monsters;
+    lootDropsRef.current = lootDrops;
     hoveredPositionRef.current = hoveredPosition;
     selectedBuildingTypeRef.current = selectedBuildingType;
     debugModeRef.current = debugMode;
     enablePlayerMovementRef.current = enablePlayerMovement;
     // canInteract and closestInteractable updated in separate useEffect below
-  }, [npcs, buildings, monsters, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+  }, [npcs, buildings, monsters, lootDrops, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
 
   // Monster AI system
   const monsterAIRef = useRef(null);
@@ -1024,6 +1029,12 @@ function GameViewport({
     // Render monsters using MonsterRenderer (already filtered)
     monsterRenderer.renderMonsters(ctx, visibleMonsters, worldToCanvas);
 
+    // Render loot drops (Phase 2: Loot System)
+    if (lootDropsRef.current && lootDropsRef.current.length > 0) {
+      const currentTime = performance.now();
+      renderLootDrops(ctx, lootDropsRef.current, worldToCanvas, currentTime);
+    }
+
     // Store metrics in ref (don't trigger state update every frame)
     perfRef.current.currentMetrics = {
       visibleBuildings: visibleBuildingCount,
@@ -1187,7 +1198,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
 
   /**
    * Terrain tool handlers

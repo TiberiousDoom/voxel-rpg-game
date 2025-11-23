@@ -12,7 +12,7 @@
  * - Validation catches corrupted saves
  */
 
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+// Using Jest (included with react-scripts)
 
 // This import will fail until we create the file (expected for TDD)
 import SaveVersionManager from '../SaveVersionManager';

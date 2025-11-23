@@ -1,4 +1,18 @@
 import { create } from 'zustand';
+import {
+  handleMonsterDeath,
+  updateLootDrops,
+  handleItemPickup,
+  calculateEquipmentStats,
+  getEquipmentPowerLevel,
+  LootStoreHelpers
+} from '../systems/LootIntegration';
+import {
+  getDefaultCharacterData,
+  createCharacterActions,
+  grantLevelUpPoints,
+  calculateDerivedStats,
+} from '../modules/character/CharacterSystem';
 
 const useGameStore = create((set, get) => ({
   // Game state
@@ -46,6 +60,9 @@ const useGameStore = create((set, get) => ({
     statusEffects: [], // Array of {type, duration, value}
     spellCooldowns: {}, // Track cooldowns per spell id
   },
+
+  // Character system (attributes and skills)
+  character: getDefaultCharacterData(),
 
   // Equipment
   equipment: {
@@ -176,6 +193,59 @@ const useGameStore = create((set, get) => ({
     set((state) => ({
       enemies: state.enemies.filter((m) => m.alive),
     })),
+
+  // Handle monster death with loot drops
+  handleMonsterDeath: (monster) => {
+    const state = get();
+
+    // Create loot drops
+    const drops = handleMonsterDeath(monster, (dropVisual) => {
+      state.addLootDrop(dropVisual);
+    });
+
+    // Add XP from monster
+    if (monster.xpReward) {
+      state.addXP(monster.xpReward);
+    }
+
+    // Remove dead monster after a delay (for death animation)
+    setTimeout(() => {
+      state.removeMonster(monster.id);
+    }, 2000);
+
+    return drops;
+  },
+
+  // Update loot drops in game loop
+  updateLootDrops: (playerPos) => {
+    const state = get();
+
+    return updateLootDrops(playerPos, (drop) => {
+      // Handle gold pickup
+      if (drop.type === 'GOLD') {
+        state.addGold(drop.gold);
+        // Gold picked up
+      }
+      // Handle item pickup
+      else if (drop.type === 'ITEM') {
+        const result = handleItemPickup(
+          drop.item,
+          state.equipment,
+          (slot, item) => state.equipItemWithStats(slot, item),
+          (item) => state.addItem(item)
+        );
+
+        if (result.equipped) {
+          // Auto-equipped item
+        } else {
+          // Added item to inventory
+        }
+      }
+
+      // Remove from store
+      state.removeLootDrop(drop.id);
+    });
+  },
 
   updatePlayer: (updates) =>
     set((state) => ({
@@ -359,25 +429,51 @@ const useGameStore = create((set, get) => ({
 
   addXP: (xp) =>
     set((state) => {
-      const newXP = state.player.xp + xp;
+      // Apply skill-based XP multiplier
+      const derivedStats = calculateDerivedStats(
+        state.character,
+        state.player,
+        state.equipment
+      );
+      const xpMultiplier = derivedStats.xpGainMultiplier || 1.0;
+      const bonusXP = Math.floor(xp * xpMultiplier);
+
+      const newXP = state.player.xp + bonusXP;
       const xpToNext = state.player.xpToNext;
 
       if (newXP >= xpToNext) {
         // Level up
         const newLevel = state.player.level + 1;
+
+        // Grant character system points (5 attribute, 2 skill per level)
+        const updatedCharacter = grantLevelUpPoints(state.character, newLevel);
+
+        // Calculate new derived stats
+        const newDerivedStats = calculateDerivedStats(
+          updatedCharacter,
+          { ...state.player, level: newLevel },
+          state.equipment
+        );
+
         return {
           player: {
             ...state.player,
             level: newLevel,
             xp: newXP - xpToNext,
             xpToNext: Math.floor(xpToNext * 1.5),
-            skillPoints: state.player.skillPoints + 3,
-            maxHealth: state.player.maxHealth + 20,
-            health: state.player.maxHealth + 20,
-            maxMana: state.player.maxMana + 15,
-            mana: state.player.maxMana + 15,
-            damage: state.player.damage + 2,
+            // Update stats with derived values
+            maxHealth: newDerivedStats.maxHealth,
+            health: newDerivedStats.maxHealth, // Fully heal on level up
+            maxMana: newDerivedStats.maxMana,
+            mana: newDerivedStats.maxMana, // Fully restore mana on level up
+            maxStamina: newDerivedStats.maxStamina,
+            stamina: newDerivedStats.maxStamina, // Fully restore stamina on level up
+            damage: newDerivedStats.damage,
+            defense: newDerivedStats.defense,
+            critChance: newDerivedStats.critChance,
+            speed: newDerivedStats.speed,
           },
+          character: updatedCharacter,
         };
       }
 
@@ -387,12 +483,23 @@ const useGameStore = create((set, get) => ({
     }),
 
   addGold: (amount) =>
-    set((state) => ({
-      inventory: {
-        ...state.inventory,
-        gold: state.inventory.gold + amount,
-      },
-    })),
+    set((state) => {
+      // Apply skill-based gold multiplier
+      const derivedStats = calculateDerivedStats(
+        state.character,
+        state.player,
+        state.equipment
+      );
+      const goldMultiplier = 1.0 + (derivedStats.skillEffects?.goldGain || 0);
+      const bonusGold = Math.floor(amount * goldMultiplier);
+
+      return {
+        inventory: {
+          ...state.inventory,
+          gold: state.inventory.gold + bonusGold,
+        },
+      };
+    }),
 
   equipItem: (slot, item) =>
     set((state) => ({
@@ -403,6 +510,23 @@ const useGameStore = create((set, get) => ({
     set((state) => ({
       equipment: { ...state.equipment, [slot]: null },
     })),
+
+  // Enhanced equipment with stat aggregation
+  equipItemWithStats: (slot, item) =>
+    set((state) => LootStoreHelpers.equipItemWithStats(state, slot, item)),
+
+  unequipItemWithStats: (slot) =>
+    set((state) => LootStoreHelpers.unequipItemWithStats(state, slot)),
+
+  // Get current equipment stats
+  getEquipmentStats: () => {
+    return calculateEquipmentStats(get().equipment);
+  },
+
+  // Get equipment power level
+  getEquipmentPowerLevel: () => {
+    return getEquipmentPowerLevel(get().equipment);
+  },
 
   addItem: (item) =>
     set((state) => ({
@@ -528,6 +652,7 @@ const useGameStore = create((set, get) => ({
         isGrounded: true,
         spellCooldowns: {},
       },
+      character: getDefaultCharacterData(),
       enemies: [],
       projectiles: [],
       targetMarkers: [],
@@ -536,6 +661,9 @@ const useGameStore = create((set, get) => ({
       xpOrbs: [],
       particleEffects: [],
     }),
+
+  // Character system actions
+  ...createCharacterActions(set, get),
 }));
 
 export default useGameStore;

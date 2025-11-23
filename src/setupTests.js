@@ -6,10 +6,10 @@ import '@testing-library/jest-dom';
 
 // Enable Immer MapSet plugin for Zustand stores
 import { enableMapSet } from 'immer';
-enableMapSet();
-
 // Mock IndexedDB for all tests
 import 'fake-indexeddb/auto';
+
+enableMapSet();
 
 // Mock requestAnimationFrame and cancelAnimationFrame
 global.requestAnimationFrame = (callback) => {

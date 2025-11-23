@@ -19,6 +19,7 @@ import PathfindingService from './PathfindingService.js';
 import { CommandQueue, Formation } from './NPCCommand.js';
 import { Personality, RelationshipManager } from './NPCPersonality.js';
 import { NPCVisualFeedbackManager } from './NPCVisualFeedback.js';
+import { NPCIntegration } from '../../utils/integrations/NPCIntegration.js';
 
 class NPC {
   /**
@@ -209,20 +210,36 @@ class NPC {
 
   /**
    * Get effective skill multiplier for role
-   * @returns {number} Multiplier 1.0 to 1.5
+   * @param {object} character - Optional character data for Leadership bonuses
+   * @returns {number} Multiplier 1.0 to 1.5+
    */
-  getSkillMultiplier() {
+  getSkillMultiplier(character = null) {
     // Average of role-relevant skills
+    let baseSkill;
     switch (this.role) {
       case 'FARMER':
-        return this.skills.farming;
+        baseSkill = this.skills.farming;
+        break;
       case 'CRAFTSMAN':
-        return this.skills.crafting;
+        baseSkill = this.skills.crafting;
+        break;
       case 'GUARD':
-        return this.skills.defense;
+        baseSkill = this.skills.defense;
+        break;
       default:
-        return this.skills.general;
+        baseSkill = this.skills.general;
     }
+
+    // Apply Leadership efficiency bonus if character data available
+    if (character) {
+      const efficiency = NPCIntegration.calculateNPCEfficiency(
+        { baseEfficiency: baseSkill },
+        character
+      );
+      return efficiency;
+    }
+
+    return baseSkill;
   }
 
   /**
@@ -238,9 +255,10 @@ class NPC {
 
   /**
    * Get NPC state summary
+   * @param {object} character - Optional character data for Leadership bonuses
    * @returns {Object} Current state
    */
-  getState() {
+  getState(character = null) {
     return {
       id: this.id,
       name: this.name,
@@ -256,7 +274,10 @@ class NPC {
       hungry: this.hungry,
       fatigued: this.fatigued,
       alive: this.alive,
-      skillMultiplier: this.getSkillMultiplier()
+      skillMultiplier: this.getSkillMultiplier(character),
+      baseSkillMultiplier: this.getSkillMultiplier(), // Base without Leadership
+      leadershipBonus: character ?
+        (this.getSkillMultiplier(character) - this.getSkillMultiplier()) : 0
     };
   }
 }
@@ -278,6 +299,9 @@ class NPCManager {
     this.npcs = new Map(); // id -> NPC
     this.npcIdCounter = 0;
     this.buildingsMap = new Map(); // buildingId -> building (for NPC movement)
+
+    // Character System Integration: Reference to character for Leadership bonuses
+    this.character = null;
 
     // Initialize pathfinding service if grid manager provided (Phase 2: terrain-aware)
     this.pathfindingService = null;
@@ -319,6 +343,14 @@ class NPCManager {
    */
   setOrchestrator(orchestrator) {
     this.orchestrator = orchestrator;
+  }
+
+  /**
+   * Set character reference (for Leadership attribute bonuses)
+   * @param {object} character - Character data with attributes
+   */
+  setCharacter(character) {
+    this.character = character;
   }
 
   /**
@@ -365,8 +397,15 @@ class NPCManager {
       };
     }
 
-    // Check population limit
-    const maxPopulation = this.townManager.getMaxPopulation();
+    // Check population limit (with Leadership bonus)
+    const baseMaxPopulation = this.townManager.getMaxPopulation();
+    const maxPopulation = this.character
+      ? NPCIntegration.calculateMaxPopulation(
+          { maxPopulation: baseMaxPopulation },
+          this.character
+        )
+      : baseMaxPopulation;
+
     if (this.npcs.size >= maxPopulation) {
       console.warn(`[NPCManager] Cannot spawn NPC: population limit reached (${maxPopulation})`);
       return {
@@ -888,9 +927,23 @@ class NPCManager {
       ? alive.reduce((sum, n) => sum + n.happiness, 0) / alive.length
       : 0;
 
+    // Calculate average skill with Leadership bonuses
     const avgSkill = alive.length > 0
+      ? alive.reduce((sum, n) => sum + n.getSkillMultiplier(this.character), 0) / alive.length
+      : 1.0;
+
+    const avgSkillBase = alive.length > 0
       ? alive.reduce((sum, n) => sum + n.getSkillMultiplier(), 0) / alive.length
       : 1.0;
+
+    // Calculate max population with Leadership
+    const baseMaxPopulation = this.townManager.getMaxPopulation();
+    const maxPopulation = this.character
+      ? NPCIntegration.calculateMaxPopulation(
+          { maxPopulation: baseMaxPopulation },
+          this.character
+        )
+      : baseMaxPopulation;
 
     return {
       totalSpawned: this.stats.totalSpawned,
@@ -900,7 +953,13 @@ class NPCManager {
       restingCount: resting,
       idleCount: idle,
       averageHappiness: avgHappiness.toFixed(1),
-      averageSkill: avgSkill.toFixed(2)
+      averageSkill: avgSkill.toFixed(2),
+      averageSkillBase: avgSkillBase.toFixed(2),
+      leadershipBonus: this.character
+        ? (avgSkill - avgSkillBase).toFixed(2)
+        : '0.00',
+      maxPopulation: maxPopulation,
+      maxPopulationBase: baseMaxPopulation
     };
   }
 
@@ -911,7 +970,7 @@ class NPCManager {
   getAllNPCStates() {
     return Array.from(this.npcs.values())
       .filter(npc => npc.alive)
-      .map(npc => npc.getState());
+      .map(npc => npc.getState(this.character));
   }
 
   /**
@@ -1549,6 +1608,15 @@ class NPCManager {
 
     // Apply work pace modifier
     let productivity = baseProductivity * npc.personality.workPaceModifier;
+
+    // Apply Leadership efficiency bonus
+    if (this.character) {
+      const efficiencyMultiplier = NPCIntegration.calculateNPCEfficiency(
+        { baseEfficiency: 1.0 },
+        this.character
+      );
+      productivity *= efficiencyMultiplier;
+    }
 
     // Check if working with friends (bonus)
     const nearbyNPCs = this.getNearbyNPCs(npcId, 3.0);

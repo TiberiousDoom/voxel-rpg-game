@@ -224,7 +224,7 @@ const useGameStore = create((set, get) => ({
       // Handle gold pickup
       if (drop.type === 'GOLD') {
         state.addGold(drop.gold);
-        console.log(`💰 Picked up ${drop.gold} gold!`);
+        // Gold picked up
       }
       // Handle item pickup
       else if (drop.type === 'ITEM') {
@@ -236,9 +236,9 @@ const useGameStore = create((set, get) => ({
         );
 
         if (result.equipped) {
-          console.log(`⚔️ Auto-equipped ${drop.item.name}!`);
+          // Auto-equipped item
         } else {
-          console.log(`🎒 Added ${drop.item.name} to inventory`);
+          // Added item to inventory
         }
       }
 

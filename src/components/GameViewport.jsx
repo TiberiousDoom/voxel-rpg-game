@@ -17,6 +17,7 @@ import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
+import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { SpawnManager } from '../systems/SpawnManager.js'; // Spawn system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
@@ -379,6 +380,14 @@ function GameViewport({
     minHeight: 0,
     maxHeight: 10,
     colorMode: 'biome'  // Use biome-based coloring (Phase 2)
+  });
+
+  // Loot Drop Renderer integration
+  const { renderLootDrops } = useLootDropRenderer({
+    tileSize: TILE_SIZE,
+    showPickupRadius: debugMode,
+    enableAnimation: true,
+    debugMode: debugMode
   });
 
   // Player movement controller
@@ -1071,6 +1080,14 @@ function GameViewport({
                 console.log(`🗑️ Removing ${monster.name} after death animation (${((now - monster.deathTime) / 1000).toFixed(1)}s ago)`);
                 useGameStore.getState().removeMonster(monster.id);
               }
+            });
+          }
+
+          // Update loot drops - check for pickup
+          if (playerRef.current) {
+            useGameStore.getState().updateLootDrops({
+              x: playerRef.current.x,
+              z: playerRef.current.z
             });
           }
 

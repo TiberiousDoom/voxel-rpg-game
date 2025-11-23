@@ -51,7 +51,7 @@ export function handleMonsterDeath(monster, addLootDropCallback) {
     });
   }
 
-  console.log(`💎 Created ${drops.length} loot drops for ${monster.name}`);
+  // Created loot drops for monster
   return drops;
 }
 
@@ -117,9 +117,7 @@ export function handleItemPickup(
     // Equip new item
     equipCallback(slot, item);
 
-    console.log(
-      `⚔️ Equipped ${item.name} in ${slot} (${upgradeCheck.isUpgrade ? 'UPGRADE' : 'empty slot'})`
-    );
+    // Equipped item
 
     return {
       equipped: true,
@@ -131,9 +129,7 @@ export function handleItemPickup(
     // Add to inventory instead
     addToInventoryCallback(item);
 
-    console.log(
-      `🎒 Added ${item.name} to inventory (not an upgrade)`
-    );
+    // Added item to inventory
 
     return {
       equipped: false,

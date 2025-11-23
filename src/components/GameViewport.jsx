@@ -468,6 +468,7 @@ function GameViewport({
   });
 
   // Structure Renderer integration (Phase 3D)
+  // eslint-disable-next-line no-unused-vars
   const { renderStructures, renderStructureHighlight, renderStructureEntrance, renderStructureLabel, renderLootSpawns, renderNPCSpawns } = useStructureRenderer({
     tileSize: TILE_SIZE,
     showBorders: true,
@@ -1049,7 +1050,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures]);
 
   /**
    * Terrain tool handlers

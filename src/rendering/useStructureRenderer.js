@@ -46,6 +46,7 @@ export const useStructureRenderer = (options = {}) => {
   const {
     tileSize = 40,
     showBorders = true,
+    // eslint-disable-next-line no-unused-vars
     showDiscoveryOverlay = true,
   } = options;
 

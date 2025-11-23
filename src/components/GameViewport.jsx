@@ -36,6 +36,9 @@ import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
 import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
+import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
+import WeatherSeasonIndicator from './WeatherSeasonIndicator.jsx'; // Weather/Season Indicator (Phase 3 Integration)
+import Phase3DebugPanel from './Phase3DebugPanel.jsx'; // Debug Panel (Phase 3 Integration)
 import './GameViewport.css';
 
 /**
@@ -1720,10 +1723,31 @@ function GameViewport({
         </div>
       )}
 
+      {/* Mini-map (Phase 3 Integration) */}
+      {enablePlayerMovement && terrainSystemRef.current && (
+        <MiniMap
+          terrainSystem={terrainSystemRef.current}
+          cameraX={cameraX}
+          cameraZ={cameraZ}
+          size={200}
+          zoom={0.5}
+        />
+      )}
+
+      {/* Weather/Season Indicator (Phase 3 Integration) */}
+      {enablePlayerMovement && terrainSystemRef.current && (
+        <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
+      )}
+
+      {/* Phase 3 Debug Panel (Phase 3 Integration) */}
+      {enablePlayerMovement && terrainSystemRef.current && (
+        <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
+      )}
+
       {/* Performance metrics overlay - always visible */}
       <div className="performance-overlay" style={{
         position: 'fixed',
-        top: '10px',
+        top: '230px', // Moved down to avoid overlap with mini-map
         right: '10px',
         background: 'rgba(0, 0, 0, 0.85)',
         color: '#00ff00',

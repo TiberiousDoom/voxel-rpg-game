@@ -810,7 +810,8 @@ function GameViewport({
       try {
         const terrainManager = terrainSystemRef.current.getTerrainManager();
         const worldGenerator = terrainSystemRef.current.getWorldGenerator();
-        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator);
+        const seasonalSystem = terrainSystemRef.current.getSeasonalSystem(); // Phase 3C
+        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator, seasonalSystem);
 
         // Phase 3B: Render water bodies (lakes, ponds, pools, hot springs)
         const waterBodies = terrainSystemRef.current.getWaterBodiesInRegion(
@@ -909,6 +910,41 @@ function GameViewport({
         perfRef.current.currentMetrics.totalProps = propStats.totalProps;
       } catch (e) {
         console.error('Prop rendering error:', e);
+      }
+    }
+
+    // Phase 3C: Render micro-biome visual indicators (in debug mode)
+    if (debugModeRef.current && terrainSystemRef.current) {
+      try {
+        const microBiomes = terrainSystemRef.current.getMicroBiomesInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        for (const microBiome of microBiomes) {
+          const centerPos = worldToCanvas(microBiome.position.x, microBiome.position.z);
+
+          ctx.save();
+
+          // Draw circle overlay
+          ctx.strokeStyle = 'rgba(255, 200, 0, 0.6)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(centerPos.x, centerPos.y, microBiome.radius * TILE_SIZE, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Draw label
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.font = 'bold 12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(microBiome.definition.name, centerPos.x, centerPos.y - 5);
+
+          ctx.restore();
+        }
+      } catch (e) {
+        // Silently fail micro-biome rendering
       }
     }
 

@@ -200,6 +200,8 @@ function GameViewport({
   onBuildingClick = () => {},
   debugMode = false,
   enablePlayerMovement = true, // New prop to enable/disable player movement
+  isMobile = false, // Mobile device detection
+  showPerformanceMonitor = true, // Show/hide performance monitor
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
@@ -1405,62 +1407,66 @@ function GameViewport({
         </div>
       )}
 
-      {/* Performance metrics overlay - always visible */}
-      <div className="performance-overlay" style={{
-        position: 'fixed',
-        top: '10px',
-        right: '10px',
-        background: 'rgba(0, 0, 0, 0.85)',
-        color: '#00ff00',
-        padding: '12px',
-        borderRadius: '8px',
-        fontSize: '12px',
-        fontFamily: 'monospace',
-        minWidth: '180px',
-        zIndex: 9999,
-        pointerEvents: 'none',
-        border: '2px solid rgba(0, 255, 0, 0.3)',
-      }}>
-        <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ffffff', borderBottom: '1px solid rgba(0, 255, 0, 0.3)', paddingBottom: '4px' }}>
-          ⚡ PERFORMANCE
+      {/* Performance metrics overlay - shown only when enabled */}
+      {showPerformanceMonitor && (
+        <div className="performance-overlay" style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          background: 'rgba(0, 0, 0, 0.85)',
+          color: '#00ff00',
+          padding: '12px',
+          borderRadius: '8px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          minWidth: '180px',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          border: '2px solid rgba(0, 255, 0, 0.3)',
+        }}>
+          <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ffffff', borderBottom: '1px solid rgba(0, 255, 0, 0.3)', paddingBottom: '4px' }}>
+            ⚡ PERFORMANCE
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
+            <div>FPS:</div>
+            <div style={{ color: perfMetrics.fps < 30 ? '#ff4444' : perfMetrics.fps < 45 ? '#ffaa00' : '#00ff00' }}>
+              {perfMetrics.fps || 0}
+            </div>
+
+            <div>Frame:</div>
+            <div style={{ color: perfMetrics.frameTime > 33 ? '#ff4444' : perfMetrics.frameTime > 22 ? '#ffaa00' : '#00ff00' }}>
+              {perfMetrics.frameTime || 0}ms
+            </div>
+
+            <div>Target:</div>
+            <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
+
+            <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
+              Entities:
+            </div>
+
+            <div>Buildings:</div>
+            <div>{perfMetrics.visibleBuildings}/{perfMetrics.totalBuildings}</div>
+
+            <div>NPCs:</div>
+            <div>{perfMetrics.visibleNPCs}/{perfMetrics.totalNPCs}</div>
+
+            <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
+              Canvas:
+            </div>
+
+            <div>Size:</div>
+            <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
+
+            <div>Device:</div>
+            <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
-          <div>FPS:</div>
-          <div style={{ color: perfMetrics.fps < 30 ? '#ff4444' : perfMetrics.fps < 45 ? '#ffaa00' : '#00ff00' }}>
-            {perfMetrics.fps || 0}
-          </div>
+      )}
 
-          <div>Frame:</div>
-          <div style={{ color: perfMetrics.frameTime > 33 ? '#ff4444' : perfMetrics.frameTime > 22 ? '#ffaa00' : '#00ff00' }}>
-            {perfMetrics.frameTime || 0}ms
-          </div>
-
-          <div>Target:</div>
-          <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
-
-          <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
-            Entities:
-          </div>
-
-          <div>Buildings:</div>
-          <div>{perfMetrics.visibleBuildings}/{perfMetrics.totalBuildings}</div>
-
-          <div>NPCs:</div>
-          <div>{perfMetrics.visibleNPCs}/{perfMetrics.totalNPCs}</div>
-
-          <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
-            Canvas:
-          </div>
-
-          <div>Size:</div>
-          <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
-
-          <div>Device:</div>
-          <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
-        </div>
-      </div>
-
-      <div className="viewport-footer">
+      {/* Viewport footer - hidden on mobile (legend moved to hamburger menu) */}
+      {!isMobile && (
+        <div className="viewport-footer">
         <p className="viewport-hint">
           {enablePlayerMovement ? (
             <>
@@ -1498,6 +1504,7 @@ function GameViewport({
           </ul>
         </div>
       </div>
+      )}
     </div>
   );
 }

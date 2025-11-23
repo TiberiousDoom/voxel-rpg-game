@@ -21,11 +21,13 @@ import DefenseTab from './tabs/DefenseTab';
 import ActionsTab from './tabs/ActionsTab';
 import DeveloperTab from './tabs/DeveloperTab';
 import CharacterSystemUI from './ui/CharacterSystemUI';
+import MobileHamburgerMenu from './MobileHamburgerMenu';
 import './GameScreen.css';
 
 /**
  * GameScreen Component - Redesigned compact layout
  * Cleaner, more efficient use of space with debug panel
+ * Mobile-optimized with hamburger menu
  */
 function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing, gameManager } = useGame();
@@ -36,7 +38,15 @@ function GameScreen() {
   const [savedSlots, setSavedSlots] = useState(new Set());
   const [toastMessage, setToastMessage] = useState(null);
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState([]);
-  const [showDebugPanel, setShowDebugPanel] = useState(true);
+
+  // Detect mobile device
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768 ||
+                   ('ontouchstart' in window);
+
+  // Hide debug panels by default on mobile
+  const [showDebugPanel, setShowDebugPanel] = useState(!isMobile);
+  const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(!isMobile);
 
   // Horizontal tab bar state
   const [activeTab, setActiveTab] = useState('resources');
@@ -216,50 +226,89 @@ function GameScreen() {
     );
   }
 
+  // Building legend for mobile menu
+  const buildingLegend = {
+    'FARM': '#90EE90',
+    'HOUSE': '#D2B48C',
+    'WAREHOUSE': '#A9A9A9',
+    'TOWN_CENTER': '#FFD700',
+    'WATCHTOWER': '#8B4513',
+    'CAMPFIRE': '#FF8C00'
+  };
+
   return (
     <div className="game-screen compact">
-      {/* Compact Header */}
-      <CompactHeader
-        gameState={gameState}
-        actions={actions}
-        selectedSlot={selectedSlot}
-        setSelectedSlot={setSelectedSlot}
-        savedSlots={savedSlots}
-        onSave={handleSave}
-        onLoad={handleLoad}
-        onToggleDebug={() => setShowDebugPanel(!showDebugPanel)}
-        showDebug={showDebugPanel}
-      />
+      {/* Mobile Hamburger Menu - Only shown on mobile */}
+      {isMobile && (
+        <MobileHamburgerMenu
+          onOpenResources={() => setShowResourcesModal(true)}
+          onOpenNPCs={() => setShowNPCsModal(true)}
+          onOpenBuild={() => setShowBuildModal(true)}
+          onOpenInventory={() => setShowInventory(true)}
+          onOpenStats={() => setShowStatsModal(true)}
+          onOpenAchievements={() => setShowAchievementsModal(true)}
+          onOpenExpeditions={() => setShowExpeditionsModal(true)}
+          onOpenDefense={() => setShowDefenseModal(true)}
+          onOpenActions={() => setShowActionsModal(true)}
+          onOpenDeveloper={() => setShowDeveloperModal(true)}
+          onSave={handleSave}
+          onLoad={handleLoad}
+          showPerformance={showPerformanceMonitor}
+          onTogglePerformance={() => setShowPerformanceMonitor(!showPerformanceMonitor)}
+          showDebug={showDebugPanel}
+          onToggleDebug={() => setShowDebugPanel(!showDebugPanel)}
+          buildingLegend={buildingLegend}
+        />
+      )}
 
-      {/* Horizontal Tab Navigation */}
-      <HorizontalTabBar
-        leftTabs={leftTabs}
-        rightTabs={rightTabs}
-        activeTab={activeTab}
-        onTabClick={handleTabClick}
-        leftCollapsed={leftCollapsed}
-        rightCollapsed={rightCollapsed}
-      />
+      {/* Compact Header - Hidden on mobile */}
+      {!isMobile && (
+        <CompactHeader
+          gameState={gameState}
+          actions={actions}
+          selectedSlot={selectedSlot}
+          setSelectedSlot={setSelectedSlot}
+          savedSlots={savedSlots}
+          onSave={handleSave}
+          onLoad={handleLoad}
+          onToggleDebug={() => setShowDebugPanel(!showDebugPanel)}
+          showDebug={showDebugPanel}
+        />
+      )}
+
+      {/* Horizontal Tab Navigation - Hidden on mobile */}
+      {!isMobile && (
+        <HorizontalTabBar
+          leftTabs={leftTabs}
+          rightTabs={rightTabs}
+          activeTab={activeTab}
+          onTabClick={handleTabClick}
+          leftCollapsed={leftCollapsed}
+          rightCollapsed={rightCollapsed}
+        />
+      )}
 
       {/* Main Layout - 3 Column */}
       <div className="compact-layout">
-        {/* Left Sidebar - Tabbed Navigation */}
-        <aside className="compact-sidebar left">
-          <LeftSidebar
-            resources={gameState.resources || {}}
-            npcs={gameState.npcs || []}
-            buildings={gameState.buildings || []}
-            onAssignNPC={handleAssignNPC}
-            onUnassignNPC={handleUnassignNPC}
-            onAutoAssign={handleAutoAssign}
-            activeTab={activeTab}
-            collapsed={leftCollapsed}
-            onCollapse={() => setLeftCollapsed(true)}
-          />
-        </aside>
+        {/* Left Sidebar - Hidden on mobile */}
+        {!isMobile && (
+          <aside className="compact-sidebar left">
+            <LeftSidebar
+              resources={gameState.resources || {}}
+              npcs={gameState.npcs || []}
+              buildings={gameState.buildings || []}
+              onAssignNPC={handleAssignNPC}
+              onUnassignNPC={handleUnassignNPC}
+              onAutoAssign={handleAutoAssign}
+              activeTab={activeTab}
+              collapsed={leftCollapsed}
+              onCollapse={() => setLeftCollapsed(true)}
+            />
+          </aside>
+        )}
 
         {/* Center - Game Viewport */}
-        <main className="compact-viewport">
+        <main className={`compact-viewport ${isMobile ? 'mobile-fullscreen' : ''}`}>
           {gameState.isPaused && (
             <div className="pause-overlay">
               <div className="pause-content">
@@ -285,6 +334,8 @@ function GameScreen() {
             }}
             onBuildingClick={handleBuildingClick}
             enablePlayerMovement={true}
+            isMobile={isMobile}
+            showPerformanceMonitor={showPerformanceMonitor}
           />
 
           {/* Selected Building Info */}
@@ -298,22 +349,24 @@ function GameScreen() {
           )}
         </main>
 
-        {/* Right Sidebar - Tabbed Navigation */}
-        <aside className="compact-sidebar right">
-          <RightSidebar
-            selectedBuildingType={selectedBuildingType}
-            onSelectBuilding={setSelectedBuildingType}
-            onSpawnNPC={() => actions.spawnNPC('WORKER')}
-            onAdvanceTier={() => {/* Advance tier - to be implemented */}}
-            onAutoAssignNPCs={handleAutoAssign}
-            currentTier={gameState.currentTier || 'SURVIVAL'}
-            buildingConfig={gameManager?.orchestrator?.buildingConfig}
-            placedBuildingCounts={{}}
-            activeTab={activeTab}
-            collapsed={rightCollapsed}
-            onCollapse={() => setRightCollapsed(true)}
-          />
-        </aside>
+        {/* Right Sidebar - Hidden on mobile */}
+        {!isMobile && (
+          <aside className="compact-sidebar right">
+            <RightSidebar
+              selectedBuildingType={selectedBuildingType}
+              onSelectBuilding={setSelectedBuildingType}
+              onSpawnNPC={() => actions.spawnNPC('WORKER')}
+              onAdvanceTier={() => {/* Advance tier - to be implemented */}}
+              onAutoAssignNPCs={handleAutoAssign}
+              currentTier={gameState.currentTier || 'SURVIVAL'}
+              buildingConfig={gameManager?.orchestrator?.buildingConfig}
+              placedBuildingCounts={{}}
+              activeTab={activeTab}
+              collapsed={rightCollapsed}
+              onCollapse={() => setRightCollapsed(true)}
+            />
+          </aside>
+        )}
       </div>
 
       {/* Debug Panel */}

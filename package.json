@@ -97,5 +97,21 @@
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
+  },
+  "overrides": {
+    "three-mesh-bvh": "^0.8.0",
+    "glob": "^10.3.10",
+    "rimraf": "^5.0.5",
+    "svgo": "^3.2.0",
+    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@^1.5.0",
+    "@babel/plugin-proposal-class-properties": "npm:@babel/plugin-transform-class-properties@^7.25.9",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "npm:@babel/plugin-transform-nullish-coalescing-operator@^7.25.9",
+    "@babel/plugin-proposal-numeric-separator": "npm:@babel/plugin-transform-numeric-separator@^7.25.9",
+    "@babel/plugin-proposal-optional-chaining": "npm:@babel/plugin-transform-optional-chaining@^7.25.9",
+    "@babel/plugin-proposal-private-methods": "npm:@babel/plugin-transform-private-methods@^7.25.9",
+    "@babel/plugin-proposal-private-property-in-object": "npm:@babel/plugin-transform-private-property-in-object@^7.25.9",
+    "rollup-plugin-terser": "npm:@rollup/plugin-terser@^0.4.4",
+    "@humanwhocodes/config-array": "npm:@eslint/config-array@^0.19.1",
+    "@humanwhocodes/object-schema": "npm:@eslint/object-schema@^2.1.5"
   }
 }

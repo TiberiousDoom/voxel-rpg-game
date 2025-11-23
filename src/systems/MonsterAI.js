@@ -14,6 +14,8 @@
  * - Configurable update intervals
  */
 
+/* eslint-disable no-console */
+
 import useGameStore from '../stores/useGameStore.js';
 import { SpatialGrid } from './SpatialGrid.js';
 

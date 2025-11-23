@@ -12,6 +12,8 @@
  * - Avoids O(n) full scan for every update
  */
 
+/* eslint-disable no-console */
+
 /**
  * SpatialGrid - Grid-based spatial partitioning system
  */

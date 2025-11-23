@@ -17,72 +17,104 @@
  */
 
 /**
- * Weather types
+ * Weather types - Phase 3C: Extended weather types
  */
 export const WeatherType = {
   CLEAR: 'clear',
+  CLOUDY: 'cloudy',
   RAIN: 'rain',
+  HEAVY_RAIN: 'heavy_rain',
   SNOW: 'snow',
+  BLIZZARD: 'blizzard',
+  SANDSTORM: 'sandstorm',
   FOG: 'fog',
   STORM: 'storm'
 };
 
 /**
- * Biome-based weather rules
+ * Biome-based weather rules - Phase 3C: Enhanced weather probabilities
  * Defines probability of each weather type per biome
  */
 const BiomeWeatherRules = {
   ocean: {
-    clear: 0.4,
-    rain: 0.3,
+    clear: 0.3,
+    cloudy: 0.2,
+    rain: 0.2,
     storm: 0.2,
     fog: 0.1
   },
   beach: {
-    clear: 0.7,
-    rain: 0.2,
+    clear: 0.6,
+    cloudy: 0.2,
+    rain: 0.1,
     fog: 0.1
   },
   plains: {
-    clear: 0.6,
-    rain: 0.3,
+    clear: 0.5,
+    cloudy: 0.2,
+    rain: 0.2,
     storm: 0.1
   },
   forest: {
-    clear: 0.5,
-    rain: 0.4,
+    clear: 0.4,
+    cloudy: 0.2,
+    rain: 0.3,
     fog: 0.1
   },
   desert: {
-    clear: 0.9,
-    fog: 0.1
+    clear: 0.7,
+    cloudy: 0.2,
+    sandstorm: 0.1
   },
   tundra: {
-    clear: 0.4,
-    snow: 0.5,
+    clear: 0.3,
+    snow: 0.4,
+    blizzard: 0.2,
     fog: 0.1
   },
   mountains: {
-    clear: 0.3,
-    snow: 0.4,
-    fog: 0.2,
+    clear: 0.2,
+    cloudy: 0.2,
+    snow: 0.3,
+    blizzard: 0.1,
+    fog: 0.1,
     storm: 0.1
   },
+  swamp: {
+    clear: 0.3,
+    cloudy: 0.2,
+    rain: 0.2,
+    heavy_rain: 0.2,
+    fog: 0.1
+  },
   hills: {
-    clear: 0.6,
-    rain: 0.3,
+    clear: 0.5,
+    cloudy: 0.2,
+    rain: 0.2,
     fog: 0.1
   }
 };
 
 /**
- * Weather visual effects configuration
+ * Weather visual effects configuration - Phase 3C: Enhanced with gameplay modifiers
  */
 const WeatherEffects = {
   [WeatherType.CLEAR]: {
     particles: 0,
     opacity: 0,
-    windSpeed: 0.1
+    windSpeed: 0.1,
+    visibility: 1.0,
+    lightingModifier: 1.0,
+    movementModifier: 1.0
+  },
+  [WeatherType.CLOUDY]: {
+    particles: 0,
+    opacity: 0.1,
+    windSpeed: 0.2,
+    visibility: 0.95,
+    lightingModifier: 0.85,
+    movementModifier: 1.0,
+    overlayColor: 'rgba(100, 100, 120, 0.1)'
   },
   [WeatherType.RAIN]: {
     particles: 200,
@@ -90,7 +122,22 @@ const WeatherEffects = {
     particleSize: 2,
     particleSpeed: 8,
     opacity: 0.3,
-    windSpeed: 0.3
+    windSpeed: 0.3,
+    visibility: 0.8,
+    lightingModifier: 0.7,
+    movementModifier: 0.95
+  },
+  [WeatherType.HEAVY_RAIN]: {
+    particles: 350,
+    particleColor: 'rgba(120, 180, 230, 0.7)',
+    particleSize: 3,
+    particleSpeed: 10,
+    opacity: 0.4,
+    windSpeed: 0.5,
+    visibility: 0.6,
+    lightingModifier: 0.6,
+    movementModifier: 0.85,
+    overlayColor: 'rgba(50, 80, 120, 0.2)'
   },
   [WeatherType.SNOW]: {
     particles: 150,
@@ -98,7 +145,34 @@ const WeatherEffects = {
     particleSize: 3,
     particleSpeed: 2,
     opacity: 0.2,
-    windSpeed: 0.2
+    windSpeed: 0.2,
+    visibility: 0.85,
+    lightingModifier: 0.9,
+    movementModifier: 0.9
+  },
+  [WeatherType.BLIZZARD]: {
+    particles: 400,
+    particleColor: 'rgba(240, 248, 255, 0.85)',
+    particleSize: 4,
+    particleSpeed: 4,
+    opacity: 0.6,
+    windSpeed: 0.7,
+    visibility: 0.4,
+    lightingModifier: 0.7,
+    movementModifier: 0.7,
+    overlayColor: 'rgba(220, 230, 255, 0.3)'
+  },
+  [WeatherType.SANDSTORM]: {
+    particles: 300,
+    particleColor: 'rgba(222, 184, 135, 0.7)',
+    particleSize: 3,
+    particleSpeed: 6,
+    opacity: 0.5,
+    windSpeed: 0.8,
+    visibility: 0.5,
+    lightingModifier: 0.75,
+    movementModifier: 0.8,
+    overlayColor: 'rgba(200, 160, 100, 0.25)'
   },
   [WeatherType.FOG]: {
     particles: 50,
@@ -106,7 +180,11 @@ const WeatherEffects = {
     particleSize: 20,
     particleSpeed: 0.5,
     opacity: 0.5,
-    windSpeed: 0.1
+    windSpeed: 0.1,
+    visibility: 0.5,
+    lightingModifier: 0.8,
+    movementModifier: 0.95,
+    overlayColor: 'rgba(200, 200, 220, 0.3)'
   },
   [WeatherType.STORM]: {
     particles: 300,
@@ -114,7 +192,13 @@ const WeatherEffects = {
     particleSize: 3,
     particleSpeed: 12,
     opacity: 0.5,
-    windSpeed: 0.8
+    windSpeed: 0.8,
+    visibility: 0.5,
+    lightingModifier: 0.5,
+    movementModifier: 0.8,
+    overlayColor: 'rgba(40, 60, 80, 0.2)',
+    lightning: true,
+    lightningChance: 0.01
   }
 };
 
@@ -146,6 +230,16 @@ export class WeatherSystem {
     // Weather particles (for rendering)
     this.particles = [];
     this.maxParticles = 0;
+
+    // Phase 3C: Lightning tracking
+    this.lightningFlashes = [];
+
+    // Phase 3C: Statistics
+    this.stats = {
+      weatherChanges: 0,
+      weatherByType: {},
+      lightningStrikes: 0,
+    };
   }
 
   /**
@@ -173,6 +267,9 @@ export class WeatherSystem {
 
     // Update particles
     this.updateParticles(deltaTime);
+
+    // Phase 3C: Update lightning
+    this.updateLightning(deltaTime);
   }
 
   /**
@@ -336,6 +433,110 @@ export class WeatherSystem {
     }
 
     return weatherCounts;
+  }
+
+  /**
+   * Phase 3C: Update lightning flashes
+   * @param {number} deltaTime - Time since last update (ms)
+   */
+  updateLightning(deltaTime) {
+    const effects = this.getWeatherEffects(this.targetWeather);
+
+    // Spawn lightning
+    if (effects.lightning && Math.random() < (effects.lightningChance * (deltaTime / 16))) {
+      this.lightningFlashes.push({
+        startTime: Date.now(),
+        duration: 100 + Math.random() * 200, // 100-300ms
+        intensity: 0.5 + Math.random() * 0.5, // 0.5-1.0
+      });
+      this.stats.lightningStrikes++;
+    }
+
+    // Remove expired lightning
+    const currentTime = Date.now();
+    this.lightningFlashes = this.lightningFlashes.filter(
+      flash => currentTime - flash.startTime < flash.duration
+    );
+  }
+
+  /**
+   * Phase 3C: Get current lightning intensity (0-1)
+   * @returns {number} Lightning intensity
+   */
+  getLightningIntensity() {
+    if (this.lightningFlashes.length === 0) return 0;
+
+    const currentTime = Date.now();
+    let maxIntensity = 0;
+
+    for (const flash of this.lightningFlashes) {
+      const elapsed = currentTime - flash.startTime;
+      const progress = elapsed / flash.duration;
+
+      // Fade in/out
+      let flashIntensity;
+      if (progress < 0.2) {
+        flashIntensity = progress / 0.2; // Fast fade in
+      } else {
+        flashIntensity = 1 - ((progress - 0.2) / 0.8); // Slow fade out
+      }
+
+      flashIntensity *= flash.intensity;
+      maxIntensity = Math.max(maxIntensity, flashIntensity);
+    }
+
+    return maxIntensity;
+  }
+
+  /**
+   * Phase 3C: Get visibility modifier (0-1)
+   * @returns {number} Visibility modifier
+   */
+  getVisibility() {
+    const effects = this.getWeatherEffects(this.targetWeather);
+    return effects.visibility || 1.0;
+  }
+
+  /**
+   * Phase 3C: Get lighting modifier (0-1) with lightning flash
+   * @returns {number} Lighting modifier
+   */
+  getLightingModifier() {
+    const effects = this.getWeatherEffects(this.targetWeather);
+    const lightning = this.getLightningIntensity();
+    return Math.min(1.0, (effects.lightingModifier || 1.0) + lightning * 0.5);
+  }
+
+  /**
+   * Phase 3C: Get movement speed modifier (0-1)
+   * @returns {number} Movement modifier
+   */
+  getMovementModifier() {
+    const effects = this.getWeatherEffects(this.targetWeather);
+    return effects.movementModifier || 1.0;
+  }
+
+  /**
+   * Phase 3C: Get weather overlay color
+   * @returns {string|null} Overlay color or null
+   */
+  getOverlayColor() {
+    const effects = this.getWeatherEffects(this.targetWeather);
+    return effects.overlayColor || null;
+  }
+
+  /**
+   * Phase 3C: Get weather statistics
+   * @returns {object} Weather statistics
+   */
+  getStats() {
+    return {
+      ...this.stats,
+      currentWeather: this.currentWeather,
+      targetWeather: this.targetWeather,
+      transitionProgress: this.transitionProgress,
+      activeLightning: this.lightningFlashes.length,
+    };
   }
 
   /**

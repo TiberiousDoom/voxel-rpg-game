@@ -1,0 +1,57 @@
+{
+  "id": "dungeon_entrance",
+  "name": "Dungeon Entrance",
+  "type": "dungeon",
+  "width": 5,
+  "height": 5,
+  "biomes": ["plains", "forest", "mountains", "desert"],
+  "rarity": 0.15,
+  "requiresDryLand": true,
+  "maxHeightVariation": 3,
+  "tiles": [
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+
+    { "type": "stone_floor", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "dungeon_stairs", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_floor", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false }
+  ],
+  "lootSpawns": [],
+  "npcSpawns": [
+    {
+      "x": 2,
+      "z": 2,
+      "npcType": "dungeon_guard",
+      "behavior": "patrol",
+      "faction": "hostile"
+    }
+  ],
+  "entrance": {
+    "x": 2,
+    "z": 2
+  },
+  "description": "Entrance to an underground dungeon with hostile guardian."
+}

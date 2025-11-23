@@ -1,0 +1,98 @@
+{
+  "id": "forest",
+  "name": "Forest",
+  "description": "Dense woodland with tall trees and thick undergrowth",
+
+  "temperature": 0.3,
+  "moisture": 0.7,
+
+  "heightRange": [4, 7],
+  "heightVariation": 2,
+
+  "terrainColors": {
+    "grass": "rgb(34, 139, 34)",
+    "dirt": "rgb(101, 67, 33)",
+    "stone": "rgb(112, 112, 112)"
+  },
+
+  "props": [
+    {
+      "type": "tree",
+      "density": 0.4,
+      "variants": ["tree_oak", "tree_birch"],
+      "minDistance": 2
+    },
+    {
+      "type": "bush",
+      "density": 0.25,
+      "variants": ["bush", "bush_berry"],
+      "minDistance": 1
+    },
+    {
+      "type": "mushroom",
+      "density": 0.12,
+      "variants": ["mushroom_red", "mushroom_brown"],
+      "minDistance": 2
+    },
+    {
+      "type": "herb",
+      "density": 0.08,
+      "variants": ["herb_medicinal", "herb_magical"],
+      "minDistance": 3
+    },
+    {
+      "type": "log_fallen",
+      "density": 0.05,
+      "variants": ["log_fallen"],
+      "minDistance": 5
+    },
+    {
+      "type": "rock",
+      "density": 0.06,
+      "variants": ["rock_small", "rock_moss"],
+      "minDistance": 3
+    }
+  ],
+
+  "structures": [
+    {
+      "type": "abandoned_cabin",
+      "rarity": 0.008,
+      "minDistance": 120
+    },
+    {
+      "type": "druid_circle",
+      "rarity": 0.003,
+      "minDistance": 200
+    }
+  ],
+
+  "monsters": [
+    {
+      "type": "bear",
+      "spawnChance": 0.02,
+      "groupSize": [1, 1]
+    },
+    {
+      "type": "wolf",
+      "spawnChance": 0.06,
+      "groupSize": [3, 5]
+    },
+    {
+      "type": "spider",
+      "spawnChance": 0.04,
+      "groupSize": [1, 2]
+    }
+  ],
+
+  "musicTheme": "mystical_forest",
+
+  "ambientSounds": ["birds", "rustling_leaves", "owl", "creek"],
+
+  "weatherProbabilities": {
+    "clear": 0.4,
+    "cloudy": 0.3,
+    "rain": 0.25,
+    "storm": 0.05
+  }
+}

@@ -47,16 +47,19 @@
   flex: 1;
   border: 2px solid #ddd;
   border-radius: 8px;
-  background: white;
+  background: #F5F5F5; /* Match canvas clear color to prevent white flash */
   cursor: crosshair;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
   touch-action: none; /* Prevent default touch behaviors */
 
-  /* GPU acceleration hints for smoother rendering on mobile */
-  will-change: contents;
+  /* GPU acceleration for smoother rendering */
   transform: translateZ(0);
+  backface-visibility: hidden;
+
+  /* Prevent canvas from being affected by page resize/scroll */
+  contain: layout style paint;
 }
 
 .viewport-canvas:hover {

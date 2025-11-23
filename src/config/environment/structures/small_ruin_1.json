@@ -1,0 +1,38 @@
+{
+  "id": "small_ruin_1",
+  "name": "Small Ruins",
+  "type": "ruin",
+  "width": 3,
+  "height": 3,
+  "biomes": ["plains", "forest", "desert", "tundra"],
+  "rarity": 0.6,
+  "requiresDryLand": true,
+  "maxHeightVariation": 2,
+  "tiles": [
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+
+    { "type": "rubble", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "rubble", "blocking": false }
+  ],
+  "lootSpawns": [
+    {
+      "x": 1,
+      "z": 1,
+      "lootTable": "ruins_common",
+      "chance": 0.7
+    }
+  ],
+  "npcSpawns": [],
+  "entrance": {
+    "x": 1,
+    "z": 2
+  },
+  "description": "A small abandoned ruin with scattered rubble and a single loot spawn."
+}

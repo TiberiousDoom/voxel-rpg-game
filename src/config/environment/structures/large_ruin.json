@@ -1,0 +1,94 @@
+{
+  "id": "large_ruin",
+  "name": "Ancient Temple Ruins",
+  "type": "ruin",
+  "width": 7,
+  "height": 7,
+  "biomes": ["plains", "forest", "desert"],
+  "rarity": 0.2,
+  "requiresDryLand": true,
+  "maxHeightVariation": 2,
+  "tiles": [
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "rubble", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "rubble", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "altar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "rubble", "blocking": false },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "pillar", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_floor", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "rubble", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "rubble", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_wall", "blocking": true }
+  ],
+  "lootSpawns": [
+    {
+      "x": 3,
+      "z": 3,
+      "lootTable": "ruins_rare",
+      "chance": 0.9
+    },
+    {
+      "x": 1,
+      "z": 1,
+      "lootTable": "ruins_common",
+      "chance": 0.6
+    },
+    {
+      "x": 5,
+      "z": 5,
+      "lootTable": "ruins_common",
+      "chance": 0.6
+    }
+  ],
+  "npcSpawns": [],
+  "entrance": {
+    "x": 3,
+    "z": 6
+  },
+  "description": "Large ancient temple ruins with pillars, altar, and valuable loot."
+}

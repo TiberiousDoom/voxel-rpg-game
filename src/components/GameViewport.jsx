@@ -1537,11 +1537,6 @@ function GameViewport({
     const maxInitialAttempts = 60; // Try for 1 second
     let lastFrameTime = performance.now();
 
-    // Detect mobile for appropriate frame rate
-    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
-                     window.innerWidth <= 768 ||
-                     ('ontouchstart' in window);
-
     const animate = (currentTime) => {
       // Calculate delta time for smooth updates
       const deltaTime = (currentTime - lastFrameTime) / 1000; // Convert to seconds

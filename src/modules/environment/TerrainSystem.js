@@ -20,6 +20,9 @@ import { ChunkManager } from './ChunkManager.js';
 import { BiomeManager } from './BiomeManager.js';
 import { PropManager } from './PropManager.js';
 import { StructureGenerator } from './structures/StructureGenerator.js'; // Phase 3D
+import { MicroBiomeSystem } from './MicroBiomeSystem.js'; // Phase 3C
+import { WeatherSystem } from './WeatherSystem.js'; // Phase 3C
+import { SeasonalSystem } from './SeasonalSystem.js'; // Phase 3C
 import biomeConfigs from '../../config/environment/biomeConfigs.js';
 import propDefinitions from '../../config/environment/propDefinitions.js';
 import structureTemplates from '../../config/environment/structures/structureTemplates.js'; // Phase 3D
@@ -110,6 +113,38 @@ export class TerrainSystem {
       }
     );
 
+    // Phase 3C: Initialize MicroBiomeSystem
+    this.microBiomeSystem = new MicroBiomeSystem(
+      this,              // terrainSystem
+      this.biomeManager, // biomeManager
+      {
+        chunkSize,
+        enabled: options.enableMicroBiomes !== false,
+        globalRarityMultiplier: 1.0,
+        minDistanceBetweenMicroBiomes: 20
+      }
+    );
+
+    // Phase 3C: Initialize WeatherSystem
+    this.weatherSystem = new WeatherSystem(
+      this.worldGenerator,
+      {
+        enableWeather: options.enableWeather !== false,
+        weatherChangeDuration: 120000, // 2 minutes
+        globalWeather: true
+      }
+    );
+
+    // Phase 3C: Initialize SeasonalSystem
+    this.seasonalSystem = new SeasonalSystem({
+      enabled: options.enableSeasons !== false,
+      dayLength: 600000, // 10 minutes per day
+      daysPerSeason: 30,
+      transitionDuration: 3,
+      autoProgress: true,
+      startSeason: 'spring'
+    });
+
     // Statistics
     this.stats = {
       updateCount: 0,
@@ -127,7 +162,7 @@ export class TerrainSystem {
    * @param {number} viewportHeight - Viewport height in pixels
    * @returns {object} Update statistics
    */
-  update(cameraX, cameraZ, viewportWidth, viewportHeight) {
+  update(cameraX, cameraZ, viewportWidth, viewportHeight, deltaTime = 16) {
     const startTime = performance.now();
 
     const result = this.chunkManager.update(
@@ -136,6 +171,15 @@ export class TerrainSystem {
       viewportWidth,
       viewportHeight
     );
+
+    // Phase 3C: Update weather and seasons
+    if (this.weatherSystem) {
+      this.weatherSystem.update(deltaTime);
+    }
+
+    if (this.seasonalSystem) {
+      this.seasonalSystem.update(deltaTime);
+    }
 
     const elapsed = performance.now() - startTime;
 
@@ -294,6 +338,10 @@ export class TerrainSystem {
       chunks: this.chunkManager.getStats(),
       world: this.worldGenerator.getInfo(),
       props: this.propManager.getStats(),
+      structures: this.structureGenerator?.getStats(),
+      microBiomes: this.microBiomeSystem?.getStats(), // Phase 3C
+      weather: this.weatherSystem?.getStats(), // Phase 3C
+      season: this.seasonalSystem?.getStats(), // Phase 3C
       system: this.stats
     };
   }
@@ -461,5 +509,107 @@ export class TerrainSystem {
    */
   removeStructure(structureId) {
     return this.structureGenerator.removeStructure(structureId);
+  }
+
+  // ===== Phase 3C: Micro-biome convenience methods =====
+
+  /**
+   * Get micro-biomes in a region - Phase 3C
+   * @param {number} startX - Region start X
+   * @param {number} startZ - Region start Z
+   * @param {number} width - Region width
+   * @param {number} depth - Region depth
+   * @returns {Array<MicroBiome>} Micro-biomes in region
+   */
+  getMicroBiomesInRegion(startX, startZ, width, depth) {
+    return this.microBiomeSystem.getMicroBiomesInRegion(startX, startZ, width, depth);
+  }
+
+  /**
+   * Get micro-biome at position - Phase 3C
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {MicroBiome|null} Micro-biome at position
+   */
+  getMicroBiomeAt(x, z) {
+    return this.microBiomeSystem.getMicroBiomeAt(x, z);
+  }
+
+  // ===== Phase 3C: Weather convenience methods =====
+
+  /**
+   * Get current weather - Phase 3C
+   * @param {number} x - Tile X
+   * @param {number} z - Tile Z
+   * @returns {string} Weather type
+   */
+  getWeather(x, z) {
+    return this.weatherSystem.getCurrentWeather(x, z);
+  }
+
+  /**
+   * Get weather effects - Phase 3C
+   * @returns {object} Weather effects
+   */
+  getWeatherEffects() {
+    return this.weatherSystem.getWeatherEffects();
+  }
+
+  /**
+   * Set weather manually - Phase 3C
+   * @param {string} weatherType - Weather type
+   */
+  setWeather(weatherType) {
+    return this.weatherSystem.setWeather(weatherType);
+  }
+
+  /**
+   * Get weather system - Phase 3C
+   * @returns {WeatherSystem} Weather system instance
+   */
+  getWeatherSystem() {
+    return this.weatherSystem;
+  }
+
+  // ===== Phase 3C: Season convenience methods =====
+
+  /**
+   * Get current season - Phase 3C
+   * @returns {string} Season type
+   */
+  getCurrentSeason() {
+    return this.seasonalSystem.currentSeason;
+  }
+
+  /**
+   * Get season info - Phase 3C
+   * @returns {object} Season information
+   */
+  getSeasonInfo() {
+    return this.seasonalSystem.getCurrentSeasonInfo();
+  }
+
+  /**
+   * Set season manually - Phase 3C
+   * @param {string} season - Season type
+   */
+  setSeason(season) {
+    return this.seasonalSystem.setSeason(season);
+  }
+
+  /**
+   * Get seasonal system - Phase 3C
+   * @returns {SeasonalSystem} Seasonal system instance
+   */
+  getSeasonalSystem() {
+    return this.seasonalSystem;
+  }
+
+  /**
+   * Get micro-biome system - Phase 3C
+   * @returns {MicroBiomeSystem} Micro-biome system instance
+   */
+  getMicroBiomeSystem() {
+    return this.microBiomeSystem;
   }
 }

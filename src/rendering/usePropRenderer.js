@@ -226,6 +226,7 @@ export const usePropRenderer = (options = {}) => {
       propsCulled,
       totalProps: props.length
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tileSize, enableLOD, enableBatching, showPropHealth]);
 
   /**

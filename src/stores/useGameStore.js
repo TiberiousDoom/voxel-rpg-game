@@ -1,5 +1,12 @@
 import { create } from 'zustand';
 import {
+  handleMonsterDeath,
+  updateLootDrops,
+  handleItemPickup,
+  calculateEquipmentStats,
+  getEquipmentPowerLevel,
+  LootStoreHelpers
+} from '../systems/LootIntegration';
   getDefaultCharacterData,
   createCharacterActions,
   grantLevelUpPoints,
@@ -185,6 +192,59 @@ const useGameStore = create((set, get) => ({
     set((state) => ({
       enemies: state.enemies.filter((m) => m.alive),
     })),
+
+  // Handle monster death with loot drops
+  handleMonsterDeath: (monster) => {
+    const state = get();
+
+    // Create loot drops
+    const drops = handleMonsterDeath(monster, (dropVisual) => {
+      state.addLootDrop(dropVisual);
+    });
+
+    // Add XP from monster
+    if (monster.xpReward) {
+      state.addXP(monster.xpReward);
+    }
+
+    // Remove dead monster after a delay (for death animation)
+    setTimeout(() => {
+      state.removeMonster(monster.id);
+    }, 2000);
+
+    return drops;
+  },
+
+  // Update loot drops in game loop
+  updateLootDrops: (playerPos) => {
+    const state = get();
+
+    return updateLootDrops(playerPos, (drop) => {
+      // Handle gold pickup
+      if (drop.type === 'GOLD') {
+        state.addGold(drop.gold);
+        console.log(`💰 Picked up ${drop.gold} gold!`);
+      }
+      // Handle item pickup
+      else if (drop.type === 'ITEM') {
+        const result = handleItemPickup(
+          drop.item,
+          state.equipment,
+          (slot, item) => state.equipItemWithStats(slot, item),
+          (item) => state.addItem(item)
+        );
+
+        if (result.equipped) {
+          console.log(`⚔️ Auto-equipped ${drop.item.name}!`);
+        } else {
+          console.log(`🎒 Added ${drop.item.name} to inventory`);
+        }
+      }
+
+      // Remove from store
+      state.removeLootDrop(drop.id);
+    });
+  },
 
   updatePlayer: (updates) =>
     set((state) => ({
@@ -449,6 +509,23 @@ const useGameStore = create((set, get) => ({
     set((state) => ({
       equipment: { ...state.equipment, [slot]: null },
     })),
+
+  // Enhanced equipment with stat aggregation
+  equipItemWithStats: (slot, item) =>
+    set((state) => LootStoreHelpers.equipItemWithStats(state, slot, item)),
+
+  unequipItemWithStats: (slot) =>
+    set((state) => LootStoreHelpers.unequipItemWithStats(state, slot)),
+
+  // Get current equipment stats
+  getEquipmentStats: () => {
+    return calculateEquipmentStats(get().equipment);
+  },
+
+  // Get equipment power level
+  getEquipmentPowerLevel: () => {
+    return getEquipmentPowerLevel(get().equipment);
+  },
 
   addItem: (item) =>
     set((state) => ({

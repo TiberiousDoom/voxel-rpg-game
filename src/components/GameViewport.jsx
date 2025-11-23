@@ -219,6 +219,7 @@ function GameViewport({
   const canvasRef = useRef(null);
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
+  const cameraPositionRef = useRef({ x: 0, z: 0 }); // Camera position for MiniMap
 
   // Terrain job system state
   const [activeTool, setActiveTool] = useState(null); // 'flatten', 'raise', 'lower', 'smooth', or null
@@ -1547,6 +1548,8 @@ function GameViewport({
           // Camera position in world pixels (inverse of offset)
           const cameraX = -offset.x;
           const cameraZ = -offset.y;
+          // Store camera position for MiniMap
+          cameraPositionRef.current = { x: cameraX, z: cameraZ };
           terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT, deltaTime * 1000);
         }
 
@@ -1808,8 +1811,8 @@ function GameViewport({
       {enablePlayerMovement && terrainSystemRef.current && (
         <MiniMap
           terrainSystem={terrainSystemRef.current}
-          cameraX={cameraX}
-          cameraZ={cameraZ}
+          cameraX={cameraPositionRef.current.x}
+          cameraZ={cameraPositionRef.current.z}
           size={200}
           zoom={0.5}
         />

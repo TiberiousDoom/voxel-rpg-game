@@ -212,7 +212,6 @@ function GameViewport({
   onBuildingClick = () => {},
   debugMode = false,
   enablePlayerMovement = true, // New prop to enable/disable player movement
-  isMobile = false, // Mobile device detection
   showPerformanceMonitor = true, // Show/hide performance monitor
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);

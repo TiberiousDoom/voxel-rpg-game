@@ -398,6 +398,14 @@ export class SeasonalSystem {
   }
 
   /**
+   * Get season progress (0-1 transition between seasons)
+   * @returns {number} Progress value 0-1
+   */
+  getSeasonProgress() {
+    return this.transitionProgress;
+  }
+
+  /**
    * Get statistics
    */
   getStats() {

@@ -7,6 +7,7 @@ import {
   getEquipmentPowerLevel,
   LootStoreHelpers
 } from '../systems/LootIntegration';
+import {
   getDefaultCharacterData,
   createCharacterActions,
   grantLevelUpPoints,

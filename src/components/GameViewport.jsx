@@ -17,6 +17,7 @@ import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
+import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
 import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
@@ -218,6 +219,7 @@ function GameViewport({
   const canvasRef = useRef(null);
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
+  const cameraPositionRef = useRef({ x: 0, z: 0 }); // Camera position for MiniMap
 
   // Terrain job system state
   const [activeTool, setActiveTool] = useState(null); // 'flatten', 'raise', 'lower', 'smooth', or null
@@ -459,6 +461,14 @@ function GameViewport({
     minHeight: 0,
     maxHeight: 10,
     colorMode: 'biome'  // Use biome-based coloring (Phase 2)
+  });
+
+  // Loot Drop Renderer integration (Phase 2)
+  const { renderLootDrops } = useLootDropRenderer({
+    tileSize: TILE_SIZE,
+    showPickupRadius: debugMode,
+    enableAnimation: true,
+    debugMode: debugMode
   });
 
   // Terrain Job Renderer integration
@@ -1538,6 +1548,8 @@ function GameViewport({
           // Camera position in world pixels (inverse of offset)
           const cameraX = -offset.x;
           const cameraZ = -offset.y;
+          // Store camera position for MiniMap
+          cameraPositionRef.current = { x: cameraX, z: cameraZ };
           terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT, deltaTime * 1000);
         }
 
@@ -1593,6 +1605,14 @@ function GameViewport({
             }
           });
         }
+
+          // Update loot drops - check for pickup
+          if (playerRef.current) {
+            useGameStore.getState().updateLootDrops({
+              x: playerRef.current.x,
+              z: playerRef.current.z
+            });
+          }
 
           // Update spawn system - spawn new monsters as needed
           if (spawnManagerRef.current && monstersRef.current) {
@@ -1791,8 +1811,8 @@ function GameViewport({
       {enablePlayerMovement && terrainSystemRef.current && (
         <MiniMap
           terrainSystem={terrainSystemRef.current}
-          cameraX={cameraX}
-          cameraZ={cameraZ}
+          cameraX={cameraPositionRef.current.x}
+          cameraZ={cameraPositionRef.current.z}
           size={200}
           zoom={0.5}
         />

@@ -1,0 +1,132 @@
+[
+  {
+    "id": "quest_daily_slime_001",
+    "title": "Daily: Slime Cleanup",
+    "description": "Clear out slimes around the settlement. This quest can be repeated daily.",
+    "type": "KILL",
+    "category": "DAILY",
+    "levelRequirement": 1,
+    "objectives": [
+      {
+        "id": "obj_daily_slime_001",
+        "description": "Kill 20 Slimes",
+        "type": "KILL",
+        "targetType": "SLIME",
+        "targetCount": 20,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 150,
+      "gold": 100,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": true
+  },
+  {
+    "id": "quest_daily_goblin_001",
+    "title": "Daily: Goblin Patrol",
+    "description": "Hunt down goblins to keep them from raiding the settlement. This quest can be repeated daily.",
+    "type": "KILL",
+    "category": "DAILY",
+    "levelRequirement": 2,
+    "objectives": [
+      {
+        "id": "obj_daily_goblin_001",
+        "description": "Kill 15 Goblins",
+        "type": "KILL",
+        "targetType": "GOBLIN",
+        "targetCount": 15,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 250,
+      "gold": 150,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": true
+  },
+  {
+    "id": "quest_daily_wolf_001",
+    "title": "Daily: Wolf Hunting",
+    "description": "Thin out the wolf population to protect travelers. This quest can be repeated daily.",
+    "type": "KILL",
+    "category": "DAILY",
+    "levelRequirement": 3,
+    "objectives": [
+      {
+        "id": "obj_daily_wolf_001",
+        "description": "Kill 12 Wolves",
+        "type": "KILL",
+        "targetType": "WOLF",
+        "targetCount": 12,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 350,
+      "gold": 200,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": true
+  },
+  {
+    "id": "quest_daily_mixed_001",
+    "title": "Daily: Monster Hunter",
+    "description": "Eliminate various monster types. This quest can be repeated daily.",
+    "type": "KILL",
+    "category": "DAILY",
+    "levelRequirement": 4,
+    "objectives": [
+      {
+        "id": "obj_daily_mixed_001_1",
+        "description": "Kill 10 Slimes",
+        "type": "KILL",
+        "targetType": "SLIME",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_daily_mixed_001_2",
+        "description": "Kill 5 Goblins",
+        "type": "KILL",
+        "targetType": "GOBLIN",
+        "targetCount": 5,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_daily_mixed_001_3",
+        "description": "Kill 3 Wolves",
+        "type": "KILL",
+        "targetType": "WOLF",
+        "targetCount": 3,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 500,
+      "gold": 300,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": true
+  }
+]

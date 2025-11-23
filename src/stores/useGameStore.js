@@ -208,6 +208,23 @@ const useGameStore = create((set, get) => ({
       state.addXP(monster.xpReward);
     }
 
+    // Track kill for quests (Phase 3: Quest System)
+    if (monster.type) {
+      try {
+        // Dynamic import to avoid circular dependencies
+        import('../systems/QuestManager.js').then(({ getQuestManager }) => {
+          const questManager = getQuestManager();
+          if (questManager) {
+            questManager.trackKill(monster.type);
+          }
+        }).catch(err => {
+          // Quest system not loaded yet, ignore
+        });
+      } catch (err) {
+        // Quest system not available
+      }
+    }
+
     // Remove dead monster after a delay (for death animation)
     setTimeout(() => {
       state.removeMonster(monster.id);

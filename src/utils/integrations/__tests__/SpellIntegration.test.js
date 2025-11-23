@@ -12,7 +12,7 @@
  * - Soft caps are respected
  */
 
-import { describe, test, expect, beforeEach } from 'vitest';
+// Using Jest (included with react-scripts)
 
 // This import will fail until we create the file (expected for TDD)
 import { SpellIntegration } from '../SpellIntegration';

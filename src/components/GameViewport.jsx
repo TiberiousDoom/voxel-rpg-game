@@ -457,9 +457,9 @@ function GameViewport({
   // Terrain Job Renderer integration
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
 
-  // Prop Renderer integration (Phase 3)
+  // Prop Renderer integration (Phase 3 & 3A)
   // eslint-disable-next-line no-unused-vars
-  const { renderProps, renderPropHighlight, renderDebugInfo } = usePropRenderer({
+  const { renderProps, renderPropHighlight, renderHarvestProgress, renderFloatingText, renderDebugInfo } = usePropRenderer({
     tileSize: TILE_SIZE,
     enableLOD: true,
     enableBatching: true,
@@ -482,6 +482,7 @@ function GameViewport({
       interactionRange * 2,
       interactionRange * 2
     ).filter(prop => prop.harvestable);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerRef.current?.x, playerRef.current?.z]);
 
   // Player interaction system
@@ -1008,7 +1009,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight]);
 
   /**
    * Terrain tool handlers

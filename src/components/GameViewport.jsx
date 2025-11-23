@@ -19,6 +19,8 @@ import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Mons
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
+import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
+import { useBiomeTransitionRenderer } from '../rendering/useBiomeTransitionRenderer.js'; // Biome transitions (Phase 3C)
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
@@ -451,6 +453,22 @@ function GameViewport({
     showDiscoveryOverlay: true
   });
 
+  // Water Renderer integration (Phase 3B)
+  const { renderWaterBodies, renderRivers: renderRiversPhase3B, renderReflections, renderWaterSurface } = useWaterRenderer({
+    tileSize: TILE_SIZE,
+    showReflections: true,
+    showRipples: true,
+    showShore: true,
+    animationSpeed: 1.0
+  });
+
+  // Biome Transition Renderer integration (Phase 3C)
+  const { blendBiomeColors, renderTransitionOverlay, renderTransitionDebug, getTransitionStrength, getTransitionParticles } = useBiomeTransitionRenderer({
+    showTransitionOverlay: false,
+    transitionThreshold: 0.7,
+    overlayOpacity: 0.15
+  });
+
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
 
@@ -794,18 +812,39 @@ function GameViewport({
         const worldGenerator = terrainSystemRef.current.getWorldGenerator();
         renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator);
 
-        // Render water on top of terrain (Phase 2: Water System)
-        renderWater(ctx, terrainManager, worldToCanvas, viewportBounds);
+        // Phase 3B: Render water bodies (lakes, ponds, pools, hot springs)
+        const waterBodies = terrainSystemRef.current.getWaterBodiesInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
 
-        // Render rivers on top of water (Phase 3: River Rendering)
-        const rivers = worldGenerator.generateRivers(
+        if (waterBodies.length > 0) {
+          const currentTime = performance.now();
+          renderWaterBodies(ctx, waterBodies, worldToCanvas, currentTime);
+          renderReflections(ctx, waterBodies, worldToCanvas);
+        }
+
+        // Phase 3B: Generate and render rivers
+        terrainSystemRef.current.generateRiversForArea(
           viewportBounds.left - 50,
           viewportBounds.top - 50,
           viewportBounds.right - viewportBounds.left + 100,
-          viewportBounds.bottom - viewportBounds.top + 100,
-          5  // Generate 5 rivers in visible area
+          viewportBounds.bottom - viewportBounds.top + 100
         );
-        renderRivers(ctx, rivers, worldToCanvas, viewportBounds);
+
+        const visibleRivers = terrainSystemRef.current.getRiversInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        if (visibleRivers.length > 0) {
+          const currentTime = performance.now();
+          renderRiversPhase3B(ctx, visibleRivers, worldToCanvas, currentTime);
+        }
       } catch (e) {
         // Log terrain rendering errors for debugging
         console.error('Terrain rendering error:', e);
@@ -1008,6 +1047,52 @@ function GameViewport({
       if (jobQueueRef.current) {
         const stats = jobQueueRef.current.getStatistics();
         renderJobStatistics(ctx, stats);
+      }
+
+      // Phase 3C: Weather effects (particles, overlays, lightning)
+      if (terrainSystemRef.current) {
+        try {
+          const weatherSystem = terrainSystemRef.current.getWeatherSystem();
+
+          if (weatherSystem) {
+            // Get weather overlay color
+            const overlayColor = weatherSystem.getOverlayColor();
+            if (overlayColor) {
+              ctx.fillStyle = overlayColor;
+              ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+
+            // Render weather particles
+            const particles = weatherSystem.getParticles();
+            const weatherEffects = weatherSystem.getWeatherEffects();
+
+            if (particles && particles.length > 0 && weatherEffects) {
+              ctx.save();
+              ctx.fillStyle = weatherEffects.particleColor || 'rgba(255, 255, 255, 0.8)';
+
+              particles.forEach(p => {
+                // Simple circle for each particle
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, weatherEffects.particleSize || 2, 0, Math.PI * 2);
+                ctx.fill();
+              });
+
+              ctx.restore();
+            }
+
+            // Lightning flash overlay
+            const lightningIntensity = weatherSystem.getLightningIntensity();
+            if (lightningIntensity > 0) {
+              ctx.save();
+              ctx.globalAlpha = lightningIntensity * 0.5;
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+              ctx.restore();
+            }
+          }
+        } catch (e) {
+          // Silently fail weather rendering
+        }
       }
     } catch (error) {
       // Don't update state in render loop - causes severe FPS drops!
@@ -1383,7 +1468,8 @@ function GameViewport({
             // Camera position in world pixels (inverse of offset)
             const cameraX = -offset.x;
             const cameraZ = -offset.y;
-            terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT);
+            // Phase 3C: Pass deltaTime for weather/season updates
+            terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT, elapsed);
           }
 
           // Update NPC positions before rendering (use ref to avoid loop recreation)

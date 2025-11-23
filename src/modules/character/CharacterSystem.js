@@ -11,6 +11,8 @@
 
 import { CombatIntegration } from '../../utils/integrations/CombatIntegration';
 import { SpellIntegration } from '../../utils/integrations/SpellIntegration';
+import skillTreeSystem from './SkillTreeSystem';
+import activeSkillSystem from './ActiveSkillSystem';
 
 /**
  * Default character data structure
@@ -182,6 +184,9 @@ export const calculateDerivedStats = (character, player, equipment = {}) => {
     isBlocking: player.isBlocking,
   };
 
+  // Get passive skill effects
+  const skillEffects = skillTreeSystem.calculatePassiveEffects(character);
+
   // Calculate all derived stats using integration APIs
   const stats = {
     // Combat & Endurance (from CombatIntegration)
@@ -201,16 +206,24 @@ export const calculateDerivedStats = (character, player, equipment = {}) => {
     manaRegen: SpellIntegration.calculateManaRegen(fullCharacter),
     spellPower: SpellIntegration.getSpellPower(fullCharacter),
 
-    // Exploration
+    // Exploration (base + skill bonuses)
     speed: 5 + (character.attributes.exploration * 0.1), // +0.1 speed per exploration point
-    gatheringSpeed: 1.0 + (character.attributes.exploration * 0.01), // +1% gathering speed
-    rareFindChance: character.attributes.exploration * 0.002, // +0.2% rare find per point
+    gatheringSpeed: 1.0 + (character.attributes.exploration * 0.01) + skillEffects.gatheringSpeed,
+    rareFindChance: (character.attributes.exploration * 0.002) + skillEffects.rareResourceChance,
 
     // Base stats (preserved from old system)
     critDamage: 150, // 1.5x multiplier
     dodgeChance: 5,  // Base 5%
     maxRage: 100,
   };
+
+  // Apply skill-based XP bonuses
+  if (skillEffects.xpGain > 0) {
+    stats.xpGainMultiplier = 1.0 + skillEffects.xpGain;
+  }
+
+  // Apply building/NPC skill bonuses (stored separately, used by systems)
+  stats.skillEffects = skillEffects;
 
   return stats;
 };
@@ -366,51 +379,120 @@ export const createCharacterActions = (set, get) => ({
     return calculateDerivedStats(state.character, state.player, state.equipment);
   },
 
-  // Unlock skill node
-  unlockSkillNode: (nodeId) => {
+  // Allocate skill point
+  allocateSkill: (treeId, skillId) => {
     set((state) => {
-      if (state.character.skillPoints <= 0) {
-        console.error('No skill points available');
+      const character = { ...state.character };
+      const result = skillTreeSystem.allocateSkill(character, treeId, skillId);
+
+      if (!result.success) {
+        console.error('Failed to allocate skill:', result.message);
         return state;
       }
 
-      if (state.character.skills.activeNodes.includes(nodeId)) {
-        console.error('Node already unlocked');
+      return { character };
+    });
+  },
+
+  // Deallocate skill point (for respec)
+  deallocateSkill: (treeId, skillId) => {
+    set((state) => {
+      const character = { ...state.character };
+      const result = skillTreeSystem.deallocateSkill(character, treeId, skillId);
+
+      if (!result.success) {
+        console.error('Failed to deallocate skill:', result.message);
         return state;
       }
 
-      return {
-        character: {
-          ...state.character,
-          skills: {
-            ...state.character.skills,
-            activeNodes: [...state.character.skills.activeNodes, nodeId],
-            unlockedNodes: [...new Set([...state.character.skills.unlockedNodes, nodeId])],
-          },
-          skillPoints: state.character.skillPoints - 1,
-          totalSkillsSpent: state.character.skills.activeNodes.length + 1,
-        },
-      };
+      return { character };
     });
   },
 
   // Reset skill tree (for respec)
-  resetSkillTree: () => {
+  resetSkillTree: (treeId) => {
     set((state) => {
-      const pointsToRefund = state.character.skills.activeNodes.length;
+      const character = { ...state.character };
+      // eslint-disable-next-line no-unused-vars
+      const result = skillTreeSystem.respecTree(character, treeId);
 
-      return {
-        character: {
-          ...state.character,
-          skills: {
-            activeNodes: [],
-            unlockedNodes: state.character.skills.unlockedNodes, // Keep history for respec discounts
-          },
-          skillPoints: state.character.skillPoints + pointsToRefund,
-          totalSkillsSpent: 0,
-        },
-      };
+      return { character };
     });
+  },
+
+  // Reset all skills
+  resetAllSkills: () => {
+    set((state) => {
+      const character = { ...state.character };
+      // eslint-disable-next-line no-unused-vars
+      const result = skillTreeSystem.respecAll(character);
+
+      return { character };
+    });
+  },
+
+  // Get passive skill effects
+  getPassiveSkillEffects: () => {
+    const state = get();
+    return skillTreeSystem.calculatePassiveEffects(state.character);
+  },
+
+  // Get active skills
+  getActiveSkills: () => {
+    const state = get();
+    return skillTreeSystem.getActiveSkills(state.character);
+  },
+
+  // Get skill tree data
+  getSkillTree: (treeId) => {
+    return skillTreeSystem.getTree(treeId);
+  },
+
+  // Get skill points in a skill
+  getSkillPoints: (treeId, skillId) => {
+    const state = get();
+    return skillTreeSystem.getSkillPoints(state.character, treeId, skillId);
+  },
+
+  // Check if can allocate skill
+  canAllocateSkill: (treeId, skillId) => {
+    const state = get();
+    return skillTreeSystem.canAllocateSkill(state.character, treeId, skillId);
+  },
+
+  // ========== ACTIVE SKILLS ==========
+
+  // Activate an active skill
+  activateActiveSkill: (treeId, skillId) => {
+    const state = get();
+    const result = activeSkillSystem.activateSkill(state.character, treeId, skillId);
+
+    if (!result.success) {
+      console.warn('Failed to activate skill:', result.message);
+    }
+
+    return result;
+  },
+
+  // Check if active skill can be activated
+  canActivateSkill: (treeId, skillId) => {
+    const state = get();
+    return activeSkillSystem.canActivateSkill(state.character, treeId, skillId);
+  },
+
+  // Get active skill cooldown
+  getActiveSkillCooldown: (treeId, skillId) => {
+    return activeSkillSystem.getCooldown(treeId, skillId);
+  },
+
+  // Get all active buffs
+  getActiveBuffs: () => {
+    return activeSkillSystem.getActiveBuffs();
+  },
+
+  // Get aggregated buff effects
+  getActiveBuffEffects: () => {
+    return activeSkillSystem.getActiveBuffEffects();
   },
 
   // Grant retroactive points (used during save migration)
@@ -424,3 +506,8 @@ export const createCharacterActions = (set, get) => ({
     }));
   },
 });
+
+/**
+ * Export active skill system instance for game loop integration
+ */
+export { activeSkillSystem };

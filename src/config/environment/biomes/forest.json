@@ -19,37 +19,37 @@
     {
       "type": "tree",
       "density": 0.4,
-      "variants": ["oak", "birch", "maple"],
+      "variants": ["tree_oak", "tree_birch"],
       "minDistance": 2
     },
     {
       "type": "bush",
       "density": 0.25,
-      "variants": ["bush", "berry_bush"],
+      "variants": ["bush", "bush_berry"],
       "minDistance": 1
     },
     {
       "type": "mushroom",
       "density": 0.12,
-      "variants": ["red_mushroom", "brown_mushroom"],
+      "variants": ["mushroom_red", "mushroom_brown"],
       "minDistance": 2
     },
     {
       "type": "herb",
       "density": 0.08,
-      "variants": ["medicinal_herb", "magical_herb"],
+      "variants": ["herb_medicinal", "herb_magical"],
       "minDistance": 3
     },
     {
-      "type": "fallen_log",
+      "type": "log_fallen",
       "density": 0.05,
-      "variants": ["log"],
+      "variants": ["log_fallen"],
       "minDistance": 5
     },
     {
       "type": "rock",
       "density": 0.06,
-      "variants": ["small_rock", "moss_rock"],
+      "variants": ["rock_small", "rock_moss"],
       "minDistance": 3
     }
   ],

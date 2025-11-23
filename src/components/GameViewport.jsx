@@ -17,9 +17,17 @@ import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
+import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
+import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
+import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
+import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
+import { useBiomeTransitionRenderer } from '../rendering/useBiomeTransitionRenderer.js'; // Biome transitions (Phase 3C)
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
+import { SpawnManager } from '../systems/SpawnManager.js'; // Spawn system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
+import { PropHarvestingSystem } from '../modules/environment/PropHarvestingSystem.js'; // Phase 3A: Prop harvesting
+import { FloatingTextManager } from '../rendering/FloatingTextManager.js'; // Phase 3A: Floating text
 import { TerrainJobQueue } from '../modules/terrain-jobs/TerrainJobQueue.js'; // Terrain job queue
 import { JobTimeCalculator } from '../modules/terrain-jobs/JobTimeCalculator.js'; // Job time calculator
 import { PlayerEntity } from '../modules/player/PlayerEntity.js';
@@ -29,6 +37,9 @@ import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
 import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
+import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
+import WeatherSeasonIndicator from './WeatherSeasonIndicator.jsx'; // Weather/Season Indicator (Phase 3 Integration)
+import Phase3DebugPanel from './Phase3DebugPanel.jsx'; // Debug Panel (Phase 3 Integration)
 import './GameViewport.css';
 
 /**
@@ -43,6 +54,7 @@ const initializeCanvas = (canvas, width, height) => {
   canvas.height = height;
 
   // Detect mobile device
+  // eslint-disable-next-line no-unused-vars
   const isMobileDevice = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
                         window.innerWidth <= 768 ||
                         ('ontouchstart' in window);
@@ -209,6 +221,7 @@ function GameViewport({
   const canvasRef = useRef(null);
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
+  const cameraPositionRef = useRef({ x: 0, z: 0 }); // Camera position for MiniMap
 
   // Terrain job system state
   const [activeTool, setActiveTool] = useState(null); // 'flatten', 'raise', 'lower', 'smooth', or null
@@ -263,6 +276,7 @@ function GameViewport({
   const npcsRef = useRef(npcs);
   const buildingsRef = useRef(buildings);
   const monstersRef = useRef(monsters);
+  const lootDropsRef = useRef([]); // Loot drops from store
   const hoveredPositionRef = useRef(hoveredPosition);
   const selectedBuildingTypeRef = useRef(selectedBuildingType);
   const debugModeRef = useRef(debugMode);
@@ -270,17 +284,21 @@ function GameViewport({
   const canInteractRef = useRef(null); // Will be set below after usePlayerInteraction
   const closestInteractableRef = useRef(null); // Will be set below after usePlayerInteraction
 
+  // Subscribe to loot drops from store
+  const lootDrops = useGameStore((state) => state.lootDrops);
+
   // Update refs when props change (prevents useCallback recreation)
   useEffect(() => {
     npcsRef.current = npcs;
     buildingsRef.current = buildings;
     monstersRef.current = monsters;
+    lootDropsRef.current = lootDrops;
     hoveredPositionRef.current = hoveredPosition;
     selectedBuildingTypeRef.current = selectedBuildingType;
     debugModeRef.current = debugMode;
     enablePlayerMovementRef.current = enablePlayerMovement;
     // canInteract and closestInteractable updated in separate useEffect below
-  }, [npcs, buildings, monsters, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+  }, [npcs, buildings, monsters, lootDrops, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
 
   // Monster AI system
   const monsterAIRef = useRef(null);
@@ -288,6 +306,26 @@ function GameViewport({
   if (monsterAIRef.current === null) {
     monsterAIRef.current = new MonsterAI();
   }
+
+  // Spawn system - Initialize once
+  const spawnManagerRef = useRef(null);
+  const zonesPopulated = useRef(false);
+  if (spawnManagerRef.current === null) {
+    spawnManagerRef.current = new SpawnManager();
+  }
+
+  // Populate spawn zones once on startup
+  useEffect(() => {
+    if (spawnManagerRef.current && !zonesPopulated.current) {
+      const initialMonsters = spawnManagerRef.current.populateAllZones();
+      if (initialMonsters.length > 0) {
+        initialMonsters.forEach(monster => {
+          useGameStore.getState().spawnMonster(monster);
+        });
+        zonesPopulated.current = true;
+      }
+    }
+  }, []);
 
   // Terrain system - Initialize once
   const terrainSystemRef = useRef(null);
@@ -302,6 +340,53 @@ function GameViewport({
     });
     // eslint-disable-next-line no-console
     console.log('Terrain system initialized:', terrainSystemRef.current);
+  }
+
+  // Phase 3A: Prop harvesting system - Initialize once
+  const propHarvestingSystemRef = useRef(null);
+  const floatingTextManagerRef = useRef(null);
+  if (propHarvestingSystemRef.current === null && terrainSystemRef.current) {
+    const propManager = terrainSystemRef.current.propManager;
+    propHarvestingSystemRef.current = new PropHarvestingSystem(propManager, {
+      baseHarvestTime: 2000, // 2 seconds default
+      harvestRange: 2, // tiles
+      autoLootResources: true,
+      showFloatingText: true,
+    });
+
+    floatingTextManagerRef.current = new FloatingTextManager();
+
+    // Set callbacks for harvesting events
+    propHarvestingSystemRef.current.setCallbacks({
+      onHarvestComplete: (propId, prop, resources) => {
+        // Add resources to inventory
+        resources.forEach(resource => {
+          useGameStore.getState().addMaterial(resource.type, resource.amount);
+
+          // Add floating text
+          floatingTextManagerRef.current.addResourceGain(
+            prop.x,
+            prop.z,
+            resource.type,
+            resource.amount
+          );
+        });
+
+        // eslint-disable-next-line no-console
+        console.log(`✅ Harvested ${prop.type || prop.variant}:`, resources);
+      },
+      onHarvestStart: (propId, prop, duration) => {
+        // eslint-disable-next-line no-console
+        console.log(`🔨 Started harvesting ${prop.type || prop.variant} (${duration}ms)`);
+      },
+      onHarvestCancel: (propId, prop) => {
+        // eslint-disable-next-line no-console
+        console.log(`❌ Cancelled harvesting ${prop.type || prop.variant}`);
+      },
+    });
+
+    // eslint-disable-next-line no-console
+    console.log('Prop harvesting system initialized');
   }
 
   // Terrain job queue - Initialize once
@@ -321,6 +406,7 @@ function GameViewport({
       // Expose playerEntity for debug commands (needed for teleportPlayer)
       if (typeof window !== 'undefined') {
         window.playerEntity = playerRef.current;
+        window.spawnManager = spawnManagerRef.current;
       }
 
       playerRendererRef.current = new PlayerRenderer({
@@ -375,6 +461,7 @@ function GameViewport({
   });
 
   // Terrain Renderer integration
+  // eslint-disable-next-line no-unused-vars -- renderWater and renderRivers replaced by Phase 3B water renderer
   const { renderTerrain, renderWater, renderRivers, renderChunkBorders } = useTerrainRenderer({
     tileSize: TILE_SIZE,
     showHeightNumbers: false,
@@ -383,11 +470,70 @@ function GameViewport({
     colorMode: 'biome'  // Use biome-based coloring (Phase 2)
   });
 
+  // Loot Drop Renderer integration (Phase 2)
+  const { renderLootDrops } = useLootDropRenderer({
+    tileSize: TILE_SIZE,
+    showPickupRadius: debugMode,
+    enableAnimation: true,
+    debugMode: debugMode
+  });
+
   // Terrain Job Renderer integration
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
 
+  // Prop Renderer integration (Phase 3 & 3A)
+  // eslint-disable-next-line no-unused-vars
+  const { renderProps, renderPropHighlight, renderHarvestProgress, renderFloatingText, renderDebugInfo } = usePropRenderer({
+    tileSize: TILE_SIZE,
+    enableLOD: true,
+    enableBatching: true,
+    showPropHealth: debugMode // Show health bars in debug mode
+  });
+
+  // Structure Renderer integration (Phase 3D)
+  // eslint-disable-next-line no-unused-vars
+  const { renderStructures, renderStructureHighlight, renderStructureEntrance, renderStructureLabel, renderLootSpawns, renderNPCSpawns } = useStructureRenderer({
+    tileSize: TILE_SIZE,
+    showBorders: true,
+    showDiscoveryOverlay: true
+  });
+
+  // Water Renderer integration (Phase 3B)
+  // eslint-disable-next-line no-unused-vars -- renderWaterSurface reserved for future water surface effects
+  const { renderWaterBodies, renderRivers: renderRiversPhase3B, renderReflections, renderWaterSurface } = useWaterRenderer({
+    tileSize: TILE_SIZE,
+    showReflections: true,
+    showRipples: true,
+    showShore: true,
+    animationSpeed: 1.0
+  });
+
+  // Biome Transition Renderer integration (Phase 3C)
+  // eslint-disable-next-line no-unused-vars -- Biome transition features reserved for future enhancement
+  const { blendBiomeColors, renderTransitionOverlay, renderTransitionDebug, getTransitionStrength, getTransitionParticles } = useBiomeTransitionRenderer({
+    showTransitionOverlay: false,
+    transitionThreshold: 0.7,
+    overlayOpacity: 0.15
+  });
+
   // Player movement controller
   usePlayerMovement(playerRef.current, enablePlayerMovement);
+
+  // Get nearby props for interaction (Phase 3A)
+  const nearbyProps = React.useMemo(() => {
+    if (!terrainSystemRef.current || !playerRef.current) return [];
+
+    const player = playerRef.current;
+    const interactionRange = 3; // tiles
+
+    return terrainSystemRef.current.getPropsInRegion(
+      player.x - interactionRange,
+      player.z - interactionRange,
+      interactionRange * 2,
+      interactionRange * 2
+    ).filter(prop => prop.harvestable);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerRef.current?.x, playerRef.current?.z]);
 
   // Player interaction system
   const { closestInteractable, canInteract } = usePlayerInteraction(
@@ -397,6 +543,7 @@ function GameViewport({
       npcs,
       resources: [], // TODO: Add resources when implemented
       chests: buildings.filter(b => b.type === 'CHEST'), // Chests are buildings
+      props: nearbyProps, // Phase 3A: Harvestable props
       onBuildingInteract: onBuildingClick,
       onNPCInteract: (npc) => {
         // TODO: Open NPC dialog/interaction panel
@@ -412,6 +559,24 @@ function GameViewport({
         // TODO: Open chest inventory panel
         // eslint-disable-next-line no-console
         if (debugMode) console.log('Opening chest:', chest);
+      },
+      onPropInteract: (prop) => {
+        // Phase 3A: Start harvesting prop
+        if (propHarvestingSystemRef.current && prop.id) {
+          const isHarvesting = propHarvestingSystemRef.current.isHarvesting(prop.id);
+
+          if (isHarvesting) {
+            // Cancel if already harvesting
+            propHarvestingSystemRef.current.cancelHarvest(prop.id);
+          } else {
+            // Start harvesting
+            propHarvestingSystemRef.current.startHarvest(
+              prop.id,
+              prop,
+              playerRef.current
+            );
+          }
+        }
       },
       enabled: enablePlayerMovement,
     }
@@ -694,23 +859,166 @@ function GameViewport({
       try {
         const terrainManager = terrainSystemRef.current.getTerrainManager();
         const worldGenerator = terrainSystemRef.current.getWorldGenerator();
-        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator);
+        const seasonalSystem = terrainSystemRef.current.getSeasonalSystem(); // Phase 3C
+        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator, seasonalSystem);
 
-        // Render water on top of terrain (Phase 2: Water System)
-        renderWater(ctx, terrainManager, worldToCanvas, viewportBounds);
+        // Phase 3B: Render water bodies (lakes, ponds, pools, hot springs)
+        const waterBodies = terrainSystemRef.current.getWaterBodiesInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
 
-        // Render rivers on top of water (Phase 3: River Rendering)
-        const rivers = worldGenerator.generateRivers(
+        if (waterBodies.length > 0) {
+          const currentTime = performance.now();
+          renderWaterBodies(ctx, waterBodies, worldToCanvas, currentTime);
+          renderReflections(ctx, waterBodies, worldToCanvas);
+        }
+
+        // Phase 3B: Generate and render rivers
+        terrainSystemRef.current.generateRiversForArea(
           viewportBounds.left - 50,
           viewportBounds.top - 50,
           viewportBounds.right - viewportBounds.left + 100,
-          viewportBounds.bottom - viewportBounds.top + 100,
-          5  // Generate 5 rivers in visible area
+          viewportBounds.bottom - viewportBounds.top + 100
         );
-        renderRivers(ctx, rivers, worldToCanvas, viewportBounds);
+
+        const visibleRivers = terrainSystemRef.current.getRiversInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        if (visibleRivers.length > 0) {
+          const currentTime = performance.now();
+          renderRiversPhase3B(ctx, visibleRivers, worldToCanvas, currentTime);
+        }
       } catch (e) {
         // Log terrain rendering errors for debugging
         console.error('Terrain rendering error:', e);
+      }
+    }
+
+    // Phase 3D: Render structures (AFTER terrain, BEFORE props)
+    if (terrainSystemRef.current) {
+      try {
+        // Get visible structures in viewport
+        const visibleStructures = terrainSystemRef.current.getStructuresInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        // Render structures
+        const structureStats = renderStructures(ctx, visibleStructures, worldToCanvas, viewportBounds);
+
+        // Render structure entrances in debug mode
+        if (debugModeRef.current) {
+          visibleStructures.forEach(structure => {
+            renderStructureEntrance(ctx, structure, worldToCanvas);
+            renderStructureLabel(ctx, structure, worldToCanvas);
+            renderLootSpawns(ctx, structure, worldToCanvas);
+            renderNPCSpawns(ctx, structure, worldToCanvas);
+          });
+        }
+
+        // Store structure metrics
+        perfRef.current.currentMetrics.visibleStructures = structureStats.structuresRendered;
+        perfRef.current.currentMetrics.totalStructures = visibleStructures.length;
+      } catch (e) {
+        console.error('Structure rendering error:', e);
+      }
+    }
+
+    // Phase 3: Render props (AFTER structures, BEFORE buildings for correct layering)
+    let visibleProps = [];
+    if (terrainSystemRef.current) {
+      try {
+        // Get visible props in viewport
+        visibleProps = terrainSystemRef.current.getPropsInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        // Render props with LOD and batching
+        const propStats = renderProps(
+          ctx,
+          visibleProps,
+          worldToCanvas,
+          { x: -offset.x, z: -offset.y }, // camera position
+          viewportBounds
+        );
+
+        // Store prop metrics
+        perfRef.current.currentMetrics.visibleProps = propStats.propsRendered;
+        perfRef.current.currentMetrics.totalProps = propStats.totalProps;
+      } catch (e) {
+        console.error('Prop rendering error:', e);
+      }
+    }
+
+    // Phase 3C: Render micro-biome visual indicators (in debug mode)
+    if (debugModeRef.current && terrainSystemRef.current) {
+      try {
+        const microBiomes = terrainSystemRef.current.getMicroBiomesInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        for (const microBiome of microBiomes) {
+          const centerPos = worldToCanvas(microBiome.position.x, microBiome.position.z);
+
+          ctx.save();
+
+          // Draw circle overlay
+          ctx.strokeStyle = 'rgba(255, 200, 0, 0.6)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(centerPos.x, centerPos.y, microBiome.radius * TILE_SIZE, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Draw label
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.font = 'bold 12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(microBiome.definition.name, centerPos.x, centerPos.y - 5);
+
+          ctx.restore();
+        }
+      } catch (e) {
+        // Silently fail micro-biome rendering
+      }
+    }
+
+    // Phase 3A: Render prop highlights for nearby harvestable props
+    if (propHarvestingSystemRef.current && closestInteractableRef.current) {
+      try {
+        const interactable = closestInteractableRef.current;
+        // Highlight if it's a prop interaction
+        if (interactable.type === 'PROP' && interactable.object) {
+          renderPropHighlight(ctx, interactable.object, worldToCanvas, 'rgba(50, 255, 50, 0.5)');
+        }
+      } catch (e) {
+        // Silently handle highlight errors
+      }
+    }
+
+    // Phase 3A: Render harvest progress bars for props being harvested
+    if (propHarvestingSystemRef.current) {
+      try {
+        const activeHarvests = propHarvestingSystemRef.current.getActiveHarvests();
+        activeHarvests.forEach(harvest => {
+          renderHarvestProgress(ctx, harvest.prop, harvest.progress, worldToCanvas);
+        });
+      } catch (e) {
+        // Silently handle progress bar errors
       }
     }
 
@@ -722,6 +1030,12 @@ function GameViewport({
 
     // Render monsters using MonsterRenderer (already filtered)
     monsterRenderer.renderMonsters(ctx, visibleMonsters, worldToCanvas);
+
+    // Render loot drops (Phase 2: Loot System)
+    if (lootDropsRef.current && lootDropsRef.current.length > 0) {
+      const currentTime = performance.now();
+      renderLootDrops(ctx, lootDropsRef.current, worldToCanvas, currentTime);
+    }
 
     // Store metrics in ref (don't trigger state update every frame)
     perfRef.current.currentMetrics = {
@@ -736,6 +1050,26 @@ function GameViewport({
     // Render player (use ref!)
     if (enablePlayerMovementRef.current && playerRef.current && playerRendererRef.current) {
       playerRendererRef.current.renderPlayer(ctx, playerRef.current, worldToCanvas);
+    }
+
+    // Phase 3A: Render floating text (resource gains, etc.)
+    if (floatingTextManagerRef.current) {
+      try {
+        const activeTexts = floatingTextManagerRef.current.getActiveTexts();
+        activeTexts.forEach(text => {
+          renderFloatingText(
+            ctx,
+            text.x + text.offsetX,
+            text.z + text.offsetZ,
+            text.text,
+            worldToCanvas,
+            text.lifetime,
+            text.color
+          );
+        });
+      } catch (e) {
+        // Silently handle floating text errors
+      }
     }
 
     // WF4: Render pathfinding visualization in debug mode (use ref!)
@@ -805,6 +1139,52 @@ function GameViewport({
         const stats = jobQueueRef.current.getStatistics();
         renderJobStatistics(ctx, stats);
       }
+
+      // Phase 3C: Weather effects (particles, overlays, lightning)
+      if (terrainSystemRef.current) {
+        try {
+          const weatherSystem = terrainSystemRef.current.getWeatherSystem();
+
+          if (weatherSystem) {
+            // Get weather overlay color
+            const overlayColor = weatherSystem.getOverlayColor();
+            if (overlayColor) {
+              ctx.fillStyle = overlayColor;
+              ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+
+            // Render weather particles
+            const particles = weatherSystem.getParticles();
+            const weatherEffects = weatherSystem.getWeatherEffects();
+
+            if (particles && particles.length > 0 && weatherEffects) {
+              ctx.save();
+              ctx.fillStyle = weatherEffects.particleColor || 'rgba(255, 255, 255, 0.8)';
+
+              particles.forEach(p => {
+                // Simple circle for each particle
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, weatherEffects.particleSize || 2, 0, Math.PI * 2);
+                ctx.fill();
+              });
+
+              ctx.restore();
+            }
+
+            // Lightning flash overlay
+            const lightningIntensity = weatherSystem.getLightningIntensity();
+            if (lightningIntensity > 0) {
+              ctx.save();
+              ctx.globalAlpha = lightningIntensity * 0.5;
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+              ctx.restore();
+            }
+          }
+        } catch (e) {
+          // Silently fail weather rendering
+        }
+      }
     } catch (error) {
       // Don't update state in render loop - causes severe FPS drops!
       // Just draw error message on canvas
@@ -820,7 +1200,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
 
   /**
    * Terrain tool handlers
@@ -1175,12 +1555,15 @@ function GameViewport({
           return;
         }
         // Update terrain chunk loading based on camera position
+        // Phase 3C: Pass deltaTime for weather/season updates
         if (terrainSystemRef.current && getOffset) {
           const offset = getOffset() || { x: 0, y: 0 };
           // Camera position in world pixels (inverse of offset)
           const cameraX = -offset.x;
           const cameraZ = -offset.y;
-          terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT);
+          // Store camera position for MiniMap
+          cameraPositionRef.current = { x: cameraX, z: cameraZ };
+          terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT, deltaTime * 1000);
         }
 
         // Update NPC positions before rendering (use ref to avoid loop recreation)
@@ -1236,8 +1619,38 @@ function GameViewport({
           });
         }
 
-        // Draw viewport with safe error handling
-        drawViewport(ctx);
+          // Update loot drops - check for pickup
+          if (playerRef.current) {
+            useGameStore.getState().updateLootDrops({
+              x: playerRef.current.x,
+              z: playerRef.current.z
+            });
+          }
+
+          // Update spawn system - spawn new monsters as needed
+          if (spawnManagerRef.current && monstersRef.current) {
+            const newMonsters = spawnManagerRef.current.update(monstersRef.current, deltaTime * 1000); // Convert back to ms
+            if (newMonsters.length > 0) {
+              // Add new monsters to the game
+              newMonsters.forEach(monster => {
+                useGameStore.getState().spawnMonster(monster);
+              });
+              monstersRef.current.push(...newMonsters);
+            }
+          }
+
+          // Phase 3A: Update prop harvesting system
+          if (propHarvestingSystemRef.current) {
+            propHarvestingSystemRef.current.update();
+          }
+
+          // Phase 3A: Update floating text animations
+          if (floatingTextManagerRef.current) {
+            floatingTextManagerRef.current.update();
+          }
+
+          // Draw viewport with safe error handling
+          drawViewport(ctx);
 
         // Track performance metrics
         const frameEndTime = performance.now();
@@ -1407,11 +1820,32 @@ function GameViewport({
         </div>
       )}
 
-      {/* Performance metrics overlay - shown only when enabled */}
+      {/* Mini-map (Phase 3 Integration) */}
+      {enablePlayerMovement && terrainSystemRef.current && (
+        <MiniMap
+          terrainSystem={terrainSystemRef.current}
+          cameraX={cameraPositionRef.current.x}
+          cameraZ={cameraPositionRef.current.z}
+          size={200}
+          zoom={0.5}
+        />
+      )}
+
+      {/* Weather/Season Indicator (Phase 3 Integration) */}
+      {enablePlayerMovement && terrainSystemRef.current && (
+        <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
+      )}
+
+      {/* Phase 3 Debug Panel (Phase 3 Integration) */}
+      {enablePlayerMovement && terrainSystemRef.current && (
+        <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
+      )}
+
+      {/* Performance metrics overlay - shown only when enabled (Mobile optimization) */}
       {showPerformanceMonitor && (
         <div className="performance-overlay" style={{
           position: 'fixed',
-          top: '10px',
+          top: '230px', // Moved down to avoid overlap with mini-map
           right: '10px',
           background: 'rgba(0, 0, 0, 0.85)',
           color: '#00ff00',

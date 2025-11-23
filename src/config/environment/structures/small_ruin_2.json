@@ -1,0 +1,28 @@
+{
+  "id": "small_ruin_2",
+  "name": "Collapsed Corner",
+  "type": "ruin",
+  "width": 2,
+  "height": 2,
+  "biomes": ["plains", "forest", "mountains"],
+  "rarity": 0.7,
+  "requiresDryLand": true,
+  "maxHeightVariation": 3,
+  "tiles": [
+    { "type": "rubble", "blocking": false },
+    { "type": "stone_wall", "blocking": true },
+
+    { "type": "stone_wall", "blocking": true },
+    { "type": "stone_floor", "blocking": false }
+  ],
+  "lootSpawns": [
+    {
+      "x": 1,
+      "z": 1,
+      "lootTable": "ruins_common",
+      "chance": 0.5
+    }
+  ],
+  "npcSpawns": [],
+  "description": "Tiny collapsed ruin with minimal remains."
+}

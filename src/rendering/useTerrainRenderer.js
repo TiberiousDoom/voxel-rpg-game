@@ -42,16 +42,22 @@ const RiverColor = 'rgba(64, 164, 223, 0.85)';  // Bright flowing water blue
 const RiverWidth = 2;  // Pixels wider than standard tile for visibility
 
 /**
- * Get terrain tile color based on biome
+ * Get terrain tile color based on biome with optional seasonal modifiers (Phase 3C)
  *
  * @param {string} biome - Biome type
  * @param {number} height - Height value for shading variation
  * @param {number} minHeight - Minimum height (default: 0)
  * @param {number} maxHeight - Maximum height (default: 10)
+ * @param {object} seasonalSystem - Optional seasonal system for color modifiers
  * @returns {string} RGB color string
  */
-const getBiomeColor = (biome, height, minHeight = 0, maxHeight = 10) => {
-  const baseColor = BiomeColors[biome] || BiomeColors.plains;
+const getBiomeColor = (biome, height, minHeight = 0, maxHeight = 10, seasonalSystem = null) => {
+  let baseColor = BiomeColors[biome] || BiomeColors.plains;
+
+  // Phase 3C: Apply seasonal color modifications
+  if (seasonalSystem) {
+    baseColor = seasonalSystem.applySeasonalColor(baseColor, biome);
+  }
 
   // Add height-based shading for depth (±15% brightness)
   const heightRatio = (height - minHeight) / (maxHeight - minHeight);
@@ -70,7 +76,7 @@ const getBiomeColor = (biome, height, minHeight = 0, maxHeight = 10) => {
 };
 
 /**
- * Blend biome colors at boundaries for smooth transitions (Phase 3)
+ * Blend biome colors at boundaries for smooth transitions (Phase 3/3C)
  *
  * @param {number} x - Tile X coordinate
  * @param {number} z - Tile Z coordinate
@@ -80,11 +86,12 @@ const getBiomeColor = (biome, height, minHeight = 0, maxHeight = 10) => {
  * @param {number} minHeight - Minimum height
  * @param {number} maxHeight - Maximum height
  * @param {number} blendRadius - Radius for blending (default: 2)
+ * @param {object} seasonalSystem - Optional seasonal system for color modifiers
  * @returns {string} Blended RGB color string
  */
-const getBlendedBiomeColor = (x, z, centerBiome, height, worldGenerator, minHeight = 0, maxHeight = 10, blendRadius = 2) => {
+const getBlendedBiomeColor = (x, z, centerBiome, height, worldGenerator, minHeight = 0, maxHeight = 10, blendRadius = 2, seasonalSystem = null) => {
   if (!worldGenerator) {
-    return getBiomeColor(centerBiome, height, minHeight, maxHeight);
+    return getBiomeColor(centerBiome, height, minHeight, maxHeight, seasonalSystem);
   }
 
   // Sample surrounding tiles (4-directional neighbors)
@@ -114,11 +121,11 @@ const getBlendedBiomeColor = (x, z, centerBiome, height, worldGenerator, minHeig
 
   // If no different biomes nearby, return regular color (no blending needed)
   if (neighborBiomes.length === 0) {
-    return getBiomeColor(centerBiome, height, minHeight, maxHeight);
+    return getBiomeColor(centerBiome, height, minHeight, maxHeight, seasonalSystem);
   }
 
   // Parse center biome color
-  const centerColor = getBiomeColor(centerBiome, height, minHeight, maxHeight);
+  const centerColor = getBiomeColor(centerBiome, height, minHeight, maxHeight, seasonalSystem);
   const centerMatch = centerColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
   if (!centerMatch) return centerColor;
 
@@ -129,7 +136,7 @@ const getBlendedBiomeColor = (x, z, centerBiome, height, worldGenerator, minHeig
 
   // Blend with neighbor biomes (closer neighbors have more influence)
   for (const { biome, distance } of neighborBiomes) {
-    const neighborColor = getBiomeColor(biome, height, minHeight, maxHeight);
+    const neighborColor = getBiomeColor(biome, height, minHeight, maxHeight, seasonalSystem);
     const neighborMatch = neighborColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (neighborMatch) {
       // Weight decreases with distance (1/distance)
@@ -220,9 +227,10 @@ export const useTerrainRenderer = (options = {}) => {
    * @param {function} worldToCanvas - World to canvas coordinate converter
    * @param {object} viewportBounds - Visible area {left, right, top, bottom}
    * @param {object} worldGenerator - World generator for biome data (optional)
+   * @param {object} seasonalSystem - Seasonal system for color modifiers (optional, Phase 3C)
    * @returns {number} Number of tiles rendered
    */
-  const renderTerrain = useCallback((ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator = null) => {
+  const renderTerrain = useCallback((ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator = null, seasonalSystem = null) => {
     if (!ctx || !terrainManager || !worldToCanvas) return 0;
 
     let tilesRendered = 0;
@@ -242,8 +250,8 @@ export const useTerrainRenderer = (options = {}) => {
           const height = terrainManager.getHeight(x, z);
           const biome = worldGenerator.getBiome(x, z);
 
-          // Get blended color at biome boundaries
-          const color = getBlendedBiomeColor(x, z, biome, height, worldGenerator, minHeight, maxHeight);
+          // Get blended color at biome boundaries (Phase 3C: with seasonal modifiers)
+          const color = getBlendedBiomeColor(x, z, biome, height, worldGenerator, minHeight, maxHeight, 2, seasonalSystem);
 
           const canvasPos = worldToCanvas(x, z);
 

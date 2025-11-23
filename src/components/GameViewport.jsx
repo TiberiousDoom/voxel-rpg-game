@@ -449,6 +449,7 @@ function GameViewport({
   });
 
   // Terrain Renderer integration
+  // eslint-disable-next-line no-unused-vars -- renderWater and renderRivers replaced by Phase 3B water renderer
   const { renderTerrain, renderWater, renderRivers, renderChunkBorders } = useTerrainRenderer({
     tileSize: TILE_SIZE,
     showHeightNumbers: false,
@@ -478,6 +479,7 @@ function GameViewport({
   });
 
   // Water Renderer integration (Phase 3B)
+  // eslint-disable-next-line no-unused-vars -- renderWaterSurface reserved for future water surface effects
   const { renderWaterBodies, renderRivers: renderRiversPhase3B, renderReflections, renderWaterSurface } = useWaterRenderer({
     tileSize: TILE_SIZE,
     showReflections: true,
@@ -487,6 +489,7 @@ function GameViewport({
   });
 
   // Biome Transition Renderer integration (Phase 3C)
+  // eslint-disable-next-line no-unused-vars -- Biome transition features reserved for future enhancement
   const { blendBiomeColors, renderTransitionOverlay, renderTransitionDebug, getTransitionStrength, getTransitionParticles } = useBiomeTransitionRenderer({
     showTransitionOverlay: false,
     transitionThreshold: 0.7,
@@ -1135,7 +1138,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections]);
 
   /**
    * Terrain tool handlers

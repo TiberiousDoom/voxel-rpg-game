@@ -11,7 +11,7 @@
  * - Gradient rendering at boundaries
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 /**
  * Interpolate between colors based on weights

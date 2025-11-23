@@ -390,6 +390,14 @@ export class SeasonalSystem {
   }
 
   /**
+   * Get current season
+   * @returns {string} Current season type
+   */
+  getCurrentSeason() {
+    return this.currentSeason;
+  }
+
+  /**
    * Get statistics
    */
   getStats() {

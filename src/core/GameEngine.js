@@ -61,6 +61,9 @@ class GameEngine {
     this.tickTimer = 0;
     this.autoSaveTimer = 0;
 
+    // Animation frame tracking (for proper cleanup)
+    this.animationFrameId = null;
+
     // Events
     this.eventListeners = new Map();
 
@@ -96,6 +99,13 @@ class GameEngine {
    */
   async stop() {
     this.isRunning = false;
+
+    // Cancel any pending animation frame to prevent memory leak
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+
     this.emit('game:stop');
   }
 
@@ -177,9 +187,10 @@ class GameEngine {
     }
 
     // Schedule next frame using requestAnimationFrame for better performance
+    // Store the ID so we can cancel it later (prevents memory leak)
     // Fallback to setTimeout if RAF not available
     if (typeof requestAnimationFrame !== 'undefined') {
-      requestAnimationFrame(() => this._gameLoop());
+      this.animationFrameId = requestAnimationFrame(() => this._gameLoop());
     } else {
       const frameTime = 1000 / this.config.targetFPS;
       const elapsed = performance.now() - now;

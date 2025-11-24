@@ -40,6 +40,7 @@ import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
 import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
 import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
 import UnifiedDebugMenu from './UnifiedDebugMenu.jsx'; // Unified Debug & Developer Menu
+import StructureExplorationUI from './StructureExplorationUI.jsx'; // Structure exploration notifications (Phase 3)
 import CollapsibleFloatingPanel from './CollapsibleFloatingPanel.jsx'; // Collapsible floating panels
 import './GameViewport.css';
 
@@ -1822,6 +1823,14 @@ function GameViewport({
           cameraX={cameraPositionRef.current.x}
           cameraZ={cameraPositionRef.current.z}
           size={200}
+        />
+      )}
+
+      {/* Structure Exploration UI (Phase 3) - Discovery notifications and nearby chests */}
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && playerRef.current && (
+        <StructureExplorationUI
+          terrainSystem={terrainSystemRef.current}
+          playerPosition={[playerRef.current.x, 0, playerRef.current.z]}
         />
       )}
 

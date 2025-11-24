@@ -70,6 +70,48 @@ class GameEngine {
     // Game state snapshots
     this.gameHistory = [];
     this.maxHistorySize = 100;
+
+    // Performance Profiler (Issue #28)
+    this.profiler = {
+      enabled: options.enableProfiling !== false,
+      samples: [],
+      maxSamples: 120, // 2 seconds at 60 FPS
+      systems: {
+        tick: { total: 0, count: 0, max: 0, min: Infinity },
+        npcMovement: { total: 0, count: 0, max: 0, min: Infinity },
+        terrainWorker: { total: 0, count: 0, max: 0, min: Infinity },
+        frameTotal: { total: 0, count: 0, max: 0, min: Infinity },
+      },
+      lastReport: 0,
+      reportInterval: 5000, // Report every 5 seconds
+    };
+  }
+
+  /**
+   * Profile a system's execution time
+   * @param {string} systemName - Name of the system being profiled
+   * @param {Function} fn - Function to execute and time
+   * @returns {*} Result of the function
+   * @private
+   */
+  _profileSystem(systemName, fn) {
+    if (!this.profiler.enabled) {
+      return fn();
+    }
+
+    const start = performance.now();
+    const result = fn();
+    const elapsed = performance.now() - start;
+
+    const stats = this.profiler.systems[systemName];
+    if (stats) {
+      stats.total += elapsed;
+      stats.count++;
+      stats.max = Math.max(stats.max, elapsed);
+      stats.min = Math.min(stats.min, elapsed);
+    }
+
+    return result;
   }
 
   /**
@@ -139,9 +181,9 @@ class GameEngine {
   _gameLoop() {
     if (!this.isRunning) return;
 
-    const now = performance.now(); // Use performance.now() for better precision
-    const deltaTime = now - this.lastFrameTime;
-    this.lastFrameTime = now;
+    const frameStart = performance.now();
+    const deltaTime = frameStart - this.lastFrameTime;
+    this.lastFrameTime = frameStart;
 
     // Skip frame if paused
     if (!this.isPaused) {
@@ -153,7 +195,7 @@ class GameEngine {
       const maxTicksPerFrame = 3;
 
       while (this.tickTimer >= this.config.gameTick && ticksThisFrame < maxTicksPerFrame) {
-        this._executeTick();
+        this._profileSystem('tick', () => this._executeTick());
         this.tickTimer -= this.config.gameTick;
         this.ticksElapsed++;
         ticksThisFrame++;
@@ -173,17 +215,31 @@ class GameEngine {
       // Phase 4: Update terrain worker behavior (60 FPS for smooth NPC movement)
       if (this.orchestrator.terrainWorkerBehavior) {
         const deltaTimeSeconds = deltaTime / 1000;
-        this.orchestrator.terrainWorkerBehavior.update(deltaTimeSeconds);
+        this._profileSystem('terrainWorker', () =>
+          this.orchestrator.terrainWorkerBehavior.update(deltaTimeSeconds)
+        );
       }
 
       // Update NPC movement (60 FPS for smooth movement)
       if (this.orchestrator.npcManager && this.orchestrator.npcManager.updateMovement) {
         const deltaTimeSeconds = deltaTime / 1000;
-        this.orchestrator.npcManager.updateMovement(deltaTimeSeconds);
+        this._profileSystem('npcMovement', () =>
+          this.orchestrator.npcManager.updateMovement(deltaTimeSeconds)
+        );
       }
 
       // Update frame metrics
       this._updateFrameMetrics(deltaTime);
+
+      // Profile total frame time
+      const frameTime = performance.now() - frameStart;
+      this._recordFrameSample(frameTime);
+
+      // Emit profiling report periodically
+      if (this.profiler.enabled && frameStart - this.profiler.lastReport > this.profiler.reportInterval) {
+        this.profiler.lastReport = frameStart;
+        this.emit('profiler:report', this.getProfilingStats());
+      }
     }
 
     // Schedule next frame using requestAnimationFrame for better performance
@@ -192,9 +248,9 @@ class GameEngine {
     if (typeof requestAnimationFrame !== 'undefined') {
       this.animationFrameId = requestAnimationFrame(() => this._gameLoop());
     } else {
-      const frameTime = 1000 / this.config.targetFPS;
-      const elapsed = performance.now() - now;
-      const delay = Math.max(0, frameTime - elapsed);
+      const targetFrameTime = 1000 / this.config.targetFPS;
+      const elapsed = performance.now() - frameStart;
+      const delay = Math.max(0, targetFrameTime - elapsed);
       setTimeout(() => this._gameLoop(), delay);
     }
   }
@@ -264,6 +320,89 @@ class GameEngine {
       const newest = this.frameTimestamps[this.frameTimestamps.length - 1];
       const elapsed = (newest - oldest) / 1000;
       this.fps = Math.round(60 / elapsed);
+    }
+  }
+
+  /**
+   * Record a frame time sample for profiling
+   * @param {number} frameTime - Frame execution time in ms
+   * @private
+   */
+  _recordFrameSample(frameTime) {
+    if (!this.profiler.enabled) return;
+
+    this.profiler.samples.push(frameTime);
+    if (this.profiler.samples.length > this.profiler.maxSamples) {
+      this.profiler.samples.shift();
+    }
+
+    // Update frame total stats
+    const stats = this.profiler.systems.frameTotal;
+    stats.total += frameTime;
+    stats.count++;
+    stats.max = Math.max(stats.max, frameTime);
+    stats.min = Math.min(stats.min, frameTime);
+  }
+
+  /**
+   * Get profiling statistics
+   * @returns {Object} Profiling data for all systems
+   */
+  getProfilingStats() {
+    const result = {
+      fps: this.fps,
+      frameTime: this.frameTime,
+      systems: {},
+      samples: this.profiler.samples.slice(-60), // Last 60 samples
+      warnings: [],
+    };
+
+    // Calculate stats for each system
+    for (const [name, stats] of Object.entries(this.profiler.systems)) {
+      if (stats.count > 0) {
+        const avg = stats.total / stats.count;
+        result.systems[name] = {
+          avg: avg.toFixed(2),
+          max: stats.max.toFixed(2),
+          min: stats.min === Infinity ? '0.00' : stats.min.toFixed(2),
+          count: stats.count,
+          percentOfFrame: ((avg / 16.67) * 100).toFixed(1), // % of 60 FPS frame budget
+        };
+
+        // Warn if system is taking too long (>5ms)
+        if (avg > 5) {
+          result.warnings.push(`${name}: ${avg.toFixed(2)}ms avg (>5ms threshold)`);
+        }
+      }
+    }
+
+    // Check if we're hitting 60 FPS
+    result.targetMet = this.fps >= 55;
+
+    return result;
+  }
+
+  /**
+   * Reset profiling statistics
+   */
+  resetProfilingStats() {
+    for (const stats of Object.values(this.profiler.systems)) {
+      stats.total = 0;
+      stats.count = 0;
+      stats.max = 0;
+      stats.min = Infinity;
+    }
+    this.profiler.samples = [];
+  }
+
+  /**
+   * Enable or disable profiling
+   * @param {boolean} enabled - Whether to enable profiling
+   */
+  setProfilingEnabled(enabled) {
+    this.profiler.enabled = enabled;
+    if (!enabled) {
+      this.resetProfilingStats();
     }
   }
 

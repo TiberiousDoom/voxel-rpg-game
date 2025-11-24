@@ -19,6 +19,8 @@ const MobileHamburgerMenu = ({
   onOpenDefense,
   onOpenActions,
   onOpenDeveloper,
+  onOpenCrafting,
+  onOpenPlayerInventory,
   onSave,
   onLoad,
   // Settings toggles
@@ -143,7 +145,27 @@ const MobileHamburgerMenu = ({
               className="mobile-menu-section-header"
               onClick={() => handleMenuAction(onOpenInventory)}
             >
-              <span>📦 Inventory</span>
+              <span>📦 Settlement Inventory</span>
+            </button>
+          </div>
+
+          {/* Player Inventory */}
+          <div className="mobile-menu-section">
+            <button
+              className="mobile-menu-section-header"
+              onClick={() => handleMenuAction(onOpenPlayerInventory)}
+            >
+              <span>🎒 Player Inventory</span>
+            </button>
+          </div>
+
+          {/* Crafting */}
+          <div className="mobile-menu-section">
+            <button
+              className="mobile-menu-section-header"
+              onClick={() => handleMenuAction(onOpenCrafting)}
+            >
+              <span>🔨 Crafting</span>
             </button>
           </div>
 

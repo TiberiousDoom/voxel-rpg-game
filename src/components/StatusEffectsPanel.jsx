@@ -10,11 +10,15 @@
  * - Settlement health
  */
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { useGame } from '../context/GameContext';
 import './StatusEffectsPanel.css';
 
-function StatusEffectsPanel({ compact = false }) {
+/**
+ * StatusEffectsPanel - Memoized for performance
+ * Re-renders only when gameState changes
+ */
+const StatusEffectsPanel = memo(function StatusEffectsPanel({ compact = false }) {
   const { gameState } = useGame();
 
   // Get NPCs for calculations
@@ -33,81 +37,85 @@ function StatusEffectsPanel({ compact = false }) {
   // Get resources
   const resources = gameState.resources || {};
 
-  // Calculate effects
-  const effects = [];
+  // Calculate effects with useMemo for performance
+  const effects = useMemo(() => {
+    const effectsList = [];
 
-  // Veterans bonus
-  if (veterans > 0) {
-    effects.push({
-      id: 'veterans',
-      icon: '💪',
-      name: 'Veterans',
-      value: `+${veterans * 5}% production`,
-      type: 'positive',
-      description: `${veterans} veteran NPCs providing production bonus`
+    // Veterans bonus
+    if (veterans > 0) {
+      effectsList.push({
+        id: 'veterans',
+        icon: '💪',
+        name: 'Veterans',
+        value: `+${veterans * 5}% production`,
+        type: 'positive',
+        description: `${veterans} veteran NPCs providing production bonus`
+      });
+    }
+
+    // Combat level bonus
+    if (avgCombatLevel > 1) {
+      effectsList.push({
+        id: 'combat-level',
+        icon: '⚔️',
+        name: 'Combat Training',
+        value: `+${(avgCombatLevel * 0.5).toFixed(1)}% production`,
+        type: 'positive',
+        description: `Average combat level: ${avgCombatLevel.toFixed(1)}`
+      });
+    }
+
+    // High morale
+    if (morale >= 80) {
+      effectsList.push({
+        id: 'high-morale',
+        icon: '😊',
+        name: 'High Morale',
+        value: '+5% all',
+        type: 'positive',
+        description: `Morale at ${morale}% - NPCs are happy!`
+      });
+    }
+
+    // Low morale
+    if (morale < 40) {
+      effectsList.push({
+        id: 'low-morale',
+        icon: '😟',
+        name: 'Low Morale',
+        value: '-10% production',
+        type: 'negative',
+        description: `Morale at ${morale}% - NPCs are unhappy`
+      });
+    }
+
+    // Low food warning
+    if (resources.food < 100) {
+      effectsList.push({
+        id: 'low-food',
+        icon: '⚠️',
+        name: 'Low Food',
+        value: '-10% morale',
+        type: 'negative',
+        description: `Food running low (${Math.floor(resources.food)})`
+      });
+    }
+
+    // Settlement health
+    const healthPercent = (settlementHealth / maxSettlementHealth) * 100;
+    const healthStatus = healthPercent >= 80 ? 'positive' : healthPercent >= 50 ? 'neutral' : 'negative';
+    effectsList.push({
+      id: 'settlement-health',
+      icon: '🏰',
+      name: 'Settlement Health',
+      value: `${Math.floor(settlementHealth)}/${maxSettlementHealth}`,
+      type: healthStatus,
+      description: `Settlement structural integrity`,
+      progress: healthPercent
     });
-  }
 
-  // Combat level bonus
-  if (avgCombatLevel > 1) {
-    effects.push({
-      id: 'combat-level',
-      icon: '⚔️',
-      name: 'Combat Training',
-      value: `+${(avgCombatLevel * 0.5).toFixed(1)}% production`,
-      type: 'positive',
-      description: `Average combat level: ${avgCombatLevel.toFixed(1)}`
-    });
-  }
-
-  // High morale
-  if (morale >= 80) {
-    effects.push({
-      id: 'high-morale',
-      icon: '😊',
-      name: 'High Morale',
-      value: '+5% all',
-      type: 'positive',
-      description: `Morale at ${morale}% - NPCs are happy!`
-    });
-  }
-
-  // Low morale
-  if (morale < 40) {
-    effects.push({
-      id: 'low-morale',
-      icon: '😟',
-      name: 'Low Morale',
-      value: '-10% production',
-      type: 'negative',
-      description: `Morale at ${morale}% - NPCs are unhappy`
-    });
-  }
-
-  // Low food warning
-  if (resources.food < 100) {
-    effects.push({
-      id: 'low-food',
-      icon: '⚠️',
-      name: 'Low Food',
-      value: '-10% morale',
-      type: 'negative',
-      description: `Food running low (${Math.floor(resources.food)})`
-    });
-  }
-
-  // Settlement health
-  const healthPercent = (settlementHealth / maxSettlementHealth) * 100;
-  const healthStatus = healthPercent >= 80 ? 'positive' : healthPercent >= 50 ? 'neutral' : 'negative';
-  effects.push({
-    id: 'settlement-health',
-    icon: '🏰',
-    name: 'Settlement Health',
-    value: `${Math.floor(settlementHealth)}/${maxSettlementHealth}`,
-    type: healthStatus,
-    description: `Settlement structural integrity`,
-    progress: healthPercent
-  });
+    return effectsList;
+  }, [veterans, avgCombatLevel, morale, resources.food, settlementHealth, maxSettlementHealth]);
 
   if (compact) {
     // Compact view - show only count
@@ -168,6 +176,6 @@ function StatusEffectsPanel({ compact = false }) {
       </div>
     </div>
   );
-}
+});
 
 export default StatusEffectsPanel;

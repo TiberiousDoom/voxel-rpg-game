@@ -11,7 +11,7 @@
  * - Construction attribute cost reduction display
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import useGameStore from '../stores/useGameStore';
 import { BuildingIntegration } from '../utils/integrations/BuildingIntegration';
 import './BuildingCard.css';
@@ -25,7 +25,11 @@ const RESOURCE_ICONS = {
   iron: '⚒️'
 };
 
-function BuildingCard({
+/**
+ * BuildingCard - Memoized for performance in building lists
+ * Re-renders only when building data, selection state, or count changes
+ */
+const BuildingCard = memo(function BuildingCard({
   building,
   isSelected = false,
   isLocked = false,
@@ -259,6 +263,6 @@ function BuildingCard({
       )}
     </div>
   );
-}
+});
 
 export default BuildingCard;

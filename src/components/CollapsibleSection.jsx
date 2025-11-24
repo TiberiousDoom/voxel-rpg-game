@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import './CollapsibleSection.css';
 
 /**
- * CollapsibleSection Component
+ * CollapsibleSection Component - Memoized for performance
  * Reusable accordion-style section for sidebar panels
+ * Re-renders only when title, icon, badge, or children change
  *
  * @param {string} title - Section title
  * @param {string} icon - Optional emoji or icon
@@ -12,7 +13,7 @@ import './CollapsibleSection.css';
  * @param {boolean} defaultExpanded - Whether section starts expanded
  * @param {ReactNode} children - Section content
  */
-function CollapsibleSection({
+const CollapsibleSection = memo(function CollapsibleSection({
   title,
   icon,
   badge,
@@ -48,6 +49,6 @@ function CollapsibleSection({
       )}
     </div>
   );
-}
+});
 
 export default CollapsibleSection;

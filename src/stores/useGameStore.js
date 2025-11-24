@@ -677,6 +677,24 @@ const useGameStore = create((set, get) => ({
       };
     }),
 
+  // Respawn player after death
+  respawnPlayer: () =>
+    set((state) => ({
+      player: {
+        ...state.player,
+        health: state.player.maxHealth,
+        mana: state.player.maxMana,
+        stamina: state.player.maxStamina,
+        position: [0, 2, 0], // Respawn at starting position
+        velocity: [0, 0, 0],
+        targetPosition: null,
+        isInvincible: false,
+        isDodging: false,
+        isBlocking: false,
+      },
+      gameState: 'playing', // Resume game
+    })),
+
   reset: () =>
     set({
       gameState: 'intro',

@@ -23,6 +23,9 @@ import DeveloperTab from './tabs/DeveloperTab';
 import CharacterSystemUI from './ui/CharacterSystemUI';
 import MobileHamburgerMenu from './MobileHamburgerMenu';
 import ActiveSkillBar from './ui/ActiveSkillBar';
+import DeathScreen from './DeathScreen';
+import CraftingUI from './CraftingUI';
+import KeyboardShortcutHints from './KeyboardShortcutHints';
 import { activeSkillSystem } from '../modules/character/CharacterSystem';
 import './GameScreen.css';
 
@@ -33,13 +36,15 @@ import './GameScreen.css';
  */
 function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing, gameManager } = useGame();
-  const { enemies } = useGameStore(); // Get monsters from useGameStore
+  const { enemies, player } = useGameStore(); // Get monsters and player from useGameStore
+  const respawnPlayer = useGameStore((state) => state.respawnPlayer);
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
   const [savedSlots, setSavedSlots] = useState(new Set());
   const [toastMessage, setToastMessage] = useState(null);
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState([]);
+  const [showDeathScreen, setShowDeathScreen] = useState(false);
 
   // Detect mobile device
   const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
@@ -69,6 +74,8 @@ function GameScreen() {
   const [showDefenseModal, setShowDefenseModal] = useState(false);
   const [showActionsModal, setShowActionsModal] = useState(false);
   const [showDeveloperModal, setShowDeveloperModal] = useState(false);
+  const [showCraftingModal, setShowCraftingModal] = useState(false);
+  const [showPlayerInventoryModal, setShowPlayerInventoryModal] = useState(false);
 
   // Auto-start game
   useEffect(() => {
@@ -76,6 +83,19 @@ function GameScreen() {
       actions.startGame();
     }
   }, [isReady, gameState.isRunning, gameState.isPaused, actions]);
+
+  // Check for player death
+  useEffect(() => {
+    if (player && player.health <= 0 && !showDeathScreen) {
+      setShowDeathScreen(true);
+    }
+  }, [player, showDeathScreen]);
+
+  // Handle respawn
+  const handleRespawn = () => {
+    respawnPlayer();
+    setShowDeathScreen(false);
+  };
 
   // Check for existing saves
   useEffect(() => {
@@ -204,7 +224,9 @@ function GameScreen() {
       'expeditions': () => setShowExpeditionsModal(true),
       'defense': () => setShowDefenseModal(true),
       'actions': () => setShowActionsModal(true),
-      'developer': () => setShowDeveloperModal(true)
+      'developer': () => setShowDeveloperModal(true),
+      'crafting': () => setShowCraftingModal(true),
+      'player-inventory': () => setShowPlayerInventoryModal(true)
     };
 
     // Open corresponding modal
@@ -296,6 +318,8 @@ function GameScreen() {
           onOpenDefense={() => setShowDefenseModal(true)}
           onOpenActions={() => setShowActionsModal(true)}
           onOpenDeveloper={() => setShowDeveloperModal(true)}
+          onOpenCrafting={() => setShowCraftingModal(true)}
+          onOpenPlayerInventory={() => setShowPlayerInventoryModal(true)}
           onSave={handleSave}
           onLoad={handleLoad}
           showPerformance={showPerformanceMonitor}
@@ -570,12 +594,44 @@ function GameScreen() {
       {/* Active Skill Bar (Bottom HUD for active skills) - Hidden in clean mode */}
       {!cleanMode && <ActiveSkillBar />}
 
+      {/* Keyboard Shortcut Hints - Hidden on mobile and in clean mode */}
+      {!isMobile && !cleanMode && <KeyboardShortcutHints />}
+
       {/* Clean Mode Indicator */}
       {cleanMode && (
         <div className="clean-mode-indicator">
           Press <kbd>`</kbd> to exit Clean Mode
         </div>
       )}
+
+      {/* Death Screen - Highest priority overlay */}
+      {showDeathScreen && <DeathScreen onRespawn={handleRespawn} />}
+
+      {/* Crafting Modal */}
+      <ModalWrapper
+        isOpen={showCraftingModal}
+        onClose={() => setShowCraftingModal(false)}
+        title="Crafting"
+        icon="🔨"
+        maxWidth="1000px"
+      >
+        <CraftingUI />
+      </ModalWrapper>
+
+      {/* Player Inventory Modal */}
+      <ModalWrapper
+        isOpen={showPlayerInventoryModal}
+        onClose={() => setShowPlayerInventoryModal(false)}
+        title="Player Inventory"
+        icon="🎒"
+        maxWidth="900px"
+      >
+        <SettlementInventoryUI
+          gameManager={gameManager}
+          isOpen={true}
+          onClose={() => {}}
+        />
+      </ModalWrapper>
 
       {/* Toast */}
       {toastMessage && (

@@ -1,0 +1,122 @@
+/* KeyboardShortcutHints.css */
+
+.keyboard-hints {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(26, 26, 46, 0.95);
+  border: 2px solid #4dabf7;
+  border-radius: 12px;
+  padding: 12px;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  min-width: 280px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.keyboard-hints.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.keyboard-hints.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.keyboard-hints-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: rgba(26, 26, 46, 0.9);
+  border: 2px solid #4dabf7;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  font-size: 24px;
+  transition: all 0.2s ease;
+}
+
+.keyboard-hints-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+  background: rgba(77, 171, 247, 0.2);
+}
+
+.keyboard-hints-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(77, 171, 247, 0.3);
+}
+
+.keyboard-hints-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #4dabf7;
+  font-weight: bold;
+}
+
+.keyboard-hints-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  fontSize: 20px;
+  padding: 0 5px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.keyboard-hints-close:hover {
+  color: #ff4444;
+}
+
+.keyboard-hints-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #cbd5e0;
+}
+
+.shortcut-row kbd {
+  min-width: 32px;
+  padding: 4px 8px;
+  background: rgba(77, 171, 247, 0.2);
+  border: 1px solid #4dabf7;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #4dabf7;
+  text-align: center;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.shortcut-row span {
+  flex: 1;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .keyboard-hints,
+  .keyboard-hints-toggle {
+    display: none; /* Hide on mobile since they use hamburger menu */
+  }
+}

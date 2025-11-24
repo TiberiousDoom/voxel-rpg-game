@@ -4,6 +4,22 @@ import useGameStore from '../stores/useGameStore';
 import { ITEM_TYPES } from '../data/craftingRecipes';
 
 /**
+ * Material definitions - icons and display names for harvested materials
+ */
+const MATERIAL_INFO = {
+  wood: { icon: '🪵', name: 'Wood', color: '#8B4513' },
+  stone: { icon: '🪨', name: 'Stone', color: '#808080' },
+  iron: { icon: '⚙️', name: 'Iron', color: '#C0C0C0' },
+  leather: { icon: '🦴', name: 'Leather', color: '#D2691E' },
+  crystal: { icon: '💎', name: 'Crystal', color: '#4FC3F7' },
+  fiber: { icon: '🌾', name: 'Fiber', color: '#F0E68C' },
+  herb: { icon: '🌿', name: 'Herbs', color: '#90EE90' },
+  meat: { icon: '🍖', name: 'Meat', color: '#DC143C' },
+  berry: { icon: '🫐', name: 'Berries', color: '#9370DB' },
+  mushroom: { icon: '🍄', name: 'Mushrooms', color: '#FF6347' },
+};
+
+/**
  * InventoryUI component - Inventory and equipment management
  * Mobile-compatible with responsive layout
  */
@@ -11,7 +27,7 @@ const InventoryUI = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileView, setMobileView] = useState('equipment'); // 'equipment' | 'items' | 'details'
+  const [mobileView, setMobileView] = useState('equipment'); // 'equipment' | 'items' | 'materials' | 'details'
 
   const inventory = useGameStore((state) => state.inventory);
   const equipment = useGameStore((state) => state.equipment);
@@ -19,6 +35,9 @@ const InventoryUI = () => {
   const unequipItem = useGameStore((state) => state.unequipItem);
   const removeItem = useGameStore((state) => state.removeItem);
   const consumeItem = useGameStore((state) => state.consumeItem);
+
+  // Get harvested materials
+  const materials = inventory.materials || {};
 
   // Detect mobile device
   useEffect(() => {
@@ -89,7 +108,7 @@ const InventoryUI = () => {
     if (mobileView === 'details') {
       setMobileView('items');
       setSelectedItem(null);
-    } else if (mobileView === 'items') {
+    } else if (mobileView === 'items' || mobileView === 'materials') {
       setMobileView('equipment');
     }
   };
@@ -176,7 +195,12 @@ const InventoryUI = () => {
             )}
             <Package size={isMobile ? 24 : 32} color="#4dabf7" />
             <h2 style={{ margin: 0, color: '#4dabf7', fontSize: isMobile ? '1.3rem' : '2rem' }}>
-              {isMobile ? (mobileView === 'equipment' ? 'Equipment' : mobileView === 'items' ? 'Items' : 'Details') : 'Inventory'}
+              {isMobile ? (
+                mobileView === 'equipment' ? 'Equipment' :
+                mobileView === 'items' ? 'Items' :
+                mobileView === 'materials' ? 'Materials' :
+                'Details'
+              ) : 'Inventory'}
             </h2>
           </div>
           <button
@@ -213,25 +237,46 @@ const InventoryUI = () => {
           >
             <h3 style={{ color: '#fff', marginTop: 0, marginBottom: '15px', fontSize: isMobile ? '1.1rem' : '1rem' }}>Equipment</h3>
             {isMobile && (
-              <button
-                onClick={() => setMobileView('items')}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  marginBottom: '15px',
-                  background: 'linear-gradient(90deg, #4dabf7, #339af0)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  minHeight: '50px',
-                  touchAction: 'manipulation',
-                }}
-              >
-                View Items ({inventory.items.length})
-              </button>
+              <>
+                <button
+                  onClick={() => setMobileView('items')}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    marginBottom: '10px',
+                    background: 'linear-gradient(90deg, #4dabf7, #339af0)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    minHeight: '50px',
+                    touchAction: 'manipulation',
+                  }}
+                >
+                  View Items ({inventory.items.length})
+                </button>
+                <button
+                  onClick={() => setMobileView('materials')}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    marginBottom: '15px',
+                    background: 'linear-gradient(90deg, #8B4513, #A0522D)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    minHeight: '50px',
+                    touchAction: 'manipulation',
+                  }}
+                >
+                  View Materials ({Object.values(materials).reduce((sum, amt) => sum + amt, 0)})
+                </button>
+              </>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
               {equipmentSlots.map(({ slot, name, icon }) => {
@@ -412,6 +457,73 @@ const InventoryUI = () => {
                     )}
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+          )}
+
+          {/* Materials Panel (Phase 3A: Harvested Materials) */}
+          {(!isMobile || mobileView === 'materials') && (
+          <div
+            style={{
+              width: isMobile ? '100%' : '300px',
+              borderLeft: isMobile ? 'none' : '2px solid #4a5568',
+              padding: isMobile ? '15px' : '20px',
+              background: '#1a202c',
+              overflowY: 'auto',
+            }}
+          >
+            <h3 style={{ color: '#fff', marginTop: 0, marginBottom: '15px', fontSize: isMobile ? '1.1rem' : '1rem' }}>
+              Materials
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+              {Object.entries(materials).length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>
+                  No materials collected. Harvest trees, rocks, and other props to gather materials!
+                </div>
+              ) : (
+                Object.entries(materials)
+                  .filter(([_, amount]) => amount > 0) // Only show materials with quantity > 0
+                  .map(([materialType, amount]) => {
+                    const materialInfo = MATERIAL_INFO[materialType] || {
+                      icon: '📦',
+                      name: materialType.charAt(0).toUpperCase() + materialType.slice(1),
+                      color: '#4a5568'
+                    };
+
+                    return (
+                      <div
+                        key={materialType}
+                        style={{
+                          background: '#2d3748',
+                          border: `2px solid ${materialInfo.color}`,
+                          borderRadius: '8px',
+                          padding: isMobile ? '14px' : '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          minHeight: isMobile ? '70px' : '60px',
+                        }}
+                      >
+                        <span style={{ fontSize: isMobile ? '2rem' : '1.8rem' }}>{materialInfo.icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              color: materialInfo.color,
+                              fontWeight: 'bold',
+                              fontSize: isMobile ? '1.05rem' : '0.95rem',
+                              marginBottom: '2px',
+                            }}
+                          >
+                            {materialInfo.name}
+                          </div>
+                          <div style={{ color: '#a0aec0', fontSize: isMobile ? '0.9rem' : '0.85rem' }}>
+                            Quantity: <span style={{ color: '#51cf66', fontWeight: 'bold' }}>{amount}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
               )}
             </div>
           </div>

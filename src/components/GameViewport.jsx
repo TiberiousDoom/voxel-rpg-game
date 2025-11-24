@@ -17,8 +17,11 @@ import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
+import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
+import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
+import { useBiomeTransitionRenderer } from '../rendering/useBiomeTransitionRenderer.js'; // Biome transitions (Phase 3C)
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { SpawnManager } from '../systems/SpawnManager.js'; // Spawn system
@@ -34,6 +37,10 @@ import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
 import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
+import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
+import WeatherSeasonIndicator from './WeatherSeasonIndicator.jsx'; // Weather/Season Indicator (Phase 3 Integration)
+import Phase3DebugPanel from './Phase3DebugPanel.jsx'; // Debug Panel (Phase 3 Integration)
+import CollapsibleFloatingPanel from './CollapsibleFloatingPanel.jsx'; // Collapsible floating panels
 import './GameViewport.css';
 
 /**
@@ -206,6 +213,8 @@ function GameViewport({
   onBuildingClick = () => {},
   debugMode = false,
   enablePlayerMovement = true, // New prop to enable/disable player movement
+  showPerformanceMonitor = true, // Show/hide performance monitor
+  cleanMode = false, // Hide all UI panels for clean viewport
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
@@ -213,6 +222,7 @@ function GameViewport({
   const canvasRef = useRef(null);
   const lastHoverUpdateRef = useRef(0); // Throttle hover updates
   const lastUpdateTimeRef = useRef(Date.now()); // For delta time calculation
+  const cameraPositionRef = useRef({ x: 0, z: 0 }); // Camera position for MiniMap
 
   // Terrain job system state
   const [activeTool, setActiveTool] = useState(null); // 'flatten', 'raise', 'lower', 'smooth', or null
@@ -241,7 +251,7 @@ function GameViewport({
     totalBuildings: 0,
     visibleNPCs: 0,
     totalNPCs: 0,
-    isMobile: false,
+    isMobileDevice: false,
     canvasWidth: 0,
     canvasHeight: 0
   });
@@ -267,6 +277,7 @@ function GameViewport({
   const npcsRef = useRef(npcs);
   const buildingsRef = useRef(buildings);
   const monstersRef = useRef(monsters);
+  const lootDropsRef = useRef([]); // Loot drops from store
   const hoveredPositionRef = useRef(hoveredPosition);
   const selectedBuildingTypeRef = useRef(selectedBuildingType);
   const debugModeRef = useRef(debugMode);
@@ -274,17 +285,21 @@ function GameViewport({
   const canInteractRef = useRef(null); // Will be set below after usePlayerInteraction
   const closestInteractableRef = useRef(null); // Will be set below after usePlayerInteraction
 
+  // Subscribe to loot drops from store
+  const lootDrops = useGameStore((state) => state.lootDrops);
+
   // Update refs when props change (prevents useCallback recreation)
   useEffect(() => {
     npcsRef.current = npcs;
     buildingsRef.current = buildings;
     monstersRef.current = monsters;
+    lootDropsRef.current = lootDrops;
     hoveredPositionRef.current = hoveredPosition;
     selectedBuildingTypeRef.current = selectedBuildingType;
     debugModeRef.current = debugMode;
     enablePlayerMovementRef.current = enablePlayerMovement;
     // canInteract and closestInteractable updated in separate useEffect below
-  }, [npcs, buildings, monsters, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+  }, [npcs, buildings, monsters, lootDrops, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
 
   // Monster AI system
   const monsterAIRef = useRef(null);
@@ -408,7 +423,7 @@ function GameViewport({
   }
 
   // Detect if mobile for performance optimizations (cached - never changes during session)
-  const isMobile = React.useMemo(() =>
+  const isMobileDevice = React.useMemo(() =>
     /Android|iPhone|iPad/i.test(navigator.userAgent) ||
     window.innerWidth <= 768 ||
     ('ontouchstart' in window),
@@ -424,16 +439,16 @@ function GameViewport({
     tileSize: TILE_SIZE,
     showHealthBars: true,
     showProgressBars: true,
-    showShadows: !isMobile, // Disable shadows on mobile for performance
-    showOverlays: !isMobile // Disable texture overlays on mobile for performance
+    showShadows: !isMobileDevice, // Disable shadows on mobile for performance
+    showOverlays: !isMobileDevice // Disable texture overlays on mobile for performance
   });
 
   // WF4: NPC Renderer integration (optimized for mobile)
   const npcRenderer = useNPCRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: !isMobile, // Hide health bars on mobile
-    showRoleBadges: !isMobile, // Hide role badges on mobile
-    showStatusIndicators: !isMobile, // Hide status indicators on mobile
+    showHealthBars: !isMobileDevice, // Hide health bars on mobile
+    showRoleBadges: !isMobileDevice, // Hide role badges on mobile
+    showStatusIndicators: !isMobileDevice, // Hide status indicators on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
@@ -441,18 +456,27 @@ function GameViewport({
   // Monster Renderer integration
   const monsterRenderer = useMonsterRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: !isMobile, // Hide health bars on mobile
+    showHealthBars: !isMobileDevice, // Hide health bars on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
 
   // Terrain Renderer integration
+  // eslint-disable-next-line no-unused-vars -- renderWater and renderRivers replaced by Phase 3B water renderer
   const { renderTerrain, renderWater, renderRivers, renderChunkBorders } = useTerrainRenderer({
     tileSize: TILE_SIZE,
     showHeightNumbers: false,
     minHeight: 0,
     maxHeight: 10,
     colorMode: 'biome'  // Use biome-based coloring (Phase 2)
+  });
+
+  // Loot Drop Renderer integration (Phase 2)
+  const { renderLootDrops } = useLootDropRenderer({
+    tileSize: TILE_SIZE,
+    showPickupRadius: debugMode,
+    enableAnimation: true,
+    debugMode: debugMode
   });
 
   // Terrain Job Renderer integration
@@ -473,6 +497,24 @@ function GameViewport({
     tileSize: TILE_SIZE,
     showBorders: true,
     showDiscoveryOverlay: true
+  });
+
+  // Water Renderer integration (Phase 3B)
+  // eslint-disable-next-line no-unused-vars -- renderWaterSurface reserved for future water surface effects
+  const { renderWaterBodies, renderRivers: renderRiversPhase3B, renderReflections, renderWaterSurface } = useWaterRenderer({
+    tileSize: TILE_SIZE,
+    showReflections: true,
+    showRipples: true,
+    showShore: true,
+    animationSpeed: 1.0
+  });
+
+  // Biome Transition Renderer integration (Phase 3C)
+  // eslint-disable-next-line no-unused-vars -- Biome transition features reserved for future enhancement
+  const { blendBiomeColors, renderTransitionOverlay, renderTransitionDebug, getTransitionStrength, getTransitionParticles } = useBiomeTransitionRenderer({
+    showTransitionOverlay: false,
+    transitionThreshold: 0.7,
+    overlayOpacity: 0.15
   });
 
   // Player movement controller
@@ -743,7 +785,7 @@ function GameViewport({
     // Draw grid with camera offset (optimized for mobile)
     // isMobile is already cached above, use it directly!
 
-    if (!isMobile) {
+    if (!isMobileDevice) {
       // Full grid on desktop
       // OPTIMIZED: Batch all lines into single path for better performance
       ctx.save();
@@ -818,20 +860,42 @@ function GameViewport({
       try {
         const terrainManager = terrainSystemRef.current.getTerrainManager();
         const worldGenerator = terrainSystemRef.current.getWorldGenerator();
-        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator);
+        const seasonalSystem = terrainSystemRef.current.getSeasonalSystem(); // Phase 3C
+        renderTerrain(ctx, terrainManager, worldToCanvas, viewportBounds, worldGenerator, seasonalSystem);
 
-        // Render water on top of terrain (Phase 2: Water System)
-        renderWater(ctx, terrainManager, worldToCanvas, viewportBounds);
+        // Phase 3B: Render water bodies (lakes, ponds, pools, hot springs)
+        const waterBodies = terrainSystemRef.current.getWaterBodiesInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
 
-        // Render rivers on top of water (Phase 3: River Rendering)
-        const rivers = worldGenerator.generateRivers(
+        if (waterBodies.length > 0) {
+          const currentTime = performance.now();
+          renderWaterBodies(ctx, waterBodies, worldToCanvas, currentTime);
+          renderReflections(ctx, waterBodies, worldToCanvas);
+        }
+
+        // Phase 3B: Generate and render rivers
+        terrainSystemRef.current.generateRiversForArea(
           viewportBounds.left - 50,
           viewportBounds.top - 50,
           viewportBounds.right - viewportBounds.left + 100,
-          viewportBounds.bottom - viewportBounds.top + 100,
-          5  // Generate 5 rivers in visible area
+          viewportBounds.bottom - viewportBounds.top + 100
         );
-        renderRivers(ctx, rivers, worldToCanvas, viewportBounds);
+
+        const visibleRivers = terrainSystemRef.current.getRiversInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        if (visibleRivers.length > 0) {
+          const currentTime = performance.now();
+          renderRiversPhase3B(ctx, visibleRivers, worldToCanvas, currentTime);
+        }
       } catch (e) {
         // Log terrain rendering errors for debugging
         console.error('Terrain rendering error:', e);
@@ -899,6 +963,41 @@ function GameViewport({
       }
     }
 
+    // Phase 3C: Render micro-biome visual indicators (in debug mode)
+    if (debugModeRef.current && terrainSystemRef.current) {
+      try {
+        const microBiomes = terrainSystemRef.current.getMicroBiomesInRegion(
+          viewportBounds.left,
+          viewportBounds.top,
+          viewportBounds.right - viewportBounds.left,
+          viewportBounds.bottom - viewportBounds.top
+        );
+
+        for (const microBiome of microBiomes) {
+          const centerPos = worldToCanvas(microBiome.position.x, microBiome.position.z);
+
+          ctx.save();
+
+          // Draw circle overlay
+          ctx.strokeStyle = 'rgba(255, 200, 0, 0.6)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(centerPos.x, centerPos.y, microBiome.radius * TILE_SIZE, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Draw label
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.font = 'bold 12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(microBiome.definition.name, centerPos.x, centerPos.y - 5);
+
+          ctx.restore();
+        }
+      } catch (e) {
+        // Silently fail micro-biome rendering
+      }
+    }
+
     // Phase 3A: Render prop highlights for nearby harvestable props
     if (propHarvestingSystemRef.current && closestInteractableRef.current) {
       try {
@@ -932,6 +1031,12 @@ function GameViewport({
 
     // Render monsters using MonsterRenderer (already filtered)
     monsterRenderer.renderMonsters(ctx, visibleMonsters, worldToCanvas);
+
+    // Render loot drops (Phase 2: Loot System)
+    if (lootDropsRef.current && lootDropsRef.current.length > 0) {
+      const currentTime = performance.now();
+      renderLootDrops(ctx, lootDropsRef.current, worldToCanvas, currentTime);
+    }
 
     // Store metrics in ref (don't trigger state update every frame)
     perfRef.current.currentMetrics = {
@@ -1035,6 +1140,52 @@ function GameViewport({
         const stats = jobQueueRef.current.getStatistics();
         renderJobStatistics(ctx, stats);
       }
+
+      // Phase 3C: Weather effects (particles, overlays, lightning)
+      if (terrainSystemRef.current) {
+        try {
+          const weatherSystem = terrainSystemRef.current.getWeatherSystem();
+
+          if (weatherSystem) {
+            // Get weather overlay color
+            const overlayColor = weatherSystem.getOverlayColor();
+            if (overlayColor) {
+              ctx.fillStyle = overlayColor;
+              ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+
+            // Render weather particles
+            const particles = weatherSystem.getParticles();
+            const weatherEffects = weatherSystem.getWeatherEffects();
+
+            if (particles && particles.length > 0 && weatherEffects) {
+              ctx.save();
+              ctx.fillStyle = weatherEffects.particleColor || 'rgba(255, 255, 255, 0.8)';
+
+              particles.forEach(p => {
+                // Simple circle for each particle
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, weatherEffects.particleSize || 2, 0, Math.PI * 2);
+                ctx.fill();
+              });
+
+              ctx.restore();
+            }
+
+            // Lightning flash overlay
+            const lightningIntensity = weatherSystem.getLightningIntensity();
+            if (lightningIntensity > 0) {
+              ctx.save();
+              ctx.globalAlpha = lightningIntensity * 0.5;
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+              ctx.restore();
+            }
+          }
+        } catch (e) {
+          // Silently fail weather rendering
+        }
+      }
     } catch (error) {
       // Don't update state in render loop - causes severe FPS drops!
       // Just draw error message on canvas
@@ -1050,7 +1201,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderWater, renderRivers, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
 
   /**
    * Terrain tool handlers
@@ -1400,12 +1551,15 @@ function GameViewport({
           return;
         }
         // Update terrain chunk loading based on camera position
+        // Phase 3C: Pass deltaTime for weather/season updates
         if (terrainSystemRef.current && getOffset) {
           const offset = getOffset() || { x: 0, y: 0 };
           // Camera position in world pixels (inverse of offset)
           const cameraX = -offset.x;
           const cameraZ = -offset.y;
-          terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT);
+          // Store camera position for MiniMap
+          cameraPositionRef.current = { x: cameraX, z: cameraZ };
+          terrainSystemRef.current.update(cameraX, cameraZ, CANVAS_WIDTH, CANVAS_HEIGHT, deltaTime * 1000);
         }
 
         // Update NPC positions before rendering (use ref to avoid loop recreation)
@@ -1461,6 +1615,14 @@ function GameViewport({
           });
         }
 
+          // Update loot drops - check for pickup
+          if (playerRef.current) {
+            useGameStore.getState().updateLootDrops({
+              x: playerRef.current.x,
+              z: playerRef.current.z
+            });
+          }
+
           // Update spawn system - spawn new monsters as needed
           if (spawnManagerRef.current && monstersRef.current) {
             const newMonsters = spawnManagerRef.current.update(monstersRef.current, deltaTime * 1000); // Convert back to ms
@@ -1505,7 +1667,7 @@ function GameViewport({
           setPerfMetrics({
             fps,
             frameTime: avgFrameTime.toFixed(2),
-            isMobile,
+            isMobileDevice,
             canvasWidth: CANVAS_WIDTH,
             canvasHeight: CANVAS_HEIGHT,
             ...perfRef.current.currentMetrics
@@ -1576,9 +1738,14 @@ function GameViewport({
         onMouseLeave={handleCanvasMouseLeave}
       />
 
-      {/* Terrain Tools Panel */}
-      {!selectedBuildingType && (
-        <div style={{ position: 'fixed', left: '10px', bottom: '10px', zIndex: 1000 }}>
+      {/* Terrain Tools Panel - Collapsible, hidden in clean mode */}
+      {!selectedBuildingType && !cleanMode && !isMobileDevice && (
+        <CollapsibleFloatingPanel
+          title="Terrain Tools"
+          icon="⛏️"
+          defaultExpanded={false}
+          position="left: 10px; bottom: 10px"
+        >
           <TerrainToolsPanel
             activeTool={activeTool}
             priority={jobPriority}
@@ -1596,7 +1763,7 @@ function GameViewport({
                       ? JobTimeCalculator.formatTime(
                           timeCalculatorRef.current.estimateTime(activeTool, {
                             x: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).x, canvasToWorld(selectionEnd.x, selectionEnd.y).x),
-                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionEnd.y).z),
+                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionStart.y).z),
                             width: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).x - canvasToWorld(selectionStart.x, selectionStart.y).x) + 1,
                             depth: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).z - canvasToWorld(selectionStart.x, selectionStart.y).z) + 1
                           })
@@ -1606,7 +1773,7 @@ function GameViewport({
                 : null
             }
           />
-        </div>
+        </CollapsibleFloatingPanel>
       )}
 
       {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
@@ -1654,62 +1821,101 @@ function GameViewport({
         </div>
       )}
 
-      {/* Performance metrics overlay - always visible */}
-      <div className="performance-overlay" style={{
-        position: 'fixed',
-        top: '10px',
-        right: '10px',
-        background: 'rgba(0, 0, 0, 0.85)',
-        color: '#00ff00',
-        padding: '12px',
-        borderRadius: '8px',
-        fontSize: '12px',
-        fontFamily: 'monospace',
-        minWidth: '180px',
-        zIndex: 9999,
-        pointerEvents: 'none',
-        border: '2px solid rgba(0, 255, 0, 0.3)',
-      }}>
-        <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ffffff', borderBottom: '1px solid rgba(0, 255, 0, 0.3)', paddingBottom: '4px' }}>
-          ⚡ PERFORMANCE
+      {/* Mini-map (Phase 3 Integration) - Always visible, has close button */}
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobileDevice && (
+        <MiniMap
+          terrainSystem={terrainSystemRef.current}
+          cameraX={cameraPositionRef.current.x}
+          cameraZ={cameraPositionRef.current.z}
+          size={200}
+          zoom={0.5}
+        />
+      )}
+
+      {/* Weather/Season Indicator (Phase 3 Integration) - Collapsible, hidden in clean mode */}
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobileDevice && (
+        <CollapsibleFloatingPanel
+          title="Weather & Season"
+          icon="🌤️"
+          defaultExpanded={false}
+          position="top: 10px; left: 10px"
+        >
+          <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
+        </CollapsibleFloatingPanel>
+      )}
+
+      {/* Phase 3 Debug Panel (Phase 3 Integration) - Collapsible, hidden in clean mode, contextual (debug mode) */}
+      {enablePlayerMovement && terrainSystemRef.current && debugMode && !cleanMode && !isMobileDevice && (
+        <CollapsibleFloatingPanel
+          title="Debug Info"
+          icon="🐛"
+          defaultExpanded={false}
+          position="top: 10px; right: 250px"
+        >
+          <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
+        </CollapsibleFloatingPanel>
+      )}
+
+      {/* Performance metrics overlay - shown only when enabled, hidden in clean mode */}
+      {showPerformanceMonitor && !cleanMode && !isMobileDevice && (
+        <div className="performance-overlay" style={{
+          position: 'fixed',
+          top: '230px', // Moved down to avoid overlap with mini-map
+          right: '10px',
+          background: 'rgba(0, 0, 0, 0.85)',
+          color: '#00ff00',
+          padding: '12px',
+          borderRadius: '8px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          minWidth: '180px',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          border: '2px solid rgba(0, 255, 0, 0.3)',
+        }}>
+          <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ffffff', borderBottom: '1px solid rgba(0, 255, 0, 0.3)', paddingBottom: '4px' }}>
+            ⚡ PERFORMANCE
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
+            <div>FPS:</div>
+            <div style={{ color: perfMetrics.fps < 30 ? '#ff4444' : perfMetrics.fps < 45 ? '#ffaa00' : '#00ff00' }}>
+              {perfMetrics.fps || 0}
+            </div>
+
+            <div>Frame:</div>
+            <div style={{ color: perfMetrics.frameTime > 33 ? '#ff4444' : perfMetrics.frameTime > 22 ? '#ffaa00' : '#00ff00' }}>
+              {perfMetrics.frameTime || 0}ms
+            </div>
+
+            <div>Target:</div>
+            <div>{perfMetrics.isMobileDevice ? '45' : '60'} FPS</div>
+
+            <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
+              Entities:
+            </div>
+
+            <div>Buildings:</div>
+            <div>{perfMetrics.visibleBuildings}/{perfMetrics.totalBuildings}</div>
+
+            <div>NPCs:</div>
+            <div>{perfMetrics.visibleNPCs}/{perfMetrics.totalNPCs}</div>
+
+            <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
+              Canvas:
+            </div>
+
+            <div>Size:</div>
+            <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
+
+            <div>Device:</div>
+            <div>{perfMetrics.isMobileDevice ? 'Mobile' : 'Desktop'}</div>
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
-          <div>FPS:</div>
-          <div style={{ color: perfMetrics.fps < 30 ? '#ff4444' : perfMetrics.fps < 45 ? '#ffaa00' : '#00ff00' }}>
-            {perfMetrics.fps || 0}
-          </div>
+      )}
 
-          <div>Frame:</div>
-          <div style={{ color: perfMetrics.frameTime > 33 ? '#ff4444' : perfMetrics.frameTime > 22 ? '#ffaa00' : '#00ff00' }}>
-            {perfMetrics.frameTime || 0}ms
-          </div>
-
-          <div>Target:</div>
-          <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
-
-          <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
-            Entities:
-          </div>
-
-          <div>Buildings:</div>
-          <div>{perfMetrics.visibleBuildings}/{perfMetrics.totalBuildings}</div>
-
-          <div>NPCs:</div>
-          <div>{perfMetrics.visibleNPCs}/{perfMetrics.totalNPCs}</div>
-
-          <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
-            Canvas:
-          </div>
-
-          <div>Size:</div>
-          <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
-
-          <div>Device:</div>
-          <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
-        </div>
-      </div>
-
-      <div className="viewport-footer">
+      {/* Viewport footer - hidden on mobile (legend moved to hamburger menu) */}
+      {!isMobileDevice && (
+        <div className="viewport-footer">
         <p className="viewport-hint">
           {enablePlayerMovement ? (
             <>
@@ -1747,6 +1953,7 @@ function GameViewport({
           </ul>
         </div>
       </div>
+      )}
     </div>
   );
 }

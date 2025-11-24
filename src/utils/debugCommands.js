@@ -110,11 +110,10 @@ export function initDebugCommands() {
       // Set death time for fade animation
       useGameStore.getState().updateMonster(monster.id, { deathTime: Date.now() });
 
-      // Remove after 1 second
-      setTimeout(() => {
-        useGameStore.getState().removeMonster(monster.id);
-        console.log(`🗑️ Removed dead ${monster.type}`);
-      }, 1000);
+      // Create loot drops!
+      useGameStore.getState().handleMonsterDeath(monster);
+
+      // Remove after death animation (handled in store)
     }
 
     return true;

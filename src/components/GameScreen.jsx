@@ -21,6 +21,7 @@ import DefenseTab from './tabs/DefenseTab';
 import ActionsTab from './tabs/ActionsTab';
 import DeveloperTab from './tabs/DeveloperTab';
 import CharacterSystemUI from './ui/CharacterSystemUI';
+import MobileHamburgerMenu from './MobileHamburgerMenu';
 import ActiveSkillBar from './ui/ActiveSkillBar';
 import { activeSkillSystem } from '../modules/character/CharacterSystem';
 import './GameScreen.css';
@@ -28,6 +29,7 @@ import './GameScreen.css';
 /**
  * GameScreen Component - Redesigned compact layout
  * Cleaner, more efficient use of space with debug panel
+ * Mobile-optimized with hamburger menu
  */
 function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing, gameManager } = useGame();
@@ -38,7 +40,18 @@ function GameScreen() {
   const [savedSlots, setSavedSlots] = useState(new Set());
   const [toastMessage, setToastMessage] = useState(null);
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState([]);
-  const [showDebugPanel, setShowDebugPanel] = useState(true);
+
+  // Detect mobile device
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) ||
+                   window.innerWidth <= 768 ||
+                   ('ontouchstart' in window);
+
+  // Hide debug panels by default on mobile
+  const [showDebugPanel, setShowDebugPanel] = useState(!isMobile);
+  const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(!isMobile);
+
+  // Clean Mode - Hide all UI for distraction-free gameplay
+  const [cleanMode, setCleanMode] = useState(false);
 
   // Horizontal tab bar state
   const [activeTab, setActiveTab] = useState('resources');
@@ -123,6 +136,20 @@ function GameScreen() {
       }
     };
   }, [gameState.isPaused]);
+
+  // Clean Mode keyboard shortcut (` backtick key)
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      // Toggle clean mode with backtick key
+      if (event.key === '`') {
+        setCleanMode(prev => !prev);
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
 
   // Event handlers
   const handleAssignNPC = (npcId, buildingId) => {
@@ -244,50 +271,89 @@ function GameScreen() {
     );
   }
 
+  // Building legend for mobile menu
+  const buildingLegend = {
+    'FARM': '#90EE90',
+    'HOUSE': '#D2B48C',
+    'WAREHOUSE': '#A9A9A9',
+    'TOWN_CENTER': '#FFD700',
+    'WATCHTOWER': '#8B4513',
+    'CAMPFIRE': '#FF8C00'
+  };
+
   return (
     <div className="game-screen compact">
-      {/* Compact Header */}
-      <CompactHeader
-        gameState={gameState}
-        actions={actions}
-        selectedSlot={selectedSlot}
-        setSelectedSlot={setSelectedSlot}
-        savedSlots={savedSlots}
-        onSave={handleSave}
-        onLoad={handleLoad}
-        onToggleDebug={() => setShowDebugPanel(!showDebugPanel)}
-        showDebug={showDebugPanel}
-      />
+      {/* Mobile Hamburger Menu - Only shown on mobile */}
+      {isMobile && (
+        <MobileHamburgerMenu
+          onOpenResources={() => setShowResourcesModal(true)}
+          onOpenNPCs={() => setShowNPCsModal(true)}
+          onOpenBuild={() => setShowBuildModal(true)}
+          onOpenInventory={() => setShowInventory(true)}
+          onOpenStats={() => setShowStatsModal(true)}
+          onOpenAchievements={() => setShowAchievementsModal(true)}
+          onOpenExpeditions={() => setShowExpeditionsModal(true)}
+          onOpenDefense={() => setShowDefenseModal(true)}
+          onOpenActions={() => setShowActionsModal(true)}
+          onOpenDeveloper={() => setShowDeveloperModal(true)}
+          onSave={handleSave}
+          onLoad={handleLoad}
+          showPerformance={showPerformanceMonitor}
+          onTogglePerformance={() => setShowPerformanceMonitor(!showPerformanceMonitor)}
+          showDebug={showDebugPanel}
+          onToggleDebug={() => setShowDebugPanel(!showDebugPanel)}
+          buildingLegend={buildingLegend}
+        />
+      )}
 
-      {/* Horizontal Tab Navigation */}
-      <HorizontalTabBar
-        leftTabs={leftTabs}
-        rightTabs={rightTabs}
-        activeTab={activeTab}
-        onTabClick={handleTabClick}
-        leftCollapsed={leftCollapsed}
-        rightCollapsed={rightCollapsed}
-      />
+      {/* Compact Header - Hidden on mobile and in clean mode */}
+      {!isMobile && !cleanMode && (
+        <CompactHeader
+          gameState={gameState}
+          actions={actions}
+          selectedSlot={selectedSlot}
+          setSelectedSlot={setSelectedSlot}
+          savedSlots={savedSlots}
+          onSave={handleSave}
+          onLoad={handleLoad}
+          onToggleDebug={() => setShowDebugPanel(!showDebugPanel)}
+          showDebug={showDebugPanel}
+        />
+      )}
+
+      {/* Horizontal Tab Navigation - Hidden on mobile and in clean mode */}
+      {!isMobile && !cleanMode && (
+        <HorizontalTabBar
+          leftTabs={leftTabs}
+          rightTabs={rightTabs}
+          activeTab={activeTab}
+          onTabClick={handleTabClick}
+          leftCollapsed={leftCollapsed}
+          rightCollapsed={rightCollapsed}
+        />
+      )}
 
       {/* Main Layout - 3 Column */}
       <div className="compact-layout">
-        {/* Left Sidebar - Tabbed Navigation */}
-        <aside className="compact-sidebar left">
-          <LeftSidebar
-            resources={gameState.resources || {}}
-            npcs={gameState.npcs || []}
-            buildings={gameState.buildings || []}
-            onAssignNPC={handleAssignNPC}
-            onUnassignNPC={handleUnassignNPC}
-            onAutoAssign={handleAutoAssign}
-            activeTab={activeTab}
-            collapsed={leftCollapsed}
-            onCollapse={() => setLeftCollapsed(true)}
-          />
-        </aside>
+        {/* Left Sidebar - Hidden on mobile and in clean mode */}
+        {!isMobile && !cleanMode && (
+          <aside className="compact-sidebar left">
+            <LeftSidebar
+              resources={gameState.resources || {}}
+              npcs={gameState.npcs || []}
+              buildings={gameState.buildings || []}
+              onAssignNPC={handleAssignNPC}
+              onUnassignNPC={handleUnassignNPC}
+              onAutoAssign={handleAutoAssign}
+              activeTab={activeTab}
+              collapsed={leftCollapsed}
+              onCollapse={() => setLeftCollapsed(true)}
+            />
+          </aside>
+        )}
 
         {/* Center - Game Viewport */}
-        <main className="compact-viewport">
+        <main className={`compact-viewport ${isMobile ? 'mobile-fullscreen' : ''} ${cleanMode ? 'clean-mode-fullscreen' : ''}`}>
           {gameState.isPaused && (
             <div className="pause-overlay">
               <div className="pause-content">
@@ -312,7 +378,11 @@ function GameScreen() {
               }
             }}
             onBuildingClick={handleBuildingClick}
+            debugMode={showDebugPanel}
             enablePlayerMovement={true}
+            isMobile={isMobile}
+            showPerformanceMonitor={showPerformanceMonitor}
+            cleanMode={cleanMode}
           />
 
           {/* Selected Building Info */}
@@ -326,32 +396,34 @@ function GameScreen() {
           )}
         </main>
 
-        {/* Right Sidebar - Tabbed Navigation */}
-        <aside className="compact-sidebar right">
-          <RightSidebar
-            selectedBuildingType={selectedBuildingType}
-            onSelectBuilding={setSelectedBuildingType}
-            onSpawnNPC={() => actions.spawnNPC('WORKER')}
-            onAdvanceTier={() => {/* Advance tier - to be implemented */}}
-            onAutoAssignNPCs={handleAutoAssign}
-            currentTier={gameState.currentTier || 'SURVIVAL'}
-            buildingConfig={gameManager?.orchestrator?.buildingConfig}
-            placedBuildingCounts={{}}
-            activeTab={activeTab}
-            collapsed={rightCollapsed}
-            onCollapse={() => setRightCollapsed(true)}
-          />
-        </aside>
+        {/* Right Sidebar - Hidden on mobile and in clean mode */}
+        {!isMobile && !cleanMode && (
+          <aside className="compact-sidebar right">
+            <RightSidebar
+              selectedBuildingType={selectedBuildingType}
+              onSelectBuilding={setSelectedBuildingType}
+              onSpawnNPC={() => actions.spawnNPC('WORKER')}
+              onAdvanceTier={() => {/* Advance tier - to be implemented */}}
+              onAutoAssignNPCs={handleAutoAssign}
+              currentTier={gameState.currentTier || 'SURVIVAL'}
+              buildingConfig={gameManager?.orchestrator?.buildingConfig}
+              placedBuildingCounts={{}}
+              activeTab={activeTab}
+              collapsed={rightCollapsed}
+              onCollapse={() => setRightCollapsed(true)}
+            />
+          </aside>
+        )}
       </div>
 
-      {/* Debug Panel */}
-      {showDebugPanel && (
+      {/* Debug Panel - Hidden in clean mode */}
+      {showDebugPanel && !cleanMode && (
         <HybridSystemDebugPanel
           onClose={() => setShowDebugPanel(false)}
         />
       )}
 
-      {/* Achievement Notifications */}
+      {/* Achievement Notifications - Always visible (important notifications) */}
       {newlyUnlockedAchievements.length > 0 && (
         <AchievementNotification
           achievements={newlyUnlockedAchievements}
@@ -492,11 +564,18 @@ function GameScreen() {
         <DeveloperTab />
       </ModalWrapper>
 
-      {/* Character System UI (Character Sheet + Notifications) */}
-      <CharacterSystemUI />
+      {/* Character System UI (Character Sheet + Notifications) - Hidden in clean mode */}
+      {!cleanMode && <CharacterSystemUI />}
 
-      {/* Active Skill Bar (Bottom HUD for active skills) */}
-      <ActiveSkillBar />
+      {/* Active Skill Bar (Bottom HUD for active skills) - Hidden in clean mode */}
+      {!cleanMode && <ActiveSkillBar />}
+
+      {/* Clean Mode Indicator */}
+      {cleanMode && (
+        <div className="clean-mode-indicator">
+          Press <kbd>`</kbd> to exit Clean Mode
+        </div>
+      )}
 
       {/* Toast */}
       {toastMessage && (

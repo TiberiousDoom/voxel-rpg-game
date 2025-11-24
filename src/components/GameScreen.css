@@ -523,8 +523,23 @@
     max-width: 100vw !important;
   }
 
+  /* Mobile fullscreen viewport - takes up entire screen */
+  .compact-viewport.mobile-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+
   .compact-layout {
-    padding: 5px !important;
+    padding: 0 !important;
     gap: 0 !important;
   }
 
@@ -786,4 +801,59 @@
 .sidebar-collapse-btn.right {
   right: auto;
   left: 8px;
+}
+
+/* Clean Mode - Fullscreen viewport without any UI */
+.compact-viewport.clean-mode-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+  z-index: 100;
+}
+
+/* Clean Mode Indicator */
+.clean-mode-indicator {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  animation: fadeInSlide 0.3s ease-out;
+  pointer-events: none;
+}
+
+.clean-mode-indicator kbd {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 0 4px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: bold;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }

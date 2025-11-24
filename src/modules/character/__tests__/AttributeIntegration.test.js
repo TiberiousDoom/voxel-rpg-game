@@ -13,7 +13,7 @@
  * - Health, mana, stamina
  */
 
-import { describe, test, expect, beforeEach } from 'vitest';
+// Using Jest (included with react-scripts)
 
 // These imports will fail until we create these files (that's expected for TDD)
 import { DerivedStatsCalculator } from '../DerivedStatsCalculator';

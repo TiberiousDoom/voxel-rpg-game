@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { X, Hammer, Package, Sword, Shield, Zap } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Hammer, Package, Sword, Shield, Zap, Pickaxe } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 // eslint-disable-next-line no-unused-vars
 import { CRAFTING_RECIPES, ITEM_TYPES, canCraft, consumeMaterials } from '../data/craftingRecipes';
+import { MaterialCraftingSystem, QUALITY_TIERS } from '../modules/crafting/MaterialCraftingSystem';
 
 /**
  * CraftingUI component - Main crafting interface
@@ -15,11 +16,22 @@ const CraftingUI = () => {
   const [craftingAnimation, setCraftingAnimation] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileView, setMobileView] = useState('categories'); // 'categories' | 'recipes' | 'details'
+  const [lastCraftedQuality, setLastCraftedQuality] = useState(null);
+
+  const craftingSystemRef = useRef(null);
 
   const inventory = useGameStore((state) => state.inventory);
   const player = useGameStore((state) => state.player);
   // eslint-disable-next-line no-unused-vars
+  const equipment = useGameStore((state) => state.equipment);
   const craftItem = useGameStore((state) => state.craftItem);
+
+  // Initialize MaterialCraftingSystem
+  useEffect(() => {
+    if (!craftingSystemRef.current) {
+      craftingSystemRef.current = new MaterialCraftingSystem(useGameStore);
+    }
+  }, []);
 
   // Detect mobile device
   useEffect(() => {
@@ -49,6 +61,7 @@ const CraftingUI = () => {
 
   const categories = [
     { id: 'all', name: 'All', icon: Package },
+    { id: ITEM_TYPES.TOOL, name: 'Tools', icon: Pickaxe },
     { id: ITEM_TYPES.WEAPON, name: 'Weapons', icon: Sword },
     { id: ITEM_TYPES.ARMOR, name: 'Armor', icon: Shield },
     { id: ITEM_TYPES.CONSUMABLE, name: 'Potions', icon: Zap },
@@ -60,25 +73,33 @@ const CraftingUI = () => {
   });
 
   const handleCraft = (recipe) => {
-    if (!canCraft(recipe, inventory)) return;
+    if (!craftingSystemRef.current || !canCraft(recipe, inventory)) return;
 
     setCraftingAnimation(true);
 
-    // Consume materials and add item
-    const newMaterials = consumeMaterials(recipe, inventory);
-    craftItem(recipe, newMaterials);
+    // Craft using MaterialCraftingSystem with equipped tool
+    const tool = equipment.weapon || equipment.offhand; // Use weapon or offhand as crafting tool
+    const result = craftingSystemRef.current.craftItem(recipe.id, { tool });
 
-    // Spawn crafting effect
-    useGameStore.getState().addParticleEffect({
-      position: player.position,
-      color: recipe.rarity.color,
-      type: 'spiral',
-      count: 30,
-    });
+    if (result.success) {
+      // Store quality for display
+      setLastCraftedQuality(result.quality);
 
-    setTimeout(() => {
+      // Spawn crafting effect with quality-based color
+      useGameStore.getState().addParticleEffect?.({
+        position: player.position,
+        color: result.quality.color,
+        type: 'spiral',
+        count: 30,
+      });
+
+      setTimeout(() => {
+        setCraftingAnimation(false);
+        setLastCraftedQuality(null);
+      }, 2000);
+    } else {
       setCraftingAnimation(false);
-    }, 1000);
+    }
   };
 
   // Mobile navigation helpers
@@ -440,6 +461,27 @@ const CraftingUI = () => {
                   </div>
                 </div>
 
+                {/* Quality Display */}
+                {lastCraftedQuality && (
+                  <div
+                    style={{
+                      marginBottom: '20px',
+                      padding: '15px',
+                      background: 'rgba(0, 255, 0, 0.1)',
+                      border: `2px solid ${lastCraftedQuality.color}`,
+                      borderRadius: '10px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ color: lastCraftedQuality.color, fontSize: '1.5rem', fontWeight: 'bold' }}>
+                      {lastCraftedQuality.name} Quality!
+                    </div>
+                    <div style={{ color: '#cbd5e0', fontSize: '0.9rem', marginTop: '5px' }}>
+                      Stats ×{lastCraftedQuality.multiplier}
+                    </div>
+                  </div>
+                )}
+
                 {/* Craft Button */}
                 <button
                   onClick={() => handleCraft(selectedRecipe)}
@@ -477,6 +519,24 @@ const CraftingUI = () => {
                   <Hammer size={24} />
                   {craftingAnimation ? 'Crafting...' : 'Craft Item'}
                 </button>
+
+                {/* Quality System Info */}
+                {!craftingAnimation && (
+                  <div style={{ marginTop: '20px', padding: '15px', background: '#2d3748', borderRadius: '10px' }}>
+                    <h4 style={{ color: '#ffd700', marginTop: 0, marginBottom: '10px' }}>Quality System</h4>
+                    <p style={{ color: '#cbd5e0', fontSize: '0.9rem', marginBottom: '10px' }}>
+                      Equip better tools to increase crafting quality! Higher quality items have better stats.
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      {Object.values(QUALITY_TIERS).map((tier) => (
+                        <div key={tier.name} style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e0', fontSize: '0.85rem' }}>
+                          <span style={{ color: tier.color }}>● {tier.name}</span>
+                          <span>×{tier.multiplier}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div

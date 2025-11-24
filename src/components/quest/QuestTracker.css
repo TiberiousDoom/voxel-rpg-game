@@ -1,0 +1,129 @@
+.quest-tracker {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  width: 300px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 100;
+  color: #eee;
+  font-family: Arial, sans-serif;
+  backdrop-filter: blur(4px);
+}
+
+.quest-tracker-header {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  text-align: center;
+}
+
+.quest-tracker-item {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-left: 4px solid #ffd700;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.quest-tracker-item.main {
+  border-left-color: #ff6600;
+}
+
+.quest-tracker-item.side {
+  border-left-color: #00aaff;
+}
+
+.quest-tracker-item.daily {
+  border-left-color: #00ff00;
+}
+
+.quest-tracker-title {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #ffd700;
+}
+
+.quest-tracker-objectives {
+  margin-bottom: 8px;
+}
+
+.quest-tracker-objective {
+  font-size: 11px;
+  color: #ccc;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.objective-progress-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objective-progress-count {
+  color: #ffd700;
+  font-weight: bold;
+  min-width: 50px;
+  text-align: right;
+}
+
+.quest-tracker-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.quest-tracker-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #ffed4e);
+  transition: width 0.3s ease;
+}
+
+.quest-tracker-more {
+  text-align: center;
+  font-size: 11px;
+  color: #aaa;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .quest-tracker {
+    top: 60px;
+    right: 10px;
+    width: 250px;
+    padding: 8px;
+  }
+
+  .quest-tracker-header {
+    font-size: 12px;
+  }
+
+  .quest-tracker-title {
+    font-size: 11px;
+  }
+
+  .quest-tracker-objective {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .quest-tracker {
+    width: 200px;
+    top: 50px;
+  }
+}

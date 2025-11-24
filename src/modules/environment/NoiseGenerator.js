@@ -106,6 +106,17 @@ export class NoiseGenerator {
   }
 
   /**
+   * Alias for perlin2D - provides a simpler API
+   * @param {number} x - X coordinate
+   * @param {number} z - Z coordinate
+   * @param {object} options - Generation options (same as perlin2D)
+   * @returns {number} Noise value in range [-1, 1]
+   */
+  noise2D(x, z, options = {}) {
+    return this.perlin2D(x, z, options);
+  }
+
+  /**
    * Base Perlin noise function (single octave)
    * @private
    */

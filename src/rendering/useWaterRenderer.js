@@ -12,7 +12,7 @@
  * - Shore rendering
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 /**
  * Water color palette based on depth
@@ -34,6 +34,7 @@ export const useWaterRenderer = (options = {}) => {
     showReflections = true,
     showRipples = true,
     showShore = true,
+    // eslint-disable-next-line no-unused-vars -- animationSpeed reserved for future water animation features
     animationSpeed = 1.0,
   } = options;
 

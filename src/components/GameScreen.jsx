@@ -50,6 +50,9 @@ function GameScreen() {
   const [showDebugPanel, setShowDebugPanel] = useState(!isMobile);
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState(!isMobile);
 
+  // Clean Mode - Hide all UI for distraction-free gameplay
+  const [cleanMode, setCleanMode] = useState(false);
+
   // Horizontal tab bar state
   const [activeTab, setActiveTab] = useState('resources');
   const [leftCollapsed, setLeftCollapsed] = useState(true);
@@ -152,6 +155,19 @@ function GameScreen() {
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [selectedBuildingType]);
+  // Clean Mode keyboard shortcut (` backtick key)
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      // Toggle clean mode with backtick key
+      if (event.key === '`') {
+        setCleanMode(prev => !prev);
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
 
   // Event handlers
   const handleAssignNPC = (npcId, buildingId) => {
@@ -308,8 +324,8 @@ function GameScreen() {
         />
       )}
 
-      {/* Compact Header - Hidden on mobile */}
-      {!isMobile && (
+      {/* Compact Header - Hidden on mobile and in clean mode */}
+      {!isMobile && !cleanMode && (
         <CompactHeader
           gameState={gameState}
           actions={actions}
@@ -323,8 +339,8 @@ function GameScreen() {
         />
       )}
 
-      {/* Horizontal Tab Navigation - Hidden on mobile */}
-      {!isMobile && (
+      {/* Horizontal Tab Navigation - Hidden on mobile and in clean mode */}
+      {!isMobile && !cleanMode && (
         <HorizontalTabBar
           leftTabs={leftTabs}
           rightTabs={rightTabs}
@@ -337,8 +353,8 @@ function GameScreen() {
 
       {/* Main Layout - 3 Column */}
       <div className="compact-layout">
-        {/* Left Sidebar - Hidden on mobile */}
-        {!isMobile && (
+        {/* Left Sidebar - Hidden on mobile and in clean mode */}
+        {!isMobile && !cleanMode && (
           <aside className="compact-sidebar left">
             <LeftSidebar
               resources={gameState.resources || {}}
@@ -355,7 +371,7 @@ function GameScreen() {
         )}
 
         {/* Center - Game Viewport */}
-        <main className={`compact-viewport ${isMobile ? 'mobile-fullscreen' : ''}`}>
+        <main className={`compact-viewport ${isMobile ? 'mobile-fullscreen' : ''} ${cleanMode ? 'clean-mode-fullscreen' : ''}`}>
           {gameState.isPaused && (
             <div className="pause-overlay">
               <div className="pause-content">
@@ -381,9 +397,11 @@ function GameScreen() {
               }
             }}
             onBuildingClick={handleBuildingClick}
+            debugMode={showDebugPanel}
             enablePlayerMovement={true}
             isMobile={isMobile}
             showPerformanceMonitor={showPerformanceMonitor}
+            cleanMode={cleanMode}
           />
 
           {/* Selected Building Info */}
@@ -397,8 +415,8 @@ function GameScreen() {
           )}
         </main>
 
-        {/* Right Sidebar - Hidden on mobile */}
-        {!isMobile && (
+        {/* Right Sidebar - Hidden on mobile and in clean mode */}
+        {!isMobile && !cleanMode && (
           <aside className="compact-sidebar right">
             <RightSidebar
               selectedBuildingType={selectedBuildingType}
@@ -417,14 +435,14 @@ function GameScreen() {
         )}
       </div>
 
-      {/* Debug Panel */}
-      {showDebugPanel && (
+      {/* Debug Panel - Hidden in clean mode */}
+      {showDebugPanel && !cleanMode && (
         <HybridSystemDebugPanel
           onClose={() => setShowDebugPanel(false)}
         />
       )}
 
-      {/* Achievement Notifications */}
+      {/* Achievement Notifications - Always visible (important notifications) */}
       {newlyUnlockedAchievements.length > 0 && (
         <AchievementNotification
           achievements={newlyUnlockedAchievements}
@@ -565,11 +583,18 @@ function GameScreen() {
         <DeveloperTab />
       </ModalWrapper>
 
-      {/* Character System UI (Character Sheet + Notifications) */}
-      <CharacterSystemUI />
+      {/* Character System UI (Character Sheet + Notifications) - Hidden in clean mode */}
+      {!cleanMode && <CharacterSystemUI />}
 
-      {/* Active Skill Bar (Bottom HUD for active skills) */}
-      <ActiveSkillBar />
+      {/* Active Skill Bar (Bottom HUD for active skills) - Hidden in clean mode */}
+      {!cleanMode && <ActiveSkillBar />}
+
+      {/* Clean Mode Indicator */}
+      {cleanMode && (
+        <div className="clean-mode-indicator">
+          Press <kbd>`</kbd> to exit Clean Mode
+        </div>
+      )}
 
       {/* Toast */}
       {toastMessage && (

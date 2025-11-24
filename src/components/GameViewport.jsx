@@ -18,6 +18,7 @@ import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
+import { useDamageNumberRenderer } from '../rendering/useDamageNumberRenderer.js'; // Damage number rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
 import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
@@ -38,8 +39,8 @@ import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSys
 import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
 import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
 import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
-import WeatherSeasonIndicator from './WeatherSeasonIndicator.jsx'; // Weather/Season Indicator (Phase 3 Integration)
-import Phase3DebugPanel from './Phase3DebugPanel.jsx'; // Debug Panel (Phase 3 Integration)
+import UnifiedDebugMenu from './UnifiedDebugMenu.jsx'; // Unified Debug & Developer Menu
+import CollapsibleFloatingPanel from './CollapsibleFloatingPanel.jsx'; // Collapsible floating panels
 import './GameViewport.css';
 
 /**
@@ -108,9 +109,8 @@ const initializeCanvas = (canvas, width, height) => {
   return ctx;
 };
 
-// Grid constants - Updated to 50x50 for player movement
-const GRID_WIDTH = 50;
-const GRID_HEIGHT = 50;
+// Grid constants - Infinite world with chunk-based terrain generation
+// The terrain system dynamically loads chunks as the player explores
 const TILE_SIZE = 40;
 // Viewport size (window into the larger world)
 const VIEWPORT_WIDTH = 800; // 20 tiles visible width
@@ -214,6 +214,7 @@ function GameViewport({
   debugMode = false,
   enablePlayerMovement = true, // New prop to enable/disable player movement
   showPerformanceMonitor = true, // Show/hide performance monitor
+  cleanMode = false, // Hide all UI panels for clean viewport
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
@@ -250,7 +251,7 @@ function GameViewport({
     totalBuildings: 0,
     visibleNPCs: 0,
     totalNPCs: 0,
-    isMobile: false,
+    isMobileDevice: false,
     canvasWidth: 0,
     canvasHeight: 0
   });
@@ -277,6 +278,7 @@ function GameViewport({
   const buildingsRef = useRef(buildings);
   const monstersRef = useRef(monsters);
   const lootDropsRef = useRef([]); // Loot drops from store
+  const damageNumbersRef = useRef([]); // Damage numbers from store
   const hoveredPositionRef = useRef(hoveredPosition);
   const selectedBuildingTypeRef = useRef(selectedBuildingType);
   const debugModeRef = useRef(debugMode);
@@ -286,6 +288,8 @@ function GameViewport({
 
   // Subscribe to loot drops from store
   const lootDrops = useGameStore((state) => state.lootDrops);
+  // Subscribe to damage numbers from store
+  const damageNumbers = useGameStore((state) => state.damageNumbers);
 
   // Update refs when props change (prevents useCallback recreation)
   useEffect(() => {
@@ -293,12 +297,13 @@ function GameViewport({
     buildingsRef.current = buildings;
     monstersRef.current = monsters;
     lootDropsRef.current = lootDrops;
+    damageNumbersRef.current = damageNumbers;
     hoveredPositionRef.current = hoveredPosition;
     selectedBuildingTypeRef.current = selectedBuildingType;
     debugModeRef.current = debugMode;
     enablePlayerMovementRef.current = enablePlayerMovement;
     // canInteract and closestInteractable updated in separate useEffect below
-  }, [npcs, buildings, monsters, lootDrops, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+  }, [npcs, buildings, monsters, lootDrops, damageNumbers, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
 
   // Monster AI system
   const monsterAIRef = useRef(null);
@@ -476,6 +481,11 @@ function GameViewport({
     showPickupRadius: debugMode,
     enableAnimation: true,
     debugMode: debugMode
+  });
+
+  // Damage Number Renderer integration (Phase 3: Combat)
+  const { renderDamageNumbers } = useDamageNumberRenderer({
+    tileSize: TILE_SIZE
   });
 
   // Terrain Job Renderer integration
@@ -798,7 +808,7 @@ function GameViewport({
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
 
-      // Calculate visible grid range
+      // Calculate visible grid range (no upper bounds for infinite world)
       const startX = Math.floor(-offset.x / TILE_SIZE);
       const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
       const startZ = Math.floor(-offset.y / TILE_SIZE);
@@ -807,15 +817,15 @@ function GameViewport({
       // Batch all grid lines into a single path (much faster!)
       ctx.beginPath();
 
-      // Vertical lines
-      for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
+      // Vertical lines (render only visible tiles, no upper limit)
+      for (let i = startX; i <= endX; i++) {
         const x = i * TILE_SIZE + offset.x;
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
       }
 
-      // Horizontal lines
-      for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
+      // Horizontal lines (render only visible tiles, no upper limit)
+      for (let i = startZ; i <= endZ; i++) {
         const y = i * TILE_SIZE + offset.y;
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
@@ -841,15 +851,15 @@ function GameViewport({
       // Batch all grid lines into a single path (much faster!)
       ctx.beginPath();
 
-      // Vertical lines
-      for (let i = Math.max(0, Math.floor(startX / 5) * 5); i <= Math.min(GRID_WIDTH, endX); i += 5) {
+      // Vertical lines (every 5 tiles for mobile, no upper limit)
+      for (let i = Math.floor(startX / 5) * 5; i <= endX; i += 5) {
         const x = i * TILE_SIZE + offset.x;
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
       }
 
-      // Horizontal lines
-      for (let i = Math.max(0, Math.floor(startZ / 5) * 5); i <= Math.min(GRID_HEIGHT, endZ); i += 5) {
+      // Horizontal lines (every 5 tiles for mobile, no upper limit)
+      for (let i = Math.floor(startZ / 5) * 5; i <= endZ; i += 5) {
         const y = i * TILE_SIZE + offset.y;
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
@@ -1044,6 +1054,12 @@ function GameViewport({
       renderLootDrops(ctx, lootDropsRef.current, worldToCanvas, currentTime);
     }
 
+    // Render damage numbers (Phase 3: Combat)
+    if (damageNumbersRef.current && damageNumbersRef.current.length > 0) {
+      const currentTime = performance.now();
+      renderDamageNumbers(ctx, damageNumbersRef.current, worldToCanvas, currentTime);
+    }
+
     // Store metrics in ref (don't trigger state update every frame)
     perfRef.current.currentMetrics = {
       visibleBuildings: visibleBuildingCount,
@@ -1207,7 +1223,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops, renderDamageNumbers]);
 
   /**
    * Terrain tool handlers
@@ -1360,8 +1376,24 @@ function GameViewport({
       // Check if clicked on an interactable object
       let didInteract = false;
 
+      // Check if clicked on a monster (Phase 3: Combat)
+      const clickedMonster = monstersRef.current?.find(monster => {
+        if (!monster || !monster.alive) return false;
+        const dist = Math.sqrt(
+          Math.pow(worldPos.x - monster.position.x, 2) +
+          Math.pow(worldPos.z - monster.position.z, 2)
+        );
+        return dist < 1.5; // Within 1.5 tiles
+      });
+
+      if (clickedMonster) {
+        // Attack the monster
+        useGameStore.getState().attackMonster(clickedMonster.id);
+        didInteract = true;
+      }
+
       // Check if close to an interactable
-      if (closestInteractable) {
+      if (!didInteract && closestInteractable) {
         const clickDist = Math.sqrt(
           Math.pow(worldPos.x - closestInteractable.position.x, 2) +
           Math.pow(worldPos.z - closestInteractable.position.z, 2)
@@ -1488,20 +1520,9 @@ function GameViewport({
       hoveredPosition.x !== position.x ||
       hoveredPosition.z !== position.z;
 
-    // Clamp to grid bounds
-    if (
-      position.x >= 0 &&
-      position.x < GRID_WIDTH &&
-      position.z >= 0 &&
-      position.z < GRID_HEIGHT
-    ) {
-      if (posChanged) {
-        setHoveredPosition(position);
-      }
-    } else {
-      if (hoveredPosition !== null) {
-        setHoveredPosition(null);
-      }
+    // No bounds checking for infinite world - always allow hover
+    if (posChanged) {
+      setHoveredPosition(position);
     }
   };
 
@@ -1629,6 +1650,18 @@ function GameViewport({
             });
           }
 
+          // Clean up old damage numbers (Phase 3: Combat)
+          if (damageNumbersRef.current && damageNumbersRef.current.length > 0) {
+            const now = performance.now();
+            const maxAge = 1500; // 1.5 seconds
+            damageNumbersRef.current.forEach(damageNum => {
+              const age = now - (damageNum.id || now);
+              if (age > maxAge) {
+                useGameStore.getState().removeDamageNumber(damageNum.id);
+              }
+            });
+          }
+
           // Update spawn system - spawn new monsters as needed
           if (spawnManagerRef.current && monstersRef.current) {
             const newMonsters = spawnManagerRef.current.update(monstersRef.current, deltaTime * 1000); // Convert back to ms
@@ -1744,9 +1777,14 @@ function GameViewport({
         onMouseLeave={handleCanvasMouseLeave}
       />
 
-      {/* Terrain Tools Panel */}
-      {!selectedBuildingType && (
-        <div style={{ position: 'fixed', left: '10px', bottom: '10px', zIndex: 1000 }}>
+      {/* Terrain Tools Panel - Collapsible, hidden in clean mode */}
+      {!selectedBuildingType && !cleanMode && !isMobileDevice && (
+        <CollapsibleFloatingPanel
+          title="Terrain Tools"
+          icon="⛏️"
+          defaultExpanded={false}
+          position="left: 10px; bottom: 10px"
+        >
           <TerrainToolsPanel
             activeTool={activeTool}
             priority={jobPriority}
@@ -1764,7 +1802,7 @@ function GameViewport({
                       ? JobTimeCalculator.formatTime(
                           timeCalculatorRef.current.estimateTime(activeTool, {
                             x: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).x, canvasToWorld(selectionEnd.x, selectionEnd.y).x),
-                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionEnd.y).z),
+                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionStart.y).z),
                             width: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).x - canvasToWorld(selectionStart.x, selectionStart.y).x) + 1,
                             depth: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).z - canvasToWorld(selectionStart.x, selectionStart.y).z) + 1
                           })
@@ -1774,134 +1812,35 @@ function GameViewport({
                 : null
             }
           />
-        </div>
+        </CollapsibleFloatingPanel>
       )}
 
-      {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
-      {debugMode && (
-        <div className="debug-overlay" style={{
-          position: 'fixed',
-          top: '10px',
-          left: '10px',
-          background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-          padding: '8px',
-          borderRadius: '6px',
-          fontSize: '10px',
-          fontFamily: 'monospace',
-          maxWidth: '200px',
-          maxHeight: '300px',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          zIndex: 9999,
-          pointerEvents: 'none',
-        }}>
-        <div><strong>🔍 Render Status</strong></div>
-        <div>Canvas: {debugInfo.canvasReady ? '✓' : '✗'}</div>
-        <div>Context: {debugInfo.contextReady ? '✓' : '✗'}</div>
-        <div>Camera: {debugInfo.cameraReady ? '✓' : '✗'}</div>
-        <div>Player: {debugInfo.playerReady ? '✓' : '✗'}</div>
-        <div>Rendering: {debugInfo.rendering ? '✓' : '✗'}</div>
-        <div>Renders: {debugInfo.renderCount}</div>
-        <div>Canvas Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
-        {canvasRef.current && (
-          <>
-            <div>Element: {canvasRef.current.width}x{canvasRef.current.height}</div>
-            <div>Display: {canvasRef.current.offsetWidth}x{canvasRef.current.offsetHeight}px</div>
-          </>
-        )}
-        <div>Window: {window.innerWidth}x{window.innerHeight}</div>
-        <div>DPR: {window.devicePixelRatio || 1}</div>
-        <div>Mobile: {/Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 768 ? 'Yes' : 'No'}</div>
-        <div>Offset: {getOffset ? JSON.stringify(getOffset()) : 'null'}</div>
-        {debugInfo.lastError && (
-          <div style={{ marginTop: '8px', color: '#ffff00', fontWeight: 'bold' }}>
-            ⚠️ {debugInfo.lastError}
-          </div>
-        )}
-        </div>
-      )}
-
-      {/* Mini-map (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
+      {/* Mini-map (Phase 3 Integration) - Always visible, has close button */}
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobile && (
         <MiniMap
           terrainSystem={terrainSystemRef.current}
           cameraX={cameraPositionRef.current.x}
           cameraZ={cameraPositionRef.current.z}
           size={200}
-          zoom={0.5}
         />
       )}
 
-      {/* Weather/Season Indicator (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
-        <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
-      )}
-
-      {/* Phase 3 Debug Panel (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
-        <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
-      )}
-
-      {/* Performance metrics overlay - shown only when enabled (Mobile optimization) */}
-      {showPerformanceMonitor && (
-        <div className="performance-overlay" style={{
-          position: 'fixed',
-          top: '230px', // Moved down to avoid overlap with mini-map
-          right: '10px',
-          background: 'rgba(0, 0, 0, 0.85)',
-          color: '#00ff00',
-          padding: '12px',
-          borderRadius: '8px',
-          fontSize: '12px',
-          fontFamily: 'monospace',
-          minWidth: '180px',
-          zIndex: 9999,
-          pointerEvents: 'none',
-          border: '2px solid rgba(0, 255, 0, 0.3)',
-        }}>
-          <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ffffff', borderBottom: '1px solid rgba(0, 255, 0, 0.3)', paddingBottom: '4px' }}>
-            ⚡ PERFORMANCE
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
-            <div>FPS:</div>
-            <div style={{ color: perfMetrics.fps < 30 ? '#ff4444' : perfMetrics.fps < 45 ? '#ffaa00' : '#00ff00' }}>
-              {perfMetrics.fps || 0}
-            </div>
-
-            <div>Frame:</div>
-            <div style={{ color: perfMetrics.frameTime > 33 ? '#ff4444' : perfMetrics.frameTime > 22 ? '#ffaa00' : '#00ff00' }}>
-              {perfMetrics.frameTime || 0}ms
-            </div>
-
-            <div>Target:</div>
-            <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
-
-            <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
-              Entities:
-            </div>
-
-            <div>Buildings:</div>
-            <div>{perfMetrics.visibleBuildings}/{perfMetrics.totalBuildings}</div>
-
-            <div>NPCs:</div>
-            <div>{perfMetrics.visibleNPCs}/{perfMetrics.totalNPCs}</div>
-
-            <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
-              Canvas:
-            </div>
-
-            <div>Size:</div>
-            <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
-
-            <div>Device:</div>
-            <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
-          </div>
-        </div>
+      {/* Unified Debug & Developer Menu - Consolidates all debug overlays */}
+      {!cleanMode && !isMobile && (
+        <UnifiedDebugMenu
+          terrainSystem={terrainSystemRef.current}
+          debugInfo={debugInfo}
+          perfMetrics={perfMetrics}
+          canvasRef={canvasRef}
+          getOffset={getOffset}
+          enablePlayerMovement={enablePlayerMovement}
+          showPerformanceMonitor={showPerformanceMonitor}
+          debugMode={debugMode}
+        />
       )}
 
       {/* Viewport footer - hidden on mobile (legend moved to hamburger menu) */}
-      {!isMobileDevice && (
+      {!isMobile && (
         <div className="viewport-footer">
         <p className="viewport-hint">
           {enablePlayerMovement ? (

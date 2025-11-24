@@ -23,7 +23,7 @@ const MINIMAP_BIOME_COLORS = {
  *
  * Phase 3 Integration: Mini-map with biomes/structures/water
  */
-const MiniMap = ({ terrainSystem, cameraX, cameraZ, size = 200, zoom = 0.5 }) => {
+const MiniMap = ({ terrainSystem, cameraX, cameraZ, size = 200, zoom = 0.2 }) => {
   const canvasRef = useRef(null);
   const [isOpen, setIsOpen] = useState(true);
 

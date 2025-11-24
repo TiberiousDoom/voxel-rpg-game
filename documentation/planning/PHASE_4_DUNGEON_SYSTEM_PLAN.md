@@ -2,7 +2,7 @@
 
 **Last Updated:** November 24, 2025
 **Author:** Claude (AI Assistant)
-**Status:** Draft - Awaiting Review
+**Status:** REVISED - Ready for Implementation
 **Purpose:** Detailed implementation plan for procedural dungeon system
 
 **Related Documents:**
@@ -11,19 +11,61 @@
 
 ---
 
+## Revision Notes (Nov 24, 2025)
+
+**Key Changes from Original Draft:**
+1. **Leverages existing systems** - DungeonCombatEngine, ExpeditionManager, Monster.js already exist
+2. **Reduced scope for MVP** - Start with 1 dungeon type, extend later
+3. **Realistic time estimates** - Adjusted based on existing infrastructure
+4. **2D Canvas rendering** - Plan now properly targets 2D rendering (not 3D voxel)
+5. **Clearer integration points** - Explicit mapping to existing codebase
+
+---
+
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [System Architecture](#system-architecture)
-3. [Phase 4A: Dungeon Entity & Room System](#phase-4a-dungeon-entity--room-system)
-4. [Phase 4B: Procedural Generator](#phase-4b-procedural-generator)
-5. [Phase 4C: Dungeon Encounters](#phase-4c-dungeon-encounters)
-6. [Phase 4D: Boss Mechanics](#phase-4d-boss-mechanics)
-7. [Phase 4E: Dungeon UI & Integration](#phase-4e-dungeon-ui--integration)
+1. [Existing Systems Audit](#existing-systems-audit)
+2. [Overview](#overview)
+3. [Phase 4A: Room-Based Layout System](#phase-4a-room-based-layout-system)
+4. [Phase 4B: Procedural Generator Enhancement](#phase-4b-procedural-generator-enhancement)
+5. [Phase 4C: Boss Mechanics](#phase-4c-boss-mechanics)
+6. [Phase 4D: Dungeon UI & Rendering](#phase-4d-dungeon-ui--rendering)
+7. [Phase 4E: Integration & Polish](#phase-4e-integration--polish)
 8. [Testing Strategy](#testing-strategy)
 9. [Implementation Timeline](#implementation-timeline)
-10. [Technical Considerations](#technical-considerations)
-11. [Risk Assessment](#risk-assessment)
+10. [Risk Assessment](#risk-assessment)
+
+---
+
+## Existing Systems Audit
+
+### ✅ Already Implemented (Leverage These)
+
+| System | File | Capabilities |
+|--------|------|--------------|
+| **DungeonCombatEngine** | `src/modules/expedition/DungeonCombatEngine.js` | Floor generation, enemy scaling, combat simulation |
+| **ExpeditionManager** | `src/modules/expedition/ExpeditionManager.js` | Expedition lifecycle, party management, state tracking |
+| **Monster Entity** | `src/entities/Monster.js` | Full monster with health, AI states, level scaling, modifiers, loot tables |
+| **MonsterAI** | `src/systems/MonsterAI.js` | AI states: IDLE, PATROL, CHASE, ATTACK, FLEE, DEATH |
+| **LootTable** | `src/systems/LootTable.js` | Loot table definitions |
+| **LootGenerator** | `src/systems/LootGenerator.js` | Item generation from tables |
+| **LootDropManager** | `src/systems/LootDropManager.js` | Drop spawning and pickup |
+| **QuestManager** | `src/systems/QuestManager.js` | Quest tracking and rewards |
+| **Quest Entity** | `src/entities/Quest.js` | Quest structure |
+| **SpawnManager** | `src/systems/SpawnManager.js` | Entity spawning |
+| **SpatialGrid** | `src/systems/SpatialGrid.js` | Spatial partitioning |
+| **MonsterRenderer** | `src/rendering/MonsterRenderer.js` | 2D monster rendering |
+
+### 🔨 Needs Implementation (Phase 4 Focus)
+
+| Component | Purpose |
+|-----------|---------|
+| **DungeonRoom** | Room entity with connections, doors, props |
+| **RoomLayoutGenerator** | Procedural room-based layouts (not just floors) |
+| **BossMonster** | Extended Monster with phases, abilities |
+| **DungeonRenderer** | 2D canvas room rendering |
+| **DungeonStore** | Zustand store for dungeon state |
+| **DungeonHUD** | Mini-map, progress, boss health bar |
 
 ---
 
@@ -31,718 +73,842 @@
 
 ### Goals
 
-Phase 4 adds instanced, procedurally-generated dungeons with boss encounters, special loot, and structured progression to the game.
+Phase 4 enhances the existing expedition system with **visual room-based dungeons** and **boss fights with unique mechanics**.
 
-**Core Features:**
-- Procedurally generated dungeon layouts
-- Room-based dungeon structure
-- Dungeon-specific monster encounters
-- Boss fights with unique mechanics
-- Entrance/exit teleportation system
-- Special loot tables for dungeons
-- Dungeon completion tracking
+**Core Features (MVP):**
+- Visual room-based dungeon layouts (not just floor numbers)
+- Room exploration with doors and connections
+- Boss fights with phase transitions
+- Mini-map showing explored rooms
+- Special boss loot drops
 
-**Design Principles:**
-- **Replayability** - Every dungeon run feels different
-- **Progression** - Dungeons provide meaningful rewards
-- **Challenge** - Dungeons are harder than overworld content
-- **Accessibility** - Clear entrance/exit mechanics
-- **Integration** - Seamlessly connects with existing quest/loot systems
+**Deferred to Phase 4.5:**
+- Multiple dungeon types (start with Cave only)
+- Additional bosses (start with 1)
+- Dungeon keys/tokens economy
+- Leaderboards
 
-### Success Criteria
+### Success Criteria (MVP)
 
-**Minimum Viable Product:**
-- [ ] 3 dungeon types with different layouts
-- [ ] 2 room types (corridor, chamber)
-- [ ] Boss encounters at dungeon end
-- [ ] Entrance/exit teleportation working
-- [ ] Special loot drops from bosses
-- [ ] Basic dungeon completion tracking
-
-**Full Implementation:**
-- [ ] 5+ dungeon types
-- [ ] 5+ room types with variety
-- [ ] 3+ boss types with unique mechanics
-- [ ] Dungeon quests integration
-- [ ] Leaderboard/completion stats
-- [ ] Dungeon difficulty scaling
+- [ ] Cave dungeon generates 10-15 connected rooms
+- [ ] Rooms render on 2D canvas with doors
+- [ ] Player can navigate between rooms
+- [ ] Boss room has phase-based fight
+- [ ] Mini-map shows explored rooms
+- [ ] Boss drops unique loot
+- [ ] 60 FPS maintained during dungeon
 
 ---
 
-## System Architecture
-
-### High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Game World                           │
-│  ┌──────────────┐         ┌─────────────────────────┐  │
-│  │   Overworld  │◄────────┤  Dungeon Entrance      │  │
-│  │   (Main Map) │  Player │  (Structure/Portal)    │  │
-│  └──────────────┘  Clicks └─────────────────────────┘  │
-│                         │                               │
-│                         ▼                               │
-│               ┌──────────────────┐                      │
-│               │ Dungeon Instance │                      │
-│               └──────────────────┘                      │
-│                         │                               │
-│        ┌────────────────┼────────────────┐             │
-│        ▼                ▼                ▼             │
-│  ┌─────────┐     ┌──────────┐    ┌──────────┐        │
-│  │ Rooms   │     │ Monsters │    │  Loot    │        │
-│  │ Layout  │     │Encounters│    │  Tables  │        │
-│  └─────────┘     └──────────┘    └──────────┘        │
-│        │                                               │
-│        └──────────► Boss Room (End)                    │
-│                            │                           │
-│                            ▼                           │
-│                    ┌──────────────┐                    │
-│                    │ Exit Portal  │                    │
-│                    └──────────────┘                    │
-│                            │                           │
-│                            ▼                           │
-│                    Return to Overworld                 │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Core Components
-
-**Entity Layer:**
-- `Dungeon` - Dungeon instance with metadata
-- `DungeonRoom` - Individual room in dungeon
-- `DungeonBoss` - Boss monster with special mechanics
-- `DungeonEntrance` - Portal/structure in overworld
-
-**System Layer:**
-- `DungeonGenerator` - Procedural generation logic
-- `DungeonManager` - Instance lifecycle management
-- `DungeonEncounterSystem` - Spawns monsters in rooms
-- `BossAI` - Extended AI for boss fights
-
-**Store Layer:**
-- `useDungeonStore` - Zustand store for dungeon state
-
-**Renderer Layer:**
-- `useDungeonRenderer` - Renders dungeon rooms and layout
-- `useBossRenderer` - Special rendering for bosses
-
----
-
-## Phase 4A: Dungeon Entity & Room System
+## Phase 4A: Room-Based Layout System
 
 ### Objectives
 
-Create the foundational data structures for dungeons and rooms.
+Create room entities and layout data structures that extend the existing floor-based system.
 
-### Implementation Steps
+### 4A.1: DungeonRoom Entity
 
-#### 4A.1: Dungeon Entity Class
+**File:** `src/entities/DungeonRoom.js`
 
-**File:** `src/entities/Dungeon.js`
+**Extends:** None (new entity)
 
-**Class Structure:**
 ```javascript
-class Dungeon {
+class DungeonRoom {
   constructor(config) {
-    this.id = uuid();
-    this.type = config.type; // 'CAVE', 'CRYPT', 'RUINS', etc.
-    this.level = config.level; // Dungeon difficulty level
-    this.rooms = []; // Array of DungeonRoom instances
-    this.startRoom = null; // Entry room
-    this.bossRoom = null; // Final room
-    this.layout = null; // Graph structure of rooms
-    this.seed = config.seed || Math.random(); // For procedural generation
-    this.state = 'ACTIVE'; // ACTIVE, COMPLETED, ABANDONED
-    this.createdAt = Date.now();
-    this.completedAt = null;
-    this.monstersKilled = 0;
-    this.deaths = 0;
-    this.timeSpent = 0;
+    this.id = config.id || uuid();
+    this.type = config.type; // 'ENTRANCE', 'CORRIDOR', 'CHAMBER', 'BOSS', 'TREASURE'
+    this.gridPosition = config.gridPosition; // {x, y} in dungeon grid
+    this.worldBounds = config.worldBounds; // {x, y, width, height} in world coords
+    this.connections = new Map(); // direction -> roomId
+    this.doors = []; // {direction: 'NORTH'|'SOUTH'|'EAST'|'WEST', targetRoomId, position}
+    this.enemies = []; // Enemy instances (from Monster.js)
+    this.lootPoints = []; // {position, lootTableId}
+    this.props = []; // Environmental decorations
+    this.explored = false;
+    this.cleared = false;
   }
 
   // Methods
-  getRoom(roomId)
-  getRoomAt(x, y)
-  getRoomNeighbors(room)
-  isComplete()
-  complete()
+  addConnection(direction, roomId)
+  getConnection(direction)
+  hasConnection(direction)
+  spawnEnemies(dungeonLevel, monsterTypes)
+  clearRoom()
   toJSON()
   static fromJSON(data)
 }
 ```
 
-**Properties:**
-- **Type** - Visual theme and monster types
-- **Level** - Difficulty scaling (1-10)
-- **Rooms** - Connected room graph
-- **Seed** - For reproducible generation
-- **State** - Lifecycle tracking
-- **Stats** - Completion metrics
+**Room Types:**
+| Type | Size (tiles) | Purpose |
+|------|--------------|---------|
+| ENTRANCE | 8x8 | Starting room, safe zone |
+| CORRIDOR | 6x4 | Connecting passage |
+| CHAMBER | 10x10 | Combat encounter |
+| BOSS | 14x14 | Final boss arena |
+| TREASURE | 8x8 | Loot room (optional) |
 
-#### 4A.2: DungeonRoom Entity Class
+### 4A.2: DungeonLayout Class
 
-**File:** `src/entities/DungeonRoom.js`
+**File:** `src/entities/DungeonLayout.js`
 
-**Class Structure:**
 ```javascript
-class DungeonRoom {
-  constructor(config) {
-    this.id = uuid();
-    this.type = config.type; // 'CORRIDOR', 'CHAMBER', 'BOSS', 'TREASURE'
-    this.position = config.position; // {x, y} in dungeon grid
-    this.size = config.size; // {width, height} in tiles
-    this.connections = []; // Array of connected room IDs
-    this.doors = []; // Array of {direction, targetRoomId}
-    this.monsters = []; // Monster spawn points
-    this.loot = []; // Loot spawn points
-    this.props = []; // Environmental objects
-    this.explored = false;
-    this.cleared = false; // All monsters defeated
+class DungeonLayout {
+  constructor(seed) {
+    this.seed = seed;
+    this.rooms = new Map(); // roomId -> DungeonRoom
+    this.roomGrid = new Map(); // "x,y" -> roomId
+    this.entranceRoom = null;
+    this.bossRoom = null;
   }
 
   // Methods
-  addConnection(roomId, direction)
-  removeConnection(roomId)
-  isAccessibleFrom(roomId)
-  spawnMonsters(dungeonLevel)
-  clearRoom()
+  addRoom(room)
+  getRoom(roomId)
+  getRoomAt(gridX, gridY)
+  getRoomNeighbors(roomId)
+  getPathToBoss() // Returns array of roomIds
   toJSON()
+  static fromJSON(data)
 }
 ```
 
-**Room Types:**
-- **CORRIDOR** - Narrow connecting passage (5x3 tiles)
-- **CHAMBER** - Large combat room (10x10 tiles)
-- **BOSS** - Final boss arena (15x15 tiles)
-- **TREASURE** - Loot room (8x8 tiles)
-- **ENTRANCE** - Starting room (8x8 tiles)
+### 4A.3: Integration with Existing Systems
 
-#### 4A.3: DungeonEntrance Structure
-
-**File:** `src/entities/structures/DungeonEntrance.js`
-
-**Structure Data:**
+**Enhance DungeonCombatEngine:**
 ```javascript
-{
-  id: 'dungeon_entrance_1',
-  name: 'Cave Entrance',
-  type: 'DUNGEON_ENTRANCE',
-  position: {x, y, z},
-  dungeonType: 'CAVE',
-  dungeonLevel: 5,
-  requiredLevel: 5,
-  active: true,
-  cooldown: 0 // Time before can re-enter (ms)
+// Add to DungeonCombatEngine.js
+generateRoomLayout(dungeonType, level, seed) {
+  const generator = new RoomLayoutGenerator(seed);
+  return generator.generate(dungeonType, level);
 }
 ```
 
-**Integration:**
-- Add to structure system (existing)
-- Render in overworld with special icon
-- Click to enter dungeon (if requirements met)
-
-#### 4A.4: Testing
-
-**Test File:** `src/entities/__tests__/Dungeon.test.js`
-
-**Test Cases:**
-- Dungeon creation with default values
-- Room addition and connections
-- Room graph traversal
-- Dungeon completion state
-- JSON serialization/deserialization
-- Room neighbor detection
-- Boss room identification
-
-**Test File:** `src/entities/__tests__/DungeonRoom.test.js`
-
-**Test Cases:**
-- Room creation with all types
-- Door connections
-- Monster spawn point management
-- Room clearing logic
-- Exploration state tracking
-
-**Estimated Time:** 6-8 hours
+**Estimated Time:** 4-6 hours
 
 ---
 
-## Phase 4B: Procedural Generator
+## Phase 4B: Procedural Generator Enhancement
 
 ### Objectives
 
-Implement procedural generation algorithm for dungeon layouts.
+Create room-based procedural generation that produces connected layouts.
 
-### Implementation Steps
+### 4B.1: RoomLayoutGenerator
 
-#### 4B.1: DungeonGenerator System
+**File:** `src/systems/RoomLayoutGenerator.js`
 
-**File:** `src/systems/DungeonGenerator.js`
+**Algorithm: Binary Space Partition + Room Placement**
 
-**Class Structure:**
 ```javascript
-class DungeonGenerator {
-  constructor() {
-    this.algorithms = {
-      'CAVE': this.generateCave,
-      'CRYPT': this.generateCrypt,
-      'RUINS': this.generateRuins
-    };
+class RoomLayoutGenerator {
+  constructor(seed) {
+    this.seed = seed;
+    this.rng = new SeededRandom(seed);
   }
 
-  // Main generation method
-  generate(type, level, seed) {
-    const algorithm = this.algorithms[type];
-    return algorithm(level, seed);
+  generate(type, level) {
+    // 1. Determine room count based on level
+    const roomCount = 8 + Math.floor(level / 2); // 8-15 rooms
+
+    // 2. Generate room positions using BSP
+    const positions = this._generatePositions(roomCount);
+
+    // 3. Create rooms with types
+    const rooms = this._createRooms(positions, level);
+
+    // 4. Connect rooms using MST
+    this._connectRooms(rooms);
+
+    // 5. Place entrance and boss rooms
+    this._placeSpecialRooms(rooms);
+
+    // 6. Populate with enemies
+    this._populateRooms(rooms, type, level);
+
+    return new DungeonLayout(this.seed, rooms);
   }
 
-  // Generation algorithms
-  generateCave(level, seed)
-  generateCrypt(level, seed)
-  generateRuins(level, seed)
+  _generatePositions(count) {
+    // Grid-based placement with some randomness
+    const positions = [];
+    const gridSize = Math.ceil(Math.sqrt(count * 2));
+    // ... BSP algorithm
+    return positions;
+  }
 
-  // Helper methods
-  createRoomGrid(width, height)
-  connectRooms(rooms)
-  placeStartRoom(rooms)
-  placeBossRoom(rooms)
-  addTreasureRooms(rooms, count)
-  validateLayout(dungeon)
-  optimizeLayout(dungeon)
-}
-```
+  _connectRooms(rooms) {
+    // Minimum Spanning Tree for guaranteed connectivity
+    // Add 20% extra connections for loops
+  }
 
-**Generation Algorithms:**
+  _populateRooms(rooms, type, level) {
+    const monsterTypes = DUNGEON_MONSTER_TYPES[type]; // e.g., ['SPIDER', 'BAT', 'TROLL']
 
-1. **Cave (Organic Layout)**
-   - Uses cellular automata for natural caves
-   - Irregular room shapes
-   - Multiple branching paths
-   - 15-25 rooms total
-
-2. **Crypt (Linear Layout)**
-   - Mostly linear progression
-   - Side rooms for loot
-   - Symmetrical design
-   - 10-15 rooms total
-
-3. **Ruins (Grid Layout)**
-   - Rectangular grid pattern
-   - Some rooms blocked/collapsed
-   - Multiple paths to boss
-   - 20-30 rooms total
-
-#### 4B.2: Room Connection Algorithm
-
-**Algorithm:** Modified Minimum Spanning Tree
-
-```javascript
-function connectRooms(rooms) {
-  // 1. Create minimum spanning tree for guaranteed connectivity
-  const mst = createMST(rooms);
-
-  // 2. Add extra connections for loops (30% of edges)
-  const extraConnections = Math.floor(rooms.length * 0.3);
-  addRandomConnections(rooms, extraConnections);
-
-  // 3. Ensure boss room only has 1 entrance
-  ensureSingleBossEntrance(rooms);
-
-  // 4. Add doors to all connections
-  addDoorsToConnections(rooms);
-
-  return rooms;
-}
-```
-
-**Features:**
-- Guaranteed path from start to boss
-- Optional loops for exploration
-- Dead-end rooms for treasure
-- Difficulty increases toward boss
-
-#### 4B.3: Monster Placement
-
-**File:** `src/systems/DungeonEncounterSystem.js`
-
-**Spawn Logic:**
-```javascript
-function populateDungeon(dungeon, dungeonLevel) {
-  dungeon.rooms.forEach(room => {
-    if (room.type === 'BOSS') {
-      spawnBoss(room, dungeonLevel);
-    } else if (room.type === 'TREASURE') {
-      spawnTreasureGuard(room, dungeonLevel);
-    } else if (room.type === 'CHAMBER') {
-      spawnRoomEncounter(room, dungeonLevel);
-    }
-    // Corridors have no spawns
-  });
-}
-
-function spawnRoomEncounter(room, level) {
-  const roomSize = room.size.width * room.size.height;
-  const monsterCount = Math.floor(roomSize / 10); // 1 per 10 tiles
-
-  for (let i = 0; i < monsterCount; i++) {
-    const monster = createDungeonMonster(level);
-    const position = getRandomPositionInRoom(room);
-    room.monsters.push({monster, position});
+    rooms.forEach(room => {
+      if (room.type === 'CHAMBER') {
+        room.spawnEnemies(level, monsterTypes);
+      } else if (room.type === 'BOSS') {
+        room.spawnBoss(level, type);
+      }
+    });
   }
 }
 ```
 
-**Monster Scaling:**
-- Base monster level = dungeon level
-- Rooms closer to boss have +1 level
-- Boss room monsters are +2 levels
-- Elite chance increases with depth
-
-#### 4B.4: Testing
-
-**Test File:** `src/systems/__tests__/DungeonGenerator.test.js`
-
-**Test Cases:**
-- Generate all dungeon types
-- Verify room connectivity
-- Ensure start and boss rooms exist
-- Validate room counts
-- Test seed reproducibility
-- Check for orphaned rooms
-- Validate boss room has single entrance
-
-**Estimated Time:** 12-16 hours
-
----
-
-## Phase 4C: Dungeon Encounters
-
-### Objectives
-
-Implement encounter system for dungeon-specific monster spawns and combat.
-
-### Implementation Steps
-
-#### 4C.1: DungeonEncounterSystem
-
-**File:** `src/systems/DungeonEncounterSystem.js`
-
-**Features:**
-- Room-based spawning
-- Progressive difficulty
-- Special dungeon monsters
-- Encounter rewards
-
-#### 4C.2: Dungeon Monster Variants
-
-**New Monster Types:**
-
-1. **Cave Monsters**
-   - Cave Spider (Level 3-5) - Poisonous attacks
-   - Giant Bat (Level 2-4) - Flying, hard to hit
-   - Cave Troll (Level 6-8) - Regenerates health
-
-2. **Crypt Monsters**
-   - Zombie (Level 3-5) - Slow but tanky
-   - Wraith (Level 5-7) - Ethereal, ignores some armor
-   - Lich (Level 8-10) - Casts spells
-
-3. **Ruins Monsters**
-   - Gargoyle (Level 4-6) - Stone skin (high armor)
-   - Construct (Level 6-8) - Immune to poison
-   - Ancient Guardian (Level 8-10) - Elite variant
+### 4B.2: Dungeon Monster Config
 
 **File:** `src/config/monsters/dungeon-monsters.json`
 
-#### 4C.3: Room Clearing Mechanics
-
-**Logic:**
-```javascript
-function updateRoomState(room, monsters) {
-  const roomMonsters = monsters.filter(m =>
-    isInRoom(m.position, room) && m.alive
-  );
-
-  if (roomMonsters.length === 0 && !room.cleared) {
-    room.cleared = true;
-    onRoomCleared(room);
-  }
-}
-
-function onRoomCleared(room) {
-  // Grant room completion bonus
-  grantXP(room.clearXP);
-
-  // Spawn treasure if treasure room
-  if (room.type === 'TREASURE') {
-    spawnTreasureChest(room);
-  }
-
-  // Track progress
-  updateDungeonProgress();
+```json
+{
+  "CAVE_SPIDER": {
+    "name": "Cave Spider",
+    "health": 40,
+    "maxHealth": 40,
+    "damage": 8,
+    "defense": 2,
+    "moveSpeed": 3.5,
+    "attackSpeed": 1.2,
+    "attackRange": 1.5,
+    "aggroRange": 6,
+    "xpReward": 25,
+    "goldReward": [5, 15],
+    "lootTable": "cave_spider_loot",
+    "abilities": ["POISON_BITE"],
+    "color": "#4a0080"
+  },
+  "CAVE_BAT": { ... },
+  "CAVE_TROLL": { ... }
 }
 ```
 
-#### 4C.4: Testing
+### 4B.3: Seed-Based Reproducibility
 
-**Test File:** `src/systems/__tests__/DungeonEncounterSystem.test.js`
+```javascript
+class SeededRandom {
+  constructor(seed) {
+    this.seed = seed;
+  }
 
-**Test Cases:**
-- Monster spawning in rooms
-- Level scaling based on depth
-- Room clearing detection
-- Treasure room rewards
-- Monster AI in dungeons
+  next() {
+    // Mulberry32 algorithm
+    let t = this.seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+
+  nextInt(min, max) {
+    return Math.floor(this.next() * (max - min + 1)) + min;
+  }
+}
+```
 
 **Estimated Time:** 8-10 hours
 
 ---
 
-## Phase 4D: Boss Mechanics
+## Phase 4C: Boss Mechanics
 
 ### Objectives
 
-Implement boss fights with unique mechanics and abilities.
+Create boss monsters with phase transitions and unique abilities.
 
-### Implementation Steps
+### 4C.1: BossMonster Entity
 
-#### 4D.1: DungeonBoss Entity
-
-**File:** `src/entities/DungeonBoss.js`
+**File:** `src/entities/BossMonster.js`
 
 **Extends:** Monster class
 
-**Additional Properties:**
 ```javascript
-class DungeonBoss extends Monster {
+import { Monster } from './Monster';
+
+class BossMonster extends Monster {
   constructor(type, position, options = {}) {
     super(type, position, options);
 
-    this.bossType = options.bossType;
+    // Boss-specific properties
+    this.isBoss = true;
     this.phases = options.phases || [];
     this.currentPhase = 0;
     this.abilities = options.abilities || [];
-    this.abilityCooldowns = {};
-    this.enrageTimer = 0;
-    this.enrageThreshold = 300000; // 5 minutes
-    this.immunities = options.immunities || [];
+    this.abilityCooldowns = new Map();
+    this.phaseTransitions = options.phaseTransitions || [0.6, 0.3]; // HP %
+    this.enraged = false;
   }
 
-  // Boss-specific methods
-  updatePhase()
-  useAbility(abilityName)
-  checkEnrage()
-  takeDamage(amount) // Override for phase transitions
+  takeDamage(amount) {
+    super.takeDamage(amount);
+    this._checkPhaseTransition();
+  }
+
+  _checkPhaseTransition() {
+    const hpPercent = this.health / this.maxHealth;
+    const nextPhase = this.currentPhase + 1;
+
+    if (nextPhase < this.phases.length &&
+        hpPercent <= this.phaseTransitions[this.currentPhase]) {
+      this._transitionToPhase(nextPhase);
+    }
+  }
+
+  _transitionToPhase(phase) {
+    this.currentPhase = phase;
+    const phaseData = this.phases[phase];
+
+    // Apply phase modifiers
+    if (phaseData.damageMultiplier) {
+      this.damage *= phaseData.damageMultiplier;
+    }
+    if (phaseData.speedMultiplier) {
+      this.moveSpeed *= phaseData.speedMultiplier;
+    }
+
+    // Trigger phase ability
+    if (phaseData.onEnterAbility) {
+      this.useAbility(phaseData.onEnterAbility);
+    }
+
+    this.emit('phase:transition', { phase, bossId: this.id });
+  }
+
+  useAbility(abilityName) {
+    const ability = this.abilities.find(a => a.name === abilityName);
+    if (!ability) return false;
+
+    const cooldown = this.abilityCooldowns.get(abilityName) || 0;
+    if (Date.now() < cooldown) return false;
+
+    // Execute ability
+    ability.execute(this);
+    this.abilityCooldowns.set(abilityName, Date.now() + ability.cooldown);
+
+    this.emit('ability:used', { ability: abilityName, bossId: this.id });
+    return true;
+  }
 }
 ```
 
-#### 4D.2: Boss Types
+### 4C.2: MVP Boss - Brood Mother (Cave)
 
-**1. Cave Boss: Brood Mother (Giant Spider)**
-- **Phase 1 (100%-60% HP):** Basic attacks
-- **Phase 2 (60%-30% HP):** Summons small spiders
-- **Phase 3 (30%-0% HP):** Poison AOE attacks
-- **Abilities:**
-  - Web Trap: Slows player
-  - Venom Spit: Ranged poison attack
-  - Spawn Adds: Summons 3 spiderlings
+**File:** `src/config/bosses/brood-mother.json`
 
-**2. Crypt Boss: Necromancer**
-- **Phase 1 (100%-50% HP):** Ranged attacks
-- **Phase 2 (50%-0% HP):** Summons undead minions
-- **Abilities:**
-  - Shadow Bolt: High damage spell
-  - Raise Dead: Summons zombies
-  - Bone Shield: Temporary invulnerability
-  - Life Drain: Heals while damaging player
+```json
+{
+  "type": "BROOD_MOTHER",
+  "name": "Brood Mother",
+  "baseStats": {
+    "health": 500,
+    "maxHealth": 500,
+    "damage": 25,
+    "defense": 10,
+    "moveSpeed": 2,
+    "attackSpeed": 0.8,
+    "attackRange": 2,
+    "aggroRange": 15
+  },
+  "phases": [
+    {
+      "name": "Normal",
+      "abilities": ["VENOM_SPIT", "WEB_TRAP"]
+    },
+    {
+      "name": "Swarm",
+      "hpThreshold": 0.6,
+      "damageMultiplier": 1.2,
+      "onEnterAbility": "SPAWN_SPIDERLINGS",
+      "abilities": ["VENOM_SPIT", "WEB_TRAP", "SPAWN_SPIDERLINGS"]
+    },
+    {
+      "name": "Frenzy",
+      "hpThreshold": 0.3,
+      "damageMultiplier": 1.5,
+      "speedMultiplier": 1.3,
+      "abilities": ["POISON_NOVA", "SPAWN_SPIDERLINGS"]
+    }
+  ],
+  "abilities": {
+    "VENOM_SPIT": {
+      "damage": 15,
+      "range": 8,
+      "cooldown": 3000,
+      "effect": "POISON",
+      "poisonDamage": 5,
+      "poisonDuration": 5000
+    },
+    "WEB_TRAP": {
+      "range": 6,
+      "cooldown": 8000,
+      "effect": "SLOW",
+      "slowAmount": 0.5,
+      "duration": 3000
+    },
+    "SPAWN_SPIDERLINGS": {
+      "cooldown": 15000,
+      "spawnCount": 3,
+      "spawnType": "CAVE_SPIDER"
+    },
+    "POISON_NOVA": {
+      "damage": 30,
+      "radius": 5,
+      "cooldown": 20000,
+      "effect": "POISON"
+    }
+  },
+  "loot": {
+    "guaranteed": ["BROOD_MOTHER_FANG"],
+    "table": "boss_cave_loot",
+    "goldReward": [200, 500]
+  }
+}
+```
 
-**3. Ruins Boss: Stone Golem**
-- **Phase 1 (100%-60% HP):** Slow melee attacks
-- **Phase 2 (60%-30% HP):** Faster attacks, stomp AOE
-- **Phase 3 (30%-0% HP):** Berserker mode
-- **Abilities:**
-  - Ground Slam: AOE damage + stun
-  - Rock Throw: Ranged attack
-  - Stone Armor: 50% damage reduction
-  - Enrage: +50% attack speed when low HP
-
-#### 4D.3: BossAI System
+### 4C.3: BossAI Extension
 
 **File:** `src/systems/BossAI.js`
 
-**Extends:** MonsterAI class
-
-**Additional States:**
-- ABILITY_CAST - Using special ability
-- PHASE_TRANSITION - Changing phases
-- SUMMONING - Spawning adds
-
-**Ability System:**
 ```javascript
-function updateBossAI(boss, gameState, deltaTime) {
-  // Check phase transition
-  const healthPercent = boss.health / boss.maxHealth;
-  if (shouldTransitionPhase(boss, healthPercent)) {
-    transitionPhase(boss);
+import { MonsterAI } from './MonsterAI';
+
+class BossAI extends MonsterAI {
+  constructor(boss, gameState) {
+    super(boss, gameState);
+    this.boss = boss;
+    this.abilityTimer = 0;
   }
 
-  // Check ability cooldowns
-  if (canUseAbility(boss)) {
-    const ability = selectAbility(boss, gameState);
-    useAbility(boss, ability, gameState);
+  update(deltaTime) {
+    // Check for ability usage
+    this.abilityTimer += deltaTime;
+
+    if (this.abilityTimer >= 2000) { // Check every 2 seconds
+      this._tryUseAbility();
+      this.abilityTimer = 0;
+    }
+
+    // Standard AI behavior
+    super.update(deltaTime);
   }
 
-  // Regular AI
-  updateMonsterAI(boss, gameState, deltaTime);
-}
-```
+  _tryUseAbility() {
+    const phase = this.boss.phases[this.boss.currentPhase];
+    if (!phase || !phase.abilities) return;
 
-#### 4D.4: Boss Loot Tables
-
-**File:** `src/config/loot/boss-loot.json`
-
-**Guaranteed Drops:**
-- Boss-specific unique item (100% drop)
-- 2-3 rare/epic items (guaranteed)
-- Large gold amount (500-1000)
-- Dungeon completion token
-
-**Boss Unique Items:**
-```json
-{
-  "brood_mother_fang": {
-    "name": "Brood Mother's Fang",
-    "type": "WEAPON",
-    "rarity": "LEGENDARY",
-    "stats": {
-      "damage": 45,
-      "critChance": 15,
-      "attackSpeed": 1.2
-    },
-    "properties": [
-      {"name": "Poison", "value": 10},
-      {"name": "LifeSteal", "value": 5}
-    ]
+    // Prioritize abilities based on situation
+    for (const abilityName of phase.abilities) {
+      if (this.boss.useAbility(abilityName)) {
+        break; // Only use one ability per check
+      }
+    }
   }
 }
 ```
 
-#### 4D.5: Testing
+**Estimated Time:** 8-10 hours
 
-**Test File:** `src/entities/__tests__/DungeonBoss.test.js`
+---
 
-**Test Cases:**
-- Boss creation and stats
-- Phase transitions at correct HP
-- Ability cooldowns
-- Damage taken in different phases
-- Boss death and loot
+## Phase 4D: Dungeon UI & Rendering
+
+### Objectives
+
+Create 2D canvas rendering for dungeon rooms and UI components.
+
+### 4D.1: DungeonRenderer
+
+**File:** `src/rendering/DungeonRenderer.js`
+
+```javascript
+class DungeonRenderer {
+  constructor(ctx, options = {}) {
+    this.ctx = ctx;
+    this.tileSize = options.tileSize || 32;
+    this.currentRoom = null;
+    this.transitionProgress = 0;
+  }
+
+  render(dungeon, currentRoomId, camera) {
+    const room = dungeon.getRoom(currentRoomId);
+    if (!room) return;
+
+    // Clear and set camera
+    this.ctx.save();
+    this.ctx.translate(-camera.x, -camera.y);
+
+    // Render room
+    this._renderFloor(room);
+    this._renderWalls(room);
+    this._renderDoors(room);
+    this._renderProps(room);
+
+    this.ctx.restore();
+  }
+
+  _renderFloor(room) {
+    const { x, y, width, height } = room.worldBounds;
+
+    // Tiled floor pattern
+    this.ctx.fillStyle = '#2a2a3d';
+    this.ctx.fillRect(x, y, width, height);
+
+    // Grid lines
+    this.ctx.strokeStyle = '#3a3a4d';
+    this.ctx.lineWidth = 1;
+    for (let tx = 0; tx < width; tx += this.tileSize) {
+      for (let ty = 0; ty < height; ty += this.tileSize) {
+        this.ctx.strokeRect(x + tx, y + ty, this.tileSize, this.tileSize);
+      }
+    }
+  }
+
+  _renderWalls(room) {
+    const { x, y, width, height } = room.worldBounds;
+
+    this.ctx.fillStyle = '#1a1a2e';
+    this.ctx.lineWidth = 4;
+    this.ctx.strokeStyle = '#4a4a6a';
+
+    // Draw walls where there are no doors
+    ['NORTH', 'SOUTH', 'EAST', 'WEST'].forEach(dir => {
+      if (!room.hasConnection(dir)) {
+        this._drawWall(room, dir);
+      }
+    });
+  }
+
+  _renderDoors(room) {
+    room.doors.forEach(door => {
+      this._drawDoor(room, door);
+    });
+  }
+
+  _drawDoor(room, door) {
+    const { x, y, width, height } = room.worldBounds;
+    const doorWidth = this.tileSize * 2;
+
+    this.ctx.fillStyle = door.isOpen ? '#4a6a4a' : '#6a4a4a';
+
+    // Position based on direction
+    let dx, dy, dw, dh;
+    switch (door.direction) {
+      case 'NORTH':
+        dx = x + (width - doorWidth) / 2;
+        dy = y - 4;
+        dw = doorWidth;
+        dh = 8;
+        break;
+      // ... other directions
+    }
+
+    this.ctx.fillRect(dx, dy, dw, dh);
+  }
+}
+```
+
+### 4D.2: DungeonStore (Zustand)
+
+**File:** `src/stores/useDungeonStore.js`
+
+```javascript
+import { create } from 'zustand';
+
+const useDungeonStore = create((set, get) => ({
+  // State
+  activeDungeon: null,
+  currentRoomId: null,
+  exploredRooms: new Set(),
+  inDungeon: false,
+  bossDefeated: false,
+
+  // Actions
+  enterDungeon: (dungeonLayout) => {
+    set({
+      activeDungeon: dungeonLayout,
+      currentRoomId: dungeonLayout.entranceRoom.id,
+      exploredRooms: new Set([dungeonLayout.entranceRoom.id]),
+      inDungeon: true,
+      bossDefeated: false
+    });
+  },
+
+  moveToRoom: (roomId) => {
+    const { activeDungeon, currentRoomId, exploredRooms } = get();
+    const currentRoom = activeDungeon.getRoom(currentRoomId);
+
+    // Validate connection exists
+    if (!currentRoom.connections.has(roomId)) {
+      return false;
+    }
+
+    // Mark as explored
+    exploredRooms.add(roomId);
+
+    set({
+      currentRoomId: roomId,
+      exploredRooms: new Set(exploredRooms)
+    });
+
+    return true;
+  },
+
+  exitDungeon: () => {
+    set({
+      activeDungeon: null,
+      currentRoomId: null,
+      exploredRooms: new Set(),
+      inDungeon: false
+    });
+  },
+
+  setBossDefeated: () => {
+    set({ bossDefeated: true });
+  }
+}));
+
+export default useDungeonStore;
+```
+
+### 4D.3: DungeonHUD Component
+
+**File:** `src/components/dungeon/DungeonHUD.jsx`
+
+```jsx
+import React, { memo } from 'react';
+import useDungeonStore from '../../stores/useDungeonStore';
+import DungeonMiniMap from './DungeonMiniMap';
+import BossHealthBar from './BossHealthBar';
+import './DungeonHUD.css';
+
+const DungeonHUD = memo(function DungeonHUD({ boss }) {
+  const { activeDungeon, currentRoomId, exploredRooms, bossDefeated } = useDungeonStore();
+
+  if (!activeDungeon) return null;
+
+  const currentRoom = activeDungeon.getRoom(currentRoomId);
+  const progress = exploredRooms.size / activeDungeon.rooms.size;
+
+  return (
+    <div className="dungeon-hud">
+      {/* Mini-map */}
+      <DungeonMiniMap
+        dungeon={activeDungeon}
+        currentRoomId={currentRoomId}
+        exploredRooms={exploredRooms}
+      />
+
+      {/* Progress */}
+      <div className="dungeon-progress">
+        <div className="progress-label">Explored</div>
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+        <div className="progress-text">
+          {exploredRooms.size} / {activeDungeon.rooms.size}
+        </div>
+      </div>
+
+      {/* Current room info */}
+      <div className="room-info">
+        <span className="room-type">{currentRoom.type}</span>
+        {currentRoom.cleared && <span className="cleared-badge">✓ Cleared</span>}
+      </div>
+
+      {/* Boss health bar (when in boss room) */}
+      {currentRoom.type === 'BOSS' && boss && !bossDefeated && (
+        <BossHealthBar boss={boss} />
+      )}
+
+      {/* Exit button */}
+      <button className="exit-dungeon-btn" onClick={() => {/* confirm exit */}}>
+        Exit Dungeon
+      </button>
+    </div>
+  );
+});
+
+export default DungeonHUD;
+```
+
+### 4D.4: DungeonMiniMap Component
+
+**File:** `src/components/dungeon/DungeonMiniMap.jsx`
+
+```jsx
+import React, { memo, useMemo } from 'react';
+import './DungeonMiniMap.css';
+
+const ROOM_SIZE = 12;
+const ROOM_GAP = 4;
+
+const DungeonMiniMap = memo(function DungeonMiniMap({
+  dungeon,
+  currentRoomId,
+  exploredRooms
+}) {
+  const roomPositions = useMemo(() => {
+    const positions = [];
+    dungeon.rooms.forEach((room, id) => {
+      positions.push({
+        id,
+        x: room.gridPosition.x * (ROOM_SIZE + ROOM_GAP),
+        y: room.gridPosition.y * (ROOM_SIZE + ROOM_GAP),
+        type: room.type,
+        explored: exploredRooms.has(id),
+        current: id === currentRoomId
+      });
+    });
+    return positions;
+  }, [dungeon, currentRoomId, exploredRooms]);
+
+  return (
+    <div className="dungeon-minimap">
+      <svg viewBox="-20 -20 200 200">
+        {roomPositions.map(room => (
+          <rect
+            key={room.id}
+            x={room.x}
+            y={room.y}
+            width={ROOM_SIZE}
+            height={ROOM_SIZE}
+            className={`
+              minimap-room
+              ${room.explored ? 'explored' : 'hidden'}
+              ${room.current ? 'current' : ''}
+              ${room.type.toLowerCase()}
+            `}
+          />
+        ))}
+      </svg>
+    </div>
+  );
+});
+
+export default DungeonMiniMap;
+```
 
 **Estimated Time:** 10-12 hours
 
 ---
 
-## Phase 4E: Dungeon UI & Integration
+## Phase 4E: Integration & Polish
 
 ### Objectives
 
-Create UI components and integrate dungeon system with game.
+Integrate dungeon system with existing game loop and polish UX.
 
-### Implementation Steps
+### 4E.1: GameViewport Integration
 
-#### 4E.1: Dungeon Store
+**Modify:** `src/components/GameViewport.jsx`
 
-**File:** `src/stores/useDungeonStore.js`
-
-**State Structure:**
 ```javascript
-{
-  activeDungeon: null, // Current dungeon instance
-  dungeonHistory: [], // Completed dungeons
-  inDungeon: false,
-  currentRoom: null,
-  exploredRooms: [],
-  miniMapRevealed: false,
+// Add dungeon rendering mode
+const { inDungeon, activeDungeon, currentRoomId } = useDungeonStore();
 
-  // Actions
-  enterDungeon(dungeonType, level),
-  exitDungeon(),
-  moveToRoom(roomId),
-  exploreRoom(roomId),
-  completeDungeon(),
-  abandonDungeon()
+// In render loop:
+if (inDungeon && activeDungeon) {
+  dungeonRenderer.render(activeDungeon, currentRoomId, camera);
+  monsterRenderer.renderDungeonMonsters(activeDungeon.getRoom(currentRoomId).enemies);
+} else {
+  // Normal overworld rendering
+  renderOverworld();
 }
 ```
 
-#### 4E.2: Dungeon Entrance UI
+### 4E.2: Dungeon Entrance Structure
 
-**File:** `src/components/dungeon/DungeonEntrance.jsx`
+**Add to building config:**
 
-**Features:**
-- Display dungeon info (type, level, requirements)
-- Show player readiness (level check)
-- Enter button with confirmation
-- Cooldown timer if recently completed
+```json
+{
+  "DUNGEON_ENTRANCE_CAVE": {
+    "name": "Cave Entrance",
+    "icon": "🕳️",
+    "description": "A dark cave entrance. Dangerous creatures lurk within.",
+    "category": "SPECIAL",
+    "tier": "PERMANENT",
+    "cost": {},
+    "isInteractable": true,
+    "interactionType": "ENTER_DUNGEON",
+    "dungeonConfig": {
+      "type": "CAVE",
+      "minLevel": 3,
+      "maxLevel": 10
+    }
+  }
+}
+```
 
-#### 4E.3: Dungeon HUD
+### 4E.3: Quest Integration
 
-**File:** `src/components/dungeon/DungeonHUD.jsx`
+**Add dungeon quest objectives:**
 
-**Components:**
-- **Mini-map** - Shows explored rooms and current position
-- **Progress Bar** - Rooms cleared / total rooms
-- **Exit Button** - Leave dungeon (confirmation required)
-- **Boss Warning** - Alert when entering boss room
+```javascript
+// In QuestManager
+registerDungeonObjectives() {
+  this.registerObjectiveType('COMPLETE_DUNGEON', {
+    check: (quest, gameState) => {
+      return gameState.dungeonCompletions.some(
+        d => d.type === quest.objective.dungeonType
+      );
+    }
+  });
 
-#### 4E.4: Dungeon Renderer
+  this.registerObjectiveType('DEFEAT_BOSS', {
+    check: (quest, gameState) => {
+      return gameState.bossKills.includes(quest.objective.bossType);
+    }
+  });
+}
+```
 
-**File:** `src/rendering/useDungeonRenderer.js`
+### 4E.4: Save/Load Support
 
-**Rendering:**
-- Render current room with walls/floors
-- Render doors to connected rooms
-- Highlight unexplored exits
-- Show room type indicator
-- Render monsters and loot in room
+**Add to GameStateSerializer:**
 
-**Camera:**
-- Center on current room
-- Smooth transitions between rooms
-- Zoom in closer than overworld
+```javascript
+serializeDungeonState(dungeonStore) {
+  const state = dungeonStore.getState();
+  if (!state.inDungeon) return null;
 
-#### 4E.5: Dungeon Completion UI
+  return {
+    seed: state.activeDungeon.seed,
+    type: state.activeDungeon.type,
+    level: state.activeDungeon.level,
+    currentRoomId: state.currentRoomId,
+    exploredRooms: Array.from(state.exploredRooms),
+    clearedRooms: Array.from(state.activeDungeon.rooms.values())
+      .filter(r => r.cleared)
+      .map(r => r.id),
+    bossDefeated: state.bossDefeated
+  };
+}
 
-**File:** `src/components/dungeon/DungeonComplete.jsx`
+deserializeDungeonState(data) {
+  if (!data) return;
 
-**Displays:**
-- Completion time
-- Monsters killed
-- Deaths
-- Loot acquired
-- XP/Gold earned
-- Return to overworld button
+  // Regenerate dungeon from seed
+  const generator = new RoomLayoutGenerator(data.seed);
+  const dungeon = generator.generate(data.type, data.level);
 
-#### 4E.6: Integration with Game Loop
+  // Restore state
+  data.exploredRooms.forEach(id => dungeon.getRoom(id).explored = true);
+  data.clearedRooms.forEach(id => dungeon.getRoom(id).cleared = true);
 
-**GameViewport Changes:**
-- Detect when in dungeon (render dungeon instead of overworld)
-- Handle room transitions
-- Track player position in room
-- Monster spawning per room
+  useDungeonStore.setState({
+    activeDungeon: dungeon,
+    currentRoomId: data.currentRoomId,
+    exploredRooms: new Set(data.exploredRooms),
+    inDungeon: true,
+    bossDefeated: data.bossDefeated
+  });
+}
+```
 
-**Quest Integration:**
-- "Complete X dungeon" objectives
-- "Defeat X boss" objectives
-- Track dungeon completions
-
-#### 4E.7: Testing
-
-**Test Files:**
-- `src/stores/__tests__/useDungeonStore.test.js`
-- `src/components/__tests__/DungeonHUD.test.jsx`
-- Manual UI testing for all dungeon flows
-
-**Estimated Time:** 10-12 hours
+**Estimated Time:** 6-8 hours
 
 ---
 
@@ -750,219 +916,92 @@ Create UI components and integrate dungeon system with game.
 
 ### Unit Tests
 
-**Entities:**
-- [ ] Dungeon entity (creation, completion, serialization)
-- [ ] DungeonRoom entity (connections, clearing, exploration)
-- [ ] DungeonBoss entity (phases, abilities, damage)
-
-**Systems:**
-- [ ] DungeonGenerator (all dungeon types, reproducibility)
-- [ ] DungeonEncounterSystem (spawning, scaling)
-- [ ] BossAI (phase transitions, abilities)
-
-**Target Coverage:** 80%+ for all dungeon systems
+| Component | Test File | Coverage Target |
+|-----------|-----------|-----------------|
+| DungeonRoom | `src/entities/__tests__/DungeonRoom.test.js` | 90% |
+| DungeonLayout | `src/entities/__tests__/DungeonLayout.test.js` | 90% |
+| BossMonster | `src/entities/__tests__/BossMonster.test.js` | 85% |
+| RoomLayoutGenerator | `src/systems/__tests__/RoomLayoutGenerator.test.js` | 85% |
+| BossAI | `src/systems/__tests__/BossAI.test.js` | 80% |
 
 ### Integration Tests
 
-**Test File:** `src/systems/__tests__/DungeonSystem.integration.test.js`
+**File:** `src/__tests__/integration/dungeon-system.test.js`
 
-**Scenarios:**
-1. **Full Dungeon Run**
-   - Generate dungeon
-   - Enter dungeon
-   - Clear rooms
-   - Fight boss
-   - Exit dungeon
-   - Verify rewards
+```javascript
+describe('Dungeon System Integration', () => {
+  it('should generate dungeon and navigate rooms', () => {
+    // Generate dungeon
+    // Enter dungeon
+    // Move through rooms
+    // Clear enemies
+    // Reach boss room
+    // Defeat boss
+    // Exit with loot
+  });
 
-2. **Boss Fight Mechanics**
-   - Enter boss room
-   - Trigger phase transitions
-   - Test all boss abilities
-   - Defeat boss
-   - Collect loot
-
-3. **Dungeon Abandonment**
-   - Enter dungeon
-   - Progress partially
-   - Abandon dungeon
-   - Verify state cleanup
-
-4. **Quest Integration**
-   - Accept dungeon quest
-   - Complete dungeon
-   - Verify quest progress
-   - Claim rewards
+  it('should save and load dungeon state', () => {
+    // Start dungeon
+    // Explore some rooms
+    // Save state
+    // Load state
+    // Verify progress preserved
+  });
+});
+```
 
 ### Manual Testing Checklist
 
-**Dungeon Generation:**
-- [ ] All 3 dungeon types generate correctly
-- [ ] No orphaned rooms
-- [ ] Boss room always reachable
-- [ ] Layouts feel varied (run 10 times)
-
-**Combat:**
-- [ ] Monsters spawn in correct rooms
-- [ ] Room clearing works properly
-- [ ] Boss phases transition correctly
-- [ ] Boss abilities work as intended
-
-**UI/UX:**
-- [ ] Entrance UI displays correct info
-- [ ] Mini-map updates as rooms explored
-- [ ] Exit button works from any room
-- [ ] Completion screen shows correct stats
-
-**Performance:**
-- [ ] Dungeon generation < 1 second
-- [ ] Room transitions smooth (< 100ms)
-- [ ] No lag with many monsters in room
-- [ ] Memory cleanup on dungeon exit
-
-**Edge Cases:**
-- [ ] Player dies in dungeon (respawn outside)
-- [ ] Save/load with active dungeon
-- [ ] Disconnect during dungeon
-- [ ] Re-enter same dungeon entrance
+- [ ] Cave dungeon generates without errors
+- [ ] All rooms are reachable from entrance
+- [ ] Boss room is always last room
+- [ ] Mini-map updates correctly
+- [ ] Room transitions are smooth
+- [ ] Boss phase transitions work
+- [ ] Boss abilities trigger correctly
+- [ ] Loot drops on boss death
+- [ ] Exit returns to overworld
+- [ ] Save/load preserves dungeon state
 
 ---
 
 ## Implementation Timeline
 
-### Phase 4A: Dungeon Entity & Room System
-**Duration:** 2 days
-**Tasks:**
-1. Create Dungeon entity class (4 hours)
-2. Create DungeonRoom entity class (3 hours)
-3. Create DungeonEntrance structure (2 hours)
-4. Write unit tests (3 hours)
-5. Documentation (1 hour)
+### Phase 4A: Room-Based Layout System
+**Duration:** 1 day (6 hours)
+- DungeonRoom entity (2h)
+- DungeonLayout class (2h)
+- Unit tests (2h)
 
 ### Phase 4B: Procedural Generator
-**Duration:** 3-4 days
-**Tasks:**
-1. DungeonGenerator system (6 hours)
-2. Cave generation algorithm (3 hours)
-3. Crypt generation algorithm (3 hours)
-4. Ruins generation algorithm (3 hours)
-5. Room connection algorithm (4 hours)
-6. Monster placement (3 hours)
-7. Testing (4 hours)
-8. Documentation (2 hours)
+**Duration:** 1.5 days (10 hours)
+- RoomLayoutGenerator (4h)
+- Room connection algorithm (3h)
+- Monster population (2h)
+- Tests (1h)
 
-### Phase 4C: Dungeon Encounters
-**Duration:** 2 days
-**Tasks:**
-1. DungeonEncounterSystem (4 hours)
-2. Dungeon monster variants (4 hours)
-3. Room clearing mechanics (3 hours)
-4. Testing (3 hours)
-5. Documentation (1 hour)
+### Phase 4C: Boss Mechanics
+**Duration:** 1.5 days (10 hours)
+- BossMonster entity (3h)
+- Brood Mother config (2h)
+- BossAI system (3h)
+- Tests (2h)
 
-### Phase 4D: Boss Mechanics
-**Duration:** 3 days
-**Tasks:**
-1. DungeonBoss entity (4 hours)
-2. Boss type implementations (6 hours)
-3. BossAI system (6 hours)
-4. Boss loot tables (2 hours)
-5. Testing (4 hours)
-6. Documentation (2 hours)
+### Phase 4D: UI & Rendering
+**Duration:** 2 days (12 hours)
+- DungeonRenderer (4h)
+- DungeonStore (2h)
+- DungeonHUD + MiniMap (4h)
+- CSS styling (2h)
 
-### Phase 4E: Dungeon UI & Integration
-**Duration:** 3 days
-**Tasks:**
-1. Dungeon store (3 hours)
-2. Entrance UI (3 hours)
-3. Dungeon HUD (4 hours)
-4. Dungeon renderer (6 hours)
-5. Completion UI (2 hours)
-6. Game loop integration (4 hours)
-7. Testing (4 hours)
-8. Documentation (2 hours)
+### Phase 4E: Integration & Polish
+**Duration:** 1 day (8 hours)
+- GameViewport integration (3h)
+- Quest integration (2h)
+- Save/load support (2h)
+- Bug fixes (1h)
 
-### Testing & Polish
-**Duration:** 2 days
-**Tasks:**
-1. Integration testing (6 hours)
-2. Manual testing (4 hours)
-3. Bug fixes (4 hours)
-4. Performance optimization (2 hours)
-
-**Total Estimated Time:** 15-17 days (120-136 hours)
-
----
-
-## Technical Considerations
-
-### Performance
-
-**Generation Performance:**
-- Dungeon generation must complete < 1 second
-- Use Web Worker for generation if needed
-- Cache generated layouts for seed
-
-**Runtime Performance:**
-- Only render current room + adjacent rooms
-- Monster AI only updates for current room
-- Unload completed dungeon data on exit
-
-**Memory Management:**
-- Clear dungeon instance on exit
-- Clean up monster references
-- Remove event listeners
-
-### Data Structures
-
-**Room Graph:**
-```javascript
-// Adjacency list for O(1) neighbor lookup
-dungeonLayout = {
-  'room_1': ['room_2', 'room_3'],
-  'room_2': ['room_1', 'room_4'],
-  // ...
-}
-
-// Spatial hash for O(1) position lookup
-roomPositions = {
-  '0,0': 'room_1',
-  '1,0': 'room_2',
-  '0,1': 'room_3',
-  // ...
-}
-```
-
-**Monster Spawning:**
-- Pre-spawn all monsters on dungeon entry
-- Monsters inactive until room entered
-- Despawn when room cleared
-
-### Save/Load Considerations
-
-**What to Save:**
-- Active dungeon ID
-- Current room ID
-- Explored rooms
-- Cleared rooms
-- Boss defeated status
-- Dungeon seed (for regeneration)
-- Time spent
-- Monsters killed
-
-**What NOT to Save:**
-- Live monster instances (regenerate on load)
-- Full room layouts (regenerate from seed)
-- Temporary ability cooldowns
-
-### Scalability
-
-**Future Expansion:**
-- Multiple dungeon floors (階層)
-- Dynamic difficulty adjustment
-- Weekly/seasonal dungeons
-- Dungeon leaderboards
-- Co-op dungeons (multiplayer)
+**Total Estimated Time:** 7-8 days (~46 hours)
 
 ---
 
@@ -970,139 +1009,62 @@ roomPositions = {
 
 ### High Risk
 
-**1. Procedural Generation Complexity**
-- **Risk:** Generation algorithms are complex and bug-prone
-- **Mitigation:**
-  - Start with simple algorithms
-  - Extensive testing with multiple seeds
-  - Visual debugging tools
-  - Reference existing algorithms (BSP, Cellular Automata)
+**1. Room Layout Generation Bugs**
+- **Mitigation:** Start with simple grid-based generation, add complexity later
+- **Mitigation:** Visual debugging tool to inspect generated layouts
 
 **2. Boss Fight Balance**
-- **Risk:** Bosses too hard or too easy
-- **Mitigation:**
-  - Playtesting with different builds
-  - Adjustable difficulty modifiers
-  - Telemetry for boss fights
-  - Iterative balance patches
-
-**3. Performance Issues**
-- **Risk:** Too many monsters/objects causes lag
-- **Mitigation:**
-  - Object pooling for monsters
-  - Room-based culling
-  - Performance profiling
-  - Mobile optimization
+- **Mitigation:** Start with easy boss, tune based on testing
+- **Mitigation:** Add difficulty slider for testing
 
 ### Medium Risk
 
-**4. UI/UX Complexity**
-- **Risk:** Dungeon UI clutters screen
-- **Mitigation:**
-  - Minimalist design
-  - Toggle-able UI elements
-  - User testing
-  - Mobile-friendly controls
+**3. Performance with Many Rooms**
+- **Mitigation:** Only render current room + adjacent
+- **Mitigation:** Pool monster instances
 
-**5. Integration Bugs**
-- **Risk:** Dungeons break existing systems
-- **Mitigation:**
-  - Isolated dungeon state
-  - Comprehensive integration tests
-  - Feature flags for gradual rollout
+**4. State Management Complexity**
+- **Mitigation:** Clear separation between dungeon and overworld state
+- **Mitigation:** Comprehensive state reset on dungeon exit
 
 ### Low Risk
 
-**6. Save/Load Issues**
-- **Risk:** Dungeon state doesn't persist correctly
-- **Mitigation:**
-  - Seed-based regeneration
-  - Extensive save/load tests
-  - Backward compatibility checks
+**5. UI Clutter**
+- **Mitigation:** Minimalist design, toggle-able elements
+
+---
+
+## Open Questions (Decisions Needed)
+
+1. **Room transition style?**
+   - Option A: Instant teleport (simpler)
+   - Option B: Animated walk-through door (nicer UX)
+   - **Recommendation:** Start with Option A, add B later
+
+2. **Death in dungeon?**
+   - Option A: Respawn outside, lose progress
+   - Option B: Respawn at entrance, continue
+   - **Recommendation:** Option A for challenge
+
+3. **Dungeon re-entry?**
+   - Option A: Same layout if re-enter quickly
+   - Option B: Always new layout
+   - **Recommendation:** Option B for variety
 
 ---
 
 ## Success Metrics
 
-**Completion Criteria:**
-- [ ] All 3 dungeon types generate without errors
-- [ ] Boss fights are challenging but fair
-- [ ] Dungeon loot is valuable and exciting
-- [ ] UI is clear and intuitive
-- [ ] Performance maintains 60 FPS
-- [ ] 80%+ test coverage
-- [ ] Zero critical bugs
-- [ ] Positive user feedback
-
-**Post-Launch Metrics:**
-- Average dungeon completion time
-- Boss fight success rate
-- Most popular dungeon type
-- Loot satisfaction rating
-- Bug reports per 100 runs
+**MVP Complete When:**
+- [x] Cave dungeon generates 10-15 connected rooms
+- [ ] Player can navigate between rooms via doors
+- [ ] Enemies spawn in chambers and cleared on defeat
+- [ ] Boss has 3 phases with abilities
+- [ ] Mini-map shows explored rooms
+- [ ] Boss drops unique loot
+- [ ] Performance: 60 FPS maintained
 
 ---
 
-## Open Questions
-
-1. **Should dungeons scale with player level or be fixed difficulty?**
-   - Pro Fixed: Easier to balance, clear progression
-   - Pro Scaled: Always relevant content
-   - **Recommendation:** Fixed with level requirements
-
-2. **How many times can player attempt same dungeon?**
-   - Option A: Unlimited
-   - Option B: Once per day
-   - Option C: Cooldown timer (1 hour)
-   - **Recommendation:** Option C - Cooldown timer
-
-3. **Should dungeons consume resources (keys, tokens)?**
-   - Pro Yes: Adds economy, makes dungeons special
-   - Pro No: More accessible, better for testing
-   - **Recommendation:** No for MVP, add later
-
-4. **Death penalty in dungeons?**
-   - Option A: Lose all progress, respawn outside
-   - Option B: Respawn at entrance, continue
-   - Option C: Respawn in room, small penalty
-   - **Recommendation:** Option A - High stakes
-
-5. **Dungeon persistence?**
-   - Should dungeons save state between sessions?
-   - **Recommendation:** Yes - Save active dungeon state
-
----
-
-## References
-
-**Procedural Generation:**
-- [Procedural Content Generation Wiki](http://pcg.wikidot.com/)
-- [Brogue (Roguelike)](https://sites.google.com/site/broguegame/) - Cave generation
-- [Spelunky](https://spelunkyworld.com/original.html) - Level generation
-
-**Boss Design:**
-- [Hollow Knight](https://www.hollowknight.com/) - Boss phases
-- [Dark Souls](https://www.darksouls.jp/) - Boss telegraphing
-- [Monster Hunter](https://www.monsterhunter.com/) - Boss patterns
-
-**Dungeon Layout:**
-- [TinyKeep Generation](https://www.gamasutra.com/blogs/AAdonaac/20150903/252889/Procedural_Dungeon_Generation_Algorithm.php)
-- [Binding of Isaac](https://bindingofisaac.com/) - Room-based dungeons
-
----
-
-## Version History
-
-- **v1.0** (2025-11-24) - Initial draft by Claude
-- Planning for Phase 4 implementation
-- Comprehensive system design and timeline
-
----
-
-**Next Steps:**
-1. Review this plan with team/maintainers
-2. Prioritize MVP features vs. nice-to-haves
-3. Set up development environment for Phase 4
-4. Begin implementation with Phase 4A
-
-**Document Status:** Awaiting review and approval before implementation begins.
+**Document Status:** REVISED - Ready for implementation
+**Next Step:** Begin Phase 4A implementation

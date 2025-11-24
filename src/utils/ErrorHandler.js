@@ -62,6 +62,10 @@ class ErrorHandler {
     this.errorHandlers = new Map();
     this.isInitialized = false;
 
+    // Store bound event handlers for cleanup
+    this.boundGlobalErrorHandler = null;
+    this.boundUnhandledRejectionHandler = null;
+
     // Error statistics
     this.stats = {
       total: 0,
@@ -80,8 +84,12 @@ class ErrorHandler {
 
     // Global error handler for unhandled errors
     if (typeof window !== 'undefined') {
-      window.addEventListener('error', this.handleGlobalError.bind(this));
-      window.addEventListener('unhandledrejection', this.handleUnhandledRejection.bind(this));
+      // Bind handlers and store references for cleanup
+      this.boundGlobalErrorHandler = this.handleGlobalError.bind(this);
+      this.boundUnhandledRejectionHandler = this.handleUnhandledRejection.bind(this);
+
+      window.addEventListener('error', this.boundGlobalErrorHandler);
+      window.addEventListener('unhandledrejection', this.boundUnhandledRejectionHandler);
     }
 
     this.isInitialized = true;
@@ -351,6 +359,37 @@ class ErrorHandler {
         }
       }
     };
+  }
+
+  /**
+   * Destroy the error handler and clean up resources
+   * Removes event listeners to prevent memory leaks
+   */
+  destroy() {
+    if (!this.isInitialized) {
+      return;
+    }
+
+    // Remove global event listeners
+    if (typeof window !== 'undefined') {
+      if (this.boundGlobalErrorHandler) {
+        window.removeEventListener('error', this.boundGlobalErrorHandler);
+        this.boundGlobalErrorHandler = null;
+      }
+      if (this.boundUnhandledRejectionHandler) {
+        window.removeEventListener('unhandledrejection', this.boundUnhandledRejectionHandler);
+        this.boundUnhandledRejectionHandler = null;
+      }
+    }
+
+    // Clear error handlers
+    this.errorHandlers.clear();
+
+    // Clear error queue
+    this.errorQueue = [];
+
+    this.isInitialized = false;
+    Logger.info('ErrorHandler destroyed');
   }
 }
 

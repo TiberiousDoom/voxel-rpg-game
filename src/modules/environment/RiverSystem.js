@@ -113,6 +113,7 @@ export class RiverSystem {
     // Storage
     this.rivers = new Map(); // riverId -> River
     this.riverGrid = new Map(); // posKey -> riverId (for fast lookups)
+    this.generatedRegions = new Set(); // Track regions that have been generated
 
     // Noise for source placement
     this.sourceNoise = new NoiseGenerator(terrainSystem?.seed || Date.now());
@@ -132,6 +133,13 @@ export class RiverSystem {
    */
   generateRiversForRegion(regionX, regionZ) {
     if (!this.config.enabled || !this.terrainSystem) return [];
+
+    // Check if region already generated (caching)
+    const regionKey = `${regionX},${regionZ}`;
+    if (this.generatedRegions.has(regionKey)) {
+      return []; // Already generated, skip
+    }
+    this.generatedRegions.add(regionKey);
 
     const rivers = [];
     const regionSize = this.config.regionSize;

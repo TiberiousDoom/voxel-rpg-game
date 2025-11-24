@@ -15,6 +15,67 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   max-height: 80vh; /* Improved scrollable container */
   position: relative;
+  transition: max-height 0.3s ease;
+}
+
+/* Collapsed State */
+.build-menu.build-menu-collapsed {
+  max-height: 60px;
+  overflow: hidden;
+}
+
+/* Collapse Header */
+.build-menu-collapse-header {
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  flex-shrink: 0;
+}
+
+/* Collapse Toggle Button */
+.build-menu-collapse-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.build-menu-collapse-toggle:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.build-menu-collapse-toggle:active {
+  transform: translateY(0);
+}
+
+.build-menu-collapse-toggle:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.6);
+  outline-offset: 2px;
+}
+
+.build-menu-collapse-toggle .collapse-icon {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.build-menu-collapsed .build-menu-collapse-toggle .collapse-icon {
+  transform: rotate(180deg);
+}
+
+.build-menu-collapse-toggle .collapse-text {
+  flex: 1;
+  text-align: left;
 }
 
 /* Scrollbar Styling */

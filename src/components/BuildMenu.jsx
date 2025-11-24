@@ -77,6 +77,7 @@ function BuildMenu({
   const [displayMode, setDisplayMode] = useState('compact');
   const [searchTerm, setSearchTerm] = useState('');
   const [showTierProgress, setShowTierProgress] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Get available buildings based on current tier
   const availableBuildings = useMemo(() => {
@@ -206,53 +207,72 @@ function BuildMenu({
 
   return (
     <div
-      className="build-menu"
+      className={`build-menu ${isCollapsed ? 'build-menu-collapsed' : ''}`}
       role="region"
       aria-label={ARIA_LABELS.BUILD_MENU.TITLE}
     >
-      {/* Quick Action Bar */}
-      <QuickActionBar
-        onSpawnNPC={onSpawnNPC}
-        onAdvanceTier={onAdvanceTier}
-        onShowInfo={() => setShowInstructions(!showInstructions)}
-        currentTier={currentTier}
-      />
+      {/* Collapse/Expand Header Button */}
+      <div className="build-menu-collapse-header">
+        <button
+          className="build-menu-collapse-toggle"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-expanded={!isCollapsed}
+          title={isCollapsed ? 'Expand Build Menu' : 'Minimize Build Menu'}
+        >
+          <span className="collapse-icon">
+            {isCollapsed ? '▲' : '▼'}
+          </span>
+          <span className="collapse-text">
+            {isCollapsed ? 'Expand Menu' : 'Minimize Menu'}
+          </span>
+        </button>
+      </div>
 
-      {/* Current Selection Banner */}
-      <CurrentSelectionBanner
-        selectedBuildingType={selectedBuildingType}
-        buildingName={selectedInfo.name}
-        buildingIcon={selectedInfo.icon}
-        onCancel={() => onSelectBuilding(null)}
-      />
+      {!isCollapsed && (
+        <>
+          {/* Quick Action Bar */}
+          <QuickActionBar
+            onSpawnNPC={onSpawnNPC}
+            onAdvanceTier={onAdvanceTier}
+            onShowInfo={() => setShowInstructions(!showInstructions)}
+            currentTier={currentTier}
+          />
 
-      {/* Building Search */}
-      <BuildingSearch
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        matchCount={searchMatchCount}
-        totalCount={availableBuildings.length}
-      />
+          {/* Current Selection Banner */}
+          <CurrentSelectionBanner
+            selectedBuildingType={selectedBuildingType}
+            buildingName={selectedInfo.name}
+            buildingIcon={selectedInfo.icon}
+            onCancel={() => onSelectBuilding(null)}
+          />
 
-      {/* Building Category Filter */}
-      <BuildingCategoryFilter
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        buildingsByCategory={buildingsByCategory}
-      />
+          {/* Building Search */}
+          <BuildingSearch
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            matchCount={searchMatchCount}
+            totalCount={availableBuildings.length}
+          />
 
-      {/* Grid Display Toggle */}
-      <GridDisplayToggle
-        displayMode={displayMode}
-        onDisplayModeChange={setDisplayMode}
-      />
+          {/* Building Category Filter */}
+          <BuildingCategoryFilter
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            buildingsByCategory={buildingsByCategory}
+          />
 
-      {/* Building Selection by Tier */}
-      <div
-        className="buildings-section"
-        role="group"
-        aria-label="Buildings organized by tier"
-      >
+          {/* Grid Display Toggle */}
+          <GridDisplayToggle
+            displayMode={displayMode}
+            onDisplayModeChange={setDisplayMode}
+          />
+
+          {/* Building Selection by Tier */}
+          <div
+            className="buildings-section"
+            role="group"
+            aria-label="Buildings organized by tier"
+          >
         {TIER_HIERARCHY.map(tier => {
           const buildings = buildingsByTier[tier];
           if (!buildings || buildings.length === 0) return null;
@@ -293,48 +313,50 @@ function BuildMenu({
             </CollapsibleSection>
           );
         })}
-      </div>
+          </div>
 
-      {/* Tier Progress Section (Collapsible) */}
-      {showTierProgress && (
-        <TierProgressIndicator
-          currentTier={currentTier}
-          currentResources={{}}
-          tierRequirements={{}}
-          gameManager={null}
-        />
-      )}
+          {/* Tier Progress Section (Collapsible) */}
+          {showTierProgress && (
+            <TierProgressIndicator
+              currentTier={currentTier}
+              currentResources={{}}
+              tierRequirements={{}}
+              gameManager={null}
+            />
+          )}
 
-      {/* Toggle Tier Progress Button */}
-      <button
-        className="tier-progress-toggle"
-        onClick={() => setShowTierProgress(!showTierProgress)}
-        title={showTierProgress ? 'Hide tier progress' : 'Show tier progress'}
-        aria-label={showTierProgress ? 'Hide tier progress details' : 'Show tier progress details'}
-        aria-expanded={showTierProgress}
-      >
-        <span className="toggle-icon" aria-hidden="true">📈</span>
-        <span className="toggle-text">
-          {showTierProgress ? 'Hide' : 'Show'} Tier Progress
-        </span>
-      </button>
+          {/* Toggle Tier Progress Button */}
+          <button
+            className="tier-progress-toggle"
+            onClick={() => setShowTierProgress(!showTierProgress)}
+            title={showTierProgress ? 'Hide tier progress' : 'Show tier progress'}
+            aria-label={showTierProgress ? 'Hide tier progress details' : 'Show tier progress details'}
+            aria-expanded={showTierProgress}
+          >
+            <span className="toggle-icon" aria-hidden="true">📈</span>
+            <span className="toggle-text">
+              {showTierProgress ? 'Hide' : 'Show'} Tier Progress
+            </span>
+          </button>
 
-      {/* Instructions Section (Collapsible) */}
-      {showInstructions && (
-        <div
-          className="instructions-section"
-          role="region"
-          aria-label="Gameplay instructions"
-        >
-          <h4>How to Play:</h4>
-          <ol>
-            <li>Select a building from the menu above</li>
-            <li>Click on the game world to place it</li>
-            <li>Use the Quick Actions to spawn NPCs and advance tiers</li>
-            <li>Gather resources to progress through civilization tiers</li>
-            <li>Press <kbd>?</kbd> to view keyboard shortcuts</li>
-          </ol>
-        </div>
+          {/* Instructions Section (Collapsible) */}
+          {showInstructions && (
+            <div
+              className="instructions-section"
+              role="region"
+              aria-label="Gameplay instructions"
+            >
+              <h4>How to Play:</h4>
+              <ol>
+                <li>Select a building from the menu above</li>
+                <li>Click on the game world to place it</li>
+                <li>Use the Quick Actions to spawn NPCs and advance tiers</li>
+                <li>Gather resources to progress through civilization tiers</li>
+                <li>Press <kbd>?</kbd> to view keyboard shortcuts</li>
+              </ol>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

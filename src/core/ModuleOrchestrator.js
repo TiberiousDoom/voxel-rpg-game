@@ -336,7 +336,7 @@ class ModuleOrchestrator {
         const npcStates = {};
         for (const npc of this.npcManager.npcs.values()) {
           npcStates[npc.id] = {
-            isWorking: npc.isWorking || this.npcAssignment.isAssigned(npc.id),
+            isWorking: npc.isWorking || this.npcAssignment.getAssignment(npc.id) !== null,
             isResting: npc.isResting || false,
             isSocializing: false, // Will be set by idle task
             isInsideTerritory: this.territoryManager.isPositionInAnyTerritory(npc.position)
@@ -1002,7 +1002,9 @@ class ModuleOrchestrator {
       // Update buildings map to ensure we have latest building positions
       this.npcManager.updateBuildingsMap(this.gameState.buildings);
 
-      const result = this.npcAssignment.assignNPCToBuilding(npcId, buildingId);
+      // assignNPC returns boolean, wrap in result object
+      const assigned = this.npcAssignment.assignNPC(npcId, buildingId);
+      const result = { success: assigned };
 
       if (result.success) {
         // Set NPC movement to the building (this triggers movement)

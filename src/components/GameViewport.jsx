@@ -421,11 +421,12 @@ function GameViewport({
   }
 
   // Detect if mobile for performance optimizations (cached - never changes during session)
-  const isMobile = React.useMemo(() =>
+  const isMobileDevice = React.useMemo(() =>
+    isMobile ||
     /Android|iPhone|iPad/i.test(navigator.userAgent) ||
     window.innerWidth <= 768 ||
     ('ontouchstart' in window),
-  []);
+  [isMobile]);
 
   // WF3: Building rendering hook (optimized for mobile)
   const {
@@ -437,16 +438,16 @@ function GameViewport({
     tileSize: TILE_SIZE,
     showHealthBars: true,
     showProgressBars: true,
-    showShadows: !isMobile, // Disable shadows on mobile for performance
-    showOverlays: !isMobile // Disable texture overlays on mobile for performance
+    showShadows: !isMobileDevice, // Disable shadows on mobile for performance
+    showOverlays: !isMobileDevice // Disable texture overlays on mobile for performance
   });
 
   // WF4: NPC Renderer integration (optimized for mobile)
   const npcRenderer = useNPCRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: !isMobile, // Hide health bars on mobile
-    showRoleBadges: !isMobile, // Hide role badges on mobile
-    showStatusIndicators: !isMobile, // Hide status indicators on mobile
+    showHealthBars: !isMobileDevice, // Hide health bars on mobile
+    showRoleBadges: !isMobileDevice, // Hide role badges on mobile
+    showStatusIndicators: !isMobileDevice, // Hide status indicators on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
@@ -454,7 +455,7 @@ function GameViewport({
   // Monster Renderer integration
   const monsterRenderer = useMonsterRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: !isMobile, // Hide health bars on mobile
+    showHealthBars: !isMobileDevice, // Hide health bars on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
@@ -783,7 +784,7 @@ function GameViewport({
     // Draw grid with camera offset (optimized for mobile)
     // isMobile is already cached above, use it directly!
 
-    if (!isMobile) {
+    if (!isMobileDevice) {
       // Full grid on desktop
       // OPTIMIZED: Batch all lines into single path for better performance
       ctx.save();
@@ -1199,7 +1200,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
 
   /**
    * Terrain tool handlers
@@ -1665,7 +1666,7 @@ function GameViewport({
           setPerfMetrics({
             fps,
             frameTime: avgFrameTime.toFixed(2),
-            isMobile,
+            isMobileDevice,
             canvasWidth: CANVAS_WIDTH,
             canvasHeight: CANVAS_HEIGHT,
             ...perfRef.current.currentMetrics
@@ -1893,7 +1894,7 @@ function GameViewport({
       )}
 
       {/* Viewport footer - hidden on mobile (legend moved to hamburger menu) */}
-      {!isMobile && (
+      {!isMobileDevice && (
         <div className="viewport-footer">
         <p className="viewport-hint">
           {enablePlayerMovement ? (

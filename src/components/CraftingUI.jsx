@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Hammer, Package, Sword, Shield, Zap, Pickaxe } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
+// eslint-disable-next-line no-unused-vars
 import { CRAFTING_RECIPES, ITEM_TYPES, canCraft, consumeMaterials } from '../data/craftingRecipes';
 import { MaterialCraftingSystem, QUALITY_TIERS } from '../modules/crafting/MaterialCraftingSystem';
 
@@ -21,6 +22,7 @@ const CraftingUI = () => {
 
   const inventory = useGameStore((state) => state.inventory);
   const player = useGameStore((state) => state.player);
+  // eslint-disable-next-line no-unused-vars
   const equipment = useGameStore((state) => state.equipment);
   const craftItem = useGameStore((state) => state.craftItem);
 

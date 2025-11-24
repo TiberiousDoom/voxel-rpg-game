@@ -38,8 +38,7 @@ import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSys
 import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
 import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
 import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
-import WeatherSeasonIndicator from './WeatherSeasonIndicator.jsx'; // Weather/Season Indicator (Phase 3 Integration)
-import Phase3DebugPanel from './Phase3DebugPanel.jsx'; // Debug Panel (Phase 3 Integration)
+import UnifiedDebugMenu from './UnifiedDebugMenu.jsx'; // Unified Debug & Developer Menu
 import './GameViewport.css';
 
 /**
@@ -1757,51 +1756,6 @@ function GameViewport({
         </div>
       )}
 
-      {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
-      {debugMode && (
-        <div className="debug-overlay" style={{
-          position: 'fixed',
-          top: '10px',
-          left: '10px',
-          background: debugInfo.lastError ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-          padding: '8px',
-          borderRadius: '6px',
-          fontSize: '10px',
-          fontFamily: 'monospace',
-          maxWidth: '200px',
-          maxHeight: '300px',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          zIndex: 9999,
-          pointerEvents: 'none',
-        }}>
-        <div><strong>🔍 Render Status</strong></div>
-        <div>Canvas: {debugInfo.canvasReady ? '✓' : '✗'}</div>
-        <div>Context: {debugInfo.contextReady ? '✓' : '✗'}</div>
-        <div>Camera: {debugInfo.cameraReady ? '✓' : '✗'}</div>
-        <div>Player: {debugInfo.playerReady ? '✓' : '✗'}</div>
-        <div>Rendering: {debugInfo.rendering ? '✓' : '✗'}</div>
-        <div>Renders: {debugInfo.renderCount}</div>
-        <div>Canvas Size: {CANVAS_WIDTH}x{CANVAS_HEIGHT}</div>
-        {canvasRef.current && (
-          <>
-            <div>Element: {canvasRef.current.width}x{canvasRef.current.height}</div>
-            <div>Display: {canvasRef.current.offsetWidth}x{canvasRef.current.offsetHeight}px</div>
-          </>
-        )}
-        <div>Window: {window.innerWidth}x{window.innerHeight}</div>
-        <div>DPR: {window.devicePixelRatio || 1}</div>
-        <div>Mobile: {/Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 768 ? 'Yes' : 'No'}</div>
-        <div>Offset: {getOffset ? JSON.stringify(getOffset()) : 'null'}</div>
-        {debugInfo.lastError && (
-          <div style={{ marginTop: '8px', color: '#ffff00', fontWeight: 'bold' }}>
-            ⚠️ {debugInfo.lastError}
-          </div>
-        )}
-        </div>
-      )}
-
       {/* Mini-map (Phase 3 Integration) */}
       {enablePlayerMovement && terrainSystemRef.current && (
         <MiniMap
@@ -1809,76 +1763,20 @@ function GameViewport({
           cameraX={cameraPositionRef.current.x}
           cameraZ={cameraPositionRef.current.z}
           size={200}
-          zoom={0.5}
         />
       )}
 
-      {/* Weather/Season Indicator (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
-        <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
-      )}
-
-      {/* Phase 3 Debug Panel (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
-        <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
-      )}
-
-      {/* Performance metrics overlay - shown only when enabled (Mobile optimization) */}
-      {showPerformanceMonitor && (
-        <div className="performance-overlay" style={{
-          position: 'fixed',
-          top: '230px', // Moved down to avoid overlap with mini-map
-          right: '10px',
-          background: 'rgba(0, 0, 0, 0.85)',
-          color: '#00ff00',
-          padding: '12px',
-          borderRadius: '8px',
-          fontSize: '12px',
-          fontFamily: 'monospace',
-          minWidth: '180px',
-          zIndex: 9999,
-          pointerEvents: 'none',
-          border: '2px solid rgba(0, 255, 0, 0.3)',
-        }}>
-          <div style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ffffff', borderBottom: '1px solid rgba(0, 255, 0, 0.3)', paddingBottom: '4px' }}>
-            ⚡ PERFORMANCE
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 8px' }}>
-            <div>FPS:</div>
-            <div style={{ color: perfMetrics.fps < 30 ? '#ff4444' : perfMetrics.fps < 45 ? '#ffaa00' : '#00ff00' }}>
-              {perfMetrics.fps || 0}
-            </div>
-
-            <div>Frame:</div>
-            <div style={{ color: perfMetrics.frameTime > 33 ? '#ff4444' : perfMetrics.frameTime > 22 ? '#ffaa00' : '#00ff00' }}>
-              {perfMetrics.frameTime || 0}ms
-            </div>
-
-            <div>Target:</div>
-            <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
-
-            <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
-              Entities:
-            </div>
-
-            <div>Buildings:</div>
-            <div>{perfMetrics.visibleBuildings}/{perfMetrics.totalBuildings}</div>
-
-            <div>NPCs:</div>
-            <div>{perfMetrics.visibleNPCs}/{perfMetrics.totalNPCs}</div>
-
-            <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
-              Canvas:
-            </div>
-
-            <div>Size:</div>
-            <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
-
-            <div>Device:</div>
-            <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
-          </div>
-        </div>
-      )}
+      {/* Unified Debug & Developer Menu */}
+      <UnifiedDebugMenu
+        terrainSystem={terrainSystemRef.current}
+        debugInfo={debugInfo}
+        perfMetrics={perfMetrics}
+        canvasRef={canvasRef}
+        getOffset={getOffset}
+        enablePlayerMovement={enablePlayerMovement}
+        showPerformanceMonitor={showPerformanceMonitor}
+        debugMode={debugMode}
+      />
 
       {/* Viewport footer - hidden on mobile (legend moved to hamburger menu) */}
       {!isMobile && (

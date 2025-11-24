@@ -422,11 +422,10 @@ function GameViewport({
 
   // Detect if mobile for performance optimizations (cached - never changes during session)
   const isMobileDevice = React.useMemo(() =>
-    isMobile ||
     /Android|iPhone|iPad/i.test(navigator.userAgent) ||
     window.innerWidth <= 768 ||
     ('ontouchstart' in window),
-  [isMobile]);
+  []);
 
   // WF3: Building rendering hook (optimized for mobile)
   const {

@@ -25,6 +25,8 @@ import { WeatherSystem } from './WeatherSystem.js'; // Phase 3C
 import { SeasonalSystem } from './SeasonalSystem.js'; // Phase 3C
 import { WaterBodySystem } from './WaterBodySystem.js'; // Phase 3B
 import { RiverSystem } from './RiverSystem.js'; // Phase 3B
+import { SeasonalEventSystem } from '../events/SeasonalEventSystem.js'; // Phase 3 Gameplay
+import { StructureInteractionSystem } from '../structures/StructureInteractionSystem.js'; // Phase 3 Gameplay
 import biomeConfigs from '../../config/environment/biomeConfigs.js';
 import propDefinitions from '../../config/environment/propDefinitions.js';
 import structureTemplates from '../../config/environment/structures/structureTemplates.js'; // Phase 3D
@@ -177,6 +179,28 @@ export class TerrainSystem {
       }
     );
 
+    // Phase 3 Gameplay: Initialize SeasonalEventSystem
+    this.seasonalEventSystem = new SeasonalEventSystem(
+      this.seasonalSystem,
+      {
+        enableEvents: options.enableSeasonalEvents !== false,
+        eventCheckInterval: 86400000, // Check daily (1 game day = 10 minutes default)
+        maxActiveEvents: 2
+      }
+    );
+
+    // Phase 3 Gameplay: Initialize StructureInteractionSystem
+    this.structureInteractionSystem = new StructureInteractionSystem(
+      this.structureGenerator,
+      {
+        minChestsPerStructure: 1,
+        maxChestsPerStructure: 3,
+        interactionRadius: 2,
+        enableRespawn: true,
+        respawnTime: 3600000 // 1 hour
+      }
+    );
+
     // Statistics
     this.stats = {
       updateCount: 0,
@@ -211,6 +235,11 @@ export class TerrainSystem {
 
     if (this.seasonalSystem) {
       this.seasonalSystem.update(deltaTime);
+    }
+
+    // Phase 3 Gameplay: Update seasonal events
+    if (this.seasonalEventSystem) {
+      this.seasonalEventSystem.update(deltaTime);
     }
 
     const elapsed = performance.now() - startTime;
@@ -376,6 +405,8 @@ export class TerrainSystem {
       season: this.seasonalSystem?.getStats(), // Phase 3C
       waterBodies: this.waterBodySystem?.getStats(), // Phase 3B
       rivers: this.riverSystem?.getStats(), // Phase 3B
+      seasonalEvents: this.seasonalEventSystem?.getStats(), // Phase 3 Gameplay
+      structureInteraction: this.structureInteractionSystem?.getStats(), // Phase 3 Gameplay
       system: this.stats
     };
   }
@@ -740,5 +771,89 @@ export class TerrainSystem {
    */
   getRiverSystem() {
     return this.riverSystem;
+  }
+
+  // ===== Phase 3 Gameplay: Seasonal event methods =====
+
+  /**
+   * Get seasonal event system - Phase 3 Gameplay
+   * @returns {SeasonalEventSystem} Seasonal event system instance
+   */
+  getSeasonalEventSystem() {
+    return this.seasonalEventSystem;
+  }
+
+  /**
+   * Get active seasonal events - Phase 3 Gameplay
+   * @returns {Array<object>} Active events
+   */
+  getActiveSeasonalEvents() {
+    return this.seasonalEventSystem?.getActiveEvents() || [];
+  }
+
+  /**
+   * Get effect multiplier from active events - Phase 3 Gameplay
+   * @param {string} effectType - Effect type (e.g., 'plantGrowth', 'harvestYield')
+   * @returns {number} Combined multiplier from all active events
+   */
+  getEventEffectMultiplier(effectType) {
+    return this.seasonalEventSystem?.getEffectMultiplier(effectType) || 1.0;
+  }
+
+  // ===== Phase 3 Gameplay: Structure interaction methods =====
+
+  /**
+   * Get structure interaction system - Phase 3 Gameplay
+   * @returns {StructureInteractionSystem} Structure interaction system instance
+   */
+  getStructureInteractionSystem() {
+    return this.structureInteractionSystem;
+  }
+
+  /**
+   * Get structure system (alias for compatibility) - Phase 3D
+   * @returns {StructureGenerator} Structure generator instance
+   */
+  getStructureSystem() {
+    return this.structureGenerator;
+  }
+
+  /**
+   * Discover a structure - Phase 3 Gameplay
+   * @param {string} structureId - Structure ID
+   * @param {object} player - Player object {id, position}
+   * @returns {object} Discovery result {success, state, chestCount}
+   */
+  discoverStructure(structureId, player) {
+    return this.structureInteractionSystem?.discoverStructure(structureId, player);
+  }
+
+  /**
+   * Open a chest - Phase 3 Gameplay
+   * @param {string} chestId - Chest ID
+   * @param {object} player - Player object {id, position}
+   * @returns {object} Interaction result {success, loot, chest}
+   */
+  openChest(chestId, player) {
+    return this.structureInteractionSystem?.openChest(chestId, player);
+  }
+
+  /**
+   * Get nearby chests - Phase 3 Gameplay
+   * @param {object} position - Position {x, z}
+   * @param {number} radius - Search radius
+   * @returns {Array<object>} Nearby chests with distance
+   */
+  getNearbyChests(position, radius) {
+    return this.structureInteractionSystem?.getNearbyChests(position, radius) || [];
+  }
+
+  /**
+   * Get exploration state for structure - Phase 3 Gameplay
+   * @param {string} structureId - Structure ID
+   * @returns {object|null} Exploration state
+   */
+  getStructureExplorationState(structureId) {
+    return this.structureInteractionSystem?.getExplorationState(structureId);
   }
 }

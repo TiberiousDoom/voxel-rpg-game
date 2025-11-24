@@ -110,9 +110,8 @@ const initializeCanvas = (canvas, width, height) => {
   return ctx;
 };
 
-// Grid constants - Updated to 50x50 for player movement
-const GRID_WIDTH = 50;
-const GRID_HEIGHT = 50;
+// Grid constants - Infinite world with chunk-based terrain generation
+// The terrain system dynamically loads chunks as the player explores
 const TILE_SIZE = 40;
 // Viewport size (window into the larger world)
 const VIEWPORT_WIDTH = 800; // 20 tiles visible width
@@ -802,7 +801,7 @@ function GameViewport({
       ctx.strokeStyle = GRID_COLOR;
       ctx.lineWidth = 1;
 
-      // Calculate visible grid range
+      // Calculate visible grid range (no upper bounds for infinite world)
       const startX = Math.floor(-offset.x / TILE_SIZE);
       const endX = Math.ceil((CANVAS_WIDTH - offset.x) / TILE_SIZE);
       const startZ = Math.floor(-offset.y / TILE_SIZE);
@@ -811,15 +810,15 @@ function GameViewport({
       // Batch all grid lines into a single path (much faster!)
       ctx.beginPath();
 
-      // Vertical lines
-      for (let i = Math.max(0, startX); i <= Math.min(GRID_WIDTH, endX); i++) {
+      // Vertical lines (render only visible tiles, no upper limit)
+      for (let i = startX; i <= endX; i++) {
         const x = i * TILE_SIZE + offset.x;
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
       }
 
-      // Horizontal lines
-      for (let i = Math.max(0, startZ); i <= Math.min(GRID_HEIGHT, endZ); i++) {
+      // Horizontal lines (render only visible tiles, no upper limit)
+      for (let i = startZ; i <= endZ; i++) {
         const y = i * TILE_SIZE + offset.y;
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
@@ -845,15 +844,15 @@ function GameViewport({
       // Batch all grid lines into a single path (much faster!)
       ctx.beginPath();
 
-      // Vertical lines
-      for (let i = Math.max(0, Math.floor(startX / 5) * 5); i <= Math.min(GRID_WIDTH, endX); i += 5) {
+      // Vertical lines (every 5 tiles for mobile, no upper limit)
+      for (let i = Math.floor(startX / 5) * 5; i <= endX; i += 5) {
         const x = i * TILE_SIZE + offset.x;
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
       }
 
-      // Horizontal lines
-      for (let i = Math.max(0, Math.floor(startZ / 5) * 5); i <= Math.min(GRID_HEIGHT, endZ); i += 5) {
+      // Horizontal lines (every 5 tiles for mobile, no upper limit)
+      for (let i = Math.floor(startZ / 5) * 5; i <= endZ; i += 5) {
         const y = i * TILE_SIZE + offset.y;
         ctx.moveTo(0, y);
         ctx.lineTo(CANVAS_WIDTH, y);
@@ -1514,20 +1513,9 @@ function GameViewport({
       hoveredPosition.x !== position.x ||
       hoveredPosition.z !== position.z;
 
-    // Clamp to grid bounds
-    if (
-      position.x >= 0 &&
-      position.x < GRID_WIDTH &&
-      position.z >= 0 &&
-      position.z < GRID_HEIGHT
-    ) {
-      if (posChanged) {
-        setHoveredPosition(position);
-      }
-    } else {
-      if (hoveredPosition !== null) {
-        setHoveredPosition(null);
-      }
+    // No bounds checking for infinite world - always allow hover
+    if (posChanged) {
+      setHoveredPosition(position);
     }
   };
 

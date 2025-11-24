@@ -18,6 +18,7 @@ import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
+import { useDamageNumberRenderer } from '../rendering/useDamageNumberRenderer.js'; // Damage number rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
 import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
@@ -278,6 +279,7 @@ function GameViewport({
   const buildingsRef = useRef(buildings);
   const monstersRef = useRef(monsters);
   const lootDropsRef = useRef([]); // Loot drops from store
+  const damageNumbersRef = useRef([]); // Damage numbers from store
   const hoveredPositionRef = useRef(hoveredPosition);
   const selectedBuildingTypeRef = useRef(selectedBuildingType);
   const debugModeRef = useRef(debugMode);
@@ -287,6 +289,8 @@ function GameViewport({
 
   // Subscribe to loot drops from store
   const lootDrops = useGameStore((state) => state.lootDrops);
+  // Subscribe to damage numbers from store
+  const damageNumbers = useGameStore((state) => state.damageNumbers);
 
   // Update refs when props change (prevents useCallback recreation)
   useEffect(() => {
@@ -294,12 +298,13 @@ function GameViewport({
     buildingsRef.current = buildings;
     monstersRef.current = monsters;
     lootDropsRef.current = lootDrops;
+    damageNumbersRef.current = damageNumbers;
     hoveredPositionRef.current = hoveredPosition;
     selectedBuildingTypeRef.current = selectedBuildingType;
     debugModeRef.current = debugMode;
     enablePlayerMovementRef.current = enablePlayerMovement;
     // canInteract and closestInteractable updated in separate useEffect below
-  }, [npcs, buildings, monsters, lootDrops, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+  }, [npcs, buildings, monsters, lootDrops, damageNumbers, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
 
   // Monster AI system
   const monsterAIRef = useRef(null);
@@ -477,6 +482,11 @@ function GameViewport({
     showPickupRadius: debugMode,
     enableAnimation: true,
     debugMode: debugMode
+  });
+
+  // Damage Number Renderer integration (Phase 3: Combat)
+  const { renderDamageNumbers } = useDamageNumberRenderer({
+    tileSize: TILE_SIZE
   });
 
   // Terrain Job Renderer integration
@@ -1038,6 +1048,12 @@ function GameViewport({
       renderLootDrops(ctx, lootDropsRef.current, worldToCanvas, currentTime);
     }
 
+    // Render damage numbers (Phase 3: Combat)
+    if (damageNumbersRef.current && damageNumbersRef.current.length > 0) {
+      const currentTime = performance.now();
+      renderDamageNumbers(ctx, damageNumbersRef.current, worldToCanvas, currentTime);
+    }
+
     // Store metrics in ref (don't trigger state update every frame)
     perfRef.current.currentMetrics = {
       visibleBuildings: visibleBuildingCount,
@@ -1201,7 +1217,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops, renderDamageNumbers]);
 
   /**
    * Terrain tool handlers
@@ -1354,8 +1370,24 @@ function GameViewport({
       // Check if clicked on an interactable object
       let didInteract = false;
 
+      // Check if clicked on a monster (Phase 3: Combat)
+      const clickedMonster = monstersRef.current?.find(monster => {
+        if (!monster || !monster.alive) return false;
+        const dist = Math.sqrt(
+          Math.pow(worldPos.x - monster.position.x, 2) +
+          Math.pow(worldPos.z - monster.position.z, 2)
+        );
+        return dist < 1.5; // Within 1.5 tiles
+      });
+
+      if (clickedMonster) {
+        // Attack the monster
+        useGameStore.getState().attackMonster(clickedMonster.id);
+        didInteract = true;
+      }
+
       // Check if close to an interactable
-      if (closestInteractable) {
+      if (!didInteract && closestInteractable) {
         const clickDist = Math.sqrt(
           Math.pow(worldPos.x - closestInteractable.position.x, 2) +
           Math.pow(worldPos.z - closestInteractable.position.z, 2)
@@ -1620,6 +1652,18 @@ function GameViewport({
             useGameStore.getState().updateLootDrops({
               x: playerRef.current.x,
               z: playerRef.current.z
+            });
+          }
+
+          // Clean up old damage numbers (Phase 3: Combat)
+          if (damageNumbersRef.current && damageNumbersRef.current.length > 0) {
+            const now = performance.now();
+            const maxAge = 1500; // 1.5 seconds
+            damageNumbersRef.current.forEach(damageNum => {
+              const age = now - (damageNum.id || now);
+              if (age > maxAge) {
+                useGameStore.getState().removeDamageNumber(damageNum.id);
+              }
             });
           }
 

@@ -1,0 +1,147 @@
+/**
+ * CollapsibleFloatingPanel.css - Styles for floating collapsible panels
+ */
+
+.collapsible-floating-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  max-width: 400px;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.collapsible-floating-panel.expanded {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Panel Header */
+.floating-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.floating-panel-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  border-radius: 8px 0 0 8px;
+}
+
+.floating-panel-toggle:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.floating-panel-toggle:active {
+  transform: scale(0.98);
+}
+
+.floating-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.floating-icon {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.floating-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+  white-space: nowrap;
+}
+
+/* Close Button */
+.floating-panel-close {
+  padding: 8px;
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 8px 8px 0;
+  min-width: 32px;
+}
+
+.floating-panel-close:hover {
+  background: rgba(220, 38, 38, 1);
+}
+
+.floating-panel-close:active {
+  transform: scale(0.95);
+}
+
+/* Panel Content */
+.floating-panel-content {
+  padding: 10px;
+  animation: fadeSlideIn 0.2s ease-out;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Compact mode when collapsed */
+.collapsible-floating-panel:not(.expanded) {
+  min-width: auto;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .collapsible-floating-panel {
+    max-width: calc(100vw - 20px);
+    min-width: 150px;
+  }
+
+  .floating-panel-toggle {
+    padding: 6px 8px;
+  }
+
+  .floating-title {
+    font-size: 10px;
+  }
+
+  .floating-icon {
+    font-size: 12px;
+  }
+}
+
+/* Ensure panels don't interfere with pointer events when not interacting */
+.collapsible-floating-panel:not(.expanded) {
+  pointer-events: auto;
+}
+
+.floating-panel-content {
+  pointer-events: auto;
+}

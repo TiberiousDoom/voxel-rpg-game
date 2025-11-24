@@ -40,6 +40,7 @@ import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
 import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
 import WeatherSeasonIndicator from './WeatherSeasonIndicator.jsx'; // Weather/Season Indicator (Phase 3 Integration)
 import Phase3DebugPanel from './Phase3DebugPanel.jsx'; // Debug Panel (Phase 3 Integration)
+import CollapsibleFloatingPanel from './CollapsibleFloatingPanel.jsx'; // Collapsible floating panels
 import './GameViewport.css';
 
 /**
@@ -213,6 +214,7 @@ function GameViewport({
   debugMode = false,
   enablePlayerMovement = true, // New prop to enable/disable player movement
   showPerformanceMonitor = true, // Show/hide performance monitor
+  cleanMode = false, // Hide all UI panels for clean viewport
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
@@ -1737,9 +1739,14 @@ function GameViewport({
         onMouseLeave={handleCanvasMouseLeave}
       />
 
-      {/* Terrain Tools Panel */}
-      {!selectedBuildingType && (
-        <div style={{ position: 'fixed', left: '10px', bottom: '10px', zIndex: 1000 }}>
+      {/* Terrain Tools Panel - Collapsible, hidden in clean mode */}
+      {!selectedBuildingType && !cleanMode && !isMobile && (
+        <CollapsibleFloatingPanel
+          title="Terrain Tools"
+          icon="⛏️"
+          defaultExpanded={false}
+          position="left: 10px; bottom: 10px"
+        >
           <TerrainToolsPanel
             activeTool={activeTool}
             priority={jobPriority}
@@ -1757,7 +1764,7 @@ function GameViewport({
                       ? JobTimeCalculator.formatTime(
                           timeCalculatorRef.current.estimateTime(activeTool, {
                             x: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).x, canvasToWorld(selectionEnd.x, selectionEnd.y).x),
-                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionEnd.y).z),
+                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionStart.y).z),
                             width: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).x - canvasToWorld(selectionStart.x, selectionStart.y).x) + 1,
                             depth: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).z - canvasToWorld(selectionStart.x, selectionStart.y).z) + 1
                           })
@@ -1767,7 +1774,7 @@ function GameViewport({
                 : null
             }
           />
-        </div>
+        </CollapsibleFloatingPanel>
       )}
 
       {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
@@ -1815,8 +1822,8 @@ function GameViewport({
         </div>
       )}
 
-      {/* Mini-map (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
+      {/* Mini-map (Phase 3 Integration) - Always visible, has close button */}
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobile && (
         <MiniMap
           terrainSystem={terrainSystemRef.current}
           cameraX={cameraPositionRef.current.x}
@@ -1826,18 +1833,32 @@ function GameViewport({
         />
       )}
 
-      {/* Weather/Season Indicator (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
-        <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
+      {/* Weather/Season Indicator (Phase 3 Integration) - Collapsible, hidden in clean mode */}
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobile && (
+        <CollapsibleFloatingPanel
+          title="Weather & Season"
+          icon="🌤️"
+          defaultExpanded={false}
+          position="top: 10px; left: 10px"
+        >
+          <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
+        </CollapsibleFloatingPanel>
       )}
 
-      {/* Phase 3 Debug Panel (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
-        <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
+      {/* Phase 3 Debug Panel (Phase 3 Integration) - Collapsible, hidden in clean mode, contextual (debug mode) */}
+      {enablePlayerMovement && terrainSystemRef.current && debugMode && !cleanMode && !isMobile && (
+        <CollapsibleFloatingPanel
+          title="Debug Info"
+          icon="🐛"
+          defaultExpanded={false}
+          position="top: 10px; right: 250px"
+        >
+          <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
+        </CollapsibleFloatingPanel>
       )}
 
-      {/* Performance metrics overlay - shown only when enabled (Mobile optimization) */}
-      {showPerformanceMonitor && (
+      {/* Performance metrics overlay - shown only when enabled, hidden in clean mode */}
+      {showPerformanceMonitor && !cleanMode && !isMobile && (
         <div className="performance-overlay" style={{
           position: 'fixed',
           top: '230px', // Moved down to avoid overlap with mini-map

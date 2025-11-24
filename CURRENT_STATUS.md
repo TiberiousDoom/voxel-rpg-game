@@ -1,23 +1,30 @@
 # Current Status
 
-**Last Updated:** November 15, 2025
+**Last Updated:** November 24, 2025
 **MVP Version:** 1.0
-**Status:** 🟢 **PRODUCTION READY**
+**Status:** 🟢 **PRODUCTION READY** (Settlement Game) + 🟡 **IN PROGRESS** (Combat/RPG Features)
 
 ---
 
 ## Executive Summary
 
-The Voxel RPG Game is a **browser-based, single-player settlement management game** built with React. The game is **feature-complete** and ready for testing.
+The Voxel RPG Game is a **browser-based, single-player settlement management game** built with React. The game is **feature-complete** for settlement management and has **combat/RPG features in active development**.
 
-**Phase Status:**
+**Settlement Management Status:**
 - ✅ **Phase 0-2:** Complete (Core systems, Browser integration, Advanced features)
 - ✅ **Phase 3A:** Complete (NPC Advanced Behaviors)
 - ✅ **Phase 3B:** Complete (Event System)
 - ✅ **Phase 3C:** Complete (Achievement System)
 - ✅ **Phase 3D:** Complete (Tutorial System)
+- **Overall:** 100% of planned settlement features
 
-**Overall Completion:** 100% of planned features
+**Combat/RPG Features Status:**
+- ✅ **Phase 1:** Complete (Monster System - 5 monster types, AI, spawning)
+- ✅ **Phase 2:** Complete (Loot System - 5 rarity tiers, procedural generation)
+- ✅ **Phase 3:** Complete (Quest System - 10 quests, tracking, rewards)
+- ✅ **Combat Integration:** Complete (Player attacks, monster damage, visual feedback)
+- 🚧 **Phase 4:** Not Started (Dungeon System)
+- **Overall:** 75% of planned combat/RPG features
 
 ---
 
@@ -46,7 +53,7 @@ Opens at: http://localhost:3000
 
 ## What You Can Do
 
-**Core Gameplay:**
+**Core Gameplay (Settlement Management):**
 - ✅ Place and remove buildings (10+ types)
 - ✅ Spawn and manage NPCs (4 roles)
 - ✅ Gather and manage 6 resource types (Food, Wood, Stone, Gold, Essence, Crystal)
@@ -54,11 +61,20 @@ Opens at: http://localhost:3000
 - ✅ Manage population morale and happiness
 - ✅ Save/Load games to browser storage
 
-**Advanced Features:**
+**Advanced Features (Settlement Management):**
 - ✅ NPC autonomous behaviors (idle tasks, needs tracking)
 - ✅ Random and seasonal events (9 event types)
 - ✅ Achievement system (50 achievements)
 - ✅ Tutorial system (12 tutorial steps)
+
+**Combat/RPG Features (NEW):**
+- ✅ Fight monsters (5 types: Slime, Goblin, Wolf, Skeleton, Orc)
+- ✅ Collect loot with 5 rarity tiers (Common to Legendary)
+- ✅ Complete quests (10 quests: main, side, daily)
+- ✅ Gain XP and level up from combat
+- ✅ Auto-equip better gear with stat bonuses
+- ✅ Track quest progress with Quest Journal and HUD tracker
+- 🚧 Dungeon exploration (coming soon)
 
 ---
 
@@ -234,6 +250,155 @@ Opens at: http://localhost:3000
 - `src/modules/tutorial-system/FeatureUnlock.js` (280 lines)
 - `src/modules/tutorial-system/tutorialSteps.js` (231 lines)
 - `src/modules/tutorial-system/contextHelpDefinitions.js` (447 lines)
+
+---
+
+## Gameplay Features (Combat/RPG Systems)
+
+**Implementation Plan:** [GAMEPLAY_FEATURES_IMPLEMENTATION_PLAN.md](documentation/planning/GAMEPLAY_FEATURES_IMPLEMENTATION_PLAN.md)
+**Status:** 🟡 **IN PROGRESS** (Phase 3 Complete, Phase 4 Pending)
+
+### Phase 1: Monster System ✅
+
+**Status:** Complete (100/100 score)
+**Location:** `src/entities/Monster.js`, `src/systems/`
+
+**Components:**
+- ✅ **Monster Entity** - Complete entity with stats, health, AI state
+- ✅ **MonsterAI System** - State machine (IDLE, PATROL, CHASE, ATTACK, FLEE)
+- ✅ **Monster Types** - 5 types: SLIME, GOBLIN, WOLF, SKELETON, ORC
+- ✅ **Monster Modifiers** - ELITE, FAST, TANK, BERSERKER variants
+- ✅ **SpawnManager** - Zone-based spawning with respawn timers
+- ✅ **MonsterRenderer** - Health bars, visual effects, animations
+- ✅ **Integration** - Fully integrated with game loop
+
+**Monster Types:**
+- **SLIME** (Lv1-3) - Weak, slow, good for beginners
+- **GOBLIN** (Lv2-5) - Fast, can flee when injured
+- **WOLF** (Lv3-6) - Pack hunters, patrol behavior
+- **SKELETON** (Lv4-8) - Undead, moderate difficulty
+- **ORC** (Lv6-10) - Strong, high HP, dangerous
+
+**Test Coverage:** Excellent (31 test cases)
+
+**Files:**
+- `src/entities/Monster.js` (366 lines)
+- `src/systems/MonsterAI.js` (425 lines)
+- `src/systems/SpawnManager.js` (306 lines)
+- `src/rendering/useMonsterRenderer.js` (478 lines)
+
+### Phase 2: Loot System ✅
+
+**Status:** Complete (100/100 score)
+**Location:** `src/entities/Item.js`, `src/systems/`
+
+**Components:**
+- ✅ **Item Entity** - Equipment and loot items with stats
+- ✅ **LootGenerator** - Procedural item generation
+- ✅ **Rarity System** - 5 tiers (COMMON to LEGENDARY)
+- ✅ **Item Properties** - Special effects (Lifesteal, Crit, etc.)
+- ✅ **Loot Tables** - Monster-specific drop tables
+- ✅ **LootDropManager** - Visual loot drops with pickup
+- ✅ **Integration** - Monster death triggers loot
+
+**Equipment Slots:**
+- Weapon, Armor, Helmet, Boots, Gloves
+- Ring (2 slots), Amulet, Offhand
+
+**Rarity Tiers:**
+- **COMMON** (70% drop) - White, 1.0x stats, 0-1 properties
+- **UNCOMMON** (20% drop) - Green, 1.3x stats, 1-2 properties
+- **RARE** (7% drop) - Blue, 1.8x stats, 2-3 properties
+- **EPIC** (2.5% drop) - Purple, 2.5x stats, 3-4 properties
+- **LEGENDARY** (0.5% drop) - Orange, 4.0x stats, 4-5 properties, glow effect
+
+**Test Coverage:** Excellent (all loot systems tested)
+
+**Files:**
+- `src/entities/Item.js` (243 lines)
+- `src/systems/LootGenerator.js` (261 lines)
+- `src/systems/LootTable.js` (287 lines)
+- `src/systems/LootDropManager.js` (342 lines)
+- `src/rendering/useLootDropRenderer.js` (298 lines)
+
+### Phase 3: Quest System ✅
+
+**Status:** Complete (100/100 score)
+**Location:** `src/entities/Quest.js`, `src/stores/useQuestStore.js`
+
+**Components:**
+- ✅ **Quest Entity** - Quest and QuestObjective classes
+- ✅ **Quest Store** - Zustand-based state management
+- ✅ **QuestManager** - Quest lifecycle and event tracking
+- ✅ **Quest Types** - KILL, COLLECT, EXPLORE, BUILD, TALK
+- ✅ **Quest Categories** - MAIN, SIDE, DAILY, REPEATABLE
+- ✅ **Quest UI** - Journal and Tracker HUD components
+- ✅ **Integration** - Monster kills tracked, rewards granted
+
+**Quest Definitions:**
+- **Starter Quests** (6) - Main story progression (Lv1-6)
+- **Side Quests** (4) - Building and mixed objectives
+- **Daily Quests** (4) - Repeatable quests for farming
+
+**Features:**
+- Level requirements and prerequisite system
+- Automatic progress tracking on game events
+- Reward distribution (XP, gold, items)
+- Quest chains with unlock system
+- Quest abandonment support
+- Repeatable quest support
+
+**Test Coverage:** Excellent (20 test cases)
+
+**Files:**
+- `src/entities/Quest.js` (367 lines)
+- `src/stores/useQuestStore.js` (286 lines)
+- `src/systems/QuestManager.js` (291 lines)
+- `src/components/quest/QuestJournal.jsx` (239 lines)
+- `src/components/quest/QuestTracker.jsx` (56 lines)
+- `src/config/quests/` (3 JSON files with 10 quest definitions)
+
+### Combat System Integration ✅
+
+**Status:** Complete (100/100 score)
+**Date Completed:** November 24, 2025
+
+**Components:**
+- ✅ **Player Attack** - Click-to-attack monsters
+- ✅ **Monster Damage** - Monsters properly damage player
+- ✅ **Damage Calculation** - Base damage + crit system
+- ✅ **Visual Feedback** - Floating damage numbers
+- ✅ **Combat Integration** - Quest tracking on kills
+
+**Attack System:**
+- Click on monster within 1.5 tiles to attack
+- Base damage: 10 (affected by player stats)
+- Critical hits: 5% chance, 150% damage
+- Damage affected by player defense, blocking, invincibility
+
+**Damage Numbers:**
+- Float upward and fade over 1.5 seconds
+- Yellow for critical hits (with "CRIT!" label)
+- Red for player damage to monsters
+- Orange for monster damage to player
+- Green for healing (future use)
+
+**Files:**
+- `src/stores/useGameStore.js` (attackMonster function)
+- `src/rendering/useDamageNumberRenderer.js` (95 lines)
+- `src/components/GameViewport.jsx` (monster click handling)
+
+### Phase 4: Dungeon System 🚧
+
+**Status:** Not Started
+**Planned Features:**
+- Procedurally generated dungeons
+- Room-based layout system
+- Dungeon encounters and boss fights
+- Special loot tables for dungeons
+- Entrance/exit teleportation
+
+**Estimated Complexity:** High (2-3 weeks)
 
 ---
 

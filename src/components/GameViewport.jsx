@@ -206,6 +206,7 @@ function GameViewport({
   buildings = [],
   npcs = [],
   monsters = [], // Array of Monster instances
+  gameManager = null, // Game manager for real-time NPC access
   selectedBuildingType = null,
   onPlaceBuilding = () => {},
   onSelectTile = () => {},
@@ -772,8 +773,15 @@ function GameViewport({
       bottom: Math.ceil((CANVAS_HEIGHT - offset.y) / TILE_SIZE) + 2
     };
 
-    // Filter visible NPCs (use ref to avoid useCallback recreation!)
-    const visibleNPCs = (npcsRef.current || []).filter(npc => {
+    // Filter visible NPCs - fetch directly from manager for real-time positions!
+    // This bypasses the debounced React state to get 60 FPS NPC movement
+    let currentNPCs = npcsRef.current || [];
+    if (gameManager && gameManager.orchestrator && gameManager.orchestrator.npcManager) {
+      // Get NPCs directly from manager with real-time positions
+      currentNPCs = gameManager.orchestrator.npcManager.getAllNPCStates();
+    }
+
+    const visibleNPCs = currentNPCs.filter(npc => {
       if (!npc || !npc.position) return false;
       return npc.position.x >= viewportBounds.left &&
              npc.position.x <= viewportBounds.right &&

@@ -137,6 +137,24 @@ function GameScreen() {
     };
   }, [gameState.isPaused]);
 
+  // ESC key handler to cancel building placement
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        // Cancel building placement if active
+        if (selectedBuildingType) {
+          setSelectedBuildingType(null);
+          setToastMessage('🚫 Building placement cancelled');
+          setTimeout(() => setToastMessage(null), 3000);
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [selectedBuildingType]);
   // Clean Mode keyboard shortcut (` backtick key)
   useEffect(() => {
     const handleKeyPress = (event) => {
@@ -367,6 +385,7 @@ function GameScreen() {
             buildings={gameState.buildings || []}
             npcs={gameState.npcs || []}
             monsters={enemies || []}
+            gameManager={gameManager}
             selectedBuildingType={selectedBuildingType}
             onPlaceBuilding={(position) => {
               if (selectedBuildingType) {

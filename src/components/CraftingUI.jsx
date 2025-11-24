@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Hammer, Package, Sword, Shield, Zap, Pickaxe } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
-import { CRAFTING_RECIPES, ITEM_TYPES, canCraft, consumeMaterials } from '../data/craftingRecipes';
+import { CRAFTING_RECIPES, ITEM_TYPES, canCraft } from '../data/craftingRecipes';
 import { MaterialCraftingSystem, QUALITY_TIERS } from '../modules/crafting/MaterialCraftingSystem';
 
 /**
@@ -22,7 +22,6 @@ const CraftingUI = () => {
   const inventory = useGameStore((state) => state.inventory);
   const player = useGameStore((state) => state.player);
   const equipment = useGameStore((state) => state.equipment);
-  const craftItem = useGameStore((state) => state.craftItem);
 
   // Initialize MaterialCraftingSystem
   useEffect(() => {

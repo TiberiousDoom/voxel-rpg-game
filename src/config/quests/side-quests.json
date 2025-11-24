@@ -1,0 +1,123 @@
+[
+  {
+    "id": "quest_side_builder_001",
+    "title": "Establishing the Settlement",
+    "description": "Build your first farm to start producing food for your settlement.",
+    "type": "BUILD",
+    "category": "SIDE",
+    "levelRequirement": 1,
+    "objectives": [
+      {
+        "id": "obj_build_001",
+        "description": "Build 1 Farm",
+        "type": "BUILD",
+        "targetType": "farm",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 75,
+      "gold": 50,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_side_builder_002",
+    "title": "Mining Operations",
+    "description": "Construct a mine to gather valuable resources from the earth.",
+    "type": "BUILD",
+    "category": "SIDE",
+    "levelRequirement": 2,
+    "objectives": [
+      {
+        "id": "obj_build_002",
+        "description": "Build 1 Mine",
+        "type": "BUILD",
+        "targetType": "mine",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 100,
+      "gold": 75,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_side_builder_003",
+    "title": "Lumber Production",
+    "description": "Build a lumbermill to process wood efficiently.",
+    "type": "BUILD",
+    "category": "SIDE",
+    "levelRequirement": 2,
+    "objectives": [
+      {
+        "id": "obj_build_003",
+        "description": "Build 1 Lumbermill",
+        "type": "BUILD",
+        "targetType": "lumbermill",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 100,
+      "gold": 75,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_side_mixed_001",
+    "title": "Clearing the Path",
+    "description": "Clear out slimes and build a watchtower to secure the area.",
+    "type": "KILL",
+    "category": "SIDE",
+    "levelRequirement": 2,
+    "objectives": [
+      {
+        "id": "obj_mixed_001_1",
+        "description": "Kill 15 Slimes",
+        "type": "KILL",
+        "targetType": "SLIME",
+        "targetCount": 15,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_mixed_001_2",
+        "description": "Build 1 Watchtower",
+        "type": "BUILD",
+        "targetType": "watchtower",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 250,
+      "gold": 150,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  }
+]

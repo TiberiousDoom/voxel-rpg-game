@@ -40,6 +40,7 @@ import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
 import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
 import WeatherSeasonIndicator from './WeatherSeasonIndicator.jsx'; // Weather/Season Indicator (Phase 3 Integration)
 import Phase3DebugPanel from './Phase3DebugPanel.jsx'; // Debug Panel (Phase 3 Integration)
+import CollapsibleFloatingPanel from './CollapsibleFloatingPanel.jsx'; // Collapsible floating panels
 import './GameViewport.css';
 
 /**
@@ -212,8 +213,8 @@ function GameViewport({
   onBuildingClick = () => {},
   debugMode = false,
   enablePlayerMovement = true, // New prop to enable/disable player movement
-  isMobile = false, // Mobile device detection
   showPerformanceMonitor = true, // Show/hide performance monitor
+  cleanMode = false, // Hide all UI panels for clean viewport
 }) {
   const [hoveredPosition, setHoveredPosition] = useState(null);
   // eslint-disable-next-line no-unused-vars -- Reserved for WF4: Building selection feature
@@ -250,7 +251,7 @@ function GameViewport({
     totalBuildings: 0,
     visibleNPCs: 0,
     totalNPCs: 0,
-    isMobile: false,
+    isMobileDevice: false,
     canvasWidth: 0,
     canvasHeight: 0
   });
@@ -422,7 +423,7 @@ function GameViewport({
   }
 
   // Detect if mobile for performance optimizations (cached - never changes during session)
-  const isMobile = React.useMemo(() =>
+  const isMobileDevice = React.useMemo(() =>
     /Android|iPhone|iPad/i.test(navigator.userAgent) ||
     window.innerWidth <= 768 ||
     ('ontouchstart' in window),
@@ -438,16 +439,16 @@ function GameViewport({
     tileSize: TILE_SIZE,
     showHealthBars: true,
     showProgressBars: true,
-    showShadows: !isMobile, // Disable shadows on mobile for performance
-    showOverlays: !isMobile // Disable texture overlays on mobile for performance
+    showShadows: !isMobileDevice, // Disable shadows on mobile for performance
+    showOverlays: !isMobileDevice // Disable texture overlays on mobile for performance
   });
 
   // WF4: NPC Renderer integration (optimized for mobile)
   const npcRenderer = useNPCRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: !isMobile, // Hide health bars on mobile
-    showRoleBadges: !isMobile, // Hide role badges on mobile
-    showStatusIndicators: !isMobile, // Hide status indicators on mobile
+    showHealthBars: !isMobileDevice, // Hide health bars on mobile
+    showRoleBadges: !isMobileDevice, // Hide role badges on mobile
+    showStatusIndicators: !isMobileDevice, // Hide status indicators on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
@@ -455,7 +456,7 @@ function GameViewport({
   // Monster Renderer integration
   const monsterRenderer = useMonsterRenderer({
     tileSize: TILE_SIZE,
-    showHealthBars: !isMobile, // Hide health bars on mobile
+    showHealthBars: !isMobileDevice, // Hide health bars on mobile
     enableAnimations: true,
     debugMode: debugMode
   });
@@ -784,7 +785,7 @@ function GameViewport({
     // Draw grid with camera offset (optimized for mobile)
     // isMobile is already cached above, use it directly!
 
-    if (!isMobile) {
+    if (!isMobileDevice) {
       // Full grid on desktop
       // OPTIMIZED: Batch all lines into single path for better performance
       ctx.save();
@@ -1200,7 +1201,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobile, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops]);
 
   /**
    * Terrain tool handlers
@@ -1666,7 +1667,7 @@ function GameViewport({
           setPerfMetrics({
             fps,
             frameTime: avgFrameTime.toFixed(2),
-            isMobile,
+            isMobileDevice,
             canvasWidth: CANVAS_WIDTH,
             canvasHeight: CANVAS_HEIGHT,
             ...perfRef.current.currentMetrics
@@ -1737,9 +1738,14 @@ function GameViewport({
         onMouseLeave={handleCanvasMouseLeave}
       />
 
-      {/* Terrain Tools Panel */}
-      {!selectedBuildingType && (
-        <div style={{ position: 'fixed', left: '10px', bottom: '10px', zIndex: 1000 }}>
+      {/* Terrain Tools Panel - Collapsible, hidden in clean mode */}
+      {!selectedBuildingType && !cleanMode && !isMobileDevice && (
+        <CollapsibleFloatingPanel
+          title="Terrain Tools"
+          icon="⛏️"
+          defaultExpanded={false}
+          position="left: 10px; bottom: 10px"
+        >
           <TerrainToolsPanel
             activeTool={activeTool}
             priority={jobPriority}
@@ -1757,7 +1763,7 @@ function GameViewport({
                       ? JobTimeCalculator.formatTime(
                           timeCalculatorRef.current.estimateTime(activeTool, {
                             x: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).x, canvasToWorld(selectionEnd.x, selectionEnd.y).x),
-                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionEnd.y).z),
+                            z: Math.min(canvasToWorld(selectionStart.x, selectionStart.y).z, canvasToWorld(selectionEnd.x, selectionStart.y).z),
                             width: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).x - canvasToWorld(selectionStart.x, selectionStart.y).x) + 1,
                             depth: Math.abs(canvasToWorld(selectionEnd.x, selectionEnd.y).z - canvasToWorld(selectionStart.x, selectionStart.y).z) + 1
                           })
@@ -1767,7 +1773,7 @@ function GameViewport({
                 : null
             }
           />
-        </div>
+        </CollapsibleFloatingPanel>
       )}
 
       {/* Debug overlay - mobile diagnostics (can be hidden if not needed) */}
@@ -1815,8 +1821,8 @@ function GameViewport({
         </div>
       )}
 
-      {/* Mini-map (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
+      {/* Mini-map (Phase 3 Integration) - Always visible, has close button */}
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobileDevice && (
         <MiniMap
           terrainSystem={terrainSystemRef.current}
           cameraX={cameraPositionRef.current.x}
@@ -1826,18 +1832,32 @@ function GameViewport({
         />
       )}
 
-      {/* Weather/Season Indicator (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
-        <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
+      {/* Weather/Season Indicator (Phase 3 Integration) - Collapsible, hidden in clean mode */}
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobileDevice && (
+        <CollapsibleFloatingPanel
+          title="Weather & Season"
+          icon="🌤️"
+          defaultExpanded={false}
+          position="top: 10px; left: 10px"
+        >
+          <WeatherSeasonIndicator terrainSystem={terrainSystemRef.current} />
+        </CollapsibleFloatingPanel>
       )}
 
-      {/* Phase 3 Debug Panel (Phase 3 Integration) */}
-      {enablePlayerMovement && terrainSystemRef.current && (
-        <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
+      {/* Phase 3 Debug Panel (Phase 3 Integration) - Collapsible, hidden in clean mode, contextual (debug mode) */}
+      {enablePlayerMovement && terrainSystemRef.current && debugMode && !cleanMode && !isMobileDevice && (
+        <CollapsibleFloatingPanel
+          title="Debug Info"
+          icon="🐛"
+          defaultExpanded={false}
+          position="top: 10px; right: 250px"
+        >
+          <Phase3DebugPanel terrainSystem={terrainSystemRef.current} />
+        </CollapsibleFloatingPanel>
       )}
 
-      {/* Performance metrics overlay - shown only when enabled (Mobile optimization) */}
-      {showPerformanceMonitor && (
+      {/* Performance metrics overlay - shown only when enabled, hidden in clean mode */}
+      {showPerformanceMonitor && !cleanMode && !isMobileDevice && (
         <div className="performance-overlay" style={{
           position: 'fixed',
           top: '230px', // Moved down to avoid overlap with mini-map
@@ -1868,7 +1888,7 @@ function GameViewport({
             </div>
 
             <div>Target:</div>
-            <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
+            <div>{perfMetrics.isMobileDevice ? '45' : '60'} FPS</div>
 
             <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
               Entities:
@@ -1888,13 +1908,13 @@ function GameViewport({
             <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
 
             <div>Device:</div>
-            <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
+            <div>{perfMetrics.isMobileDevice ? 'Mobile' : 'Desktop'}</div>
           </div>
         </div>
       )}
 
       {/* Viewport footer - hidden on mobile (legend moved to hamburger menu) */}
-      {!isMobile && (
+      {!isMobileDevice && (
         <div className="viewport-footer">
         <p className="viewport-hint">
           {enablePlayerMovement ? (

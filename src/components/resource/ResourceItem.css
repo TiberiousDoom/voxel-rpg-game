@@ -157,7 +157,7 @@
 
 /* Tooltip Container */
 .resource-tooltip-container {
-  z-index: 10000;
+  z-index: var(--z-resource-tooltip-container); /* 11100 - Above modals */
 }
 
 /* Responsive Design */

@@ -10,7 +10,7 @@
   bottom: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
-  z-index: 10000;
+  z-index: var(--z-raid-warning); /* 10550 - Above modals, critical game alert */
   display: flex;
   align-items: center;
   justify-content: center;

@@ -49,6 +49,24 @@ Thank you for contributing to the Voxel RPG Game! This guide covers both code an
 - Manual testing for UI changes
 - Performance testing for optimization changes
 
+### Pre-submission Checklist
+
+Before creating a pull request, verify:
+
+- [ ] **No ESLint errors** - Run build and fix all linting errors
+- [ ] **No unused variables** - Remove or use all declared variables
+- [ ] **No console.log** statements in production code
+- [ ] **Tests pass** - All existing tests still pass
+- [ ] **New tests added** - For new features or bug fixes
+- [ ] **Code formatted** - Follows project style guide
+- [ ] **Documentation updated** - If API or behavior changed
+
+**Quick verification:**
+```bash
+npm run build  # Check for ESLint errors and unused variables
+npm test       # Ensure all tests pass
+```
+
 ---
 
 ## Documentation Contributions

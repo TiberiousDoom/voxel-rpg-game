@@ -17,6 +17,8 @@ const Phase3DebugPanel = ({ terrainSystem }) => {
     season: false,
     microBiomes: false,
     structures: false,
+    seasonalEvents: false,
+    structureExploration: false,
   });
 
   // Update stats every second
@@ -75,6 +77,19 @@ const Phase3DebugPanel = ({ terrainSystem }) => {
       const structureSystem = terrainSystem.getStructureSystem?.();
       if (structureSystem) {
         newStats.structures = structureSystem.getStats?.() || {};
+      }
+
+      // Seasonal Event Stats (Phase 3 Gameplay)
+      const eventSystem = terrainSystem.getSeasonalEventSystem?.();
+      if (eventSystem) {
+        newStats.seasonalEvents = eventSystem.getStats?.() || {};
+        newStats.activeEvents = eventSystem.getActiveEvents?.() || [];
+      }
+
+      // Structure Interaction Stats (Phase 3 Gameplay)
+      const interactionSystem = terrainSystem.getStructureInteractionSystem?.();
+      if (interactionSystem) {
+        newStats.structureExploration = interactionSystem.getStats?.() || {};
       }
 
       setStats(newStats);
@@ -307,6 +322,48 @@ const Phase3DebugPanel = ({ terrainSystem }) => {
               <StatRow label="Temples" value={stats.structures.byType?.temple || 0} />
               <StatRow label="Ruins" value={stats.structures.byType?.ruins || 0} />
               <StatRow label="Towers" value={stats.structures.byType?.tower || 0} />
+            </div>
+          )}
+        </DebugSection>
+
+        {/* Seasonal Events Section (Gameplay) */}
+        <DebugSection
+          title="Seasonal Events (Gameplay)"
+          isExpanded={expandedSections.seasonalEvents}
+          onToggle={() => toggleSection('seasonalEvents')}
+        >
+          {stats.seasonalEvents && (
+            <div style={statsContainerStyle}>
+              <StatRow label="Active Events" value={stats.activeEventsCount || stats.activeEvents?.length || 0} />
+              <StatRow label="Total Triggered" value={stats.seasonalEvents.totalEventsTriggered || 0} />
+              <StatRow label="Completed" value={stats.seasonalEvents.totalEventsCompleted || 0} />
+              {stats.activeEvents && stats.activeEvents.length > 0 && (
+                <div style={{ marginTop: '8px', fontSize: '0.75rem' }}>
+                  <div style={{ color: '#4FC3F7', fontWeight: 'bold', marginBottom: '4px' }}>Active:</div>
+                  {stats.activeEvents.map((event, idx) => (
+                    <div key={idx} style={{ color: '#cbd5e0', marginLeft: '8px' }}>
+                      • {event.id.replace(/_/g, ' ')}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </DebugSection>
+
+        {/* Structure Exploration Section (Gameplay) */}
+        <DebugSection
+          title="Structure Exploration (Gameplay)"
+          isExpanded={expandedSections.structureExploration}
+          onToggle={() => toggleSection('structureExploration')}
+        >
+          {stats.structureExploration && (
+            <div style={statsContainerStyle}>
+              <StatRow label="Discovered" value={stats.structureExploration.structuresDiscovered || 0} />
+              <StatRow label="Explored" value={stats.structureExploration.structuresExplored || 0} />
+              <StatRow label="Total Chests" value={stats.structureExploration.totalChests || 0} />
+              <StatRow label="Opened Chests" value={stats.structureExploration.chestsOpened || 0} />
+              <StatRow label="Remaining" value={stats.structureExploration.chestsRemaining || 0} />
             </div>
           )}
         </DebugSection>

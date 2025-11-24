@@ -194,6 +194,47 @@ const useGameStore = create((set, get) => ({
       enemies: state.enemies.filter((m) => m.alive),
     })),
 
+  // Attack a monster (player deals damage)
+  attackMonster: (monsterId) => {
+    const state = get();
+    const monster = state.enemies.find(m => m.id === monsterId);
+
+    if (!monster || !monster.alive) {
+      return false;
+    }
+
+    // Calculate damage
+    const baseDamage = state.player.damage || 10;
+    const critRoll = Math.random() * 100;
+    const isCrit = critRoll < (state.player.critChance || 5);
+    const critMultiplier = isCrit ? (state.player.critDamage || 150) / 100 : 1;
+    const finalDamage = Math.floor(baseDamage * critMultiplier);
+
+    // Apply damage to monster
+    const killed = monster.takeDamage(finalDamage);
+
+    // Show damage number
+    state.addDamageNumber({
+      x: monster.position.x,
+      z: monster.position.z,
+      damage: finalDamage,
+      isCrit: isCrit,
+      type: 'player'
+    });
+
+    // Update monster in store to trigger React update
+    set(state => ({
+      enemies: [...state.enemies]
+    }));
+
+    // If monster died, handle death
+    if (killed) {
+      state.handleMonsterDeath(monster);
+    }
+
+    return true;
+  },
+
   // Handle monster death with loot drops
   handleMonsterDeath: (monster) => {
     const state = get();
@@ -206,6 +247,23 @@ const useGameStore = create((set, get) => ({
     // Add XP from monster
     if (monster.xpReward) {
       state.addXP(monster.xpReward);
+    }
+
+    // Track kill for quests (Phase 3: Quest System)
+    if (monster.type) {
+      try {
+        // Dynamic import to avoid circular dependencies
+        import('../systems/QuestManager.js').then(({ getQuestManager }) => {
+          const questManager = getQuestManager();
+          if (questManager) {
+            questManager.trackKill(monster.type);
+          }
+        }).catch(err => {
+          // Quest system not loaded yet, ignore
+        });
+      } catch (err) {
+        // Quest system not available
+      }
     }
 
     // Remove dead monster after a delay (for death animation)

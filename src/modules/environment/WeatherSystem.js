@@ -359,13 +359,13 @@ export class WeatherSystem {
   updateParticles(deltaTime) {
     const effects = this.getWeatherEffects(this.targetWeather);
 
-    // Add particles if below max
+    // Add particles if below max - distribute across screen to avoid "row" effect
     while (this.particles.length < this.maxParticles) {
       this.particles.push({
         x: Math.random() * 1000, // Canvas width (adjust as needed)
-        y: Math.random() * -100, // Start above screen
-        vx: (Math.random() - 0.5) * effects.windSpeed,
-        vy: effects.particleSpeed
+        y: Math.random() * 900 - 100, // Distribute from above screen to bottom (-100 to 800)
+        vx: (Math.random() - 0.5) * effects.windSpeed * 2, // Add more wind variation
+        vy: effects.particleSpeed || 1
       });
     }
 

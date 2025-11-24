@@ -5,6 +5,7 @@
  * Manages player state, position, movement, and stats
  */
 
+// eslint-disable-next-line no-unused-vars
 import { GRID } from '../../shared/config.js';
 
 /**

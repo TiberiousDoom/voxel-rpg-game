@@ -369,6 +369,7 @@ function GameScreen() {
             buildings={gameState.buildings || []}
             npcs={gameState.npcs || []}
             monsters={enemies || []}
+            gameManager={gameManager}
             selectedBuildingType={selectedBuildingType}
             onPlaceBuilding={(position) => {
               if (selectedBuildingType) {

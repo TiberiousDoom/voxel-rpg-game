@@ -344,6 +344,15 @@ export class WeatherSystem {
   }
 
   /**
+   * Get weather data (alias for getWeatherEffects for gameplay integration)
+   * @param {string} weatherType - Weather type
+   * @returns {object} Weather data with modifiers
+   */
+  getWeatherData(weatherType) {
+    return this.getWeatherEffects(weatherType);
+  }
+
+  /**
    * Update weather particles for rendering
    * @param {number} deltaTime - Time since last update (ms)
    */

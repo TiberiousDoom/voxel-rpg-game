@@ -251,7 +251,7 @@ function GameViewport({
     totalBuildings: 0,
     visibleNPCs: 0,
     totalNPCs: 0,
-    isMobile: false,
+    isMobileDevice: false,
     canvasWidth: 0,
     canvasHeight: 0
   });
@@ -424,11 +424,10 @@ function GameViewport({
 
   // Detect if mobile for performance optimizations (cached - never changes during session)
   const isMobileDevice = React.useMemo(() =>
-    isMobile ||
     /Android|iPhone|iPad/i.test(navigator.userAgent) ||
     window.innerWidth <= 768 ||
     ('ontouchstart' in window),
-  [isMobile]);
+  []);
 
   // WF3: Building rendering hook (optimized for mobile)
   const {
@@ -1740,7 +1739,7 @@ function GameViewport({
       />
 
       {/* Terrain Tools Panel - Collapsible, hidden in clean mode */}
-      {!selectedBuildingType && !cleanMode && !isMobile && (
+      {!selectedBuildingType && !cleanMode && !isMobileDevice && (
         <CollapsibleFloatingPanel
           title="Terrain Tools"
           icon="⛏️"
@@ -1823,7 +1822,7 @@ function GameViewport({
       )}
 
       {/* Mini-map (Phase 3 Integration) - Always visible, has close button */}
-      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobile && (
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobileDevice && (
         <MiniMap
           terrainSystem={terrainSystemRef.current}
           cameraX={cameraPositionRef.current.x}
@@ -1834,7 +1833,7 @@ function GameViewport({
       )}
 
       {/* Weather/Season Indicator (Phase 3 Integration) - Collapsible, hidden in clean mode */}
-      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobile && (
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobileDevice && (
         <CollapsibleFloatingPanel
           title="Weather & Season"
           icon="🌤️"
@@ -1846,7 +1845,7 @@ function GameViewport({
       )}
 
       {/* Phase 3 Debug Panel (Phase 3 Integration) - Collapsible, hidden in clean mode, contextual (debug mode) */}
-      {enablePlayerMovement && terrainSystemRef.current && debugMode && !cleanMode && !isMobile && (
+      {enablePlayerMovement && terrainSystemRef.current && debugMode && !cleanMode && !isMobileDevice && (
         <CollapsibleFloatingPanel
           title="Debug Info"
           icon="🐛"
@@ -1858,7 +1857,7 @@ function GameViewport({
       )}
 
       {/* Performance metrics overlay - shown only when enabled, hidden in clean mode */}
-      {showPerformanceMonitor && !cleanMode && !isMobile && (
+      {showPerformanceMonitor && !cleanMode && !isMobileDevice && (
         <div className="performance-overlay" style={{
           position: 'fixed',
           top: '230px', // Moved down to avoid overlap with mini-map
@@ -1889,7 +1888,7 @@ function GameViewport({
             </div>
 
             <div>Target:</div>
-            <div>{perfMetrics.isMobile ? '45' : '60'} FPS</div>
+            <div>{perfMetrics.isMobileDevice ? '45' : '60'} FPS</div>
 
             <div style={{ marginTop: '4px', gridColumn: '1 / -1', borderTop: '1px solid rgba(0, 255, 0, 0.2)', paddingTop: '4px' }}>
               Entities:
@@ -1909,7 +1908,7 @@ function GameViewport({
             <div>{perfMetrics.canvasWidth}x{perfMetrics.canvasHeight}</div>
 
             <div>Device:</div>
-            <div>{perfMetrics.isMobile ? 'Mobile' : 'Desktop'}</div>
+            <div>{perfMetrics.isMobileDevice ? 'Mobile' : 'Desktop'}</div>
           </div>
         </div>
       )}

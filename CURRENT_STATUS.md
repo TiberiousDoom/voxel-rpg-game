@@ -1,6 +1,6 @@
 # Current Status
 
-**Last Updated:** November 15, 2025
+**Last Updated:** November 24, 2025
 **MVP Version:** 1.0
 **Status:** 🟢 **PRODUCTION READY**
 
@@ -242,6 +242,46 @@ Opens at: http://localhost:3000
 **Last Code Integration Audit:** November 15, 2025
 **Audit Report:** [CODE_INTEGRATION_AUDIT_2025-11-15.md](documentation/reports/audits/CODE_INTEGRATION_AUDIT_2025-11-15.md)
 **Overall Integration Status:** 🟡 PARTIALLY INTEGRATED (85/100)
+
+### Recent Fixes (November 24, 2025) ✅
+
+**Runtime Bug Fixes - Branch:** `claude/character-development-review-01RwdH2am2WAs1Rcu6ysr91v`
+**Status:** Ready to merge | [Full Report](documentation/reports/BUG_FIXES_SUMMARY.md)
+
+1. **Building Placement Stuck Mode** ✅ FIXED
+   - **Issue:** No way to cancel building placement, game stuck in placement mode
+   - **Fix:** Added ESC key handler in `GameScreen.jsx:137-154`
+   - **Commit:** 7c3c81b
+
+2. **NPC Movement Not Rendering** ✅ FIXED
+   - **Issue:** NPCs assigned to buildings but appeared frozen (positions updated at 60 FPS internally but React state debounced to 500ms)
+   - **Fix:** Fetch NPCs directly from `npcManager.getAllNPCStates()` in render loop, bypassing debounced state
+   - **Files:** `GameScreen.jsx:372`, `GameViewport.jsx:766-780`
+   - **Commit:** c3fb790
+
+3. **Monster Aggro Range Too Large** ✅ FIXED
+   - **Issue:** Monsters detected player from too far (10-15 units)
+   - **Fix:** Reduced aggro ranges by ~50% (Slime: 10→5, Goblin: 12→6, Wolf: 15→7)
+   - **File:** `src/config/monsters/monster-types.json`
+   - **Commit:** 511edab
+
+4. **Start Expedition Button Non-Functional** ✅ FIXED
+   - **Issue:** Button click had no effect, only changed UI mode
+   - **Fix:** Added missing `expeditionManager.startExpedition(config)` call
+   - **File:** `ExpeditionsTab.jsx:34-40`
+   - **Commit:** 511edab
+
+5. **isMobile Undefined Error** ✅ FIXED
+   - **Issue:** Compilation error preventing app from starting
+   - **Fix:** Removed undefined variable reference from `useMemo` dependency
+   - **File:** `GameViewport.jsx:424-428`
+   - **Commit:** 528cda0
+
+**Investigation Reports:**
+- [Bug Investigation Report](documentation/history/BUG_REPORT.md)
+- [Runtime Test Report](documentation/history/RUNTIME_TEST_REPORT.md)
+
+---
 
 ### Critical Integration Bugs 🔴
 

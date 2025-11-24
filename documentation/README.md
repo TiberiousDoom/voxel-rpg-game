@@ -1,6 +1,6 @@
 # Documentation Archive Index
 
-**Last Updated:** 2025-11-20
+**Last Updated:** 2025-11-24
 **Purpose:** Index of all archived documentation
 
 This directory contains historical documentation. For current, authoritative docs, see the **root directory**.
@@ -91,13 +91,13 @@ Guides for migrating between versions or architectures.
 
 ---
 
-**Last Updated:** 2025-11-20
+**Last Updated:** 2025-11-24
 **Maintained By:** Project team
 # Documentation Archive
 
 This directory contains historical documentation, archived reports, and phase completion summaries.
 
-**Last Updated:** November 20, 2025
+**Last Updated:** November 24, 2025
 
 ---
 
@@ -193,6 +193,7 @@ These documents record the completion of each development phase.
 
 | File | Description | Date |
 |------|-------------|------|
+| `BUG_FIXES_SUMMARY.md` | Runtime bug fixes summary (5 bugs fixed) | Nov 24, 2025 |
 | `WEEK4_SUMMARY.md` | Week 4 summary | Historical |
 
 ---
@@ -240,6 +241,8 @@ These documents contain development notes, investigations, and historical contex
 
 | File | Description | Size | Notes |
 |------|-------------|------|-------|
+| `BUG_REPORT.md` | Runtime bug investigation (5 bugs) | Medium | Nov 24, 2025 |
+| `RUNTIME_TEST_REPORT.md` | Manual runtime testing report | Large | Nov 24, 2025 |
 | `development-notes.md` | Full conversation history | 60KB | Complete development log |
 | `PR_PHASE_2_BODY.md` | Phase 2 PR body | Small | PR template |
 | `TEST_FAILURE_INVESTIGATION.md` | Test failure investigation | Medium | Debugging notes |

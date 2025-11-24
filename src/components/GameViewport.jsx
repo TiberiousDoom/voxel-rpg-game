@@ -1816,7 +1816,7 @@ function GameViewport({
       )}
 
       {/* Mini-map (Phase 3 Integration) - Always visible, has close button */}
-      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobile && (
+      {enablePlayerMovement && terrainSystemRef.current && !cleanMode && !isMobileDevice && (
         <MiniMap
           terrainSystem={terrainSystemRef.current}
           cameraX={cameraPositionRef.current.x}
@@ -1826,7 +1826,7 @@ function GameViewport({
       )}
 
       {/* Unified Debug & Developer Menu - Consolidates all debug overlays */}
-      {!cleanMode && !isMobile && (
+      {!cleanMode && !isMobileDevice && (
         <UnifiedDebugMenu
           terrainSystem={terrainSystemRef.current}
           debugInfo={debugInfo}
@@ -1840,7 +1840,7 @@ function GameViewport({
       )}
 
       {/* Viewport footer - hidden on mobile (legend moved to hamburger menu) */}
-      {!isMobile && (
+      {!isMobileDevice && (
         <div className="viewport-footer">
         <p className="viewport-hint">
           {enablePlayerMovement ? (

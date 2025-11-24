@@ -32,7 +32,7 @@ const SEASON_INFO = {
  *
  * Phase 3 Integration: Weather/Season Indicators
  */
-const WeatherSeasonIndicator = ({ terrainSystem }) => {
+const WeatherSeasonIndicator = ({ terrainSystem, embedded = false }) => {
   if (!terrainSystem) return null;
 
   // Get weather and season systems
@@ -52,9 +52,13 @@ const WeatherSeasonIndicator = ({ terrainSystem }) => {
   const seasonProgress = seasonalSystem.getSeasonProgress();
   const dayInSeason = seasonalSystem.getCurrentDay();
 
-  return (
-    <div
-      style={{
+  const containerStyle = embedded
+    ? {
+        background: 'transparent',
+        borderRadius: '8px',
+        padding: '0',
+      }
+    : {
         position: 'fixed',
         top: '20px',
         left: '20px',
@@ -65,8 +69,10 @@ const WeatherSeasonIndicator = ({ terrainSystem }) => {
         zIndex: 1500,
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
         minWidth: '220px',
-      }}
-    >
+      };
+
+  return (
+    <div style={containerStyle}>
       {/* Weather Section */}
       <div style={{ marginBottom: '15px' }}>
         <div

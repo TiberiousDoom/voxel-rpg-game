@@ -9,11 +9,10 @@ import { useCallback } from 'react';
 /**
  * Hook for rendering damage numbers
  * @param {Object} options - Renderer options
- * @param {number} options.tileSize - Size of each tile in pixels
  * @returns {Object} Renderer functions
  */
 export function useDamageNumberRenderer(options = {}) {
-  const { tileSize = 32 } = options;
+  // Options reserved for future use
 
   /**
    * Render all damage numbers
@@ -85,7 +84,7 @@ export function useDamageNumberRenderer(options = {}) {
       // Reset alpha
       ctx.globalAlpha = 1.0;
     });
-  }, []); // tileSize not used in callback
+  }, []);
 
   return {
     renderDamageNumbers

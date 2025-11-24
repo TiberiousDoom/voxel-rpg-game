@@ -134,6 +134,25 @@ function GameScreen() {
     };
   }, [gameState.isPaused]);
 
+  // ESC key handler to cancel building placement
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        // Cancel building placement if active
+        if (selectedBuildingType) {
+          setSelectedBuildingType(null);
+          setToastMessage('🚫 Building placement cancelled');
+          setTimeout(() => setToastMessage(null), 3000);
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [selectedBuildingType]);
+
   // Event handlers
   const handleAssignNPC = (npcId, buildingId) => {
     actions.assignNPC(npcId, buildingId);

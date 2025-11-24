@@ -365,12 +365,38 @@ export const createCharacterActions = (set, get) => ({
     });
   },
 
-  // Reset all attributes (costs resources, TODO: add cost)
+  // Reset all attributes (costs gold based on total attributes spent)
+  // Base cost: 50 gold + 10 gold per attribute point spent
   resetAllAttributes: () => {
     set((state) => {
+      const totalSpent = calculateTotalAttributesSpent(state.character.attributes);
+      const resetCost = 50 + (totalSpent * 10);
+      const currentGold = state.inventory?.gold || 0;
+
+      // Check if player can afford the reset
+      if (currentGold < resetCost) {
+        // eslint-disable-next-line no-console
+        console.warn(`[CharacterSystem] Cannot reset attributes: Need ${resetCost} gold, have ${currentGold}`);
+        return state;
+      }
+
+      // Deduct gold and reset attributes
       const updatedCharacter = resetAttributes(state.character);
-      return { character: updatedCharacter };
+      return {
+        character: updatedCharacter,
+        inventory: {
+          ...state.inventory,
+          gold: currentGold - resetCost,
+        },
+      };
     });
+  },
+
+  // Get the cost to reset attributes (for UI display)
+  getResetAttributesCost: () => {
+    const state = get();
+    const totalSpent = calculateTotalAttributesSpent(state.character.attributes);
+    return 50 + (totalSpent * 10);
   },
 
   // Get current derived stats

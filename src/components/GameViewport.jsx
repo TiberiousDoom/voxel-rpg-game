@@ -552,22 +552,22 @@ function GameViewport({
     {
       buildings,
       npcs,
-      resources: [], // TODO: Add resources when implemented
+      resources: [], // FUTURE: Add world resources (ore nodes, etc.) when resource system is implemented
       chests: buildings.filter(b => b.type === 'CHEST'), // Chests are buildings
       props: nearbyProps, // Phase 3A: Harvestable props
       onBuildingInteract: onBuildingClick,
       onNPCInteract: (npc) => {
-        // TODO: Open NPC dialog/interaction panel
+        // FUTURE: Open NPC dialog/interaction panel (requires dialog system)
         // eslint-disable-next-line no-console
         if (debugMode) console.log('Interacting with NPC:', npc);
       },
       onResourceInteract: (resource) => {
-        // TODO: Implement resource gathering
+        // FUTURE: Implement resource gathering (requires resource node system)
         // eslint-disable-next-line no-console
         if (debugMode) console.log('Gathering resource:', resource);
       },
       onChestInteract: (chest) => {
-        // TODO: Open chest inventory panel
+        // FUTURE: Open chest inventory panel (requires chest loot UI)
         // eslint-disable-next-line no-console
         if (debugMode) console.log('Opening chest:', chest);
       },
@@ -1118,9 +1118,30 @@ function GameViewport({
 
       // WF3: Draw hover preview using new renderer (use refs!)
       if (hoveredPositionRef.current && selectedBuildingTypeRef.current) {
-        // TODO: Add validation check to determine if placement is valid
-        const isValid = true; // Placeholder - should check collision/placement rules
-        renderPlacementPreview(ctx, hoveredPositionRef.current, selectedBuildingTypeRef.current, isValid, worldToCanvas);
+        // Validate placement: check for collisions and terrain
+        const pos = hoveredPositionRef.current;
+        let isValid = true;
+
+        // Check if there's already a building at this position
+        if (buildingsRef.current && buildingsRef.current.length > 0) {
+          const hasCollision = buildingsRef.current.some(building =>
+            building.x === pos.x && building.z === pos.z
+          );
+          if (hasCollision) isValid = false;
+        }
+
+        // Check terrain validity (not water, not blocked)
+        if (isValid && terrainSystemRef.current) {
+          const tile = terrainSystemRef.current.getTileAt(pos.x, pos.z);
+          if (tile) {
+            // Invalid if water or blocked terrain
+            if (tile.isWater || tile.blocked) {
+              isValid = false;
+            }
+          }
+        }
+
+        renderPlacementPreview(ctx, pos, selectedBuildingTypeRef.current, isValid, worldToCanvas);
       }
 
       // Terrain job overlays (show existing jobs)

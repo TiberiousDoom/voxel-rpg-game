@@ -47,7 +47,12 @@ Summaries of completed phases and features.
 
 | File | Description | Date | Status |
 |------|-------------|------|--------|
-| *(none yet)* | | | |
+| `PHASE_1_COMPLETE.md` | Phase 1 dead code audit completion | Nov 24, 2025 | Completed |
+| `PHASE_2_BIOME_SYSTEM_COMPLETE.md` | Phase 2 biome system completion | Nov 2025 | Completed |
+| `PHASE_3_PROPS_IN_PROGRESS.md` | Phase 3 props progress | Nov 2025 | Reference |
+| `PHASE_3_PROPS_PROGRESS_UPDATE.md` | Phase 3 props progress update | Nov 2025 | Reference |
+| `PHASE_4_COMPLETION_REPORT.md` | Phase 4 completion report | Nov 2025 | Completed |
+| `WF3_IMPLEMENTATION_SUMMARY.md` | WF3 implementation summary | Nov 2025 | Completed |
 
 ---
 
@@ -57,7 +62,13 @@ Architecture audits, phase reviews, and comprehensive evaluations.
 
 | File | Description | Date | Status |
 |------|-------------|------|--------|
-| *(none yet)* | | | |
+| `COMPREHENSIVE_CODE_AUDIT_REPORT.md` | **Dead code audit - Master report (~5,000 lines)** | Nov 24, 2025 | **Active** |
+| `AUDIT_DECISIONS_RESPONSE.md` | **Dead code audit - Detailed decisions (~2,000 lines)** | Nov 24, 2025 | **Active** |
+| `EQUIPMENT_STATS_INTEGRATION_AUDIT.md` | **EquipmentStatsIntegration.js integration plan (703 lines)** | Nov 24, 2025 | **Completed** |
+| `SPATIAL_HASH_AUDIT.md` | SpatialHash integration verification (431 lines) | Nov 24, 2025 | Completed |
+| `MODAL_ZINDEX_AUDIT.md` | Modal z-index conflict audit | Nov 24, 2025 | Completed |
+| `ENTITY_DEFINITIONS_AUDIT.md` | Entity definitions verification | Nov 24, 2025 | Completed |
+| `NOTIFICATION_COMPONENTS_AUDIT.md` | Notification component audit | Nov 24, 2025 | Completed |
 
 ---
 
@@ -67,7 +78,14 @@ Development notes, investigations, and debugging sessions.
 
 | File | Description | Date | Status |
 |------|-------------|------|--------|
-| *(none yet)* | | | |
+| `SESSION_SUMMARY_2025-11-24.md` | **Session summary - comprehensive work log** | Nov 24, 2025 | Reference |
+| `PULL_REQUEST.md` | PR description for Phase 1 + Z-Index | Nov 24, 2025 | Reference |
+| `PULL_REQUEST_PHASE2B.md` | PR description for Phase 2B integrations | Nov 24, 2025 | Reference |
+| `HANDOFF.md` | Handoff notes between sessions | Nov 24, 2025 | Reference |
+| `ANIMATION_FRAME_LEAK_FIX.md` | Animation frame leak fix notes | Nov 2025 | Completed |
+| `MEMORY_LEAK_FIXES_COMPLETE.md` | Memory leak fixes summary | Nov 2025 | Completed |
+| `TEST_VERIFICATION.md` | Test verification notes | Nov 2025 | Reference |
+| `DEPENDENCY_WARNINGS.md` | Dependency warnings documentation | Nov 2025 | Reference |
 
 ---
 

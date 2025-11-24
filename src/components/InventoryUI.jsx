@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, Package } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 import { ITEM_TYPES } from '../data/craftingRecipes';
+import {
+  compareStatsWithItem,
+  formatStatDifference,
+} from '../utils/EquipmentStatsIntegration';
 
 /**
  * Material definitions - icons and display names for harvested materials
@@ -35,9 +39,56 @@ const InventoryUI = () => {
   const unequipItem = useGameStore((state) => state.unequipItem);
   const removeItem = useGameStore((state) => state.removeItem);
   const consumeItem = useGameStore((state) => state.consumeItem);
+  const character = useGameStore((state) => state.character);
+  const player = useGameStore((state) => state.player);
 
   // Get harvested materials
   const materials = inventory.materials || {};
+
+  /**
+   * Get the equipment slot for an item type
+   * @param {object} item - The item to check
+   * @returns {string|null} The slot name or null if not equippable
+   */
+  const getSlotForItem = useCallback((item) => {
+    const slotMap = {
+      [ITEM_TYPES.WEAPON]: 'weapon',
+      [ITEM_TYPES.ARMOR]: 'armor',
+      [ITEM_TYPES.HELMET]: 'helmet',
+      [ITEM_TYPES.GLOVES]: 'gloves',
+      [ITEM_TYPES.BOOTS]: 'boots',
+      [ITEM_TYPES.RING]: equipment.ring1 ? 'ring2' : 'ring1',
+      [ITEM_TYPES.AMULET]: 'amulet',
+      [ITEM_TYPES.OFFHAND]: 'offhand',
+    };
+    return slotMap[item.type] || null;
+  }, [equipment.ring1]);
+
+  /**
+   * Calculate stat comparison when an equippable item is selected
+   * Shows how player stats would change if the item is equipped
+   */
+  const statComparison = useMemo(() => {
+    if (!selectedItem || selectedItem.type === ITEM_TYPES.CONSUMABLE) {
+      return null;
+    }
+
+    const slot = getSlotForItem(selectedItem);
+    if (!slot) return null;
+
+    try {
+      return compareStatsWithItem(
+        equipment,
+        slot,
+        selectedItem,
+        character,
+        player
+      );
+    } catch (error) {
+      console.warn('[InventoryUI] Failed to calculate stat comparison:', error);
+      return null;
+    }
+  }, [selectedItem, equipment, character, player, getSlotForItem]);
 
   // Detect mobile device
   useEffect(() => {
@@ -557,7 +608,60 @@ const InventoryUI = () => {
               </div>
               <p style={{ color: '#cbd5e0', marginBottom: '20px' }}>{selectedItem.description}</p>
 
-              {selectedItem.stats && (
+              {/* Stat Comparison Display */}
+              {statComparison && Object.keys(statComparison).length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>Stat Changes</h4>
+                  {Object.entries(statComparison).map(([stat, diff]) => {
+                    const formatted = formatStatDifference(stat, diff);
+                    return (
+                      <div
+                        key={stat}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '8px 10px',
+                          marginBottom: '4px',
+                          borderRadius: '4px',
+                          background: diff.isPositive
+                            ? 'rgba(81, 207, 102, 0.15)'
+                            : 'rgba(255, 107, 107, 0.15)',
+                          border: `1px solid ${diff.isPositive ? 'rgba(81, 207, 102, 0.3)' : 'rgba(255, 107, 107, 0.3)'}`,
+                        }}
+                      >
+                        <span style={{ color: '#fff', textTransform: 'capitalize' }}>
+                          {stat.replace(/([A-Z])/g, ' $1').trim()}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: '#a0aec0', fontSize: '0.9rem' }}>
+                            {typeof diff.current === 'number' ? diff.current.toFixed(1) : diff.current}
+                          </span>
+                          <span style={{ color: formatted.color, fontSize: '1rem' }}>
+                            {diff.isPositive ? '→' : '→'}
+                          </span>
+                          <span style={{ color: formatted.color, fontWeight: 'bold' }}>
+                            {typeof diff.new === 'number' ? diff.new.toFixed(1) : diff.new}
+                          </span>
+                          <span
+                            style={{
+                              color: formatted.color,
+                              fontSize: '0.85rem',
+                              fontWeight: 'bold',
+                              marginLeft: '4px',
+                            }}
+                          >
+                            ({formatted.text})
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Basic Stats Display (fallback for items without stat comparison) */}
+              {selectedItem.stats && (!statComparison || Object.keys(statComparison).length === 0) && (
                 <div style={{ marginBottom: '20px' }}>
                   <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>Stats</h4>
                   {Object.entries(selectedItem.stats).map(([stat, value]) => (

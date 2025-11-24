@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Treasure, CheckCircle, Search } from 'lucide-react';
+import { MapPin, Package, Search } from 'lucide-react';
 
 /**
  * Structure type icons and colors
@@ -217,7 +217,7 @@ const StructureExplorationUI = ({ terrainSystem, playerPosition }) => {
               marginBottom: '12px',
             }}
           >
-            <Treasure size={24} color={CHEST_THEME[lootDrop.chestType]?.color || '#9CA3AF'} />
+            <Package size={24} color={CHEST_THEME[lootDrop.chestType]?.color || '#9CA3AF'} />
             <div style={{ flex: 1 }}>
               <div
                 style={{
@@ -340,7 +340,7 @@ const StructureExplorationUI = ({ terrainSystem, playerPosition }) => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Treasure size={16} color={theme.color} />
+                    <Package size={16} color={theme.color} />
                     <span style={{ color: theme.color, fontSize: '0.85rem', fontWeight: 'bold' }}>
                       {theme.name}
                     </span>

@@ -64,17 +64,9 @@ export class PlayerEntity {
 
     const speed = this.getCurrentSpeed();
 
-    // Apply velocity
-    const newX = this.position.x + this.velocity.x * speed * deltaTime;
-    const newZ = this.position.z + this.velocity.z * speed * deltaTime;
-
-    // Clamp to grid bounds (with collision radius)
-    const minBound = 0 + this.collisionRadius;
-    const maxBoundX = GRID.GRID_WIDTH - this.collisionRadius;
-    const maxBoundZ = GRID.GRID_HEIGHT - this.collisionRadius;
-
-    this.position.x = Math.max(minBound, Math.min(maxBoundX, newX));
-    this.position.z = Math.max(minBound, Math.min(maxBoundZ, newZ));
+    // Apply velocity (no bounds checking for infinite world)
+    this.position.x += this.velocity.x * speed * deltaTime;
+    this.position.z += this.velocity.z * speed * deltaTime;
 
     // Update facing direction based on velocity
     if (this.velocity.x !== 0 || this.velocity.z !== 0) {
@@ -177,11 +169,8 @@ export class PlayerEntity {
       return;
     }
 
-    // Clamp target to grid bounds
-    const clampedX = Math.max(0, Math.min(GRID.GRID_WIDTH, target.x));
-    const clampedZ = Math.max(0, Math.min(GRID.GRID_HEIGHT, target.z));
-
-    this.targetPosition = { x: clampedX, z: clampedZ };
+    // No bounds checking for infinite world
+    this.targetPosition = { x: target.x, z: target.z };
   }
 
   /**

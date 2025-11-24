@@ -56,14 +56,14 @@ export const BUILDING_TIERS = {
 // These define the spatial foundation for all building placement.
 // The grid is square-based with configurable cell size.
 
-// Grid dimensions: The playable building area is a square grid.
-// 50x50 grid provides ample space for player movement and base building.
-// This ensures buildings placed in the world appear correctly in the viewport.
+// Grid dimensions: The playable area uses procedural generation for infinite worlds.
+// Using very large bounds (100,000x100,000) effectively creates an infinite world.
+// The chunk-based terrain system only loads areas near the player.
 export const GRID = {
   CELL_SIZE: 1,              // Size of each grid cell in world units
-  GRID_WIDTH: 50,            // Grid cells wide (matches GameViewport GRID_WIDTH)
-  GRID_HEIGHT: 50,           // Grid cells tall (matches GameViewport GRID_HEIGHT)
-  GRID_ORIGIN: { x: -25, z: -25 }, // World position of grid origin (bottom-left)
+  GRID_WIDTH: 100000,        // Effectively infinite world width
+  GRID_HEIGHT: 100000,       // Effectively infinite world height
+  GRID_ORIGIN: { x: -50000, z: -50000 }, // World position of grid origin (bottom-left)
 
   // Rotation rules: Buildings can snap to cardinal directions
   ALLOWED_ROTATIONS: [0, 90, 180, 270], // Degrees
@@ -316,7 +316,8 @@ export const PLACEMENT_CONSTRAINTS = {
   ALLOW_OVERLAP_WITH_PLAYER: false,
 
   // Can buildings be placed outside the main grid?
-  ENFORCE_GRID_BOUNDS: true,
+  // Set to false for infinite world generation
+  ENFORCE_GRID_BOUNDS: false,
 
   // Maximum buildings allowed in the game world
   // This prevents memory and performance issues

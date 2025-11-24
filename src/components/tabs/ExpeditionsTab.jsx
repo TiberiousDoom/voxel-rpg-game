@@ -33,6 +33,8 @@ function ExpeditionsTab() {
   // Handlers for expedition lifecycle
   const handleStartExpedition = (config) => {
     if (expeditionManager) {
+      // Actually start the expedition with the provided config
+      expeditionManager.startExpedition?.(config);
       setExpeditionMode('expedition');
     }
   };

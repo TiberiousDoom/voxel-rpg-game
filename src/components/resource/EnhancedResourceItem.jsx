@@ -10,10 +10,14 @@
  * - Glassmorphism effect
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import './EnhancedResourceItem.css';
 
-function EnhancedResourceItem({
+/**
+ * EnhancedResourceItem - Memoized for performance in resource lists
+ * Re-renders only when amount, capacity, or productionRate changes
+ */
+const EnhancedResourceItem = memo(function EnhancedResourceItem({
   name,
   icon,
   amount = 0,
@@ -124,6 +128,6 @@ function EnhancedResourceItem({
       </div>
     </div>
   );
-}
+});
 
 export default EnhancedResourceItem;

@@ -351,7 +351,7 @@ function getBoundingBox(position, dimensions, rotation = 0) {
   const { width, height, depth } = dimensions;
 
   // For simplicity, assume axis-aligned bboxes
-  // TODO: Handle rotation-aware bboxes if needed
+  // FUTURE: Handle rotation-aware bboxes if rotated buildings are supported
   const w = width / 2;
   const h = height / 2;
   const d = depth / 2;

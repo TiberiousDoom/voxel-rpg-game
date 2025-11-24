@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { memo } from 'react';
 import './QuickStats.css';
 
 /**
- * QuickStats Component
+ * QuickStats Component - Memoized for performance
  * Compact overview of critical game information
+ * Re-renders only when resources, NPCs, achievements, or tier change
  *
  * @param {object} resources - Game resources
  * @param {array} npcs - NPCs array
  * @param {object} achievementStats - Achievement statistics
  * @param {string} currentTier - Current tier
  */
-function QuickStats({ resources = {}, npcs = [], achievementStats = null, currentTier = 'SURVIVAL' }) {
+const QuickStats = memo(function QuickStats({ resources = {}, npcs = [], achievementStats = null, currentTier = 'SURVIVAL' }) {
   // Helper to format large numbers
   const formatNumber = (num) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -69,6 +70,6 @@ function QuickStats({ resources = {}, npcs = [], achievementStats = null, curren
       </div>
     </div>
   );
-}
+});
 
 export default QuickStats;

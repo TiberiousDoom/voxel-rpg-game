@@ -8,7 +8,7 @@
  * - Displays estimated progress percentage
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import './TierProgressIndicator.css';
 
 // Resource icons
@@ -28,7 +28,11 @@ const TIER_METADATA = {
   CASTLE: { icon: '🏰', label: 'Castle', color: '#f44336' }
 };
 
-function TierProgressIndicator({
+/**
+ * TierProgressIndicator - Memoized for performance
+ * Re-renders only when tier, resources, or requirements change
+ */
+const TierProgressIndicator = memo(function TierProgressIndicator({
   currentTier = 'SURVIVAL',
   currentResources = { wood: 0, food: 0, stone: 0 },
   tierRequirements = {},
@@ -197,6 +201,6 @@ function TierProgressIndicator({
       )}
     </div>
   );
-}
+});
 
 export default TierProgressIndicator;

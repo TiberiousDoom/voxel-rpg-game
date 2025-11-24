@@ -542,6 +542,9 @@ export default class GameManager extends EventEmitter {
         // Update game state immediately
         this.orchestrator._updateGameState();
 
+        // Notify tutorial system
+        this.orchestrator.notifyBuildingPlaced(building);
+
         return { success: true, buildingId: result.buildingId };
       }
 
@@ -571,6 +574,9 @@ export default class GameManager extends EventEmitter {
 
         // Force an immediate tick update
         this.orchestrator._updateGameState();
+
+        // Notify tutorial system
+        this.orchestrator.notifyNPCSpawned();
 
         return result;
       }
@@ -774,6 +780,9 @@ export default class GameManager extends EventEmitter {
 
         // Update game state immediately
         this.orchestrator._updateGameState();
+
+        // Notify tutorial system
+        this.orchestrator.notifyNPCAssigned();
       }
 
       return result;

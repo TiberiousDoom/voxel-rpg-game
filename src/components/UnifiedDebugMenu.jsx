@@ -26,6 +26,7 @@ const UnifiedDebugMenu = ({
     render: false,
     phase3: false,
     weather: false,
+    gameplay: false,
   });
   const [phase3Stats, setPhase3Stats] = useState({});
 
@@ -85,6 +86,19 @@ const UnifiedDebugMenu = ({
       const structureSystem = terrainSystem.getStructureSystem?.();
       if (structureSystem) {
         newStats.structures = structureSystem.getStats?.() || {};
+      }
+
+      // Seasonal Event Stats (Phase 3 Gameplay)
+      const eventSystem = terrainSystem.getSeasonalEventSystem?.();
+      if (eventSystem) {
+        newStats.seasonalEvents = eventSystem.getStats?.() || {};
+        newStats.activeEvents = eventSystem.getActiveEvents?.() || [];
+      }
+
+      // Structure Interaction Stats (Phase 3 Gameplay)
+      const interactionSystem = terrainSystem.getStructureInteractionSystem?.();
+      if (interactionSystem) {
+        newStats.structureExploration = interactionSystem.getStats?.() || {};
       }
 
       setPhase3Stats(newStats);
@@ -564,6 +578,102 @@ const UnifiedDebugMenu = ({
                 <StatRow
                   label="Ruins"
                   value={phase3Stats.structures.byType?.ruins || 0}
+                />
+              </div>
+            )}
+          </DebugSection>
+        )}
+
+        {/* Gameplay Systems Section */}
+        {enablePlayerMovement && terrainSystem && (phase3Stats.seasonalEvents || phase3Stats.structureExploration) && (
+          <DebugSection
+            title="🎮 Gameplay Systems"
+            isExpanded={expandedSections.gameplay}
+            onToggle={() => toggleSection('gameplay')}
+          >
+            {/* Seasonal Events */}
+            {phase3Stats.seasonalEvents && (
+              <div style={statsContainerStyle}>
+                <div
+                  style={{
+                    fontWeight: 'bold',
+                    color: '#FFB6C1',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Seasonal Events:
+                </div>
+                <StatRow
+                  label="Active Events"
+                  value={phase3Stats.activeEvents?.length || 0}
+                  color="#4dabf7"
+                />
+                <StatRow
+                  label="Total Triggered"
+                  value={phase3Stats.seasonalEvents.totalEventsTriggered || 0}
+                />
+                <StatRow
+                  label="Completed"
+                  value={phase3Stats.seasonalEvents.totalEventsCompleted || 0}
+                  color="#51cf66"
+                />
+                {phase3Stats.activeEvents && phase3Stats.activeEvents.length > 0 && (
+                  <div style={{ marginTop: '8px', fontSize: '0.75rem' }}>
+                    <div
+                      style={{
+                        color: '#4FC3F7',
+                        fontWeight: 'bold',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Active:
+                    </div>
+                    {phase3Stats.activeEvents.map((event, idx) => (
+                      <div
+                        key={idx}
+                        style={{ color: '#cbd5e0', marginLeft: '8px' }}
+                      >
+                        • {event.id?.replace(/_/g, ' ') || 'Unknown Event'}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Structure Exploration */}
+            {phase3Stats.structureExploration && (
+              <div style={{ ...statsContainerStyle, marginTop: '12px' }}>
+                <div
+                  style={{
+                    fontWeight: 'bold',
+                    color: '#FFD700',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Structure Exploration:
+                </div>
+                <StatRow
+                  label="Discovered"
+                  value={phase3Stats.structureExploration.structuresDiscovered || 0}
+                />
+                <StatRow
+                  label="Explored"
+                  value={phase3Stats.structureExploration.structuresExplored || 0}
+                  color="#51cf66"
+                />
+                <StatRow
+                  label="Total Chests"
+                  value={phase3Stats.structureExploration.totalChests || 0}
+                />
+                <StatRow
+                  label="Opened Chests"
+                  value={phase3Stats.structureExploration.chestsOpened || 0}
+                  color="#4dabf7"
+                />
+                <StatRow
+                  label="Remaining"
+                  value={phase3Stats.structureExploration.chestsRemaining || 0}
                 />
               </div>
             )}

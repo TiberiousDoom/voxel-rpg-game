@@ -28,6 +28,7 @@ Implementation plans, timelines, and workflow coordination.
 
 | File | Description | Date | Status |
 |------|-------------|------|--------|
+| `PHASE_4_DUNGEON_SYSTEM_PLAN.md` | **Detailed implementation plan for Phase 4: Dungeon System (procedural generation, bosses, encounters)** | Nov 24, 2025 | **Draft** |
 | `GAME_ENVIRONMENT_IMPLEMENTATION_PLAN.md` | **Comprehensive plan for procedural environment system (terrain, biomes, props, structures, weather)** | Nov 20, 2025 | **Active** |
 | `GAMEPLAY_FEATURES_IMPLEMENTATION_PLAN.md` | **Comprehensive plan for monsters, loot, quests, and dungeons** | Nov 18, 2025 | **Active** |
 | `SPRITE_SYSTEM_IMPLEMENTATION_PLAN.md` | Implementation plan for sprite-based rendering system | Nov 17, 2025 | Active |

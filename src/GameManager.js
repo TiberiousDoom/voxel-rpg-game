@@ -24,7 +24,6 @@ import AutonomousDecision from './modules/npc-system/AutonomousDecision';
 import TutorialSystem from './modules/tutorial-system/TutorialSystem';
 import ContextHelp from './modules/tutorial-system/ContextHelp';
 import FeatureUnlock from './modules/tutorial-system/FeatureUnlock';
-import { createTutorialSteps } from './modules/tutorial-system/tutorialSteps';
 import { getContextHelpDefinitions } from './modules/tutorial-system/contextHelpDefinitions';
 // Phase 3C: Achievement System
 import AchievementSystem from './modules/achievement-system/AchievementSystem';
@@ -207,8 +206,8 @@ export default class GameManager extends EventEmitter {
     const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
 
     // Phase 3D: Tutorial System (optional - can be enabled/disabled)
-    const tutorialSteps = createTutorialSteps();
-    const tutorialSystem = new TutorialSystem(tutorialSteps);
+    // Note: TutorialSystem creates steps internally via createTutorialSteps()
+    const tutorialSystem = new TutorialSystem(null);
     const contextHelpDefinitions = getContextHelpDefinitions();
     const contextHelp = new ContextHelp(contextHelpDefinitions);
     const featureUnlock = new FeatureUnlock();
@@ -362,12 +361,19 @@ export default class GameManager extends EventEmitter {
       this._startTickTimer();
 
       this.gameState = GameManager.GAME_STATE.RUNNING;
-      
+
       // Emit started event with current state
       this._emit('game:started', {
         tick: this.currentTick,
         timestamp: Date.now()
       });
+
+      // Auto-start tutorial for new games (when not loading a save)
+      if (!saveSlot && this.orchestrator?.tutorialSystem?.shouldAutoStart()) {
+        this.orchestrator.tutorialSystem.start();
+        // eslint-disable-next-line no-console
+        console.log('[GameManager] Tutorial auto-started for new game');
+      }
 
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game started successfully');
@@ -544,6 +550,14 @@ export default class GameManager extends EventEmitter {
 
         // Notify tutorial system
         this.orchestrator.notifyBuildingPlaced(building);
+
+        // Track building placement for quests
+        import('./systems/QuestManager.js').then(({ getQuestManager }) => {
+          const questManager = getQuestManager();
+          if (questManager?.initialized) {
+            questManager.trackBuilding(type);
+          }
+        }).catch(() => {});
 
         return { success: true, buildingId: result.buildingId };
       }

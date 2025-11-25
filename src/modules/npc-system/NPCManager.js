@@ -838,13 +838,18 @@ class NPCManager {
       this.orchestrator.achievementSystem.recordNPCDeath(causeOfDeath);
     }
 
+    // Notify orchestrator of NPC death (for tutorial system context help)
+    if (this.orchestrator && this.orchestrator.notifyNPCDied) {
+      this.orchestrator.notifyNPCDied();
+    }
+
     // Phase 3A: Clean up idle tasks and needs tracking (memory cleanup)
     if (this.orchestrator) {
       if (this.orchestrator.idleTaskManager) {
         this.orchestrator.idleTaskManager.removeNPC(npcId);
       }
-      if (this.orchestrator.needsTracker) {
-        this.orchestrator.needsTracker.unregisterNPC(npcId);
+      if (this.orchestrator.npcNeedsTracker) {
+        this.orchestrator.npcNeedsTracker.unregisterNPC(npcId);
       }
     }
 

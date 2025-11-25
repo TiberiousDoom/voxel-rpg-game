@@ -1048,6 +1048,16 @@ class ModuleOrchestrator {
   }
 
   /**
+   * Alias for assignNPC - for backward compatibility with existing code
+   * @param {string} npcId - NPC ID
+   * @param {string} buildingId - Building ID
+   * @returns {Object} Result object with success status
+   */
+  assignNPCToBuilding(npcId, buildingId) {
+    return this.assignNPC(npcId, buildingId);
+  }
+
+  /**
    * Auto-assign idle NPCs to buildings
    * @returns {Object} Result object with success status and count
    */
@@ -1466,7 +1476,8 @@ class ModuleOrchestrator {
    * @param {Object} rewardData - Reward data from achievement system
    */
   _applyAchievementReward(rewardData) {
-    const { rewardType, rewardValue, achievementName } = rewardData;
+    const { rewardType, rewardValue, achievementId, achievementName } = rewardData;
+    const displayName = achievementName || achievementId || 'Unknown';
 
     if (rewardType === 'multiplier') {
       for (const [key, bonus] of Object.entries(rewardValue)) {
@@ -1474,9 +1485,9 @@ class ModuleOrchestrator {
           this.achievementBonuses[key] += bonus;
           // eslint-disable-next-line no-console
           console.log(
-            `🏆 Achievement "${achievementName}" bonus applied: ` +
+            `🏆 Achievement "${displayName}" bonus applied: ` +
             `${key} +${(bonus * 100).toFixed(1)}% ` +
-            `(total: ${(this.achievementBonuses[key] * 100).toFixed(1)}%)`
+            `(total: ${((this.achievementBonuses[key] - 1) * 100).toFixed(1)}%)`
           );
         }
       }
@@ -1490,15 +1501,16 @@ class ModuleOrchestrator {
    * @returns {number} Total multiplier (1.0 = no bonus)
    */
   getAchievementMultiplier(type) {
-    // Apply general production bonus
-    let multiplier = this.achievementBonuses.production || 1.0;
-
-    // Apply specific resource/stat bonus if exists
-    if (type && type in this.achievementBonuses) {
-      multiplier *= this.achievementBonuses[type];
+    // For specific resource types (food, wood, stone, etc.), use their specific bonus
+    // For general 'production', use the production bonus
+    // This avoids double-applying the production bonus
+    if (type && type !== 'production' && type in this.achievementBonuses) {
+      // For specific resources: general production bonus * specific resource bonus
+      return (this.achievementBonuses.production || 1.0) * (this.achievementBonuses[type] || 1.0);
     }
 
-    return multiplier;
+    // For 'production' type, just return the production bonus (avoid double-applying)
+    return this.achievementBonuses.production || 1.0;
   }
 
   /**

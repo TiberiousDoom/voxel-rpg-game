@@ -19,6 +19,7 @@ import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Mons
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
 import { useDamageNumberRenderer } from '../rendering/useDamageNumberRenderer.js'; // Damage number rendering
+import { useProjectileRenderer } from '../rendering/useProjectileRenderer.js'; // 2D Projectile rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
 import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
@@ -488,6 +489,9 @@ function GameViewport({
   const { renderDamageNumbers } = useDamageNumberRenderer({
     tileSize: TILE_SIZE
   });
+
+  // Projectile Renderer integration (2D ranged attacks)
+  const { createProjectile, updateProjectiles, renderProjectiles } = useProjectileRenderer();
 
   // Terrain Job Renderer integration
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
@@ -1055,6 +1059,9 @@ function GameViewport({
       renderLootDrops(ctx, lootDropsRef.current, worldToCanvas, currentTime);
     }
 
+    // Render 2D projectiles (ranged attacks)
+    renderProjectiles(ctx, worldToCanvas);
+
     // Render damage numbers (Phase 3: Combat)
     if (damageNumbersRef.current && damageNumbersRef.current.length > 0) {
       const currentTime = performance.now();
@@ -1434,21 +1441,38 @@ function GameViewport({
             damage: baseDamage,
           });
         } else {
-          // Ranged attack - costs mana
+          // Ranged attack - costs mana, creates visual projectile
           const manaCost = 5;
 
           if (store.player.mana >= manaCost) {
-            // Consume mana and deal damage
+            // Consume mana
             store.updatePlayer({ mana: store.player.mana - manaCost });
 
-            if (clickedMonster.takeDamage) {
-              clickedMonster.takeDamage(baseDamage);
-            }
-
-            // Show damage number
-            store.addDamageNumber({
-              position: [monsterPos.x, 0, monsterPos.z],
+            // Create projectile that will deal damage on hit
+            const targetMonster = clickedMonster;
+            createProjectile({
+              startX: player2DPos.x,
+              startZ: player2DPos.z,
+              targetX: monsterPos.x,
+              targetZ: monsterPos.z,
               damage: baseDamage,
+              speed: 12, // Units per second
+              color: '#ff6600', // Orange fireball
+              size: 8,
+              targetId: targetMonster.id,
+              onHit: () => {
+                // Deal damage when projectile hits
+                if (targetMonster && targetMonster.alive && targetMonster.takeDamage) {
+                  targetMonster.takeDamage(baseDamage);
+
+                  // Show damage number at impact
+                  const storeNow = useGameStore.getState();
+                  storeNow.addDamageNumber({
+                    position: [targetMonster.position.x, 0, targetMonster.position.z],
+                    damage: baseDamage,
+                  });
+                }
+              }
             });
           }
         }
@@ -1747,6 +1771,9 @@ function GameViewport({
           if (floatingTextManagerRef.current) {
             floatingTextManagerRef.current.update();
           }
+
+          // Update 2D projectiles
+          updateProjectiles(deltaTime);
 
           // Draw viewport with safe error handling
           drawViewport(ctx);

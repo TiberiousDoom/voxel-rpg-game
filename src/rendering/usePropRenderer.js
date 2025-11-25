@@ -164,17 +164,24 @@ export const usePropRenderer = (options = {}) => {
           };
           return { propType, success: true };
         } catch (error) {
-          // Silent fail - will use colored shape fallback
+          // Log failed sprites for debugging
+          // eslint-disable-next-line no-console
+          console.warn(`[PropRenderer] Failed to load sprite for ${propType}:`, data.sprite, error.message);
           return { propType, success: false };
         }
       });
 
       const results = await Promise.all(loadPromises);
       const successCount = results.filter(r => r.success).length;
+      const failedCount = results.filter(r => !r.success).length;
+
       if (successCount > 0) {
         spritesLoadedRef.current = true;
         // eslint-disable-next-line no-console
-        console.log(`[PropRenderer] ${successCount}/${results.length} environment sprites loaded`);
+        console.log(`[PropRenderer] ${successCount}/${results.length} environment sprites loaded (${failedCount} failed)`);
+      } else {
+        // eslint-disable-next-line no-console
+        console.error('[PropRenderer] No environment sprites loaded - all failed!');
       }
     };
 
@@ -276,6 +283,9 @@ export const usePropRenderer = (options = {}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tileSize, enableLOD, enableBatching, showPropHealth]);
 
+  // Debug: track unknown variants (only log once per variant)
+  const unknownVariantsRef = useRef(new Set());
+
   /**
    * Render a single prop
    * @private
@@ -290,6 +300,13 @@ export const usePropRenderer = (options = {}) => {
     // Try to get sprite for this variant
     const spriteData = spritesRef.current[variant];
     const canUseSprite = useSprites && spritesLoadedRef.current && spriteData;
+
+    // Debug: Log variants without sprites (only once per variant)
+    if (useSprites && spritesLoadedRef.current && !spriteData && !unknownVariantsRef.current.has(variant)) {
+      unknownVariantsRef.current.add(variant);
+      // eslint-disable-next-line no-console
+      console.warn(`[PropRenderer] No sprite found for variant: "${variant}" (type: ${prop.type})`);
+    }
 
     // Render based on LOD level
     if (lod === LOD_LEVELS.FULL) {

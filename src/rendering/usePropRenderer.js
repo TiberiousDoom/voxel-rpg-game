@@ -125,7 +125,7 @@ const calculateLOD = (propX, propZ, cameraX, cameraZ, tileSize) => {
  * @param {object} options - Rendering options
  * @param {number} options.tileSize - Size of each tile in pixels
  * @param {boolean} options.enableLOD - Enable LOD system (default: true)
- * @param {boolean} options.enableBatching - Enable sprite batching (default: true)
+ * @param {boolean} options.enableBatching - Enable sprite batching (default: false, breaks depth order)
  * @param {boolean} options.showPropHealth - Show health bars (default: false)
  * @param {boolean} options.useSprites - Use sprite images (default: true)
  * @returns {object} Rendering functions
@@ -134,7 +134,7 @@ export const usePropRenderer = (options = {}) => {
   const {
     tileSize = 40,
     enableLOD = true,
-    enableBatching = true,
+    enableBatching = false, // Disabled by default - batching breaks depth sorting
     showPropHealth = false,
     useSprites = true
   } = options;

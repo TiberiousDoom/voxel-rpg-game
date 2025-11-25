@@ -116,7 +116,7 @@ const initializeCanvas = (canvas, width, height) => {
 
 // Grid constants - Infinite world with chunk-based terrain generation
 // The terrain system dynamically loads chunks as the player explores
-const TILE_SIZE = 40;
+const TILE_SIZE = 64; // Increased from 40 for closer zoom
 // Viewport size (window into the larger world)
 const VIEWPORT_WIDTH = 800; // 20 tiles visible width
 const VIEWPORT_HEIGHT = 600; // 15 tiles visible height

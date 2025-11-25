@@ -6,6 +6,12 @@
  */
 
 /**
+ * Helper to get the public URL prefix for assets
+ * This ensures assets load correctly on GitHub Pages deployments
+ */
+const PUBLIC_URL = process.env.PUBLIC_URL || '';
+
+/**
  * NPC Sprite Manifest
  * Defines sprite sheets for all NPC roles
  *
@@ -16,9 +22,9 @@
  */
 export const NPC_SPRITE_MANIFEST = {
   FARMER: {
-    idle: '/assets/sprites/npcs/farmer/idle.png',
-    walk: '/assets/sprites/npcs/farmer/walk.png',
-    work: '/assets/sprites/npcs/farmer/work.png',
+    idle: `${PUBLIC_URL}/assets/sprites/npcs/farmer/idle.png`,
+    walk: `${PUBLIC_URL}/assets/sprites/npcs/farmer/walk.png`,
+    work: `${PUBLIC_URL}/assets/sprites/npcs/farmer/work.png`,
     frames: {
       idle: 1,
       walk: 4,
@@ -31,9 +37,9 @@ export const NPC_SPRITE_MANIFEST = {
   },
 
   GUARD: {
-    idle: '/assets/sprites/npcs/guard/idle.png',
-    walk: '/assets/sprites/npcs/guard/walk.png',
-    work: '/assets/sprites/npcs/guard/work.png',
+    idle: `${PUBLIC_URL}/assets/sprites/npcs/guard/idle.png`,
+    walk: `${PUBLIC_URL}/assets/sprites/npcs/guard/walk.png`,
+    work: `${PUBLIC_URL}/assets/sprites/npcs/guard/work.png`,
     frames: {
       idle: 1,
       walk: 4,
@@ -46,9 +52,9 @@ export const NPC_SPRITE_MANIFEST = {
   },
 
   WORKER: {
-    idle: '/assets/sprites/npcs/worker/idle.png',
-    walk: '/assets/sprites/npcs/worker/walk.png',
-    work: '/assets/sprites/npcs/worker/work.png',
+    idle: `${PUBLIC_URL}/assets/sprites/npcs/worker/idle.png`,
+    walk: `${PUBLIC_URL}/assets/sprites/npcs/worker/walk.png`,
+    work: `${PUBLIC_URL}/assets/sprites/npcs/worker/work.png`,
     frames: {
       idle: 1,
       walk: 4,
@@ -61,9 +67,9 @@ export const NPC_SPRITE_MANIFEST = {
   },
 
   CRAFTSMAN: {
-    idle: '/assets/sprites/npcs/craftsman/idle.png',
-    walk: '/assets/sprites/npcs/craftsman/walk.png',
-    work: '/assets/sprites/npcs/craftsman/work.png',
+    idle: `${PUBLIC_URL}/assets/sprites/npcs/craftsman/idle.png`,
+    walk: `${PUBLIC_URL}/assets/sprites/npcs/craftsman/walk.png`,
+    work: `${PUBLIC_URL}/assets/sprites/npcs/craftsman/work.png`,
     frames: {
       idle: 1,
       walk: 4,
@@ -76,9 +82,9 @@ export const NPC_SPRITE_MANIFEST = {
   },
 
   MINER: {
-    idle: '/assets/sprites/npcs/miner/idle.png',
-    walk: '/assets/sprites/npcs/miner/walk.png',
-    work: '/assets/sprites/npcs/miner/work.png',
+    idle: `${PUBLIC_URL}/assets/sprites/npcs/miner/idle.png`,
+    walk: `${PUBLIC_URL}/assets/sprites/npcs/miner/walk.png`,
+    work: `${PUBLIC_URL}/assets/sprites/npcs/miner/work.png`,
     frames: {
       idle: 1,
       walk: 4,
@@ -91,9 +97,9 @@ export const NPC_SPRITE_MANIFEST = {
   },
 
   MERCHANT: {
-    idle: '/assets/sprites/npcs/merchant/idle.png',
-    walk: '/assets/sprites/npcs/merchant/walk.png',
-    work: '/assets/sprites/npcs/merchant/work.png',
+    idle: `${PUBLIC_URL}/assets/sprites/npcs/merchant/idle.png`,
+    walk: `${PUBLIC_URL}/assets/sprites/npcs/merchant/walk.png`,
+    work: `${PUBLIC_URL}/assets/sprites/npcs/merchant/work.png`,
     frames: {
       idle: 1,
       walk: 4,
@@ -116,7 +122,7 @@ export const NPC_SPRITE_MANIFEST = {
 export const BUILDING_SPRITE_MANIFEST = {
   FARM: {
     sprites: {
-      default: '/assets/sprites/buildings/farm.png'
+      default: `${PUBLIC_URL}/assets/sprites/buildings/farm.png`
     },
     size: {
       width: 40,
@@ -126,7 +132,7 @@ export const BUILDING_SPRITE_MANIFEST = {
 
   HOUSE: {
     sprites: {
-      default: '/assets/sprites/buildings/house.png'
+      default: `${PUBLIC_URL}/assets/sprites/buildings/house.png`
     },
     size: {
       width: 40,
@@ -136,7 +142,7 @@ export const BUILDING_SPRITE_MANIFEST = {
 
   WAREHOUSE: {
     sprites: {
-      default: '/assets/sprites/buildings/warehouse.png'
+      default: `${PUBLIC_URL}/assets/sprites/buildings/warehouse.png`
     },
     size: {
       width: 40,
@@ -146,7 +152,7 @@ export const BUILDING_SPRITE_MANIFEST = {
 
   TOWN_CENTER: {
     sprites: {
-      default: '/assets/sprites/buildings/town_center.png'
+      default: `${PUBLIC_URL}/assets/sprites/buildings/town_center.png`
     },
     size: {
       width: 40,
@@ -156,7 +162,7 @@ export const BUILDING_SPRITE_MANIFEST = {
 
   WATCHTOWER: {
     sprites: {
-      default: '/assets/sprites/buildings/watchtower.png'
+      default: `${PUBLIC_URL}/assets/sprites/buildings/watchtower.png`
     },
     size: {
       width: 40,
@@ -166,7 +172,7 @@ export const BUILDING_SPRITE_MANIFEST = {
 
   CAMPFIRE: {
     sprites: {
-      default: '/assets/sprites/buildings/campfire.png'
+      default: `${PUBLIC_URL}/assets/sprites/buildings/campfire.png`
     },
     size: {
       width: 40,
@@ -176,7 +182,7 @@ export const BUILDING_SPRITE_MANIFEST = {
 
   MARKET: {
     sprites: {
-      default: '/assets/sprites/buildings/market.png'
+      default: `${PUBLIC_URL}/assets/sprites/buildings/market.png`
     },
     size: {
       width: 40,
@@ -186,7 +192,7 @@ export const BUILDING_SPRITE_MANIFEST = {
 
   CASTLE: {
     sprites: {
-      default: '/assets/sprites/buildings/castle.png'
+      default: `${PUBLIC_URL}/assets/sprites/buildings/castle.png`
     },
     size: {
       width: 40,
@@ -205,9 +211,9 @@ export const BUILDING_SPRITE_MANIFEST = {
  * - sprint: 4-frame sprinting animation
  */
 export const PLAYER_SPRITE_MANIFEST = {
-  idle: '/assets/sprites/player/idle.png',
-  walk: '/assets/sprites/player/walk.png',
-  sprint: '/assets/sprites/player/sprint.png',
+  idle: `${PUBLIC_URL}/assets/sprites/player/idle.png`,
+  walk: `${PUBLIC_URL}/assets/sprites/player/walk.png`,
+  sprint: `${PUBLIC_URL}/assets/sprites/player/sprint.png`,
   frames: {
     idle: 1,
     walk: 4,

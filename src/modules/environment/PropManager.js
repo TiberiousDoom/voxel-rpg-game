@@ -24,7 +24,7 @@
  * Prop instance
  */
 class Prop {
-  constructor(id, type, x, z, variant, config) {
+  constructor(id, type, x, z, variant, config, scale = 1.0) {
     this.id = id;
     this.type = type;           // 'tree', 'rock', 'bush', etc.
     this.x = x;
@@ -42,6 +42,7 @@ class Prop {
     this.sprite = config.sprite || variant;
     this.width = config.width || 1;
     this.height = config.height || 1;
+    this.scale = scale;         // Random scale for visual variety
 
     // Metadata
     this.createdAt = Date.now();
@@ -313,17 +314,26 @@ export class PropManager {
         // Random variant
         const variant = variants[Math.floor(Math.random() * variants.length)];
 
-        // Get prop definition
-        const propDef = this.propDefinitions[propType] || this.getDefaultPropDefinition(propType);
+        // Get prop definition - try variant-specific first, then fall back to type
+        const variantDef = this.propDefinitions[variant];
+        const propDef = variantDef || this.propDefinitions[propType] || this.getDefaultPropDefinition(propType);
 
-        // Create prop
+        // Generate random scale from scaleRange if defined
+        let scale = 1.0;
+        if (propDef.scaleRange && propDef.scaleRange.length === 2) {
+          const [minScale, maxScale] = propDef.scaleRange;
+          scale = minScale + Math.random() * (maxScale - minScale);
+        }
+
+        // Create prop with scale
         const prop = new Prop(
           `prop_${this.nextPropId++}`,
           propType,
           worldX,
           worldZ,
           variant,
-          propDef
+          propDef,
+          scale
         );
 
         props.push(prop);

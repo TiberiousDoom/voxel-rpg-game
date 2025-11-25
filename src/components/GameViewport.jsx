@@ -1559,9 +1559,9 @@ function GameViewport({
               targetX: monsterPos.x,
               targetZ: monsterPos.z,
               damage: baseDamage,
-              speed: 12, // Units per second
+              speed: 8, // Units per second (slower for visibility)
               color: '#ff6600', // Orange fireball
-              size: 8,
+              size: 20, // Larger size for visibility with bigger tiles
               targetId: targetMonster.id,
               onHit: () => {
                 // Deal damage when projectile hits

@@ -9,6 +9,7 @@ import RightSidebar from './RightSidebar';
 import HorizontalTabBar from './HorizontalTabBar';
 import BuildingInfoPanel from './BuildingInfoPanel';
 import AchievementNotification from './AchievementNotification';
+import NotificationSystem from './notifications/NotificationSystem';
 import SettlementInventoryUI from './SettlementInventoryUI';
 import ModalWrapper from './ModalWrapper';
 import BuildMenu from './BuildMenu';
@@ -473,6 +474,9 @@ function GameScreen() {
           onDismiss={() => setNewlyUnlockedAchievements([])}
         />
       )}
+
+      {/* Global Notification System - For quests, events, etc. */}
+      <NotificationSystem />
 
       {/* Settlement Inventory */}
       <SettlementInventoryUI

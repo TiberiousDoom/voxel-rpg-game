@@ -639,6 +639,8 @@ class ModuleOrchestrator {
             newlyUnlocked: newlyUnlocked.map(a => ({
               id: a.id,
               name: a.name,
+              description: a.description,
+              icon: a.icon,
               reward: a.reward
             }))
           };

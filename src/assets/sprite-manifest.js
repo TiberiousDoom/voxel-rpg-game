@@ -182,9 +182,10 @@ export const WILDLIFE_SPRITE_MANIFEST = {
  *
  * Format:
  * - Single sprite per prop type (static image)
+ * - Variants without specific sprites fallback to similar assets
  */
 export const ENVIRONMENT_SPRITE_MANIFEST = {
-  // Trees
+  // === TREES ===
   tree_oak: {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_oak.png`,
     size: { width: 40, height: 40 }
@@ -193,8 +194,28 @@ export const ENVIRONMENT_SPRITE_MANIFEST = {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_pine.png`,
     size: { width: 40, height: 40 }
   },
+  tree_birch: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_oak.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  tree_dead: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_pine.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  tree_swamp: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_oak.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  tree: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_oak.png`, // generic tree
+    size: { width: 40, height: 40 }
+  },
 
-  // Rocks
+  // === ROCKS ===
+  rock: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`,
+    size: { width: 40, height: 40 }
+  },
   rock_small: {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`,
     size: { width: 40, height: 40 }
@@ -203,8 +224,20 @@ export const ENVIRONMENT_SPRITE_MANIFEST = {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`,
     size: { width: 40, height: 40 }
   },
+  rock_moss: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  rock_ice: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  rock_desert: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
 
-  // Ores
+  // === ORES ===
   ore_iron: {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/ores/ore_iron.png`,
     size: { width: 40, height: 40 }
@@ -217,8 +250,16 @@ export const ENVIRONMENT_SPRITE_MANIFEST = {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/ores/ore_crystal.png`,
     size: { width: 40, height: 40 }
   },
+  ore_copper: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/ores/ore_iron.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  ore_vein: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/ores/ore_iron.png`, // generic ore
+    size: { width: 40, height: 40 }
+  },
 
-  // Plants
+  // === BUSHES ===
   bush: {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/bush.png`,
     size: { width: 40, height: 40 }
@@ -227,16 +268,126 @@ export const ENVIRONMENT_SPRITE_MANIFEST = {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/bush_berry.png`,
     size: { width: 40, height: 40 }
   },
+  bush_dead: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/bush.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+
+  // === HERBS ===
+  herb: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  herb_medicinal: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  herb_magical: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/flower_wildflower.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+
+  // === MUSHROOMS ===
+  mushroom: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/mushroom_red.png`,
+    size: { width: 40, height: 40 }
+  },
   mushroom_red: {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/mushroom_red.png`,
     size: { width: 40, height: 40 }
   },
-  grass_clump: {
-    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`,
+  mushroom_brown: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/mushroom_red.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  mushroom_poison: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/mushroom_red.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  mushroom_glowing: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/mushroom_red.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+
+  // === FLOWERS ===
+  flower: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/flower_wildflower.png`,
     size: { width: 40, height: 40 }
   },
   flower_wildflower: {
     sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/flower_wildflower.png`,
+    size: { width: 40, height: 40 }
+  },
+  flower_daisy: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/flower_wildflower.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+
+  // === GRASS & VEGETATION ===
+  grass_clump: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`,
+    size: { width: 40, height: 40 }
+  },
+  grass: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`,
+    size: { width: 40, height: 40 }
+  },
+  vine: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  vine_hanging: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+
+  // === CACTI (desert) ===
+  cactus: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/bush.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  cactus_saguaro: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/bush.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  cactus_barrel: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/bush.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+
+  // === WATER PLANTS ===
+  reed: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  reed_cattail: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  lily: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/flower_wildflower.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  lily_water: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/flower_wildflower.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+
+  // === MISCELLANEOUS ===
+  bones: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  bones_skeleton: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  log_fallen: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_pine.png`, // fallback
+    size: { width: 40, height: 40 }
+  },
+  ice_crystal: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/ores/ore_crystal.png`, // fallback
     size: { width: 40, height: 40 }
   }
 };

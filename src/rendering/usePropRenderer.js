@@ -248,7 +248,8 @@ export const usePropRenderer = (options = {}) => {
       const batches = new Map();
 
       for (const prop of visibleProps) {
-        const batchKey = `${prop.variant}_${prop._lod}`;
+        // Use ::: as separator to avoid conflicts with underscores in variant names
+        const batchKey = `${prop.variant}:::${prop._lod}`;
         if (!batches.has(batchKey)) {
           batches.set(batchKey, []);
         }
@@ -257,7 +258,8 @@ export const usePropRenderer = (options = {}) => {
 
       // Render batches (maintains Z-order within each variant)
       for (const [batchKey, batchProps] of batches.entries()) {
-        const [variant, lod] = batchKey.split('_');
+        // Split on ::: to correctly recover variant names with underscores
+        const [variant, lod] = batchKey.split(':::');
         const lodLevel = parseInt(lod);
 
         for (const prop of batchProps) {

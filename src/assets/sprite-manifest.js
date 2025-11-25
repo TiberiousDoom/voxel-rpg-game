@@ -113,6 +113,135 @@ export const NPC_SPRITE_MANIFEST = {
 };
 
 /**
+ * Monster Sprite Manifest
+ * Defines sprites for all monster types
+ *
+ * Format:
+ * - Single sprite per monster type (static image)
+ */
+export const MONSTER_SPRITE_MANIFEST = {
+  SLIME: {
+    sprite: `${PUBLIC_URL}/assets/sprites/monsters/slime.png`,
+    size: { width: 16, height: 16 }
+  },
+  GOBLIN: {
+    sprite: `${PUBLIC_URL}/assets/sprites/monsters/goblin.png`,
+    size: { width: 16, height: 16 }
+  },
+  WOLF: {
+    sprite: `${PUBLIC_URL}/assets/sprites/monsters/wolf.png`,
+    size: { width: 20, height: 20 }
+  },
+  SKELETON: {
+    sprite: `${PUBLIC_URL}/assets/sprites/monsters/skeleton.png`,
+    size: { width: 18, height: 18 }
+  },
+  ORC: {
+    sprite: `${PUBLIC_URL}/assets/sprites/monsters/orc.png`,
+    size: { width: 20, height: 20 }
+  }
+};
+
+/**
+ * Wildlife Sprite Manifest
+ * Defines sprites for all wildlife animal types
+ *
+ * Format:
+ * - Single sprite per animal type (static image)
+ */
+export const WILDLIFE_SPRITE_MANIFEST = {
+  DEER: {
+    sprite: `${PUBLIC_URL}/assets/sprites/wildlife/deer.png`,
+    size: { width: 16, height: 16 }
+  },
+  RABBIT: {
+    sprite: `${PUBLIC_URL}/assets/sprites/wildlife/rabbit.png`,
+    size: { width: 16, height: 16 }
+  },
+  SHEEP: {
+    sprite: `${PUBLIC_URL}/assets/sprites/wildlife/sheep.png`,
+    size: { width: 16, height: 16 }
+  },
+  BEAR: {
+    sprite: `${PUBLIC_URL}/assets/sprites/wildlife/bear.png`,
+    size: { width: 16, height: 16 }
+  },
+  BOAR: {
+    sprite: `${PUBLIC_URL}/assets/sprites/wildlife/boar.png`,
+    size: { width: 16, height: 16 }
+  },
+  WOLF: {
+    sprite: `${PUBLIC_URL}/assets/sprites/wildlife/wolf.png`,
+    size: { width: 16, height: 16 }
+  }
+};
+
+/**
+ * Environment Sprite Manifest
+ * Defines sprites for environmental props (trees, rocks, ores, plants)
+ *
+ * Format:
+ * - Single sprite per prop type (static image)
+ */
+export const ENVIRONMENT_SPRITE_MANIFEST = {
+  // Trees
+  tree_oak: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_oak.png`,
+    size: { width: 40, height: 40 }
+  },
+  tree_pine: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/trees/tree_pine.png`,
+    size: { width: 40, height: 40 }
+  },
+
+  // Rocks
+  rock_small: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`,
+    size: { width: 40, height: 40 }
+  },
+  rock_large: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/rocks/rock.png`,
+    size: { width: 40, height: 40 }
+  },
+
+  // Ores
+  ore_iron: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/ores/ore_iron.png`,
+    size: { width: 40, height: 40 }
+  },
+  ore_gold: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/ores/ore_gold.png`,
+    size: { width: 40, height: 40 }
+  },
+  ore_crystal: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/ores/ore_crystal.png`,
+    size: { width: 40, height: 40 }
+  },
+
+  // Plants
+  bush: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/bush.png`,
+    size: { width: 40, height: 40 }
+  },
+  bush_berry: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/bush_berry.png`,
+    size: { width: 40, height: 40 }
+  },
+  mushroom_red: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/mushroom_red.png`,
+    size: { width: 40, height: 40 }
+  },
+  grass_clump: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/grass_clump.png`,
+    size: { width: 40, height: 40 }
+  },
+  flower_wildflower: {
+    sprite: `${PUBLIC_URL}/assets/sprites/environment/plants/flower_wildflower.png`,
+    size: { width: 40, height: 40 }
+  }
+};
+
+/**
  * Building Sprite Manifest
  * Defines sprites for all building types
  *
@@ -235,7 +364,10 @@ export function getSpriteManifest(type) {
   const manifests = {
     'npc': NPC_SPRITE_MANIFEST,
     'building': BUILDING_SPRITE_MANIFEST,
-    'player': PLAYER_SPRITE_MANIFEST
+    'player': PLAYER_SPRITE_MANIFEST,
+    'monster': MONSTER_SPRITE_MANIFEST,
+    'wildlife': WILDLIFE_SPRITE_MANIFEST,
+    'environment': ENVIRONMENT_SPRITE_MANIFEST
   };
 
   return manifests[type] || null;
@@ -266,6 +398,21 @@ export function getSpritePath(entityType, entityId, state = 'default') {
   if (entityType === 'building') {
     const buildingData = manifest[entityId];
     return buildingData && buildingData.sprites ? buildingData.sprites[state] : null;
+  }
+
+  if (entityType === 'monster') {
+    const monsterData = manifest[entityId];
+    return monsterData ? monsterData.sprite : null;
+  }
+
+  if (entityType === 'wildlife') {
+    const wildlifeData = manifest[entityId];
+    return wildlifeData ? wildlifeData.sprite : null;
+  }
+
+  if (entityType === 'environment') {
+    const envData = manifest[entityId];
+    return envData ? envData.sprite : null;
   }
 
   return null;
@@ -322,6 +469,21 @@ export function getFrameSize(entityType, entityId) {
     return buildingData && buildingData.size ? buildingData.size : { width: 40, height: 40 };
   }
 
+  if (entityType === 'monster') {
+    const monsterData = manifest[entityId];
+    return monsterData && monsterData.size ? monsterData.size : { width: 16, height: 16 };
+  }
+
+  if (entityType === 'wildlife') {
+    const wildlifeData = manifest[entityId];
+    return wildlifeData && wildlifeData.size ? wildlifeData.size : { width: 16, height: 16 };
+  }
+
+  if (entityType === 'environment') {
+    const envData = manifest[entityId];
+    return envData && envData.size ? envData.size : { width: 40, height: 40 };
+  }
+
   return { width: 16, height: 16 };
 }
 
@@ -329,6 +491,9 @@ const spriteManifestExports = {
   NPC_SPRITE_MANIFEST,
   BUILDING_SPRITE_MANIFEST,
   PLAYER_SPRITE_MANIFEST,
+  MONSTER_SPRITE_MANIFEST,
+  WILDLIFE_SPRITE_MANIFEST,
+  ENVIRONMENT_SPRITE_MANIFEST,
   getSpriteManifest,
   getSpritePath,
   getFrameCount,

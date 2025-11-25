@@ -38,6 +38,7 @@ import { usePlayerMovement } from '../modules/player/PlayerMovementController.js
 import { usePlayerInteraction } from '../modules/player/PlayerInteractionSystem.js';
 import { useCameraFollow, CAMERA_MODES } from '../modules/player/CameraFollowSystem.js';
 import useGameStore from '../stores/useGameStore.js'; // For monster cleanup
+import useDungeonStore from '../stores/useDungeonStore.js'; // For dungeon entry
 import TerrainToolsPanel from './TerrainToolsPanel.jsx'; // Terrain tools UI
 import MiniMap from './MiniMap.jsx'; // Mini-map (Phase 3 Integration)
 import UnifiedDebugMenu from './UnifiedDebugMenu.jsx'; // Unified Debug & Developer Menu
@@ -567,6 +568,31 @@ function GameViewport({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerRef.current?.x, playerRef.current?.z]);
 
+  // Get nearby dungeon entrances for interaction
+  const nearbyDungeonEntrances = React.useMemo(() => {
+    if (!terrainSystemRef.current || !playerRef.current) return [];
+
+    const player = playerRef.current;
+    const interactionRange = 5; // tiles - larger range for structures
+
+    const structures = terrainSystemRef.current.getStructuresInRegion(
+      player.x - interactionRange,
+      player.z - interactionRange,
+      interactionRange * 2,
+      interactionRange * 2
+    );
+
+    // Filter to only dungeon entrances (template.type === 'dungeon' or templateId === 'dungeon_entrance')
+    return structures.filter(s =>
+      s.template?.type === 'dungeon' || s.templateId === 'dungeon_entrance'
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerRef.current?.x, playerRef.current?.z]);
+
+  // Get dungeon store functions
+  const enterDungeon = useDungeonStore((state) => state.enterDungeon);
+  const inDungeon = useDungeonStore((state) => state.inDungeon);
+
   // Player interaction system
   const { closestInteractable, canInteract } = usePlayerInteraction(
     playerRef.current,
@@ -576,6 +602,7 @@ function GameViewport({
       resources: [], // FUTURE: Add world resources (ore nodes, etc.) when resource system is implemented
       chests: buildings.filter(b => b.type === 'CHEST'), // Chests are buildings
       props: nearbyProps, // Phase 3A: Harvestable props
+      dungeonEntrances: nearbyDungeonEntrances, // Dungeon entry points
       onBuildingInteract: onBuildingClick,
       onNPCInteract: (npc) => {
         // FUTURE: Open NPC dialog/interaction panel (requires dialog system)
@@ -610,7 +637,31 @@ function GameViewport({
           }
         }
       },
-      enabled: enablePlayerMovement,
+      onDungeonEntranceInteract: (dungeonEntrance) => {
+        // Enter dungeon when interacting with entrance
+        if (inDungeon) return; // Already in dungeon
+
+        const player = useGameStore.getState().player;
+        const playerStats = {
+          health: player.health,
+          maxHealth: player.maxHealth,
+          mana: player.mana || 100,
+          maxMana: player.maxMana || 100,
+          damage: player.damage,
+          defense: player.defense,
+          critChance: player.critChance,
+          critDamage: player.critDamage,
+          dodgeChance: player.dodgeChance || 5,
+          attackSpeed: player.attackSpeed || 1.0,
+        };
+
+        // Determine dungeon type based on biome or structure properties
+        const dungeonType = dungeonEntrance.template?.dungeonType || 'CAVE';
+        const dungeonLevel = Math.max(1, Math.floor(player.level / 3) + 1);
+
+        enterDungeon(dungeonType, dungeonLevel, playerStats);
+      },
+      enabled: enablePlayerMovement && !inDungeon,
     }
   );
 
@@ -744,6 +795,12 @@ function GameViewport({
         break;
       case 'CHEST':
         icon = '📦';
+        break;
+      case 'PROP':
+        icon = '🌳';
+        break;
+      case 'DUNGEON_ENTRANCE':
+        icon = '🚪';
         break;
       default:
         icon = '?';
@@ -1453,6 +1510,26 @@ function GameViewport({
           } else if (closestInteractable.type === 'CHEST') {
             // eslint-disable-next-line no-console
             if (debugMode) console.log('Opening chest:', closestInteractable.object);
+          } else if (closestInteractable.type === 'DUNGEON_ENTRANCE') {
+            // Enter dungeon when clicking on entrance
+            if (!inDungeon) {
+              const player = useGameStore.getState().player;
+              const playerStats = {
+                health: player.health,
+                maxHealth: player.maxHealth,
+                mana: player.mana || 100,
+                maxMana: player.maxMana || 100,
+                damage: player.damage,
+                defense: player.defense,
+                critChance: player.critChance,
+                critDamage: player.critDamage,
+                dodgeChance: player.dodgeChance || 5,
+                attackSpeed: player.attackSpeed || 1.0,
+              };
+              const dungeonType = closestInteractable.object.template?.dungeonType || 'CAVE';
+              const dungeonLevel = Math.max(1, Math.floor(player.level / 3) + 1);
+              enterDungeon(dungeonType, dungeonLevel, playerStats);
+            }
           }
           didInteract = true;
         }

@@ -35,6 +35,24 @@ const TILE_COLORS = {
   stairs: '#B0B0B0',
   dungeon_stairs: '#505050',
 
+  // Cave dungeon tiles
+  rock: '#4a4a4a',
+  dark_stone: '#2d2d2d',
+  cave_stairs: '#1a1a1a',
+
+  // Forest dungeon tiles
+  moss_stone: '#4a6b4a',
+  twisted_root: '#3d2817',
+  forest_floor: '#2d5a27',
+  grove_stairs: '#1a3d15',
+
+  // Ruins dungeon tiles
+  sand_stone: '#c4a35a',
+  crumbled_pillar: '#8b7355',
+  ancient_tile: '#a89060',
+  hieroglyph_floor: '#d4af37',
+  tomb_stairs: '#6b5a40',
+
   // Default
   default: '#CCCCCC',
 };

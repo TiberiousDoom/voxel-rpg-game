@@ -1,0 +1,63 @@
+{
+  "id": "cave_dungeon_entrance",
+  "name": "Cave Entrance",
+  "type": "dungeon",
+  "dungeonType": "CAVE",
+  "width": 5,
+  "height": 5,
+  "biomes": ["plains", "mountains"],
+  "rarity": 0.12,
+  "requiresDryLand": true,
+  "maxHeightVariation": 3,
+  "tiles": [
+    { "type": "rock", "blocking": true },
+    { "type": "rock", "blocking": true },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "rock", "blocking": true },
+    { "type": "rock", "blocking": true },
+
+    { "type": "rock", "blocking": true },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "rock", "blocking": true },
+
+    { "type": "dark_stone", "blocking": false },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "cave_stairs", "blocking": false },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "dark_stone", "blocking": false },
+
+    { "type": "rock", "blocking": true },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "rock", "blocking": true },
+
+    { "type": "rock", "blocking": true },
+    { "type": "rock", "blocking": true },
+    { "type": "dark_stone", "blocking": false },
+    { "type": "rock", "blocking": true },
+    { "type": "rock", "blocking": true }
+  ],
+  "lootSpawns": [],
+  "npcSpawns": [
+    {
+      "x": 1,
+      "z": 2,
+      "npcType": "cave_bat",
+      "behavior": "idle",
+      "faction": "hostile"
+    }
+  ],
+  "entrance": {
+    "x": 2,
+    "z": 2
+  },
+  "visualStyle": {
+    "primaryColor": "#4a4a4a",
+    "secondaryColor": "#2d2d2d",
+    "accentColor": "#1a1a1a"
+  },
+  "description": "A dark cave entrance leading into underground depths. Bats can be heard echoing from within."
+}

@@ -10,6 +10,9 @@ import smallRuin2 from './small_ruin_2.json';
 import largeRuin from './large_ruin.json';
 import npcHut1 from './npc_hut_1.json';
 import dungeonEntrance from './dungeon_entrance.json';
+import caveDungeonEntrance from './cave_dungeon_entrance.json';
+import forestDungeonEntrance from './forest_dungeon_entrance.json';
+import ruinsDungeonEntrance from './ruins_dungeon_entrance.json';
 import stoneTower from './stone_tower.json';
 import stoneCircle from './stone_circle.json';
 import resourceCamp from './resource_camp.json';
@@ -22,7 +25,10 @@ export const structureTemplates = {
   small_ruin_2: smallRuin2,
   large_ruin: largeRuin,
   npc_hut_1: npcHut1,
-  dungeon_entrance: dungeonEntrance,
+  dungeon_entrance: dungeonEntrance, // Generic fallback (kept for compatibility)
+  cave_dungeon_entrance: caveDungeonEntrance, // CAVE type - plains/mountains
+  forest_dungeon_entrance: forestDungeonEntrance, // FOREST type - forest biome
+  ruins_dungeon_entrance: ruinsDungeonEntrance, // RUINS type - desert biome
   stone_tower: stoneTower,
   stone_circle: stoneCircle,
   resource_camp: resourceCamp,

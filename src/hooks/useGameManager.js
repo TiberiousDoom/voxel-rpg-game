@@ -16,6 +16,9 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import GameManager from '../GameManager';
 import BrowserSaveManager from '../persistence/BrowserSaveManager';
+// Quest System
+import { getQuestManager } from '../systems/QuestManager';
+import { ALL_QUESTS } from '../config/quests';
 
 /**
  * Default game state structure
@@ -324,6 +327,12 @@ export function useGameManager(config = {}) {
             }
           });
         }
+
+        // Initialize Quest System with all quest definitions
+        const questManager = getQuestManager();
+        questManager.initialize(ALL_QUESTS);
+        // eslint-disable-next-line no-console
+        console.log('useGameManager: Quest system initialized with', ALL_QUESTS.length, 'quests');
 
         setIsReady(true);
         setIsInitializing(false);

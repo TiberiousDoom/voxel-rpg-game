@@ -298,6 +298,16 @@ const useGameStore = create((set, get) => ({
         } else {
           // Added item to inventory
         }
+
+        // Track item collection for quests
+        if (drop.item?.type) {
+          import('../systems/QuestManager.js').then(({ getQuestManager }) => {
+            const questManager = getQuestManager();
+            if (questManager?.initialized) {
+              questManager.trackCollection(drop.item.type);
+            }
+          }).catch(() => {});
+        }
       }
 
       // Remove from store

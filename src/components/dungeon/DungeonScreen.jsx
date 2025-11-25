@@ -187,13 +187,13 @@ function EnemySprite({ enemy, isSelected, onClick }) {
 /**
  * PlayerSprite Component - 2D player representation
  */
-function PlayerSprite({ position, health, maxHealth, isAttacking, attackCooldown, attackSpeed }) {
+function PlayerSprite({ position, health, maxHealth, attackCooldown, attackSpeed }) {
   const healthPercent = (health / maxHealth) * 100;
   const cooldownPercent = attackCooldown > 0 ? (attackCooldown / (1000 / attackSpeed)) * 100 : 0;
 
   return (
     <div
-      className={`player-sprite ${isAttacking ? 'attacking' : ''}`}
+      className="player-sprite"
       style={{
         left: position.x,
         top: position.y

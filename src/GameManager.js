@@ -24,7 +24,6 @@ import AutonomousDecision from './modules/npc-system/AutonomousDecision';
 import TutorialSystem from './modules/tutorial-system/TutorialSystem';
 import ContextHelp from './modules/tutorial-system/ContextHelp';
 import FeatureUnlock from './modules/tutorial-system/FeatureUnlock';
-import { createTutorialSteps } from './modules/tutorial-system/tutorialSteps';
 import { getContextHelpDefinitions } from './modules/tutorial-system/contextHelpDefinitions';
 // Phase 3C: Achievement System
 import AchievementSystem from './modules/achievement-system/AchievementSystem';
@@ -46,6 +45,8 @@ import { TerrainSystem } from './modules/environment/TerrainSystem';
 import { TerrainJobQueue } from './modules/terrain-jobs/TerrainJobQueue';
 import { JobTimeCalculator } from './modules/terrain-jobs/JobTimeCalculator';
 import { TerrainWorkerBehavior } from './modules/terrain-jobs/TerrainWorkerBehavior';
+// Phase 4: AI System Manager
+import { AISystemManager } from './modules/ai';
 
 /**
  * GameManager - Main game controller
@@ -207,8 +208,8 @@ export default class GameManager extends EventEmitter {
     const productionTick = new ProductionTick(buildingConfig, buildingEffect, storage);
 
     // Phase 3D: Tutorial System (optional - can be enabled/disabled)
-    const tutorialSteps = createTutorialSteps();
-    const tutorialSystem = new TutorialSystem(tutorialSteps);
+    // Note: TutorialSystem creates steps internally via createTutorialSteps()
+    const tutorialSystem = new TutorialSystem(null);
     const contextHelpDefinitions = getContextHelpDefinitions();
     const contextHelp = new ContextHelp(contextHelpDefinitions);
     const featureUnlock = new FeatureUnlock();
@@ -240,6 +241,19 @@ export default class GameManager extends EventEmitter {
     const jobTimeCalculator = new JobTimeCalculator(terrainSystem);
     const terrainJobQueue = new TerrainJobQueue(terrainSystem);
     const terrainWorkerBehavior = new TerrainWorkerBehavior(npcManager, terrainJobQueue);
+
+    // Phase 4: AI System Manager
+    const aiSystemManager = new AISystemManager({
+      worldSize: 512,
+      enablePathfinding: true,
+      enablePerception: true,
+      enableNPCBehavior: true,
+      enableEnemyAI: true,
+      enableEconomicAI: true,
+      enableWildlifeAI: true,
+      enableCompanionAI: true,
+      enableQuestAI: true
+    });
 
     return {
       grid: grid,
@@ -280,7 +294,9 @@ export default class GameManager extends EventEmitter {
       terrainSystem: terrainSystem,
       jobTimeCalculator: jobTimeCalculator,
       terrainJobQueue: terrainJobQueue,
-      terrainWorkerBehavior: terrainWorkerBehavior
+      terrainWorkerBehavior: terrainWorkerBehavior,
+      // Phase 4: AI System Manager
+      aiSystemManager: aiSystemManager
     };
   }
 
@@ -362,12 +378,19 @@ export default class GameManager extends EventEmitter {
       this._startTickTimer();
 
       this.gameState = GameManager.GAME_STATE.RUNNING;
-      
+
       // Emit started event with current state
       this._emit('game:started', {
         tick: this.currentTick,
         timestamp: Date.now()
       });
+
+      // Auto-start tutorial for new games (when not loading a save)
+      if (!saveSlot && this.orchestrator?.tutorialSystem?.shouldAutoStart()) {
+        this.orchestrator.tutorialSystem.start();
+        // eslint-disable-next-line no-console
+        console.log('[GameManager] Tutorial auto-started for new game');
+      }
 
       // eslint-disable-next-line no-console
       console.log('[GameManager] Game started successfully');
@@ -544,6 +567,14 @@ export default class GameManager extends EventEmitter {
 
         // Notify tutorial system
         this.orchestrator.notifyBuildingPlaced(building);
+
+        // Track building placement for quests
+        import('./systems/QuestManager.js').then(({ getQuestManager }) => {
+          const questManager = getQuestManager();
+          if (questManager?.initialized) {
+            questManager.trackBuilding(type);
+          }
+        }).catch(() => {});
 
         return { success: true, buildingId: result.buildingId };
       }

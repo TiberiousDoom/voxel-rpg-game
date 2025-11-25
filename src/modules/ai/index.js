@@ -105,3 +105,6 @@ export {
   QuestState,
   ObjectiveType
 } from './QuestAISystem.js';
+
+// AI System Manager - Central coordinator
+export { AISystemManager } from './AISystemManager.js';

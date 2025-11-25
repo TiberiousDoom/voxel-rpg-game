@@ -46,6 +46,8 @@ import { TerrainSystem } from './modules/environment/TerrainSystem';
 import { TerrainJobQueue } from './modules/terrain-jobs/TerrainJobQueue';
 import { JobTimeCalculator } from './modules/terrain-jobs/JobTimeCalculator';
 import { TerrainWorkerBehavior } from './modules/terrain-jobs/TerrainWorkerBehavior';
+// Phase 4: AI System Manager
+import { AISystemManager } from './modules/ai';
 
 /**
  * GameManager - Main game controller
@@ -241,6 +243,19 @@ export default class GameManager extends EventEmitter {
     const terrainJobQueue = new TerrainJobQueue(terrainSystem);
     const terrainWorkerBehavior = new TerrainWorkerBehavior(npcManager, terrainJobQueue);
 
+    // Phase 4: AI System Manager
+    const aiSystemManager = new AISystemManager({
+      worldSize: 512,
+      enablePathfinding: true,
+      enablePerception: true,
+      enableNPCBehavior: true,
+      enableEnemyAI: true,
+      enableEconomicAI: true,
+      enableWildlifeAI: true,
+      enableCompanionAI: true,
+      enableQuestAI: true
+    });
+
     return {
       grid: grid,
       spatial: spatial,
@@ -280,7 +295,9 @@ export default class GameManager extends EventEmitter {
       terrainSystem: terrainSystem,
       jobTimeCalculator: jobTimeCalculator,
       terrainJobQueue: terrainJobQueue,
-      terrainWorkerBehavior: terrainWorkerBehavior
+      terrainWorkerBehavior: terrainWorkerBehavior,
+      // Phase 4: AI System Manager
+      aiSystemManager: aiSystemManager
     };
   }
 

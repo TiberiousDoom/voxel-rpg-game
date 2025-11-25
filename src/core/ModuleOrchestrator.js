@@ -101,6 +101,16 @@ class ModuleOrchestrator {
     this.terrainJobQueue = modules.terrainJobQueue || null;
     this.terrainWorkerBehavior = modules.terrainWorkerBehavior || null;
 
+    // Phase 4: AI System Manager
+    this.aiSystemManager = modules.aiSystemManager || null;
+    if (this.aiSystemManager) {
+      // Set references to game systems
+      this.aiSystemManager.npcManager = this.npcManager;
+      this.aiSystemManager.storage = this.storage;
+      this.aiSystemManager.territoryManager = this.territoryManager;
+      this.aiSystemManager.gridManager = this.grid;
+    }
+
     // Phase 3C: Achievement bonuses (multiplicative)
     this.achievementBonuses = {
       production: 1.0,
@@ -433,6 +443,35 @@ class ModuleOrchestrator {
           queuedEvents: this.eventSystem.eventQueue.length,
           totalEventsTriggered: this.eventSystem.stats.totalEventsTriggered,
           notifications: notifications
+        };
+      }
+
+      // ============================================
+      // STEP 4.7: PHASE 4 - AI SYSTEM UPDATE
+      // ============================================
+      if (this.aiSystemManager) {
+        // Calculate game hour from tick count (24 hour cycle over ~288 ticks = 24 min real time)
+        const gameHour = Math.floor((this.tickCount % 288) / 12);
+
+        // Build AI game state
+        const aiGameState = {
+          hour: gameHour,
+          weather: this.gameState.weather || 'clear',
+          playerPosition: this.gameState.playerPosition || null,
+          playerHealth: this.gameState.playerHealth || 100
+        };
+
+        // Update all AI systems
+        const aiResult = this.aiSystemManager.update(1, aiGameState);
+
+        result.phase4AI = {
+          ticksProcessed: aiResult.tick,
+          npcBehavior: aiResult.npcBehavior,
+          enemyAI: aiResult.enemyAI,
+          wildlife: aiResult.wildlife,
+          companions: aiResult.companions,
+          quests: aiResult.quests,
+          economic: aiResult.economic
         };
       }
 

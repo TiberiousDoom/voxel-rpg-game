@@ -54,11 +54,22 @@ const Projectile = ({
     // Avoid multiple hits for non-AOE spells
     if (hasHit.current && type !== 'aoe') return;
 
-    const otherBody = event.other.rigidBody;
-    if (!otherBody) return;
+    // In react-three-rapier, userData is on rigidBodyObject (Three.js object), not rigidBody (Rapier object)
+    const otherObject = event.other.rigidBodyObject;
+    if (!otherObject) return;
 
-    // Check if we hit an enemy
-    const userData = otherBody.userData;
+    // Check if we hit an enemy - check userData on the object and its children
+    let userData = otherObject.userData;
+
+    // If not found on the rigid body object, traverse children to find enemy data
+    if (!userData?.isEnemy) {
+      otherObject.traverse((child) => {
+        if (child.userData?.isEnemy && child.userData?.takeDamage) {
+          userData = child.userData;
+        }
+      });
+    }
+
     if (userData?.isEnemy && userData?.takeDamage) {
       hasHit.current = true;
 

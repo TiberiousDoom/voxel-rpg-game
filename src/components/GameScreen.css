@@ -857,3 +857,24 @@
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* Dungeon Overlay - Full screen dungeon interface */
+.dungeon-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  background: #0f172a;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

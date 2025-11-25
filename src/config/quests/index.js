@@ -6,6 +6,7 @@
 import starterQuests from './starter-quests.json';
 import sideQuests from './side-quests.json';
 import dailyQuests from './daily-quests.json';
+import dungeonQuests from './dungeon-quests.json';
 
 /**
  * All quest definitions
@@ -13,16 +14,18 @@ import dailyQuests from './daily-quests.json';
 export const ALL_QUESTS = [
   ...starterQuests,
   ...sideQuests,
-  ...dailyQuests
+  ...dailyQuests,
+  ...dungeonQuests
 ];
 
 /**
  * Quests by category
  */
 export const QUESTS_BY_CATEGORY = {
-  MAIN: starterQuests,
+  MAIN: [...starterQuests, ...dungeonQuests.filter(q => q.category === 'MAIN')],
   SIDE: sideQuests,
-  DAILY: dailyQuests
+  DAILY: [...dailyQuests, ...dungeonQuests.filter(q => q.category === 'DAILY')],
+  DUNGEON: dungeonQuests
 };
 
 /**

@@ -1,0 +1,136 @@
+/**
+ * DungeonCombatLog.css - Styling for combat log
+ */
+
+.dungeon-combat-log {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.dungeon-combat-log h3 {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.log-container {
+  flex: 1;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.log-empty {
+  color: #555;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 20px;
+}
+
+.log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.log-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.log-message {
+  flex: 1;
+  line-height: 1.4;
+}
+
+/* Log type styles */
+.log-player {
+  background: rgba(100, 150, 200, 0.15);
+  border-left: 3px solid #6496c8;
+  color: #9cc;
+}
+
+.log-enemy {
+  background: rgba(200, 100, 100, 0.15);
+  border-left: 3px solid #c86464;
+  color: #faa;
+}
+
+.log-skill {
+  background: rgba(150, 100, 200, 0.15);
+  border-left: 3px solid #9664c8;
+  color: #caf;
+}
+
+.log-reward {
+  background: rgba(200, 180, 100, 0.15);
+  border-left: 3px solid #c8b464;
+  color: #fea;
+}
+
+.log-loot {
+  background: rgba(200, 150, 100, 0.15);
+  border-left: 3px solid #c89664;
+  color: #fca;
+}
+
+.log-heal {
+  background: rgba(100, 200, 100, 0.15);
+  border-left: 3px solid #64c864;
+  color: #afa;
+}
+
+.log-boss {
+  background: rgba(200, 50, 50, 0.2);
+  border-left: 3px solid #c83232;
+  color: #fcc;
+  font-weight: bold;
+}
+
+.log-system {
+  background: rgba(100, 100, 150, 0.15);
+  border-left: 3px solid #6464a0;
+  color: #aaf;
+}
+
+/* Scrollbar styling */
+.log-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+  background: #4a4a6a;
+  border-radius: 3px;
+}
+
+.log-container::-webkit-scrollbar-thumb:hover {
+  background: #5a5a7a;
+}

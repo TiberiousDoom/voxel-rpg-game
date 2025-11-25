@@ -45,6 +45,85 @@ export class AudioManager {
       volume: this.sfxVolume,
       loop: false
     });
+
+    // Dungeon-specific sounds
+    this.sounds.dungeonEnter = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume,
+      loop: false
+    });
+
+    this.sounds.roomTransition = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume * 0.6,
+      loop: false
+    });
+
+    this.sounds.playerAttack = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume,
+      loop: false
+    });
+
+    this.sounds.enemyHit = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume * 0.8,
+      loop: false
+    });
+
+    this.sounds.playerHit = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume,
+      loop: false
+    });
+
+    this.sounds.enemyDeath = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume * 0.9,
+      loop: false
+    });
+
+    this.sounds.bossAbility = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume,
+      loop: false
+    });
+
+    this.sounds.bossPhaseChange = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume,
+      loop: false
+    });
+
+    this.sounds.bossDefeated = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume,
+      loop: false
+    });
+
+    this.sounds.skillActivate = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume * 0.9,
+      loop: false
+    });
+
+    this.sounds.lootDrop = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume * 0.7,
+      loop: false
+    });
+
+    this.sounds.dodge = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume * 0.6,
+      loop: false
+    });
+
+    this.sounds.criticalHit = new Howl({
+      src: ['data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgA'],
+      volume: this.sfxVolume,
+      loop: false
+    });
   }
 
   play(soundName) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import useGameStore from '../stores/useGameStore';
+import useDungeonStore from '../stores/useDungeonStore';
 import CompactHeader from './CompactHeader';
 import HybridSystemDebugPanel from './HybridSystemDebugPanel';
 import GameViewport from './GameViewport';
@@ -26,6 +27,7 @@ import ActiveSkillBar from './ui/ActiveSkillBar';
 import DeathScreen from './DeathScreen';
 import CraftingUI from './CraftingUI';
 import KeyboardShortcutHints from './KeyboardShortcutHints';
+import DungeonScreen from './dungeon/DungeonScreen';
 import { activeSkillSystem } from '../modules/character/CharacterSystem';
 import './GameScreen.css';
 
@@ -38,6 +40,7 @@ function GameScreen() {
   const { gameState, actions, isReady, error, isInitializing, gameManager } = useGame();
   const { enemies, player } = useGameStore(); // Get monsters and player from useGameStore
   const respawnPlayer = useGameStore((state) => state.respawnPlayer);
+  const inDungeon = useDungeonStore((state) => state.inDungeon);
   const [selectedBuildingType, setSelectedBuildingType] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState('slot-1');
@@ -76,6 +79,7 @@ function GameScreen() {
   const [showDeveloperModal, setShowDeveloperModal] = useState(false);
   const [showCraftingModal, setShowCraftingModal] = useState(false);
   const [showPlayerInventoryModal, setShowPlayerInventoryModal] = useState(false);
+  const [showDungeonScreen, setShowDungeonScreen] = useState(false);
 
   // Auto-start game
   useEffect(() => {
@@ -91,10 +95,31 @@ function GameScreen() {
     }
   }, [player, showDeathScreen]);
 
+  // Show dungeon screen when entering dungeon
+  useEffect(() => {
+    if (inDungeon && !showDungeonScreen) {
+      setShowDungeonScreen(true);
+      setShowExpeditionsModal(false); // Close expeditions modal
+    } else if (!inDungeon && showDungeonScreen) {
+      setShowDungeonScreen(false);
+    }
+  }, [inDungeon, showDungeonScreen]);
+
   // Handle respawn
   const handleRespawn = () => {
     respawnPlayer();
     setShowDeathScreen(false);
+  };
+
+  // Handle dungeon entry from ExpeditionsTab
+  const handleEnterDungeon = () => {
+    setShowExpeditionsModal(false);
+    setShowDungeonScreen(true);
+  };
+
+  // Handle dungeon exit
+  const handleExitDungeon = () => {
+    setShowDungeonScreen(false);
   };
 
   // Check for existing saves
@@ -567,7 +592,7 @@ function GameScreen() {
         icon="⚔️"
         maxWidth="1100px"
       >
-        <ExpeditionsTab />
+        <ExpeditionsTab onEnterDungeon={handleEnterDungeon} />
       </ModalWrapper>
 
       {/* Defense Modal */}
@@ -620,6 +645,13 @@ function GameScreen() {
       {cleanMode && (
         <div className="clean-mode-indicator">
           Press <kbd>`</kbd> to exit Clean Mode
+        </div>
+      )}
+
+      {/* Dungeon Screen - Full screen overlay when in dungeon */}
+      {showDungeonScreen && inDungeon && (
+        <div className="dungeon-overlay">
+          <DungeonScreen onExit={handleExitDungeon} />
         </div>
       )}
 

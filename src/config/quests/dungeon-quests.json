@@ -1,0 +1,388 @@
+[
+  {
+    "id": "quest_dungeon_cave_001",
+    "title": "Into the Darkness",
+    "description": "A network of caves has been discovered nearby. Venture inside and clear out the dangerous creatures lurking within.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 1,
+    "chainId": "dungeon_cave_chain",
+    "chainIndex": 1,
+    "objectives": [
+      {
+        "id": "obj_cave_001_1",
+        "description": "Kill 5 Cave Spiders",
+        "type": "KILL",
+        "targetType": "CAVE_SPIDER",
+        "targetCount": 5,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_cave_001_2",
+        "description": "Kill 3 Cave Bats",
+        "type": "KILL",
+        "targetType": "CAVE_BAT",
+        "targetCount": 3,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 150,
+      "gold": 75,
+      "items": [],
+      "unlockQuests": ["quest_dungeon_cave_002"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_cave_002",
+    "title": "The Troll Menace",
+    "description": "Reports indicate that a powerful Cave Troll has made its home deep within the caves. Eliminate this threat.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 2,
+    "prerequisiteQuests": ["quest_dungeon_cave_001"],
+    "chainId": "dungeon_cave_chain",
+    "chainIndex": 2,
+    "objectives": [
+      {
+        "id": "obj_cave_002_1",
+        "description": "Kill 1 Cave Troll",
+        "type": "KILL",
+        "targetType": "CAVE_TROLL",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 250,
+      "gold": 125,
+      "items": [],
+      "unlockQuests": ["quest_dungeon_cave_boss"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_cave_boss",
+    "title": "The Brood Mother",
+    "description": "At the heart of the caves dwells the Brood Mother, an ancient spider queen. Defeat her to clear the Cave dungeon once and for all.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 3,
+    "prerequisiteQuests": ["quest_dungeon_cave_002"],
+    "chainId": "dungeon_cave_chain",
+    "chainIndex": 3,
+    "objectives": [
+      {
+        "id": "obj_cave_boss_1",
+        "description": "Defeat the Brood Mother",
+        "type": "KILL",
+        "targetType": "BROOD_MOTHER",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 500,
+      "gold": 300,
+      "items": [],
+      "unlockQuests": ["quest_dungeon_forest_001"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_forest_001",
+    "title": "Into the Haunted Forest",
+    "description": "A cursed forest filled with dangerous creatures blocks the path forward. Brave its depths and clear the way.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 5,
+    "prerequisiteQuests": ["quest_dungeon_cave_boss"],
+    "chainId": "dungeon_forest_chain",
+    "chainIndex": 1,
+    "objectives": [
+      {
+        "id": "obj_forest_001_1",
+        "description": "Kill 8 Forest Wolves",
+        "type": "KILL",
+        "targetType": "FOREST_WOLF",
+        "targetCount": 8,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_forest_001_2",
+        "description": "Kill 6 Goblins",
+        "type": "KILL",
+        "targetType": "GOBLIN",
+        "targetCount": 6,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 400,
+      "gold": 200,
+      "items": [],
+      "unlockQuests": ["quest_dungeon_forest_002"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_forest_002",
+    "title": "Orc Warband",
+    "description": "An Orc Warrior has been spotted leading raids from within the forest. Hunt them down.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 6,
+    "prerequisiteQuests": ["quest_dungeon_forest_001"],
+    "chainId": "dungeon_forest_chain",
+    "chainIndex": 2,
+    "objectives": [
+      {
+        "id": "obj_forest_002_1",
+        "description": "Kill 1 Orc Warrior",
+        "type": "KILL",
+        "targetType": "ORC_WARRIOR",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 500,
+      "gold": 250,
+      "items": [],
+      "unlockQuests": ["quest_dungeon_forest_boss"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_forest_boss",
+    "title": "The Ancient Treant",
+    "description": "The forest's corruption stems from an Ancient Treant at its center. Destroy it to lift the curse.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 8,
+    "prerequisiteQuests": ["quest_dungeon_forest_002"],
+    "chainId": "dungeon_forest_chain",
+    "chainIndex": 3,
+    "objectives": [
+      {
+        "id": "obj_forest_boss_1",
+        "description": "Defeat the Ancient Treant",
+        "type": "KILL",
+        "targetType": "ANCIENT_TREANT",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 800,
+      "gold": 500,
+      "items": [],
+      "unlockQuests": ["quest_dungeon_ruins_001"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_ruins_001",
+    "title": "Secrets of the Ancient Ruins",
+    "description": "Ancient ruins have been discovered, teeming with undead. Clear them out to uncover their secrets.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 10,
+    "prerequisiteQuests": ["quest_dungeon_forest_boss"],
+    "chainId": "dungeon_ruins_chain",
+    "chainIndex": 1,
+    "objectives": [
+      {
+        "id": "obj_ruins_001_1",
+        "description": "Kill 10 Skeletons",
+        "type": "KILL",
+        "targetType": "SKELETON",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_ruins_001_2",
+        "description": "Kill 5 Ghosts",
+        "type": "KILL",
+        "targetType": "GHOST",
+        "targetCount": 5,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 700,
+      "gold": 350,
+      "items": [],
+      "unlockQuests": ["quest_dungeon_ruins_002"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_ruins_002",
+    "title": "The Undead Knight",
+    "description": "An Undead Knight guards the inner sanctum of the ruins. Defeat it to proceed.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 12,
+    "prerequisiteQuests": ["quest_dungeon_ruins_001"],
+    "chainId": "dungeon_ruins_chain",
+    "chainIndex": 2,
+    "objectives": [
+      {
+        "id": "obj_ruins_002_1",
+        "description": "Kill 1 Undead Knight",
+        "type": "KILL",
+        "targetType": "UNDEAD_KNIGHT",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 900,
+      "gold": 450,
+      "items": [],
+      "unlockQuests": ["quest_dungeon_ruins_boss"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_ruins_boss",
+    "title": "The Lich Lord",
+    "description": "At the heart of the ruins sits the Lich Lord, master of the undead. Only by defeating him can peace be restored.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 15,
+    "prerequisiteQuests": ["quest_dungeon_ruins_002"],
+    "chainId": "dungeon_ruins_chain",
+    "chainIndex": 3,
+    "objectives": [
+      {
+        "id": "obj_ruins_boss_1",
+        "description": "Defeat the Lich Lord",
+        "type": "KILL",
+        "targetType": "LICH_LORD",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 1500,
+      "gold": 1000,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_dungeon_daily_cave",
+    "title": "Daily: Cave Cleansing",
+    "description": "The caves are never truly empty. Clear out the monsters that have returned.",
+    "type": "KILL",
+    "category": "DAILY",
+    "levelRequirement": 1,
+    "objectives": [
+      {
+        "id": "obj_daily_cave_1",
+        "description": "Kill 10 enemies in Cave dungeon",
+        "type": "KILL",
+        "targetType": "CAVE_SPIDER",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 100,
+      "gold": 50,
+      "items": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": true
+  },
+  {
+    "id": "quest_dungeon_daily_forest",
+    "title": "Daily: Forest Patrol",
+    "description": "Patrol the Haunted Forest and eliminate any threats you encounter.",
+    "type": "KILL",
+    "category": "DAILY",
+    "levelRequirement": 5,
+    "objectives": [
+      {
+        "id": "obj_daily_forest_1",
+        "description": "Kill 10 enemies in Forest dungeon",
+        "type": "KILL",
+        "targetType": "FOREST_WOLF",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 200,
+      "gold": 100,
+      "items": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": true
+  },
+  {
+    "id": "quest_dungeon_daily_ruins",
+    "title": "Daily: Ruins Expedition",
+    "description": "The undead continue to rise in the Ancient Ruins. Push them back.",
+    "type": "KILL",
+    "category": "DAILY",
+    "levelRequirement": 10,
+    "objectives": [
+      {
+        "id": "obj_daily_ruins_1",
+        "description": "Kill 10 enemies in Ruins dungeon",
+        "type": "KILL",
+        "targetType": "SKELETON",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 350,
+      "gold": 175,
+      "items": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": true
+  }
+]

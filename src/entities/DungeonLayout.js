@@ -8,7 +8,7 @@
  * - Handles serialization for save/load
  */
 
-import { DungeonRoom, ROOM_TYPES, DIRECTIONS, OPPOSITE_DIRECTION } from './DungeonRoom';
+import { DungeonRoom, ROOM_TYPES, OPPOSITE_DIRECTION } from './DungeonRoom';
 
 /**
  * DungeonLayout class

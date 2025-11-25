@@ -1581,21 +1581,12 @@ function GameViewport({
           Math.pow(player2DPos.z - monsterPos.z, 2)
         );
 
-        const meleeRange = 1; // Melee attack range in units (1 tile)
+        const meleeRange = 2.5; // Melee attack range in units (matches monster attack ranges of 1.5-2.0)
         const store = useGameStore.getState();
-        const baseDamage = store.player.damage || 10;
 
         if (playerDistToMonster <= meleeRange) {
-          // Melee range - direct attack to 2D monster (free)
-          if (clickedMonster.takeDamage) {
-            clickedMonster.takeDamage(baseDamage);
-          }
-
-          // Show damage number
-          store.addDamageNumber({
-            position: [monsterPos.x, 0, monsterPos.z],
-            damage: baseDamage,
-          });
+          // Melee range - use attackMonster which handles damage, death, and loot drops
+          store.attackMonster(clickedMonster.id);
         } else {
           // Ranged attack - costs mana, creates visual projectile
           const manaCost = 5;
@@ -1605,28 +1596,23 @@ function GameViewport({
             store.updatePlayer({ mana: store.player.mana - manaCost });
 
             // Create projectile that will deal damage on hit
-            const targetMonster = clickedMonster;
+            const targetMonsterId = clickedMonster.id;
             createProjectile({
               startX: player2DPos.x,
               startZ: player2DPos.z,
               targetX: monsterPos.x,
               targetZ: monsterPos.z,
-              damage: baseDamage,
-              speed: 8, // Units per second (slower for visibility)
+              damage: store.player.damage || 10,
+              speed: 12, // Units per second (faster for better feel)
               color: '#ff6600', // Orange fireball
               size: 20, // Larger size for visibility with bigger tiles
-              targetId: targetMonster.id,
+              targetId: targetMonsterId,
               onHit: () => {
-                // Deal damage when projectile hits
-                if (targetMonster && targetMonster.alive && targetMonster.takeDamage) {
-                  targetMonster.takeDamage(baseDamage);
-
-                  // Show damage number at impact
-                  const storeNow = useGameStore.getState();
-                  storeNow.addDamageNumber({
-                    position: [targetMonster.position.x, 0, targetMonster.position.z],
-                    damage: baseDamage,
-                  });
+                // Deal damage when projectile hits - use attackMonster for proper death/loot handling
+                const storeNow = useGameStore.getState();
+                const monster = storeNow.enemies.find(m => m.id === targetMonsterId);
+                if (monster && monster.alive) {
+                  storeNow.attackMonster(targetMonsterId);
                 }
               }
             });

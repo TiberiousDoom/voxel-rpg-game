@@ -1,0 +1,217 @@
+/**
+ * DungeonSkillBar.css - Styling for dungeon skill bar
+ */
+
+.dungeon-skill-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  border: 1px solid rgba(100, 100, 140, 0.3);
+}
+
+.dungeon-skill-bar.empty {
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.dungeon-skill-bar.empty p {
+  margin: 0;
+}
+
+/* Mana Display */
+.mana-display {
+  margin-bottom: 4px;
+}
+
+.mana-bar {
+  position: relative;
+  height: 16px;
+  background: #1a1a2a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mana-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a6a8a, #6a8aaa);
+  transition: width 0.3s ease;
+}
+
+.mana-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Skill Bar Container */
+.skill-bar-container {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Skill Button */
+.skill-button {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #3a3a5a 0%, #2a2a4a 100%);
+  border: 2px solid #5a5a7a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.skill-button.ready {
+  border-color: #7a7aaa;
+}
+
+.skill-button.ready:hover {
+  transform: scale(1.05);
+  border-color: #9a9aca;
+  box-shadow: 0 0 10px rgba(100, 100, 180, 0.4);
+}
+
+.skill-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.skill-button.on-cooldown {
+  border-color: #4a4a6a;
+}
+
+/* Skill Icon */
+.skill-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  z-index: 1;
+}
+
+.skill-button.on-cooldown .skill-icon,
+.skill-button.disabled .skill-icon {
+  filter: grayscale(0.5) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+/* Cooldown Overlay */
+.cooldown-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  transition: height 0.1s linear;
+  z-index: 2;
+}
+
+/* Cooldown Text */
+.cooldown-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 1);
+  z-index: 3;
+}
+
+/* Mana Cost */
+.mana-cost {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 0.6rem;
+  padding: 1px 3px;
+  background: rgba(60, 100, 140, 0.8);
+  border-radius: 3px;
+  color: #8af;
+  z-index: 4;
+}
+
+.mana-cost.insufficient {
+  background: rgba(140, 60, 60, 0.8);
+  color: #f88;
+}
+
+/* Hotkey Badge */
+.hotkey-badge {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  color: #aaa;
+  z-index: 4;
+}
+
+/* Skill Type Indicator */
+.skill-type {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.65rem;
+  z-index: 4;
+}
+
+/* Skill Feedback */
+.skill-feedback {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  z-index: 1000;
+  animation: feedback-pop 0.3s ease;
+}
+
+.skill-feedback.success {
+  background: rgba(60, 140, 60, 0.9);
+  color: #fff;
+  border: 2px solid #8f8;
+}
+
+.skill-feedback.error {
+  background: rgba(140, 60, 60, 0.9);
+  color: #fff;
+  border: 2px solid #f88;
+}
+
+@keyframes feedback-pop {
+  0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+  50% { transform: translateX(-50%) scale(1.05); }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .skill-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .skill-icon {
+    font-size: 1.2rem;
+  }
+}

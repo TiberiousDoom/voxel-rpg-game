@@ -1,5 +1,6 @@
 /**
  * DungeonScreen.css - Styling for dungeon gameplay interface
+ * Updated for real-time 2D combat arena
  */
 
 .dungeon-screen {
@@ -164,14 +165,24 @@
   height: 50px;
 }
 
-.combat-warning {
-  margin: 10px 0 0;
-  padding: 6px;
-  background: #6a3a3a;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  text-align: center;
-  color: #faa;
+/* Combat Instructions Panel */
+.combat-instructions {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.combat-instructions h3 {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.combat-instructions p {
+  margin: 6px 0;
+  font-size: 0.85rem;
+  color: #aaa;
 }
 
 /* Center Panel */
@@ -219,111 +230,180 @@
   color: #8f8;
 }
 
-/* Enemy List */
-.enemy-list {
+/* ===========================================
+   COMBAT ARENA - 2D Real-time Combat View
+   =========================================== */
+
+.combat-arena {
+  position: relative;
   flex: 1;
-  padding: 12px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.no-enemies {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  font-size: 1.1rem;
-}
-
-.no-enemies .hint {
-  margin-top: 10px;
-  font-size: 0.9rem;
-  color: #555;
-}
-
-.enemy-card {
-  background: rgba(0, 0, 0, 0.4);
-  border: 2px solid #4a4a5a;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(40, 40, 60, 0.8) 0%, rgba(20, 20, 35, 0.9) 100%),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0V0zm1 1h38v38H1V1z' fill='%23333355' fill-opacity='0.3'/%3E%3C/svg%3E");
+  margin: 10px;
   border-radius: 8px;
-  padding: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-}
-
-.enemy-card:hover:not(.dead) {
-  border-color: #6a6a8a;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.enemy-card.selected {
-  border-color: #8a8aaa;
-  box-shadow: 0 0 10px rgba(138, 138, 170, 0.4);
-}
-
-.enemy-card.boss {
-  border-color: #8a3a3a;
-  background: rgba(100, 30, 30, 0.3);
-}
-
-.enemy-card.elite {
-  border-color: #8a6a3a;
-  background: rgba(100, 70, 30, 0.2);
-}
-
-.enemy-card.dead {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.enemy-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.enemy-name {
-  font-weight: bold;
-  font-size: 1rem;
-}
-
-.boss-phase {
-  font-size: 0.8rem;
-  color: #f88;
-  padding: 2px 6px;
-  background: rgba(200, 50, 50, 0.3);
-  border-radius: 4px;
-}
-
-.enemy-health-bar {
-  height: 20px;
-  background: #1a1a2a;
-  border-radius: 4px;
   overflow: hidden;
-  position: relative;
+  min-height: 400px;
 }
 
-.enemy-health-fill {
-  height: 100%;
-  transition: width 0.3s ease;
+.combat-arena.transitioning {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
-.enemy-health-text {
+/* Player Sprite */
+.player-sprite {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  width: 50px;
+  height: 70px;
   transform: translate(-50%, -50%);
-  font-size: 0.75rem;
-  color: #fff;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: left 0.1s ease-out, top 0.1s ease-out;
+  z-index: 100;
 }
 
-.enemy-dead-overlay {
+.player-sprite-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.player-sprite-label {
+  font-size: 0.7rem;
+  color: #4af;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+.player-sprite-health-bar {
+  width: 40px;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.player-sprite-health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a8, #6c8);
+  transition: width 0.2s ease;
+}
+
+.player-sprite-cooldown {
+  width: 40px;
+  height: 3px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.player-sprite-cooldown-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #48a, #68c);
+  transition: width 0.05s linear;
+}
+
+.player-sprite.attacking .player-sprite-icon {
+  animation: player-attack 0.2s ease-out;
+}
+
+@keyframes player-attack {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3) translateY(-5px); }
+  100% { transform: scale(1); }
+}
+
+/* Enemy Sprite */
+.enemy-sprite {
+  position: absolute;
+  width: 70px;
+  min-height: 80px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid #666;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.1s ease-out, border-color 0.2s, background 0.2s;
+  z-index: 50;
+}
+
+.enemy-sprite:hover:not(.dead) {
+  transform: translate(-50%, -50%) scale(1.05);
+  background: rgba(50, 50, 80, 0.6);
+}
+
+.enemy-sprite.dead {
+  opacity: 0.4;
+  cursor: default;
+  filter: grayscale(1);
+}
+
+.enemy-sprite.hit-flash {
+  animation: hit-flash 0.15s ease-out;
+}
+
+@keyframes hit-flash {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(2) saturate(0.5); background: rgba(255, 100, 100, 0.4); }
+  100% { filter: brightness(1); }
+}
+
+.enemy-sprite.attacking {
+  animation: enemy-attack 0.3s ease-out;
+}
+
+@keyframes enemy-attack {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  25% { transform: translate(-50%, -40%) scale(1.1); }
+  50% { transform: translate(-50%, -60%) scale(1.15); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.enemy-sprite-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.enemy-sprite-name {
+  font-size: 0.65rem;
+  color: #ddd;
+  font-weight: bold;
+  margin-top: 2px;
+  text-align: center;
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.enemy-sprite-health-bar {
+  width: 60px;
+  height: 5px;
+  background: #1a1a2a;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.enemy-sprite-health-fill {
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.enemy-sprite-phase {
+  font-size: 0.6rem;
+  color: #f88;
+  margin-top: 2px;
+}
+
+.enemy-sprite-dead-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -332,62 +412,92 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  font-size: 1.2rem;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.7rem;
   font-weight: bold;
   color: #a00;
   border-radius: 6px;
 }
 
-/* Combat Actions */
-.combat-actions {
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border-top: 1px solid #3a3a4a;
+/* Damage Numbers */
+.damage-number {
+  position: absolute;
+  font-size: 1.1rem;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 200;
+  white-space: nowrap;
+  animation: damage-float 1.5s ease-out forwards;
 }
 
-.attack-btn,
-.skill-btn {
-  flex: 1;
-  padding: 14px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
+@keyframes damage-float {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  20% { transform: translate(-50%, -70%) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, -100%) scale(0.8); opacity: 0; }
+}
+
+/* Arena Messages */
+.arena-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 20px 40px;
+  border-radius: 12px;
+  border: 2px solid #4a6a4a;
+}
+
+.arena-message p {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #8f8;
   font-weight: bold;
 }
 
-.attack-btn {
-  background: linear-gradient(135deg, #6a3a3a 0%, #8a4a4a 100%);
-  color: #fff;
+.arena-message .hint {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: normal;
 }
 
-.attack-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #8a4a4a 0%, #aa5a5a 100%);
-  transform: translateY(-2px);
+/* Transition Overlay */
+.transition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  animation: fade-in 0.2s ease;
 }
 
-.skill-btn {
-  background: linear-gradient(135deg, #3a6a3a 0%, #4a8a4a 100%);
-  color: #fff;
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
-.skill-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4a8a4a 0%, #5aaa5a 100%);
-  transform: translateY(-2px);
+.transition-text {
+  font-size: 1.2rem;
+  color: #aaa;
+  animation: pulse 0.5s ease infinite alternate;
 }
 
-.attack-btn:disabled,
-.skill-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
 }
 
-/* Right Panel */
+/* ===========================================
+   Right Panel - Stats & Combat Log
+   =========================================== */
+
 .dungeon-right-panel {
   width: 280px;
   display: flex;
@@ -466,7 +576,45 @@
   color: #aaa;
 }
 
-/* Modal Overlay */
+/* Quick Actions */
+.quick-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #3a3a4a;
+  display: flex;
+  gap: 8px;
+}
+
+.quick-action-btn {
+  flex: 1;
+  padding: 10px;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+
+.heal-btn {
+  background: linear-gradient(135deg, #3a6a3a 0%, #4a8a4a 100%);
+  color: #fff;
+}
+
+.heal-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4a8a4a 0%, #5aaa5a 100%);
+  transform: translateY(-2px);
+}
+
+.quick-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===========================================
+   Modal & Overlays
+   =========================================== */
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -552,7 +700,10 @@
   border-radius: 4px;
 }
 
-/* Rewards Screen */
+/* ===========================================
+   Rewards Screen
+   =========================================== */
+
 .dungeon-rewards {
   display: flex;
   align-items: center;
@@ -638,8 +789,11 @@
   transform: translateY(-2px);
 }
 
-/* Responsive adjustments */
-@media (max-width: 900px) {
+/* ===========================================
+   Responsive Adjustments
+   =========================================== */
+
+@media (max-width: 1100px) {
   .dungeon-content {
     flex-direction: column;
   }
@@ -653,5 +807,243 @@
 
   .dungeon-center-panel {
     min-width: unset;
+    order: -1;
   }
+
+  .combat-arena {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dungeon-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dungeon-progress {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .combat-arena {
+    min-height: 250px;
+  }
+
+  .enemy-sprite {
+    width: 55px;
+    min-height: 65px;
+  }
+
+  .enemy-sprite-icon {
+    font-size: 1.5rem;
+  }
+
+  .player-sprite-icon {
+    font-size: 1.5rem;
+  }
+}
+
+/* ===========================================
+   Boss Visual Effects
+   =========================================== */
+
+/* Boss Sprite Styling */
+.enemy-sprite.boss {
+  width: 90px;
+  min-height: 100px;
+  border: 3px solid #ffd700;
+  background: linear-gradient(180deg, rgba(100, 50, 0, 0.6) 0%, rgba(50, 25, 0, 0.7) 100%);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+  z-index: 60;
+}
+
+.enemy-sprite.boss .enemy-sprite-icon {
+  font-size: 2.8rem;
+}
+
+.enemy-sprite.boss .enemy-sprite-name {
+  color: #ffd700;
+  font-size: 0.75rem;
+}
+
+/* Boss Preparing Ability */
+.enemy-sprite.preparing-ability {
+  animation: boss-charge 1s ease infinite;
+}
+
+@keyframes boss-charge {
+  0% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(255, 0, 0, 0.7), 0 0 60px rgba(255, 100, 0, 0.4); }
+  100% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.3); }
+}
+
+/* Boss ability warning indicator */
+.boss-ability-warning {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(150, 0, 0, 0.9);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  white-space: nowrap;
+  animation: warning-pulse 0.5s ease infinite alternate;
+  z-index: 100;
+}
+
+@keyframes warning-pulse {
+  0% { opacity: 0.7; transform: translateX(-50%) scale(0.95); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+}
+
+/* Boss Phase Indicator */
+.enemy-sprite-phase {
+  font-size: 0.65rem;
+  color: #f88;
+  margin-top: 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Boss using ability animation */
+.enemy-sprite.using-ability {
+  animation: boss-ability-execute 0.5s ease-out;
+}
+
+@keyframes boss-ability-execute {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  30% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Screen Flash Effects */
+.combat-arena.screen-flash-damage {
+  animation: screen-flash-red 0.3s ease-out;
+}
+
+@keyframes screen-flash-red {
+  0% { background-color: rgba(255, 0, 0, 0.4); }
+  100% { background-color: transparent; }
+}
+
+.combat-arena.screen-flash-heal {
+  animation: screen-flash-green 0.3s ease-out;
+}
+
+@keyframes screen-flash-green {
+  0% { background-color: rgba(0, 255, 0, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.combat-arena.screen-flash-summon {
+  animation: screen-flash-purple 0.4s ease-out;
+}
+
+@keyframes screen-flash-purple {
+  0% { background-color: rgba(128, 0, 128, 0.3); }
+  50% { background-color: rgba(128, 0, 128, 0.1); }
+  100% { background-color: transparent; }
+}
+
+/* Boss ability damage number styling */
+.damage-number.boss-ability {
+  font-size: 1.6rem;
+  color: #ff3333;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8), 2px 2px 4px rgba(0, 0, 0, 0.8);
+  animation: damage-float-big 2s ease-out forwards;
+}
+
+@keyframes damage-float-big {
+  0% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  20% { transform: translate(-50%, -80%) scale(1.5); opacity: 1; }
+  100% { transform: translate(-50%, -120%) scale(1); opacity: 0; }
+}
+
+/* Heal number styling */
+.damage-number.heal {
+  color: #44ff44;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.6), 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Dodge text */
+.damage-number.dodge {
+  color: #8888ff;
+  font-style: italic;
+}
+
+.damage-number.dodge::after {
+  content: 'DODGE';
+}
+
+/* Buff indicator on boss */
+.boss-buff-indicator {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #ff8800, #ffaa00);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  animation: buff-glow 1s ease infinite alternate;
+  z-index: 70;
+}
+
+@keyframes buff-glow {
+  0% { box-shadow: 0 0 5px rgba(255, 136, 0, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(255, 136, 0, 0.9); }
+}
+
+/* Spawned minion entrance animation */
+.enemy-sprite.spawning {
+  animation: spawn-entrance 0.5s ease-out;
+}
+
+@keyframes spawn-entrance {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* Elite enemy styling */
+.enemy-sprite.elite {
+  border-color: #a0a0ff;
+  box-shadow: 0 0 10px rgba(160, 160, 255, 0.3);
+}
+
+.enemy-sprite.elite .enemy-sprite-name {
+  color: #a0a0ff;
+}
+
+/* Selected target highlight */
+.enemy-sprite.selected:not(.dead) {
+  border-color: #ffff00;
+  box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
+}
+
+/* Combat log boss message styling */
+.combat-log .boss-message {
+  color: #ff8800;
+  font-weight: bold;
+  border-left: 3px solid #ff8800;
+  padding-left: 8px;
+  margin: 4px 0;
+}
+
+/* Phase transition screen effect */
+.combat-arena.phase-transition {
+  animation: phase-transition-effect 1s ease-out;
+}
+
+@keyframes phase-transition-effect {
+  0% { filter: brightness(1); }
+  25% { filter: brightness(1.5) saturate(1.3); }
+  50% { filter: brightness(0.8); }
+  100% { filter: brightness(1); }
 }

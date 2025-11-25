@@ -1,21 +1,23 @@
 /**
- * DungeonScreen.jsx - Main dungeon gameplay interface
+ * DungeonScreen.jsx - Main dungeon gameplay interface with real-time combat
  *
  * Features:
- * - Room visualization with doors
- * - Enemy list with health bars
- * - Combat controls (attack, skills)
- * - Player stats display
- * - Combat log
- * - Mini-map
- * - Navigation between rooms
+ * - 2D arena view with player and enemy positions
+ * - Real-time combat matching overworld mechanics
+ * - Floating damage numbers
+ * - Enemy AI with movement and attacks
+ * - Room navigation between combats
+ * - Combat log and mini-map
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import useDungeonStore from '../../stores/useDungeonStore';
 import useGameStore from '../../stores/useGameStore';
+import { getQuestManager } from '../../systems/QuestManager';
+import { audioManager } from '../../utils/AudioManager';
 import DungeonMiniMap from './DungeonMiniMap';
 import DungeonCombatLog from './DungeonCombatLog';
+import DungeonSkillBar from './DungeonSkillBar';
 import './DungeonScreen.css';
 
 /**
@@ -40,9 +42,187 @@ const DIRECTION_ICONS = {
 };
 
 /**
+ * Enemy sprite icons by type
+ */
+const ENEMY_ICONS = {
+  CAVE_SPIDER: '🕷️',
+  CAVE_BAT: '🦇',
+  CAVE_TROLL: '👹',
+  BROOD_MOTHER: '🕸️',
+  FOREST_WOLF: '🐺',
+  GOBLIN: '👺',
+  ORC_WARRIOR: '⚔️',
+  ANCIENT_TREANT: '🌳',
+  SKELETON: '💀',
+  GHOST: '👻',
+  UNDEAD_KNIGHT: '🗡️',
+  LICH_LORD: '☠️'
+};
+
+/**
+ * DamageNumber Component - Floating damage indicator
+ */
+function DamageNumber({ damage, x, y, type, isCrit, createdAt }) {
+  const age = Date.now() - createdAt;
+  const maxAge = type === 'boss' ? 2000 : 1500; // Boss abilities show longer
+  const progress = Math.min(1, age / maxAge);
+
+  // Float upward and fade out
+  const offsetY = progress * (type === 'boss' ? 80 : 60);
+  const opacity = 1 - progress;
+  let scale = isCrit ? 1.3 : 1;
+
+  let color = '#ff4444'; // Player damage (red)
+  let text = `-${damage}`;
+  let extraClass = '';
+
+  if (type === 'enemy') {
+    color = '#ff8800'; // Enemy damage to player (orange)
+  } else if (type === 'boss') {
+    color = '#ff3333'; // Boss ability damage (bright red)
+    scale = 1.4;
+    extraClass = 'boss-ability';
+  } else if (type === 'skill') {
+    color = '#aa44ff'; // Skill damage (purple)
+  } else if (type === 'heal') {
+    color = '#44ff44'; // Healing (green)
+    text = `+${damage}`;
+    extraClass = 'heal';
+  } else if (type === 'dodge') {
+    color = '#4488ff'; // Dodge (blue)
+    text = '';
+    extraClass = 'dodge';
+  }
+
+  if (isCrit && type !== 'boss') {
+    color = '#ffff00'; // Crit (yellow)
+    text = `CRIT! -${damage}`;
+  }
+
+  return (
+    <div
+      className={`damage-number ${extraClass}`}
+      style={{
+        left: x,
+        top: y - offsetY,
+        opacity,
+        transform: `translate(-50%, -50%) scale(${scale})`,
+        color,
+        textShadow: `0 0 4px ${color}, 0 2px 4px rgba(0,0,0,0.8)`
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+/**
+ * EnemySprite Component - 2D enemy representation
+ */
+function EnemySprite({ enemy, isSelected, onClick }) {
+  const icon = ENEMY_ICONS[enemy.type] || '👾';
+  const healthPercent = (enemy.health / enemy.maxHealth) * 100;
+
+  const isFlashing = enemy.hitFlashTimer > 0;
+  const isAttacking = enemy.isAttacking;
+  const isPreparingAbility = enemy.pendingAbility && enemy.abilityTimer > 0;
+
+  // Build class list
+  const classNames = ['enemy-sprite'];
+  if (!enemy.alive) classNames.push('dead');
+  if (isFlashing) classNames.push('hit-flash');
+  if (isAttacking) classNames.push('attacking');
+  if (enemy.isBoss) classNames.push('boss');
+  if (enemy.isElite) classNames.push('elite');
+  if (isSelected && enemy.alive) classNames.push('selected');
+  if (isPreparingAbility) classNames.push('preparing-ability');
+  if (enemy.isBuffed) classNames.push('buffed');
+
+  return (
+    <div
+      className={classNames.join(' ')}
+      style={{
+        left: enemy.position.x,
+        top: enemy.position.y
+      }}
+      onClick={() => enemy.alive && onClick(enemy.id)}
+    >
+      {/* Buff indicator */}
+      {enemy.isBuffed && (
+        <div className="boss-buff-indicator" title="Enraged">🔥</div>
+      )}
+
+      {/* Ability warning */}
+      {isPreparingAbility && (
+        <div className="boss-ability-warning">
+          {enemy.pendingAbility.replace(/_/g, ' ').toUpperCase()}!
+        </div>
+      )}
+
+      <div className="enemy-sprite-icon">{icon}</div>
+      <div className="enemy-sprite-name">
+        {enemy.isBoss && '👑 '}
+        {enemy.isElite && '⭐ '}
+        {enemy.name}
+      </div>
+      <div className="enemy-sprite-health-bar">
+        <div
+          className="enemy-sprite-health-fill"
+          style={{
+            width: `${healthPercent}%`,
+            backgroundColor: enemy.isBoss ? '#a33' : enemy.isElite ? '#a83' : '#3a3'
+          }}
+        />
+      </div>
+      {enemy.isBoss && (
+        <div className="enemy-sprite-phase">
+          Phase {enemy.currentPhase}/{enemy.maxPhases}
+        </div>
+      )}
+      {!enemy.alive && <div className="enemy-sprite-dead-overlay">DEFEATED</div>}
+    </div>
+  );
+}
+
+/**
+ * PlayerSprite Component - 2D player representation
+ */
+function PlayerSprite({ position, health, maxHealth, isAttacking, attackCooldown, attackSpeed }) {
+  const healthPercent = (health / maxHealth) * 100;
+  const cooldownPercent = attackCooldown > 0 ? (attackCooldown / (1000 / attackSpeed)) * 100 : 0;
+
+  return (
+    <div
+      className={`player-sprite ${isAttacking ? 'attacking' : ''}`}
+      style={{
+        left: position.x,
+        top: position.y
+      }}
+    >
+      <div className="player-sprite-icon">⚔️</div>
+      <div className="player-sprite-label">You</div>
+      <div className="player-sprite-health-bar">
+        <div
+          className="player-sprite-health-fill"
+          style={{ width: `${healthPercent}%` }}
+        />
+      </div>
+      {cooldownPercent > 0 && (
+        <div className="player-sprite-cooldown">
+          <div
+            className="player-sprite-cooldown-fill"
+            style={{ width: `${100 - cooldownPercent}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * DungeonScreen Component
  */
-function DungeonScreen({ onExit, onDeath }) {
+function DungeonScreen({ onExit }) {
   const player = useGameStore((state) => state.player);
   const addXP = useGameStore((state) => state.addXP);
   const addGold = useGameStore((state) => state.addGold);
@@ -62,61 +242,86 @@ function DungeonScreen({ onExit, onDeath }) {
     dungeonPlayerMaxHealth,
     dungeonPlayerMana,
     dungeonPlayerMaxMana,
+    playerPosition,
+    playerAttackCooldown,
+    damageNumbers,
     bossDefeated,
     collectedXP,
     collectedGold,
     combatLog,
+    isTransitioning,
     attackEnemy,
     moveToRoom,
+    movePlayer,
     selectTarget,
     exitDungeon,
     handlePlayerDeath,
     getAvailableDirections,
     getCurrentRoom,
     isPlayerDead,
-    healPlayer,
-    updateCooldowns
+    update,
+    getArenaDimensions
   } = useDungeonStore();
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [rewards, setRewards] = useState(null);
+  const [keysPressed, setKeysPressed] = useState({});
+  const gameLoopRef = useRef(null);
+  const lastTimeRef = useRef(performance.now());
+
+  // Get arena dimensions
+  const arenaDimensions = getArenaDimensions();
 
   // Get current room data
   const currentRoom = getCurrentRoom();
   const availableDirections = getAvailableDirections();
   const roomVisual = currentRoom ? ROOM_VISUALS[currentRoom.type] : ROOM_VISUALS.CHAMBER;
 
-  // Update cooldowns
+  // Main game loop
   useEffect(() => {
-    if (!inDungeon) return;
+    if (!inDungeon || rewards) return;
 
-    let lastTime = performance.now();
-    let animationFrameId;
+    const gameLoop = (currentTime) => {
+      const deltaTime = (currentTime - lastTimeRef.current) / 1000;
+      lastTimeRef.current = currentTime;
 
-    const updateLoop = (currentTime) => {
-      const deltaTime = (currentTime - lastTime) / 1000;
-      lastTime = currentTime;
+      // Update dungeon state (enemy AI, cooldowns, etc.)
+      update(deltaTime, {
+        damage: player.damage,
+        defense: player.defense,
+        dodgeChance: player.dodgeChance,
+        attackSpeed: player.attackSpeed || 1.0
+      });
 
-      updateCooldowns(deltaTime);
-      animationFrameId = requestAnimationFrame(updateLoop);
+      // Handle player movement input
+      const moveX = (keysPressed['d'] || keysPressed['arrowright'] ? 1 : 0) -
+                    (keysPressed['a'] || keysPressed['arrowleft'] ? 1 : 0);
+      const moveY = (keysPressed['s'] || keysPressed['arrowdown'] ? 1 : 0) -
+                    (keysPressed['w'] || keysPressed['arrowup'] ? 1 : 0);
+
+      if (moveX !== 0 || moveY !== 0) {
+        movePlayer(moveX, moveY, deltaTime);
+      }
+
+      gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
 
-    animationFrameId = requestAnimationFrame(updateLoop);
+    gameLoopRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [inDungeon, updateCooldowns]);
+  }, [inDungeon, rewards, player, update, movePlayer, keysPressed]);
 
   // Check for player death
   useEffect(() => {
-    if (isPlayerDead()) {
+    if (isPlayerDead() && inDungeon && !rewards) {
       const deathRewards = handlePlayerDeath();
       setRewards({ ...deathRewards, died: true });
     }
-  }, [dungeonPlayerHealth, isPlayerDead, handlePlayerDeath]);
+  }, [dungeonPlayerHealth, isPlayerDead, handlePlayerDeath, inDungeon, rewards]);
 
   // Handle attack action
   const handleAttack = useCallback(() => {
@@ -127,17 +332,61 @@ function DungeonScreen({ onExit, onDeath }) {
       critChance: player.critChance,
       critDamage: player.critDamage,
       defense: player.defense,
-      dodgeChance: player.dodgeChance
+      dodgeChance: player.dodgeChance,
+      attackSpeed: player.attackSpeed || 1.0
     });
 
-    return result;
+    // Play attack sounds
+    if (result && result.success) {
+      audioManager.play('playerAttack');
+      if (result.isCrit) {
+        audioManager.play('criticalHit');
+      }
+      if (result.enemyKilled) {
+        audioManager.play('enemyDeath');
+        if (result.lootDropped) {
+          audioManager.play('lootDrop');
+        }
+      }
+    }
   }, [selectedTargetId, player, attackEnemy, isPlayerDead]);
+
+  // Handle click on enemy
+  const handleEnemyClick = useCallback((enemyId) => {
+    selectTarget(enemyId);
+    // Also attack if we have a target selected
+    if (playerAttackCooldown <= 0) {
+      const result = attackEnemy(enemyId, {
+        damage: player.damage,
+        critChance: player.critChance,
+        critDamage: player.critDamage,
+        defense: player.defense,
+        dodgeChance: player.dodgeChance,
+        attackSpeed: player.attackSpeed || 1.0
+      });
+
+      // Play attack sounds
+      if (result && result.success) {
+        audioManager.play('playerAttack');
+        if (result.isCrit) {
+          audioManager.play('criticalHit');
+        }
+        if (result.enemyKilled) {
+          audioManager.play('enemyDeath');
+          if (result.lootDropped) {
+            audioManager.play('lootDrop');
+          }
+        }
+      }
+    }
+  }, [selectTarget, attackEnemy, player, playerAttackCooldown]);
 
   // Handle movement
   const handleMove = useCallback((direction) => {
-    if (inCombat) return;
+    if (inCombat || isTransitioning) return;
+    audioManager.play('roomTransition');
     moveToRoom(direction);
-  }, [inCombat, moveToRoom]);
+  }, [inCombat, isTransitioning, moveToRoom]);
 
   // Handle exit
   const handleExit = useCallback(() => {
@@ -154,6 +403,16 @@ function DungeonScreen({ onExit, onDeath }) {
       addItem(item);
     });
 
+    // Track kills for quest progress
+    const questManager = getQuestManager();
+    if (dungeonRewards.killsByType) {
+      Object.entries(dungeonRewards.killsByType).forEach(([monsterType, count]) => {
+        for (let i = 0; i < count; i++) {
+          questManager.trackKill(monsterType);
+        }
+      });
+    }
+
     setRewards(dungeonRewards);
   }, [exitDungeon, addXP, addGold, addItem]);
 
@@ -165,51 +424,76 @@ function DungeonScreen({ onExit, onDeath }) {
 
   // Keyboard controls
   useEffect(() => {
-    const handleKeyPress = (e) => {
+    const handleKeyDown = (e) => {
       if (!inDungeon || rewards) return;
 
-      switch (e.key.toLowerCase()) {
-        case 'w':
-        case 'arrowup':
-          if (availableDirections.includes('NORTH')) handleMove('NORTH');
-          break;
-        case 's':
-        case 'arrowdown':
-          if (availableDirections.includes('SOUTH')) handleMove('SOUTH');
-          break;
-        case 'd':
-        case 'arrowright':
-          if (availableDirections.includes('EAST')) handleMove('EAST');
-          break;
-        case 'a':
-        case 'arrowleft':
-          if (availableDirections.includes('WEST')) handleMove('WEST');
-          break;
-        case ' ':
-        case 'enter':
-          if (inCombat) handleAttack();
-          break;
-        case 'tab':
-          // Cycle through targets
-          e.preventDefault();
-          const aliveEnemies = currentEnemies.filter(e => e.alive);
-          if (aliveEnemies.length > 0) {
-            const currentIndex = aliveEnemies.findIndex(e => e.id === selectedTargetId);
-            const nextIndex = (currentIndex + 1) % aliveEnemies.length;
-            selectTarget(aliveEnemies[nextIndex].id);
-          }
-          break;
-        case 'escape':
-          setShowExitConfirm(true);
-          break;
-        default:
-          break;
+      const key = e.key.toLowerCase();
+      setKeysPressed(prev => ({ ...prev, [key]: true }));
+
+      // Room navigation (only when not in combat)
+      if (!inCombat && !isTransitioning) {
+        switch (key) {
+          case 'w':
+          case 'arrowup':
+            if (availableDirections.includes('NORTH')) handleMove('NORTH');
+            break;
+          case 's':
+          case 'arrowdown':
+            if (availableDirections.includes('SOUTH')) handleMove('SOUTH');
+            break;
+          case 'd':
+          case 'arrowright':
+            if (availableDirections.includes('EAST')) handleMove('EAST');
+            break;
+          case 'a':
+          case 'arrowleft':
+            if (availableDirections.includes('WEST')) handleMove('WEST');
+            break;
+          default:
+            break;
+        }
+      }
+
+      // Combat controls
+      if (inCombat) {
+        switch (key) {
+          case ' ':
+          case 'enter':
+            e.preventDefault();
+            handleAttack();
+            break;
+          case 'tab':
+            e.preventDefault();
+            const aliveEnemies = currentEnemies.filter(e => e.alive);
+            if (aliveEnemies.length > 0) {
+              const currentIndex = aliveEnemies.findIndex(e => e.id === selectedTargetId);
+              const nextIndex = (currentIndex + 1) % aliveEnemies.length;
+              selectTarget(aliveEnemies[nextIndex].id);
+            }
+            break;
+          default:
+            break;
+        }
+      }
+
+      if (key === 'escape') {
+        setShowExitConfirm(true);
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [inDungeon, rewards, availableDirections, handleMove, handleAttack, inCombat, currentEnemies, selectedTargetId, selectTarget]);
+    const handleKeyUp = (e) => {
+      const key = e.key.toLowerCase();
+      setKeysPressed(prev => ({ ...prev, [key]: false }));
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [inDungeon, rewards, availableDirections, handleMove, handleAttack, inCombat, currentEnemies, selectedTargetId, selectTarget, isTransitioning]);
 
   // Show rewards screen
   if (rewards) {
@@ -281,127 +565,132 @@ function DungeonScreen({ onExit, onDeath }) {
             exploredRooms={exploredRooms}
           />
 
-          {/* Navigation Controls */}
-          <div className="navigation-panel">
-            <h3>Navigation</h3>
-            <div className="nav-grid">
-              <div className="nav-row">
-                <div className="nav-empty" />
-                <button
-                  className={`nav-btn ${availableDirections.includes('NORTH') ? 'available' : 'blocked'}`}
-                  onClick={() => handleMove('NORTH')}
-                  disabled={!availableDirections.includes('NORTH') || inCombat}
-                >
-                  {DIRECTION_ICONS.NORTH}
-                </button>
-                <div className="nav-empty" />
-              </div>
-              <div className="nav-row">
-                <button
-                  className={`nav-btn ${availableDirections.includes('WEST') ? 'available' : 'blocked'}`}
-                  onClick={() => handleMove('WEST')}
-                  disabled={!availableDirections.includes('WEST') || inCombat}
-                >
-                  {DIRECTION_ICONS.WEST}
-                </button>
-                <div className="nav-center">
-                  {roomVisual.icon}
+          {/* Navigation Controls (only show when not in combat) */}
+          {!inCombat && (
+            <div className="navigation-panel">
+              <h3>Navigation</h3>
+              <div className="nav-grid">
+                <div className="nav-row">
+                  <div className="nav-empty" />
+                  <button
+                    className={`nav-btn ${availableDirections.includes('NORTH') ? 'available' : 'blocked'}`}
+                    onClick={() => handleMove('NORTH')}
+                    disabled={!availableDirections.includes('NORTH') || isTransitioning}
+                  >
+                    {DIRECTION_ICONS.NORTH}
+                  </button>
+                  <div className="nav-empty" />
                 </div>
-                <button
-                  className={`nav-btn ${availableDirections.includes('EAST') ? 'available' : 'blocked'}`}
-                  onClick={() => handleMove('EAST')}
-                  disabled={!availableDirections.includes('EAST') || inCombat}
-                >
-                  {DIRECTION_ICONS.EAST}
-                </button>
-              </div>
-              <div className="nav-row">
-                <div className="nav-empty" />
-                <button
-                  className={`nav-btn ${availableDirections.includes('SOUTH') ? 'available' : 'blocked'}`}
-                  onClick={() => handleMove('SOUTH')}
-                  disabled={!availableDirections.includes('SOUTH') || inCombat}
-                >
-                  {DIRECTION_ICONS.SOUTH}
-                </button>
-                <div className="nav-empty" />
+                <div className="nav-row">
+                  <button
+                    className={`nav-btn ${availableDirections.includes('WEST') ? 'available' : 'blocked'}`}
+                    onClick={() => handleMove('WEST')}
+                    disabled={!availableDirections.includes('WEST') || isTransitioning}
+                  >
+                    {DIRECTION_ICONS.WEST}
+                  </button>
+                  <div className="nav-center">
+                    {roomVisual.icon}
+                  </div>
+                  <button
+                    className={`nav-btn ${availableDirections.includes('EAST') ? 'available' : 'blocked'}`}
+                    onClick={() => handleMove('EAST')}
+                    disabled={!availableDirections.includes('EAST') || isTransitioning}
+                  >
+                    {DIRECTION_ICONS.EAST}
+                  </button>
+                </div>
+                <div className="nav-row">
+                  <div className="nav-empty" />
+                  <button
+                    className={`nav-btn ${availableDirections.includes('SOUTH') ? 'available' : 'blocked'}`}
+                    onClick={() => handleMove('SOUTH')}
+                    disabled={!availableDirections.includes('SOUTH') || isTransitioning}
+                  >
+                    {DIRECTION_ICONS.SOUTH}
+                  </button>
+                  <div className="nav-empty" />
+                </div>
               </div>
             </div>
-            {inCombat && <p className="combat-warning">Clear enemies to move!</p>}
-          </div>
+          )}
+
+          {/* Combat instructions when in combat */}
+          {inCombat && (
+            <div className="combat-instructions">
+              <h3>Combat</h3>
+              <p>Click enemies to attack</p>
+              <p>WASD: Move around</p>
+              <p>Space: Attack selected</p>
+              <p>Tab: Switch target</p>
+            </div>
+          )}
         </div>
 
-        {/* Center Panel - Room & Combat */}
+        {/* Center Panel - Combat Arena */}
         <div className="dungeon-center-panel">
-          {/* Room Display */}
           <div className="room-display" style={{ borderColor: roomVisual.color }}>
             <div className="room-header" style={{ backgroundColor: roomVisual.color }}>
               <span className="room-icon">{roomVisual.icon}</span>
               <span className="room-name">{roomVisual.name}</span>
-              {currentRoom?.cleared && <span className="cleared-badge">Cleared</span>}
+              {!inCombat && currentRoom?.cleared && <span className="cleared-badge">Cleared</span>}
             </div>
 
-            {/* Enemy List */}
-            <div className="enemy-list">
-              {currentEnemies.length === 0 ? (
-                <div className="no-enemies">
-                  <p>Room is clear</p>
-                  <p className="hint">Use WASD or arrows to move</p>
+            {/* Combat Arena */}
+            <div
+              className={`combat-arena ${isTransitioning ? 'transitioning' : ''}`}
+              style={{
+                width: arenaDimensions.width,
+                height: arenaDimensions.height
+              }}
+            >
+              {/* Enemies */}
+              {currentEnemies.map(enemy => (
+                <EnemySprite
+                  key={enemy.id}
+                  enemy={enemy}
+                  isSelected={selectedTargetId === enemy.id}
+                  onClick={handleEnemyClick}
+                />
+              ))}
+
+              {/* Player */}
+              <PlayerSprite
+                position={playerPosition}
+                health={dungeonPlayerHealth}
+                maxHealth={dungeonPlayerMaxHealth}
+                attackCooldown={playerAttackCooldown}
+                attackSpeed={player.attackSpeed || 1.0}
+              />
+
+              {/* Damage Numbers */}
+              {damageNumbers.map(dmg => (
+                <DamageNumber
+                  key={dmg.id}
+                  damage={dmg.damage}
+                  x={dmg.x}
+                  y={dmg.y}
+                  type={dmg.type}
+                  isCrit={dmg.isCrit}
+                  createdAt={dmg.createdAt}
+                />
+              ))}
+
+              {/* Room clear message */}
+              {!inCombat && currentEnemies.length === 0 && (
+                <div className="arena-message">
+                  <p>Room Clear!</p>
+                  <p className="hint">Use WASD or arrows to move to next room</p>
                 </div>
-              ) : (
-                currentEnemies.map(enemy => (
-                  <div
-                    key={enemy.id}
-                    className={`enemy-card ${!enemy.alive ? 'dead' : ''} ${selectedTargetId === enemy.id ? 'selected' : ''} ${enemy.isBoss ? 'boss' : ''} ${enemy.isElite ? 'elite' : ''}`}
-                    onClick={() => enemy.alive && selectTarget(enemy.id)}
-                  >
-                    <div className="enemy-info">
-                      <span className="enemy-name">
-                        {enemy.isBoss && '👑 '}
-                        {enemy.isElite && '⭐ '}
-                        {enemy.name}
-                      </span>
-                      {enemy.isBoss && (
-                        <span className="boss-phase">Phase {enemy.currentPhase}/{enemy.maxPhases}</span>
-                      )}
-                    </div>
-                    <div className="enemy-health-bar">
-                      <div
-                        className="enemy-health-fill"
-                        style={{
-                          width: `${(enemy.health / enemy.maxHealth) * 100}%`,
-                          backgroundColor: enemy.isBoss ? '#a33' : enemy.isElite ? '#a83' : '#3a3'
-                        }}
-                      />
-                      <span className="enemy-health-text">
-                        {enemy.health} / {enemy.maxHealth}
-                      </span>
-                    </div>
-                    {!enemy.alive && <div className="enemy-dead-overlay">DEFEATED</div>}
-                  </div>
-                ))
+              )}
+
+              {/* Transition overlay */}
+              {isTransitioning && (
+                <div className="transition-overlay">
+                  <div className="transition-text">Entering next room...</div>
+                </div>
               )}
             </div>
-
-            {/* Combat Actions */}
-            {inCombat && (
-              <div className="combat-actions">
-                <button
-                  className="attack-btn"
-                  onClick={handleAttack}
-                  disabled={!selectedTargetId || isPlayerDead()}
-                >
-                  ⚔️ Attack
-                </button>
-                <button
-                  className="skill-btn"
-                  onClick={() => healPlayer(Math.floor(dungeonPlayerMaxHealth * 0.2))}
-                  disabled={isPlayerDead()}
-                >
-                  💚 Heal (20%)
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -417,7 +706,7 @@ function DungeonScreen({ onExit, onDeath }) {
                   className="bar-fill health"
                   style={{ width: `${(dungeonPlayerHealth / dungeonPlayerMaxHealth) * 100}%` }}
                 />
-                <span className="bar-text">{dungeonPlayerHealth} / {dungeonPlayerMaxHealth}</span>
+                <span className="bar-text">{Math.floor(dungeonPlayerHealth)} / {dungeonPlayerMaxHealth}</span>
               </div>
             </div>
             <div className="stat-bar mana-bar">
@@ -427,7 +716,7 @@ function DungeonScreen({ onExit, onDeath }) {
                   className="bar-fill mana"
                   style={{ width: `${(dungeonPlayerMana / dungeonPlayerMaxMana) * 100}%` }}
                 />
-                <span className="bar-text">{dungeonPlayerMana} / {dungeonPlayerMaxMana}</span>
+                <span className="bar-text">{Math.floor(dungeonPlayerMana)} / {dungeonPlayerMaxMana}</span>
               </div>
             </div>
             <div className="player-combat-stats">
@@ -435,7 +724,11 @@ function DungeonScreen({ onExit, onDeath }) {
               <div>Defense: {player.defense}</div>
               <div>Crit: {player.critChance}%</div>
             </div>
+
           </div>
+
+          {/* Skill Bar */}
+          <DungeonSkillBar />
 
           {/* Combat Log */}
           <DungeonCombatLog logs={combatLog} />
@@ -463,8 +756,8 @@ function DungeonScreen({ onExit, onDeath }) {
 
       {/* Controls Hint */}
       <div className="controls-hint">
-        <span>WASD/Arrows: Move</span>
-        <span>Space/Enter: Attack</span>
+        <span>WASD: {inCombat ? 'Move' : 'Navigate'}</span>
+        <span>Click/Space: Attack</span>
         <span>Tab: Switch Target</span>
         <span>ESC: Exit</span>
       </div>

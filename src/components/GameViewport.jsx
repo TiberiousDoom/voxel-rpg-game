@@ -1410,30 +1410,46 @@ function GameViewport({
 
       if (clickedMonster) {
         // Check player distance from monster to determine melee vs ranged attack
-        const store = useGameStore.getState();
-        const playerPos = store.player.position;
+        // Use 2D playerRef position (has {x, z} format)
+        const player2DPos = playerRef.current.position;
         const monsterPos = clickedMonster.position;
         const playerDistToMonster = Math.sqrt(
-          Math.pow(playerPos[0] - monsterPos.x, 2) +
-          Math.pow(playerPos[2] - monsterPos.z, 2)
+          Math.pow(player2DPos.x - monsterPos.x, 2) +
+          Math.pow(player2DPos.z - monsterPos.z, 2)
         );
 
-        const meleeRange = 2; // Melee attack range in units
+        const meleeRange = 3; // Melee attack range in units
+        const store = useGameStore.getState();
+        const baseDamage = store.player.damage || 10;
 
         if (playerDistToMonster <= meleeRange) {
-          // Melee range - direct attack (free, no mana cost)
-          store.attackMonster(clickedMonster.id);
-        } else {
-          // Try ranged attack - fire projectile (costs mana)
-          const result = store.fireProjectileAtMonster(clickedMonster.id);
+          // Melee range - direct attack to 2D monster (free)
+          if (clickedMonster.takeDamage) {
+            clickedMonster.takeDamage(baseDamage);
+          }
 
-          // If no mana and monster is close enough, fall back to melee
-          if (!result.success && result.reason === 'no_mana') {
-            if (playerDistToMonster <= meleeRange * 1.5) {
-              // Close enough for emergency melee
-              store.attackMonster(clickedMonster.id);
+          // Show damage number
+          store.addDamageNumber({
+            position: [monsterPos.x, 0, monsterPos.z],
+            damage: baseDamage,
+          });
+        } else {
+          // Ranged attack - costs mana
+          const manaCost = 5;
+
+          if (store.player.mana >= manaCost) {
+            // Consume mana and deal damage
+            store.updatePlayer({ mana: store.player.mana - manaCost });
+
+            if (clickedMonster.takeDamage) {
+              clickedMonster.takeDamage(baseDamage);
             }
-            // Otherwise, attack fails (player needs to get closer or regenerate mana)
+
+            // Show damage number
+            store.addDamageNumber({
+              position: [monsterPos.x, 0, monsterPos.z],
+              damage: baseDamage,
+            });
           }
         }
         didInteract = true;

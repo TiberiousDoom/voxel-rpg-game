@@ -73,8 +73,8 @@
   },
   "STARTER_ZONE": {
     "name": "Peaceful Meadow",
-    "position": { "x": 0, "z": 0 },
-    "radius": 20,
+    "position": { "x": 25, "z": 25 },
+    "radius": 25,
     "monsterTypes": [
       { "type": "SLIME", "weight": 100 }
     ],

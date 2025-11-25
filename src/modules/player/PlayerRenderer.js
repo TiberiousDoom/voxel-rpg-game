@@ -149,14 +149,16 @@ export class PlayerRenderer {
     // Draw direction indicator
     this.renderDirectionIndicator(ctx, centerX, centerY, player.facing);
 
-    // Draw health bar
+    // Draw health bar - position above the sprite (sprite is 70% of tile, so offset by ~40% of tile)
     if (this.showHealthBar) {
-      this.renderHealthBar(ctx, centerX, centerY - 15, player.health, player.maxHealth);
+      const healthBarOffset = this.tileSize * 0.45;
+      this.renderHealthBar(ctx, centerX, centerY - healthBarOffset, player.health, player.maxHealth);
     }
 
-    // Draw stamina bar
+    // Draw stamina bar - position just below health bar
     if (this.showStaminaBar) {
-      this.renderStaminaBar(ctx, centerX, centerY - 10, player.stamina, player.maxStamina);
+      const staminaBarOffset = this.tileSize * 0.38;
+      this.renderStaminaBar(ctx, centerX, centerY - staminaBarOffset, player.stamina, player.maxStamina);
     }
 
     // Draw sprint indicator

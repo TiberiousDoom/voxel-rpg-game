@@ -536,7 +536,7 @@ function GameViewport({
   const { renderProps, renderPropHighlight, renderHarvestProgress, renderFloatingText, renderDebugInfo } = usePropRenderer({
     tileSize: TILE_SIZE,
     enableLOD: true,
-    enableBatching: true,
+    enableBatching: false, // Disabled - batching breaks depth sorting
     showPropHealth: debugMode // Show health bars in debug mode
   });
 
@@ -1055,32 +1055,18 @@ function GameViewport({
       }
     }
 
-    // Phase 3: Render props (AFTER structures, BEFORE buildings for correct layering)
+    // Phase 3: Get visible props for depth-sorted rendering
     let visibleProps = [];
     if (terrainSystemRef.current) {
       try {
-        // Get visible props in viewport
         visibleProps = terrainSystemRef.current.getPropsInRegion(
           viewportBounds.left,
           viewportBounds.top,
           viewportBounds.right - viewportBounds.left,
           viewportBounds.bottom - viewportBounds.top
         );
-
-        // Render props with LOD and batching
-        const propStats = renderProps(
-          ctx,
-          visibleProps,
-          worldToCanvas,
-          { x: -offset.x, z: -offset.y }, // camera position
-          viewportBounds
-        );
-
-        // Store prop metrics
-        perfRef.current.currentMetrics.visibleProps = propStats.propsRendered;
-        perfRef.current.currentMetrics.totalProps = propStats.totalProps;
       } catch (e) {
-        console.error('Prop rendering error:', e);
+        console.error('Prop retrieval error:', e);
       }
     }
 
@@ -1119,11 +1105,95 @@ function GameViewport({
       }
     }
 
-    // Phase 3A: Render prop highlights for nearby harvestable props
+    // WF3: Render buildings using new BuildingRenderer with viewport culling (use ref!)
+    const visibleBuildingCount = renderBuildingsWF3(ctx, buildingsRef.current, worldToCanvas, viewportBounds);
+
+    // === UNIFIED DEPTH-SORTED RENDERING ===
+    // Collect all depth-sortable entities into a single array for proper back-to-front rendering
+    const depthSortedEntities = [];
+
+    // Add props to depth sort list
+    for (const prop of visibleProps) {
+      depthSortedEntities.push({
+        z: prop.z,
+        type: 'prop',
+        data: prop
+      });
+    }
+
+    // Add player to depth sort list
+    if (enablePlayerMovementRef.current && playerRef.current && playerRendererRef.current) {
+      depthSortedEntities.push({
+        z: playerRef.current.position.z,
+        type: 'player',
+        data: playerRef.current
+      });
+    }
+
+    // Add monsters to depth sort list
+    for (const monster of visibleMonsters) {
+      depthSortedEntities.push({
+        z: monster.position?.z ?? monster.z ?? 0,
+        type: 'monster',
+        data: monster
+      });
+    }
+
+    // Add NPCs to depth sort list
+    for (const npc of visibleNPCs) {
+      depthSortedEntities.push({
+        z: npc.position?.z ?? npc.z ?? 0,
+        type: 'npc',
+        data: npc
+      });
+    }
+
+    // Add wildlife to depth sort list
+    for (const animal of visibleWildlife) {
+      depthSortedEntities.push({
+        z: animal.position?.z ?? animal.z ?? 0,
+        type: 'wildlife',
+        data: animal
+      });
+    }
+
+    // Sort all entities by Z (lower Z = further back = render first)
+    depthSortedEntities.sort((a, b) => a.z - b.z);
+
+    // Render all entities in depth-sorted order
+    let propsRendered = 0;
+    for (const entity of depthSortedEntities) {
+      switch (entity.type) {
+        case 'prop':
+          // Render single prop using the prop renderer's internal logic
+          renderProps(ctx, [entity.data], worldToCanvas, { x: -offset.x, z: -offset.y }, viewportBounds);
+          propsRendered++;
+          break;
+        case 'player':
+          playerRendererRef.current.renderPlayer(ctx, entity.data, worldToCanvas);
+          break;
+        case 'monster':
+          monsterRenderer.renderMonsters(ctx, [entity.data], worldToCanvas);
+          break;
+        case 'npc':
+          npcRenderer.renderNPCs(ctx, [entity.data], worldToCanvas);
+          break;
+        case 'wildlife':
+          wildlifeRenderer.renderWildlife(ctx, [entity.data], worldToCanvas);
+          break;
+        default:
+          break;
+      }
+    }
+
+    // Store prop metrics
+    perfRef.current.currentMetrics.visibleProps = propsRendered;
+    perfRef.current.currentMetrics.totalProps = visibleProps.length;
+
+    // Phase 3A: Render prop highlights for nearby harvestable props (after entities)
     if (propHarvestingSystemRef.current && closestInteractableRef.current) {
       try {
         const interactable = closestInteractableRef.current;
-        // Highlight if it's a prop interaction
         if (interactable.type === 'PROP' && interactable.object) {
           renderPropHighlight(ctx, interactable.object, worldToCanvas, 'rgba(50, 255, 50, 0.5)');
         }
@@ -1143,18 +1213,6 @@ function GameViewport({
         // Silently handle progress bar errors
       }
     }
-
-    // WF3: Render buildings using new BuildingRenderer with viewport culling (use ref!)
-    const visibleBuildingCount = renderBuildingsWF3(ctx, buildingsRef.current, worldToCanvas, viewportBounds);
-
-    // WF4: Render NPCs using NPCRenderer (already filtered, use ref!)
-    npcRenderer.renderNPCs(ctx, visibleNPCs, worldToCanvas);
-
-    // Render monsters using MonsterRenderer (already filtered)
-    monsterRenderer.renderMonsters(ctx, visibleMonsters, worldToCanvas);
-
-    // Render wildlife using WildlifeRenderer (already filtered)
-    wildlifeRenderer.renderWildlife(ctx, visibleWildlife, worldToCanvas);
 
     // Render loot drops (Phase 2: Loot System)
     if (lootDropsRef.current && lootDropsRef.current.length > 0) {
@@ -1180,11 +1238,6 @@ function GameViewport({
       visibleMonsters: visibleMonsters.length,
       totalMonsters: monstersRef.current?.length || 0
     };
-
-    // Render player (use ref!)
-    if (enablePlayerMovementRef.current && playerRef.current && playerRendererRef.current) {
-      playerRendererRef.current.renderPlayer(ctx, playerRef.current, worldToCanvas);
-    }
 
     // Phase 3A: Render floating text (resource gains, etc.)
     if (floatingTextManagerRef.current) {

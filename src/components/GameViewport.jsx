@@ -526,7 +526,9 @@ function GameViewport({
   });
 
   // Projectile Renderer integration (2D ranged attacks)
-  const { createProjectile, updateProjectiles, renderProjectiles } = useProjectileRenderer();
+  const { createProjectile, updateProjectiles, renderProjectiles } = useProjectileRenderer({
+    tileSize: TILE_SIZE
+  });
 
   // Terrain Job Renderer integration
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();

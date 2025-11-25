@@ -25,8 +25,8 @@ const useGameStore = create((set, get) => ({
   // Camera state
   camera: {
     rotationAngle: 0, // Horizontal rotation around player
-    distance: 20,
-    height: 15,
+    distance: 12, // Zoomed in closer to player (was 20)
+    height: 10,  // Lower camera height (was 15)
   },
 
   // Player state
@@ -952,8 +952,8 @@ const useGameStore = create((set, get) => ({
       gameState: 'intro',
       camera: {
         rotationAngle: 0,
-        distance: 20,
-        height: 15,
+        distance: 12,
+        height: 10,
       },
       player: {
         position: [0, 2, 0],

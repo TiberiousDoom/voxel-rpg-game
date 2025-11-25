@@ -36,9 +36,9 @@
     },
     {
       "type": "mushroom",
-      "density": 0.2,
+      "density": 0.05,
       "variants": ["mushroom_poison", "mushroom_glowing"],
-      "minDistance": 2
+      "minDistance": 3
     },
     {
       "type": "grass_clump",

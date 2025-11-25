@@ -26,6 +26,7 @@ export const propDefinitions = {
     height: 2,
     harvestable: true,
     blocking: true,
+    scaleRange: [1.5, 2.0], // Trees are larger
     resources: [
       { type: 'wood', min: 5, max: 10 },
       { type: 'seed', min: 0, max: 2 }
@@ -39,6 +40,7 @@ export const propDefinitions = {
     height: 2,
     harvestable: true,
     blocking: true,
+    scaleRange: [1.5, 2.0],
     resources: [
       { type: 'wood', min: 4, max: 8 },
       { type: 'resin', min: 1, max: 3 }
@@ -52,6 +54,7 @@ export const propDefinitions = {
     height: 2,
     harvestable: true,
     blocking: true,
+    scaleRange: [1.5, 1.9],
     resources: [
       { type: 'wood', min: 4, max: 7 }
     ]
@@ -64,6 +67,7 @@ export const propDefinitions = {
     height: 2,
     harvestable: true,
     blocking: true,
+    scaleRange: [1.3, 1.8],
     resources: [
       { type: 'wood', min: 2, max: 5 }
     ]
@@ -76,6 +80,7 @@ export const propDefinitions = {
     height: 2,
     harvestable: true,
     blocking: true,
+    scaleRange: [1.4, 1.9],
     resources: [
       { type: 'wood', min: 3, max: 6 },
       { type: 'moss', min: 1, max: 2 }
@@ -90,6 +95,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.3, 0.6], // Small rocks vary in size
     resources: [
       { type: 'stone', min: 3, max: 6 }
     ]
@@ -102,6 +108,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.7, 1.0], // Large rocks are bigger
     resources: [
       { type: 'stone', min: 6, max: 12 }
     ]
@@ -114,6 +121,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.4, 0.8],
     resources: [
       { type: 'stone', min: 3, max: 7 },
       { type: 'moss', min: 1, max: 2 }
@@ -127,6 +135,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.3, 0.7],
     resources: [
       { type: 'stone', min: 2, max: 5 },
       { type: 'ice', min: 2, max: 4 }
@@ -140,6 +149,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.4, 0.9],
     resources: [
       { type: 'stone', min: 4, max: 8 },
       { type: 'sand', min: 2, max: 4 }
@@ -154,6 +164,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.5, 0.8],
     resources: [
       { type: 'iron_ore', min: 2, max: 5 },
       { type: 'stone', min: 1, max: 3 }
@@ -167,6 +178,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.4, 0.7],
     resources: [
       { type: 'gold_ore', min: 1, max: 3 },
       { type: 'stone', min: 2, max: 4 }
@@ -180,6 +192,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.4, 0.7],
     resources: [
       { type: 'crystal', min: 1, max: 2 },
       { type: 'essence', min: 1, max: 3 }
@@ -194,6 +207,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.5, 0.8],
     resources: []
   },
 
@@ -204,6 +218,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.5, 0.8],
     resources: [
       { type: 'berry', min: 2, max: 5 }
     ]
@@ -216,6 +231,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.4, 0.7],
     resources: [
       { type: 'wood', min: 1, max: 2 }
     ]
@@ -229,6 +245,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.2, 0.4],
     resources: [
       { type: 'medicinal_herb', min: 1, max: 3 }
     ]
@@ -241,13 +258,14 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.2, 0.4],
     resources: [
       { type: 'magical_herb', min: 1, max: 2 },
       { type: 'essence', min: 0, max: 1 }
     ]
   },
 
-  // === MUSHROOMS ===
+  // === MUSHROOMS (small) ===
   mushroom_red: {
     sprite: 'mushroom_red',
     health: 8,
@@ -255,6 +273,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.15, 0.25], // Mushrooms are tiny
     resources: [
       { type: 'mushroom', min: 1, max: 2 }
     ]
@@ -267,6 +286,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.15, 0.25],
     resources: [
       { type: 'mushroom', min: 1, max: 2 }
     ]
@@ -279,6 +299,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.15, 0.25],
     resources: [
       { type: 'poison_mushroom', min: 1, max: 2 }
     ]
@@ -291,6 +312,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.18, 0.28], // Glowing ones slightly bigger
     resources: [
       { type: 'glowing_mushroom', min: 1, max: 2 },
       { type: 'essence', min: 0, max: 1 }
@@ -305,6 +327,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.2, 0.35],
     resources: [
       { type: 'flower', min: 1, max: 1 }
     ]
@@ -317,6 +340,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.2, 0.35],
     resources: [
       { type: 'flower', min: 1, max: 1 }
     ]
@@ -330,6 +354,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [1.2, 1.8], // Tall cacti
     resources: [
       { type: 'cactus_flesh', min: 2, max: 5 },
       { type: 'water', min: 1, max: 2 }
@@ -343,6 +368,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.5, 0.8], // Barrel cacti are smaller
     resources: [
       { type: 'cactus_flesh', min: 1, max: 3 },
       { type: 'water', min: 1, max: 2 }
@@ -357,6 +383,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.6, 1.0],
     resources: [
       { type: 'reed', min: 1, max: 3 }
     ]
@@ -369,6 +396,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.3, 0.5],
     resources: [
       { type: 'lily_pad', min: 1, max: 1 }
     ]
@@ -382,6 +410,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: false,
     blocking: false,
+    scaleRange: [0.2, 0.4],
     resources: []
   },
 
@@ -392,6 +421,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: false,
     blocking: false,
+    scaleRange: [0.5, 0.9],
     resources: []
   },
 
@@ -402,6 +432,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.4, 0.7],
     resources: [
       { type: 'bone', min: 1, max: 3 }
     ]
@@ -414,6 +445,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: true,
+    scaleRange: [0.8, 1.2],
     resources: [
       { type: 'wood', min: 3, max: 6 }
     ]
@@ -426,6 +458,7 @@ export const propDefinitions = {
     height: 1,
     harvestable: true,
     blocking: false,
+    scaleRange: [0.4, 0.7],
     resources: [
       { type: 'ice_crystal', min: 1, max: 2 },
       { type: 'essence', min: 0, max: 1 }

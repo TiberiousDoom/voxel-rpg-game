@@ -334,14 +334,18 @@ export const usePropRenderer = (options = {}) => {
     const spriteWidth = spriteData.size.width;
     const spriteHeight = spriteData.size.height;
 
-    // Scale sprite to fit tile if needed
-    const scale = Math.min(size / spriteWidth, size / spriteHeight);
-    const drawWidth = spriteWidth * scale;
-    const drawHeight = spriteHeight * scale;
+    // Apply prop's scale (from scaleRange in prop definitions)
+    const propScale = prop.scale || 1.0;
+
+    // Scale sprite to fit tile, then apply prop's individual scale
+    const baseScale = Math.min(size / spriteWidth, size / spriteHeight);
+    const finalScale = baseScale * propScale;
+    const drawWidth = spriteWidth * finalScale;
+    const drawHeight = spriteHeight * finalScale;
 
     // Center the sprite in the tile
     const offsetX = (size - drawWidth) / 2;
-    const offsetY = (size - drawHeight) / 2;
+    const offsetY = size - drawHeight; // Anchor to bottom of tile for trees/tall props
 
     ctx.drawImage(
       spriteData.image,
@@ -364,29 +368,40 @@ export const usePropRenderer = (options = {}) => {
   const renderFullDetailProp = (ctx, x, y, size, color, prop, showHealth) => {
     ctx.fillStyle = color;
 
+    // Apply prop's scale
+    const propScale = prop.scale || 1.0;
+    const scaledSize = size * propScale;
+    const offsetX = (size - scaledSize) / 2;
+    const offsetY = size - scaledSize; // Anchor to bottom
+
     // Different shapes based on prop type
     const type = prop.type;
+    const sx = x + offsetX; // Scaled x
+    const sy = y + offsetY; // Scaled y
+
+    // Use scaled size (ss) for all drawing
+    const ss = scaledSize;
 
     if (type === 'tree' || type.startsWith('tree_')) {
       // Tree: trunk + canopy
       // Trunk
       ctx.fillStyle = '#8B4513'; // Brown
-      ctx.fillRect(x + size * 0.4, y + size * 0.5, size * 0.2, size * 0.5);
+      ctx.fillRect(sx + ss * 0.4, sy + ss * 0.5, ss * 0.2, ss * 0.5);
 
       // Canopy
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(x + size * 0.5, y + size * 0.3, size * 0.4, 0, Math.PI * 2);
+      ctx.arc(sx + ss * 0.5, sy + ss * 0.3, ss * 0.4, 0, Math.PI * 2);
       ctx.fill();
     } else if (type === 'rock' || type.startsWith('rock_') || type.startsWith('ore_')) {
       // Rock/Ore: irregular polygon
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(x + size * 0.5, y + size * 0.2);
-      ctx.lineTo(x + size * 0.8, y + size * 0.5);
-      ctx.lineTo(x + size * 0.7, y + size * 0.9);
-      ctx.lineTo(x + size * 0.3, y + size * 0.9);
-      ctx.lineTo(x + size * 0.2, y + size * 0.5);
+      ctx.moveTo(sx + ss * 0.5, sy + ss * 0.2);
+      ctx.lineTo(sx + ss * 0.8, sy + ss * 0.5);
+      ctx.lineTo(sx + ss * 0.7, sy + ss * 0.9);
+      ctx.lineTo(sx + ss * 0.3, sy + ss * 0.9);
+      ctx.lineTo(sx + ss * 0.2, sy + ss * 0.5);
       ctx.closePath();
       ctx.fill();
 
@@ -394,33 +409,33 @@ export const usePropRenderer = (options = {}) => {
       if (type.startsWith('ore_')) {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.beginPath();
-        ctx.arc(x + size * 0.6, y + size * 0.4, size * 0.1, 0, Math.PI * 2);
+        ctx.arc(sx + ss * 0.6, sy + ss * 0.4, ss * 0.1, 0, Math.PI * 2);
         ctx.fill();
       }
     } else if (type === 'bush' || type.startsWith('bush_')) {
       // Bush: cluster of circles
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(x + size * 0.3, y + size * 0.6, size * 0.2, 0, Math.PI * 2);
-      ctx.arc(x + size * 0.7, y + size * 0.6, size * 0.2, 0, Math.PI * 2);
-      ctx.arc(x + size * 0.5, y + size * 0.4, size * 0.25, 0, Math.PI * 2);
+      ctx.arc(sx + ss * 0.3, sy + ss * 0.6, ss * 0.2, 0, Math.PI * 2);
+      ctx.arc(sx + ss * 0.7, sy + ss * 0.6, ss * 0.2, 0, Math.PI * 2);
+      ctx.arc(sx + ss * 0.5, sy + ss * 0.4, ss * 0.25, 0, Math.PI * 2);
       ctx.fill();
     } else if (type === 'cactus' || type.startsWith('cactus_')) {
       // Cactus: vertical bars
       ctx.fillStyle = color;
-      ctx.fillRect(x + size * 0.4, y + size * 0.3, size * 0.2, size * 0.6);
-      ctx.fillRect(x + size * 0.2, y + size * 0.5, size * 0.15, size * 0.3);
-      ctx.fillRect(x + size * 0.65, y + size * 0.5, size * 0.15, size * 0.3);
+      ctx.fillRect(sx + ss * 0.4, sy + ss * 0.3, ss * 0.2, ss * 0.6);
+      ctx.fillRect(sx + ss * 0.2, sy + ss * 0.5, ss * 0.15, ss * 0.3);
+      ctx.fillRect(sx + ss * 0.65, sy + ss * 0.5, ss * 0.15, ss * 0.3);
     } else if (type === 'mushroom' || type.startsWith('mushroom_')) {
       // Mushroom: cap + stem
       // Stem
       ctx.fillStyle = '#F5DEB3'; // Wheat
-      ctx.fillRect(x + size * 0.45, y + size * 0.5, size * 0.1, size * 0.4);
+      ctx.fillRect(sx + ss * 0.45, sy + ss * 0.5, ss * 0.1, ss * 0.4);
 
       // Cap
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.ellipse(x + size * 0.5, y + size * 0.5, size * 0.3, size * 0.2, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx + ss * 0.5, sy + ss * 0.5, ss * 0.3, ss * 0.2, 0, 0, Math.PI * 2);
       ctx.fill();
 
       // Glow effect for glowing mushrooms
@@ -428,7 +443,7 @@ export const usePropRenderer = (options = {}) => {
         ctx.shadowBlur = 10;
         ctx.shadowColor = color;
         ctx.beginPath();
-        ctx.ellipse(x + size * 0.5, y + size * 0.5, size * 0.3, size * 0.2, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx + ss * 0.5, sy + ss * 0.5, ss * 0.3, ss * 0.2, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       }
@@ -436,7 +451,7 @@ export const usePropRenderer = (options = {}) => {
       // Default: simple circle
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(x + size * 0.5, y + size * 0.5, size * 0.3, 0, Math.PI * 2);
+      ctx.arc(sx + ss * 0.5, sy + ss * 0.5, ss * 0.3, 0, Math.PI * 2);
       ctx.fill();
     }
 

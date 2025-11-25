@@ -30,9 +30,9 @@
     },
     {
       "type": "mushroom",
-      "density": 0.12,
+      "density": 0.03,
       "variants": ["mushroom_red", "mushroom_brown"],
-      "minDistance": 2
+      "minDistance": 3
     },
     {
       "type": "herb",

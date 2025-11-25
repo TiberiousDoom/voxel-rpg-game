@@ -13,11 +13,7 @@
  */
 
 import {
-  BehaviorTree,
   BehaviorTreeBuilder,
-  Selector,
-  Sequence,
-  Action,
   Blackboard,
   NodeStatus
 } from './BehaviorTree.js';
@@ -478,7 +474,7 @@ export class EnemyAISystem {
     this._updateGroups(deltaTime, gameState);
 
     // Update each enemy
-    for (const [enemyId, enemy] of this.enemies) {
+    for (const [, enemy] of this.enemies) {
       if (!enemy.alive) continue;
       this._updateEnemy(enemy, deltaTime, gameState);
     }
@@ -521,7 +517,7 @@ export class EnemyAISystem {
    * @private
    */
   _updateThreatTables(deltaTime) {
-    for (const [enemyId, threatTable] of this.threatTables) {
+    for (const [, threatTable] of this.threatTables) {
       for (const [targetId, entry] of threatTable) {
         entry.decay(this.config.threatDecayRate, deltaTime);
         if (entry.threat <= 0) {
@@ -536,7 +532,7 @@ export class EnemyAISystem {
    * @private
    */
   _updateGroups(deltaTime, gameState) {
-    for (const [groupId, group] of this.groups) {
+    for (const [, group] of this.groups) {
       const leader = this.enemies.get(group.leaderId);
       if (!leader || !leader.alive) {
         // Find new leader
@@ -623,6 +619,9 @@ export class EnemyAISystem {
             };
           }
         });
+        break;
+      default:
+        // Unknown formation, no offset changes
         break;
     }
   }

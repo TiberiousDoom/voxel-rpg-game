@@ -538,6 +538,7 @@ class ModuleOrchestrator {
                   type: 'kill',
                   attackerId: 'expedition_party',
                   targetId: `expedition_monster_${i}`,
+                  targetType: monsterType,
                   position: { x: 0, z: 0 }
                 });
               }

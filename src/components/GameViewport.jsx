@@ -26,6 +26,7 @@ import { useBiomeTransitionRenderer } from '../rendering/useBiomeTransitionRende
 import { useJobRenderer } from '../rendering/useJobRenderer.js'; // Terrain job rendering
 import { MonsterAI } from '../systems/MonsterAI.js'; // Monster AI system
 import { SpawnManager } from '../systems/SpawnManager.js'; // Spawn system
+import { WildlifeSpawnManager } from '../systems/WildlifeSpawnManager.js'; // Wildlife spawn system
 import { TerrainSystem } from '../modules/environment/TerrainSystem.js'; // Terrain system
 import { PropHarvestingSystem } from '../modules/environment/PropHarvestingSystem.js'; // Phase 3A: Prop harvesting
 import { FloatingTextManager } from '../rendering/FloatingTextManager.js'; // Phase 3A: Floating text
@@ -329,6 +330,26 @@ function GameViewport({
           useGameStore.getState().spawnMonster(monster);
         });
         zonesPopulated.current = true;
+      }
+    }
+  }, []);
+
+  // Wildlife spawn system - Initialize once
+  const wildlifeSpawnManagerRef = useRef(null);
+  const wildlifePopulated = useRef(false);
+  if (wildlifeSpawnManagerRef.current === null) {
+    wildlifeSpawnManagerRef.current = new WildlifeSpawnManager();
+  }
+
+  // Populate wildlife zones once on startup
+  useEffect(() => {
+    if (wildlifeSpawnManagerRef.current && !wildlifePopulated.current) {
+      const initialWildlife = wildlifeSpawnManagerRef.current.populateAllZones();
+      if (initialWildlife.length > 0) {
+        initialWildlife.forEach(animal => {
+          useGameStore.getState().spawnWildlife(animal);
+        });
+        wildlifePopulated.current = true;
       }
     }
   }, []);

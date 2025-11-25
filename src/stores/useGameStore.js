@@ -18,6 +18,10 @@ const useGameStore = create((set, get) => ({
   // Game state
   gameState: 'intro', // 'intro', 'playing', 'paused', 'gameOver'
 
+  // AI System Manager reference (set by GameManager)
+  aiSystemManager: null,
+  setAISystemManager: (manager) => set({ aiSystemManager: manager }),
+
   // Camera state
   camera: {
     rotationAngle: 0, // Horizontal rotation around player
@@ -89,6 +93,9 @@ const useGameStore = create((set, get) => ({
 
   // Enemies/Monsters
   enemies: [], // Array of Monster instances
+
+  // Wildlife (wild animals)
+  wildlife: [], // Array of Wildlife instances
 
   // Projectiles
   projectiles: [],
@@ -172,15 +179,27 @@ const useGameStore = create((set, get) => ({
     })),
 
   // Monster management
-  spawnMonster: (monster) =>
-    set((state) => ({
-      enemies: [...state.enemies, monster],
-    })),
+  spawnMonster: (monster) => {
+    const state = get();
+    // Register with AI system if available
+    if (state.aiSystemManager) {
+      state.aiSystemManager.registerMonster(monster);
+    }
+    set((s) => ({
+      enemies: [...s.enemies, monster],
+    }));
+  },
 
-  removeMonster: (id) =>
-    set((state) => ({
-      enemies: state.enemies.filter((m) => m.id !== id),
-    })),
+  removeMonster: (id) => {
+    const state = get();
+    // Unregister from AI system if available
+    if (state.aiSystemManager) {
+      state.aiSystemManager.unregisterMonster(id);
+    }
+    set((s) => ({
+      enemies: s.enemies.filter((m) => m.id !== id),
+    }));
+  },
 
   updateMonster: (id, updates) =>
     set((state) => ({
@@ -189,10 +208,20 @@ const useGameStore = create((set, get) => ({
       ),
     })),
 
-  clearDeadMonsters: () =>
-    set((state) => ({
-      enemies: state.enemies.filter((m) => m.alive),
-    })),
+  clearDeadMonsters: () => {
+    const state = get();
+    // Unregister dead monsters from AI system
+    if (state.aiSystemManager) {
+      state.enemies.forEach((m) => {
+        if (!m.alive) {
+          state.aiSystemManager.unregisterMonster(m.id);
+        }
+      });
+    }
+    set((s) => ({
+      enemies: s.enemies.filter((m) => m.alive),
+    }));
+  },
 
   // Attack a monster (player deals damage)
   attackMonster: (monsterId) => {
@@ -213,6 +242,17 @@ const useGameStore = create((set, get) => ({
     // Apply damage to monster
     const killed = monster.takeDamage(finalDamage);
 
+    // Notify AI system of combat damage
+    if (state.aiSystemManager) {
+      state.aiSystemManager.onCombatEvent({
+        type: 'damage',
+        attackerId: 'player',
+        targetId: monsterId,
+        damage: finalDamage,
+        position: monster.position
+      });
+    }
+
     // Show damage number
     state.addDamageNumber({
       x: monster.position.x,
@@ -223,12 +263,21 @@ const useGameStore = create((set, get) => ({
     });
 
     // Update monster in store to trigger React update
-    set(state => ({
-      enemies: [...state.enemies]
+    set(s => ({
+      enemies: [...s.enemies]
     }));
 
     // If monster died, handle death
     if (killed) {
+      // Notify AI system of kill
+      if (state.aiSystemManager) {
+        state.aiSystemManager.onCombatEvent({
+          type: 'kill',
+          attackerId: 'player',
+          targetId: monsterId,
+          position: monster.position
+        });
+      }
       state.handleMonsterDeath(monster);
     }
 
@@ -272,6 +321,145 @@ const useGameStore = create((set, get) => ({
     }, 2000);
 
     return drops;
+  },
+
+  // Wildlife management
+  spawnWildlife: (animal) => {
+    const state = get();
+    // Register with AI system if available
+    if (state.aiSystemManager) {
+      state.aiSystemManager.registerWildlife(animal);
+    }
+    set((s) => ({
+      wildlife: [...s.wildlife, animal],
+    }));
+  },
+
+  removeWildlife: (id) => {
+    const state = get();
+    // Unregister from AI system if available
+    if (state.aiSystemManager) {
+      state.aiSystemManager.unregisterWildlife(id);
+    }
+    set((s) => ({
+      wildlife: s.wildlife.filter((w) => w.id !== id),
+    }));
+  },
+
+  updateWildlife: (id, updates) =>
+    set((state) => ({
+      wildlife: state.wildlife.map((w) =>
+        w.id === id ? { ...w, ...updates } : w
+      ),
+    })),
+
+  clearDeadWildlife: () => {
+    const state = get();
+    // Unregister dead wildlife from AI system
+    if (state.aiSystemManager) {
+      state.wildlife.forEach((w) => {
+        if (!w.alive) {
+          state.aiSystemManager.unregisterWildlife(w.id);
+        }
+      });
+    }
+    set((s) => ({
+      wildlife: s.wildlife.filter((w) => w.alive),
+    }));
+  },
+
+  // Attack wildlife (player deals damage)
+  attackWildlife: (wildlifeId) => {
+    const state = get();
+    const animal = state.wildlife.find(w => w.id === wildlifeId);
+
+    if (!animal || !animal.alive) {
+      return false;
+    }
+
+    // Calculate damage
+    const baseDamage = state.player.damage || 10;
+    const critRoll = Math.random() * 100;
+    const isCrit = critRoll < (state.player.critChance || 5);
+    const critMultiplier = isCrit ? (state.player.critDamage || 150) / 100 : 1;
+    const finalDamage = Math.floor(baseDamage * critMultiplier);
+
+    // Apply damage to wildlife
+    const killed = animal.takeDamage(finalDamage);
+
+    // Notify AI system of combat
+    if (state.aiSystemManager) {
+      state.aiSystemManager.onCombatEvent({
+        type: 'damage',
+        attackerId: 'player',
+        targetId: wildlifeId,
+        damage: finalDamage,
+        position: animal.position
+      });
+    }
+
+    // Show damage number
+    state.addDamageNumber({
+      x: animal.position.x,
+      z: animal.position.z,
+      damage: finalDamage,
+      isCrit: isCrit,
+      type: 'player'
+    });
+
+    // Update wildlife in store to trigger React update
+    set(s => ({
+      wildlife: [...s.wildlife]
+    }));
+
+    // If animal died, handle death
+    if (killed) {
+      state.handleWildlifeDeath(animal);
+    }
+
+    return true;
+  },
+
+  // Handle wildlife death with loot drops
+  handleWildlifeDeath: (animal) => {
+    const state = get();
+
+    // Generate loot drops from wildlife
+    const loot = animal.generateLoot();
+    loot.forEach(drop => {
+      state.addLootDrop({
+        x: animal.position.x,
+        z: animal.position.z,
+        type: 'ITEM',
+        item: {
+          id: `${drop.type}_${Date.now()}`,
+          type: drop.type,
+          name: drop.type.charAt(0).toUpperCase() + drop.type.slice(1),
+          quantity: drop.quantity,
+          icon: '🥩'
+        }
+      });
+    });
+
+    // Add XP from wildlife
+    if (animal.xpReward) {
+      state.addXP(animal.xpReward);
+    }
+
+    // Notify AI system of kill
+    if (state.aiSystemManager) {
+      state.aiSystemManager.onCombatEvent({
+        type: 'kill',
+        attackerId: 'player',
+        targetId: animal.id,
+        position: animal.position
+      });
+    }
+
+    // Remove dead wildlife after a delay
+    setTimeout(() => {
+      state.removeWildlife(animal.id);
+    }, 2000);
   },
 
   // Update loot drops in game loop
@@ -730,6 +918,7 @@ const useGameStore = create((set, get) => ({
       },
       character: getDefaultCharacterData(),
       enemies: [],
+      wildlife: [],
       projectiles: [],
       targetMarkers: [],
       damageNumbers: [],

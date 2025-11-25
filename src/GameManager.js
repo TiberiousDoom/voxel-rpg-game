@@ -48,6 +48,8 @@ import { JobTimeCalculator } from './modules/terrain-jobs/JobTimeCalculator';
 import { TerrainWorkerBehavior } from './modules/terrain-jobs/TerrainWorkerBehavior';
 // Phase 4: AI System Manager
 import { AISystemManager } from './modules/ai';
+// Store for AI system wiring
+import useGameStore from './stores/useGameStore';
 
 /**
  * GameManager - Main game controller
@@ -126,7 +128,13 @@ export default class GameManager extends EventEmitter {
       }
 
       // Create module orchestrator with all game modules
-      this.orchestrator = new ModuleOrchestrator(this._createModules());
+      const modules = this._createModules();
+      this.orchestrator = new ModuleOrchestrator(modules);
+
+      // Wire AI system manager to game store for monster registration
+      if (modules.aiSystemManager) {
+        useGameStore.getState().setAISystemManager(modules.aiSystemManager);
+      }
 
       // Initialize game engine
       this.engine = new GameEngine(this.orchestrator);

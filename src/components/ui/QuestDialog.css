@@ -1,0 +1,533 @@
+/**
+ * QuestDialog.css - Quest NPC interaction dialog styles
+ */
+
+.quest-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.quest-dialog {
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  border: 2px solid #4a4a4a;
+  border-radius: 12px;
+  width: 850px;
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Header */
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(90deg, #3d3d3d 0%, #2d2d2d 100%);
+  border-bottom: 1px solid #4a4a4a;
+  border-radius: 10px 10px 0 0;
+}
+
+.npc-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.npc-avatar {
+  font-size: 48px;
+  background: #1a1a1a;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #5a5a5a;
+}
+
+.npc-info h1 {
+  margin: 0;
+  color: #f0d060;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.npc-title {
+  color: #888;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.btn-close {
+  background: #8b0000;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.btn-close:hover {
+  background: #a00000;
+}
+
+/* Greeting */
+.dialog-greeting {
+  padding: 16px 20px;
+  background: rgba(240, 208, 96, 0.1);
+  border-bottom: 1px solid #4a4a4a;
+}
+
+.dialog-greeting p {
+  margin: 0;
+  color: #ddd;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* Content */
+.dialog-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+/* Quest List */
+.quest-list {
+  width: 300px;
+  border-right: 1px solid #4a4a4a;
+  display: flex;
+  flex-direction: column;
+}
+
+.quest-tabs {
+  display: flex;
+  border-bottom: 1px solid #4a4a4a;
+  background: #2a2a2a;
+}
+
+.quest-tabs .tab {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.quest-tabs .tab:hover {
+  color: #ccc;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.quest-tabs .tab.active {
+  color: #f0d060;
+  border-bottom-color: #f0d060;
+}
+
+.quest-tabs .tab.turn-in.active {
+  color: #90ee90;
+  border-bottom-color: #90ee90;
+}
+
+.quest-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.no-quests {
+  text-align: center;
+  color: #666;
+  padding: 30px;
+  font-style: italic;
+}
+
+/* Quest Item */
+.quest-item {
+  background: #3a3a3a;
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quest-item:hover {
+  background: #454545;
+  border-color: #666;
+}
+
+.quest-item.selected {
+  background: rgba(240, 208, 96, 0.2);
+  border-color: #f0d060;
+}
+
+.quest-item.turn-in {
+  border-color: rgba(144, 238, 144, 0.5);
+}
+
+.quest-item.turn-in.selected {
+  background: rgba(144, 238, 144, 0.2);
+  border-color: #90ee90;
+}
+
+.quest-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.quest-icon {
+  width: 24px;
+  height: 24px;
+  background: #f0d060;
+  color: #1a1a1a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.quest-item.turn-in .quest-icon {
+  background: #90ee90;
+}
+
+.quest-title {
+  color: #e0e0e0;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.quest-item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 32px;
+}
+
+.quest-difficulty {
+  font-size: 0.85rem;
+}
+
+.quest-type {
+  color: #888;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+/* Quest Details */
+.quest-details,
+.quest-details-empty {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #252525;
+}
+
+.quest-details-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-style: italic;
+}
+
+.quest-details-header {
+  margin-bottom: 16px;
+}
+
+.quest-details-header h2 {
+  margin: 0 0 8px 0;
+  color: #f0d060;
+  font-size: 1.4rem;
+}
+
+.quest-meta {
+  display: flex;
+  gap: 10px;
+}
+
+.difficulty-badge,
+.type-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.difficulty-badge {
+  color: #1a1a1a;
+}
+
+.type-badge {
+  background: #4a4a4a;
+  color: #ccc;
+}
+
+.quest-description {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border-left: 4px solid #f0d060;
+}
+
+.quest-description p {
+  margin: 0;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+/* Objectives */
+.quest-objectives {
+  margin-bottom: 20px;
+}
+
+.quest-objectives h4 {
+  margin: 0 0 12px 0;
+  color: #aaa;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.objective {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #3a3a3a;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.objective.complete {
+  background: rgba(144, 238, 144, 0.15);
+}
+
+.objective.hidden {
+  opacity: 0.5;
+}
+
+.objective-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.objective.complete .objective-icon {
+  color: #90ee90;
+}
+
+.objective-content {
+  flex: 1;
+}
+
+.objective-text {
+  color: #ddd;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.objective.complete .objective-text {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.objective-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f0d060 0%, #ffd700 100%);
+  transition: width 0.3s;
+}
+
+.objective.complete .progress-fill {
+  background: linear-gradient(90deg, #90ee90 0%, #00ff00 100%);
+}
+
+.progress-text {
+  color: #888;
+  font-size: 0.8rem;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Rewards */
+.quest-rewards {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.quest-rewards h4 {
+  margin: 0 0 12px 0;
+  color: #ffd700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.rewards-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.reward-icon {
+  font-size: 1.2rem;
+}
+
+.reward-value {
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+/* Time Limit */
+.quest-time-limit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 140, 0, 0.2);
+  border-radius: 6px;
+  margin-bottom: 20px;
+  color: #ffa500;
+}
+
+.time-icon {
+  font-size: 1.2rem;
+}
+
+/* Actions */
+.quest-actions {
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+.btn-accept,
+.btn-turn-in {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-accept {
+  background: linear-gradient(135deg, #f0d060 0%, #d4a020 100%);
+  color: #1a1a1a;
+}
+
+.btn-accept:hover {
+  background: linear-gradient(135deg, #ffd700 0%, #f0d060 100%);
+  transform: translateY(-2px);
+}
+
+.btn-turn-in {
+  background: linear-gradient(135deg, #90ee90 0%, #228b22 100%);
+  color: #1a1a1a;
+}
+
+.btn-turn-in:hover {
+  background: linear-gradient(135deg, #00ff00 0%, #90ee90 100%);
+  transform: translateY(-2px);
+}
+
+/* Scrollbar */
+.quest-items::-webkit-scrollbar,
+.quest-details::-webkit-scrollbar {
+  width: 8px;
+}
+
+.quest-items::-webkit-scrollbar-track,
+.quest-details::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.quest-items::-webkit-scrollbar-thumb,
+.quest-details::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 4px;
+}
+
+.quest-items::-webkit-scrollbar-thumb:hover,
+.quest-details::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .dialog-content {
+    flex-direction: column;
+  }
+
+  .quest-list {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #4a4a4a;
+    max-height: 250px;
+  }
+
+  .quest-details {
+    max-height: 350px;
+  }
+}

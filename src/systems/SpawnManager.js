@@ -51,9 +51,10 @@ export class SpawnManager {
    * Update spawn system
    * @param {Array<Monster>} currentMonsters - All current monsters
    * @param {number} deltaTime - Time since last update (ms)
+   * @param {Object} playerPosition - Player position {x, z} for relative spawning
    * @returns {Array<Monster>} - New monsters to spawn
    */
-  update(currentMonsters, deltaTime) {
+  update(currentMonsters, deltaTime, playerPosition = null) {
     this.lastUpdateTime += deltaTime;
 
     // Only check spawns every second
@@ -84,7 +85,7 @@ export class SpawnManager {
         // Check respawn timer
         if (now - zone.lastSpawnTime >= zone.respawnTime) {
           const needed = zone.maxPopulation - zone.currentPopulation;
-          const newMonsters = this.spawnInZone(zone, needed);
+          const newMonsters = this.spawnInZone(zone, needed, playerPosition);
           monstersToSpawn.push(...newMonsters);
           zone.lastSpawnTime = now;
         }
@@ -98,9 +99,10 @@ export class SpawnManager {
    * Spawn monsters in a zone
    * @param {Object} zone - Zone configuration
    * @param {number} count - Number of monsters to spawn
+   * @param {Object} playerPosition - Player position {x, z} for relative spawning
    * @returns {Array<Monster>} - Spawned monsters
    */
-  spawnInZone(zone, count) {
+  spawnInZone(zone, count, playerPosition = null) {
     const monsters = [];
     let remaining = count;
 
@@ -114,7 +116,7 @@ export class SpawnManager {
 
         const groupType = this.selectMonsterType(zone.monsterTypes);
         const groupLevel = this.randomInt(zone.minLevel, zone.maxLevel);
-        const groupPosition = this.getRandomPositionInZone(zone);
+        const groupPosition = this.getRandomPositionInZone(zone, playerPosition);
 
         for (let i = 0; i < groupSize; i++) {
           // Spread group members around spawn point
@@ -141,7 +143,7 @@ export class SpawnManager {
         // Spawn single monster
         const monsterType = this.selectMonsterType(zone.monsterTypes);
         const level = this.randomInt(zone.minLevel, zone.maxLevel);
-        const position = this.getRandomPositionInZone(zone);
+        const position = this.getRandomPositionInZone(zone, playerPosition);
 
         const monster = this.spawnMonster(monsterType, position, level, zone);
         monsters.push(monster);
@@ -201,15 +203,31 @@ export class SpawnManager {
   }
 
   /**
-   * Get random position within zone radius
+   * Get random position for spawning
+   * If playerPosition is provided, spawn 6-10 tiles from player
+   * Otherwise, spawn within zone radius
    * @param {Object} zone - Spawn zone
+   * @param {Object} playerPosition - Player position {x, z} (optional)
    * @returns {Object} - Position {x, z}
    */
-  getRandomPositionInZone(zone) {
+  getRandomPositionInZone(zone, playerPosition = null) {
     // Random angle
     const angle = Math.random() * Math.PI * 2;
 
-    // Random distance (weighted toward edge for better distribution)
+    // If player position is provided, spawn 6-10 tiles from player
+    if (playerPosition) {
+      const minDistance = 6;
+      const maxDistance = 10;
+      // Random distance between 6 and 10 tiles
+      const distance = minDistance + Math.random() * (maxDistance - minDistance);
+
+      return {
+        x: playerPosition.x + Math.cos(angle) * distance,
+        z: playerPosition.z + Math.sin(angle) * distance
+      };
+    }
+
+    // Fallback: spawn within zone radius (for initial population or when no player pos)
     const distance = Math.sqrt(Math.random()) * zone.radius;
 
     return {

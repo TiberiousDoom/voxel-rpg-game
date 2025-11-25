@@ -1528,7 +1528,7 @@ function GameViewport({
           Math.pow(player2DPos.z - monsterPos.z, 2)
         );
 
-        const meleeRange = 3; // Melee attack range in units
+        const meleeRange = 1; // Melee attack range in units (1 tile)
         const store = useGameStore.getState();
         const baseDamage = store.player.damage || 10;
 
@@ -1878,9 +1878,11 @@ function GameViewport({
             });
           }
 
-          // Update spawn system - spawn new monsters as needed
+          // Update spawn system - spawn new monsters around player
           if (spawnManagerRef.current && monstersRef.current) {
-            const newMonsters = spawnManagerRef.current.update(monstersRef.current, deltaTime * 1000); // Convert back to ms
+            // Pass player position for spawning 6-10 tiles from player
+            const playerPos = playerPosition ? { x: playerPosition[0], z: playerPosition[2] } : null;
+            const newMonsters = spawnManagerRef.current.update(monstersRef.current, deltaTime * 1000, playerPos); // Convert back to ms
             if (newMonsters.length > 0) {
               // Add new monsters to the game
               newMonsters.forEach(monster => {

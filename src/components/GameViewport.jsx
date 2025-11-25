@@ -1409,8 +1409,33 @@ function GameViewport({
       });
 
       if (clickedMonster) {
-        // Attack the monster
-        useGameStore.getState().attackMonster(clickedMonster.id);
+        // Check player distance from monster to determine melee vs ranged attack
+        const store = useGameStore.getState();
+        const playerPos = store.player.position;
+        const monsterPos = clickedMonster.position;
+        const playerDistToMonster = Math.sqrt(
+          Math.pow(playerPos[0] - monsterPos.x, 2) +
+          Math.pow(playerPos[2] - monsterPos.z, 2)
+        );
+
+        const meleeRange = 2; // Melee attack range in units
+
+        if (playerDistToMonster <= meleeRange) {
+          // Melee range - direct attack (free, no mana cost)
+          store.attackMonster(clickedMonster.id);
+        } else {
+          // Try ranged attack - fire projectile (costs mana)
+          const result = store.fireProjectileAtMonster(clickedMonster.id);
+
+          // If no mana and monster is close enough, fall back to melee
+          if (!result.success && result.reason === 'no_mana') {
+            if (playerDistToMonster <= meleeRange * 1.5) {
+              // Close enough for emergency melee
+              store.attackMonster(clickedMonster.id);
+            }
+            // Otherwise, attack fails (player needs to get closer or regenerate mana)
+          }
+        }
         didInteract = true;
       }
 
@@ -1664,11 +1689,12 @@ function GameViewport({
           });
         }
 
-          // Update loot drops - check for pickup
-          if (playerRef.current) {
+          // Update loot drops - check for auto-pickup when player is near
+          const playerPosition = useGameStore.getState().player.position;
+          if (playerPosition) {
             useGameStore.getState().updateLootDrops({
-              x: playerRef.current.x,
-              z: playerRef.current.z
+              x: playerPosition[0],
+              z: playerPosition[2]
             });
           }
 

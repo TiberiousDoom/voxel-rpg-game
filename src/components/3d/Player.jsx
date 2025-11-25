@@ -337,6 +337,34 @@ const Player = () => {
           <coneGeometry args={[0.2, 0.5, 4]} />
           <meshStandardMaterial color="#ff6b6b" />
         </mesh>
+
+        {/* Health Bar - positioned above player */}
+        <group position={[0, 2.5, 0]}>
+          {/* Health bar background */}
+          <mesh position={[0, 0, 0]}>
+            <planeGeometry args={[1.2, 0.15]} />
+            <meshBasicMaterial color="#333333" />
+          </mesh>
+          {/* Health bar fill - dynamically sized based on current health */}
+          <mesh position={[(player.health / player.maxHealth - 1) * 0.55, 0, 0.01]}>
+            <planeGeometry args={[1.1 * (player.health / player.maxHealth), 0.1]} />
+            <meshBasicMaterial color={player.health / player.maxHealth > 0.5 ? '#44ff44' : player.health / player.maxHealth > 0.25 ? '#ffff00' : '#ff4444'} />
+          </mesh>
+        </group>
+
+        {/* Mana Bar - positioned below health bar */}
+        <group position={[0, 2.3, 0]}>
+          {/* Mana bar background */}
+          <mesh position={[0, 0, 0]}>
+            <planeGeometry args={[1.2, 0.12]} />
+            <meshBasicMaterial color="#333333" />
+          </mesh>
+          {/* Mana bar fill */}
+          <mesh position={[(player.mana / player.maxMana - 1) * 0.55, 0, 0.01]}>
+            <planeGeometry args={[1.1 * (player.mana / player.maxMana), 0.08]} />
+            <meshBasicMaterial color="#4488ff" />
+          </mesh>
+        </group>
       </group>
     </RigidBody>
   );

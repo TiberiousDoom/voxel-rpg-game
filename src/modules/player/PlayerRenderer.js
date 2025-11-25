@@ -229,13 +229,13 @@ export class PlayerRenderer {
     // Draw outer glow if sprinting
     if (player.isSprinting) {
       ctx.beginPath();
-      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.arc(x, y, this.tileSize * 0.2, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(74, 144, 226, 0.3)';
       ctx.fill();
     }
 
-    // Draw the sprite
-    const drawSize = PLAYER_CONFIG.size * 1.5; // Scale up slightly for visibility
+    // Draw the sprite - scale proportionally to tile size (70% of tile)
+    const drawSize = this.tileSize * 0.7;
 
     ctx.save();
     if (flipX) {
@@ -272,7 +272,8 @@ export class PlayerRenderer {
    * @private
    */
   _renderPlayerWithCircle(ctx, x, y, player) {
-    const radius = PLAYER_CONFIG.size / 2;
+    // Scale radius proportionally to tile size (35% of tile)
+    const radius = this.tileSize * 0.35;
 
     // Pulsing effect when moving
     const isMoving = player.velocity.x !== 0 || player.velocity.z !== 0;
@@ -299,9 +300,10 @@ export class PlayerRenderer {
     ctx.fillStyle = PLAYER_CONFIG.color;
     ctx.fill();
 
-    // Draw "P" letter for player
+    // Draw "P" letter for player - scale font with tile size
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 10px Arial';
+    const fontSize = Math.max(10, Math.floor(this.tileSize * 0.25));
+    ctx.font = `bold ${fontSize}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('P', x, y);
@@ -311,7 +313,7 @@ export class PlayerRenderer {
    * Render direction indicator (small triangle)
    */
   renderDirectionIndicator(ctx, x, y, facing) {
-    const offset = PLAYER_CONFIG.size / 2 + 3;
+    const offset = this.tileSize * 0.4;
     let dx = 0, dy = 0;
 
     switch (facing) {
@@ -339,7 +341,7 @@ export class PlayerRenderer {
     }
 
     ctx.beginPath();
-    ctx.arc(x + dx, y + dy, 2, 0, Math.PI * 2);
+    ctx.arc(x + dx, y + dy, this.tileSize * 0.05, 0, Math.PI * 2);
     ctx.fillStyle = '#FFFFFF';
     ctx.fill();
   }
@@ -351,9 +353,9 @@ export class PlayerRenderer {
     ctx.beginPath();
     ctx.ellipse(
       x,
-      y + PLAYER_CONFIG.size / 2 + PLAYER_CONFIG.shadowOffset,
-      PLAYER_CONFIG.size / 2,
-      PLAYER_CONFIG.size / 4,
+      y + this.tileSize * 0.35 + 2,
+      this.tileSize * 0.3,
+      this.tileSize * 0.15,
       0,
       0,
       Math.PI * 2
@@ -366,8 +368,9 @@ export class PlayerRenderer {
    * Render health bar above player
    */
   renderHealthBar(ctx, x, y, health, maxHealth) {
-    const barWidth = 20;
-    const barHeight = 3;
+    // Scale bar with tile size
+    const barWidth = this.tileSize * 0.6;
+    const barHeight = Math.max(3, this.tileSize * 0.06);
     const healthPercent = Math.max(0, Math.min(1, health / maxHealth));
 
     // Background
@@ -390,8 +393,9 @@ export class PlayerRenderer {
    * Render stamina bar above health bar
    */
   renderStaminaBar(ctx, x, y, stamina, maxStamina) {
-    const barWidth = 20;
-    const barHeight = 2;
+    // Scale bar with tile size
+    const barWidth = this.tileSize * 0.6;
+    const barHeight = Math.max(2, this.tileSize * 0.04);
     const staminaPercent = Math.max(0, Math.min(1, stamina / maxStamina));
 
     // Background

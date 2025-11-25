@@ -235,9 +235,11 @@ export class MonsterRenderer {
       scale = 1 + Math.sin(Date.now() / 1000 * pulseSpeed * Math.PI * 2) * pulseAmount;
     }
 
-    // Calculate draw size based on sprite size and scale
-    const drawWidth = spriteData.size.width * scale;
-    const drawHeight = spriteData.size.height * scale;
+    // Calculate draw size - scale sprite to fit tile (60% of tile size)
+    const baseSize = this.config.tileSize * 0.6;
+    const aspectRatio = spriteData.size.width / spriteData.size.height;
+    const drawWidth = baseSize * aspectRatio * scale;
+    const drawHeight = baseSize * scale;
 
     // Flip horizontally based on movement direction
     const flipX = velocity.x < -0.01;
@@ -288,8 +290,8 @@ export class MonsterRenderer {
     }
     ctx.scale(scale, scale);
 
-    // Draw monster circle
-    const radius = monster.size || 12;
+    // Draw monster circle - scale to 30% of tile size
+    const radius = this.config.tileSize * 0.3;
     ctx.fillStyle = monster.tint || monster.color || '#ff0000';
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
@@ -297,14 +299,15 @@ export class MonsterRenderer {
 
     // Draw circle outline
     ctx.strokeStyle = monster.alive ? '#000000' : '#666666';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(2, this.config.tileSize * 0.03);
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Draw type letter
+    // Draw type letter - scale font with tile size
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 12px Arial';
+    const fontSize = Math.max(10, Math.floor(this.config.tileSize * 0.2));
+    ctx.font = `bold ${fontSize}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const typeLetter = monster.type ? monster.type.charAt(0) : 'M';
@@ -329,10 +332,11 @@ export class MonsterRenderer {
     // Only show if damaged or always show for monsters
     if (healthPercent >= 1.0) return;
 
-    const barWidth = 24;
-    const barHeight = 4;
+    // Scale bar with tile size
+    const barWidth = this.config.tileSize * 0.5;
+    const barHeight = Math.max(3, this.config.tileSize * 0.06);
     const barX = centerX - barWidth / 2;
-    const barY = centerY - (monster.size || 12) - 8;
+    const barY = centerY - this.config.tileSize * 0.35 - barHeight - 4;
 
     // Background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';

@@ -233,7 +233,8 @@ describe('AutonomousDecision', () => {
     });
 
     test('should accept work at rest threshold boundary (15)', () => {
-      needsTracker.registerNPC('npc12', { rest: 16 });
+      // Ensure all needs are above critical threshold (20) so only rest is tested
+      needsTracker.registerNPC('npc12', { rest: 21, food: 80, social: 70, shelter: 80 });
       const npc = { id: 'npc12' };
 
       const decision = autonomousDecision.decideAction(npc, { hasWorkOffer: true });

@@ -189,6 +189,23 @@ const useQuestStore = create((set, get) => ({
     // eslint-disable-next-line no-console
     console.log(`   Rewards: ${quest.rewards.xp} XP, ${quest.rewards.gold} gold, ${quest.rewards.items.length} items`);
 
+    // Show notification (if NotificationSystem is mounted)
+    if (window.addNotification) {
+      const rewardText = [];
+      if (quest.rewards.xp > 0) rewardText.push(`${quest.rewards.xp} XP`);
+      if (quest.rewards.gold > 0) rewardText.push(`${quest.rewards.gold} Gold`);
+      if (quest.rewards.items.length > 0) rewardText.push(`${quest.rewards.items.length} item(s)`);
+
+      window.addNotification({
+        type: 'success',
+        title: 'Quest Complete!',
+        description: quest.title,
+        extra: rewardText.length > 0 ? `Rewards: ${rewardText.join(', ')}` : null,
+        icon: '📜',
+        duration: 5000
+      });
+    }
+
     // Move to completed
     set(state => ({
       activeQuests: state.activeQuests.filter(q => q.id !== questId),

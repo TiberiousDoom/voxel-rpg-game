@@ -20,6 +20,7 @@ import { useWildlifeRenderer } from '../rendering/useWildlifeRenderer.js'; // Wi
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
 import { useDamageNumberRenderer } from '../rendering/useDamageNumberRenderer.js'; // Damage number rendering
+import { useProjectileRenderer } from '../rendering/useProjectileRenderer.js'; // 2D Projectile rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
 import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
@@ -523,6 +524,9 @@ function GameViewport({
   const { renderDamageNumbers } = useDamageNumberRenderer({
     tileSize: TILE_SIZE
   });
+
+  // Projectile Renderer integration (2D ranged attacks)
+  const { createProjectile, updateProjectiles, renderProjectiles } = useProjectileRenderer();
 
   // Terrain Job Renderer integration
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
@@ -1158,6 +1162,9 @@ function GameViewport({
       renderLootDrops(ctx, lootDropsRef.current, worldToCanvas, currentTime);
     }
 
+    // Render 2D projectiles (ranged attacks)
+    renderProjectiles(ctx, worldToCanvas);
+
     // Render damage numbers (Phase 3: Combat)
     if (damageNumbersRef.current && damageNumbersRef.current.length > 0) {
       const currentTime = performance.now();
@@ -1513,30 +1520,63 @@ function GameViewport({
 
       if (clickedMonster) {
         // Check player distance from monster to determine melee vs ranged attack
-        const store = useGameStore.getState();
-        const playerPos = store.player.position;
+        // Use 2D playerRef position (has {x, z} format)
+        const player2DPos = playerRef.current.position;
         const monsterPos = clickedMonster.position;
         const playerDistToMonster = Math.sqrt(
-          Math.pow(playerPos[0] - monsterPos.x, 2) +
-          Math.pow(playerPos[2] - monsterPos.z, 2)
+          Math.pow(player2DPos.x - monsterPos.x, 2) +
+          Math.pow(player2DPos.z - monsterPos.z, 2)
         );
 
-        const meleeRange = 2; // Melee attack range in units
+        const meleeRange = 3; // Melee attack range in units
+        const store = useGameStore.getState();
+        const baseDamage = store.player.damage || 10;
 
         if (playerDistToMonster <= meleeRange) {
-          // Melee range - direct attack (free, no mana cost)
-          store.attackMonster(clickedMonster.id);
-        } else {
-          // Try ranged attack - fire projectile (costs mana)
-          const result = store.fireProjectileAtMonster(clickedMonster.id);
+          // Melee range - direct attack to 2D monster (free)
+          if (clickedMonster.takeDamage) {
+            clickedMonster.takeDamage(baseDamage);
+          }
 
-          // If no mana and monster is close enough, fall back to melee
-          if (!result.success && result.reason === 'no_mana') {
-            if (playerDistToMonster <= meleeRange * 1.5) {
-              // Close enough for emergency melee
-              store.attackMonster(clickedMonster.id);
-            }
-            // Otherwise, attack fails (player needs to get closer or regenerate mana)
+          // Show damage number
+          store.addDamageNumber({
+            position: [monsterPos.x, 0, monsterPos.z],
+            damage: baseDamage,
+          });
+        } else {
+          // Ranged attack - costs mana, creates visual projectile
+          const manaCost = 5;
+
+          if (store.player.mana >= manaCost) {
+            // Consume mana
+            store.updatePlayer({ mana: store.player.mana - manaCost });
+
+            // Create projectile that will deal damage on hit
+            const targetMonster = clickedMonster;
+            createProjectile({
+              startX: player2DPos.x,
+              startZ: player2DPos.z,
+              targetX: monsterPos.x,
+              targetZ: monsterPos.z,
+              damage: baseDamage,
+              speed: 12, // Units per second
+              color: '#ff6600', // Orange fireball
+              size: 8,
+              targetId: targetMonster.id,
+              onHit: () => {
+                // Deal damage when projectile hits
+                if (targetMonster && targetMonster.alive && targetMonster.takeDamage) {
+                  targetMonster.takeDamage(baseDamage);
+
+                  // Show damage number at impact
+                  const storeNow = useGameStore.getState();
+                  storeNow.addDamageNumber({
+                    position: [targetMonster.position.x, 0, targetMonster.position.z],
+                    damage: baseDamage,
+                  });
+                }
+              }
+            });
           }
         }
         didInteract = true;
@@ -1859,6 +1899,9 @@ function GameViewport({
           if (floatingTextManagerRef.current) {
             floatingTextManagerRef.current.update();
           }
+
+          // Update 2D projectiles
+          updateProjectiles(deltaTime);
 
           // Draw viewport with safe error handling
           drawViewport(ctx);

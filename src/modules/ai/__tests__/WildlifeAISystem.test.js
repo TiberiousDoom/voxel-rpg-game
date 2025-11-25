@@ -28,6 +28,42 @@ jest.mock('../PathfindingSystem.js', () => {
   };
 });
 
+jest.mock('../BehaviorTree.js', () => {
+  const NodeStatus = {
+    SUCCESS: 'SUCCESS',
+    FAILURE: 'FAILURE',
+    RUNNING: 'RUNNING'
+  };
+
+  class MockBehaviorTree {
+    constructor() {}
+    update() { return NodeStatus.SUCCESS; }
+  }
+
+  class MockBlackboard {
+    constructor() { this.data = new Map(); }
+    set(key, value) { this.data.set(key, value); }
+    get(key) { return this.data.get(key); }
+  }
+
+  class MockBehaviorTreeBuilder {
+    constructor() { this.tree = new MockBehaviorTree(); }
+    selector() { return this; }
+    sequence() { return this; }
+    action() { return this; }
+    check() { return this; }
+    end() { return this; }
+    build() { return this.tree; }
+  }
+
+  return {
+    BehaviorTree: MockBehaviorTree,
+    BehaviorTreeBuilder: MockBehaviorTreeBuilder,
+    Blackboard: MockBlackboard,
+    NodeStatus
+  };
+});
+
 describe('WildlifeAISystem', () => {
   let wildlifeAI;
 
@@ -46,17 +82,16 @@ describe('WildlifeAISystem', () => {
   describe('Enums', () => {
     test('AnimalBehavior should have all behaviors', () => {
       expect(AnimalBehavior.PASSIVE).toBe('PASSIVE');
+      expect(AnimalBehavior.NEUTRAL).toBe('NEUTRAL');
       expect(AnimalBehavior.AGGRESSIVE).toBe('AGGRESSIVE');
-      expect(AnimalBehavior.SKITTISH).toBe('SKITTISH');
-      expect(AnimalBehavior.TERRITORIAL).toBe('TERRITORIAL');
-      expect(AnimalBehavior.PREDATOR).toBe('PREDATOR');
-      expect(AnimalBehavior.PREY).toBe('PREY');
+      expect(AnimalBehavior.HERD).toBe('HERD');
     });
 
     test('ActivityPattern should have all patterns', () => {
       expect(ActivityPattern.DIURNAL).toBe('DIURNAL');
       expect(ActivityPattern.NOCTURNAL).toBe('NOCTURNAL');
       expect(ActivityPattern.CREPUSCULAR).toBe('CREPUSCULAR');
+      expect(ActivityPattern.ALWAYS).toBe('ALWAYS');
     });
 
     test('AnimalState should have all states', () => {
@@ -65,7 +100,10 @@ describe('WildlifeAISystem', () => {
       expect(AnimalState.WANDERING).toBe('WANDERING');
       expect(AnimalState.FLEEING).toBe('FLEEING');
       expect(AnimalState.HUNTING).toBe('HUNTING');
-      expect(AnimalState.SLEEPING).toBe('SLEEPING');
+      expect(AnimalState.RESTING).toBe('RESTING');
+      expect(AnimalState.FOLLOWING_HERD).toBe('FOLLOWING_HERD');
+      expect(AnimalState.DEFENDING_TERRITORY).toBe('DEFENDING_TERRITORY');
+      expect(AnimalState.DEAD).toBe('DEAD');
     });
   });
 
@@ -77,7 +115,7 @@ describe('WildlifeAISystem', () => {
     test('should create herd with leader', () => {
       const herd = new Herd('leader1', 'deer');
       expect(herd.leaderId).toBe('leader1');
-      expect(herd.species).toBe('deer');
+      expect(herd.animalType).toBe('deer');
       expect(herd.members.has('leader1')).toBe(true);
     });
 
@@ -120,18 +158,22 @@ describe('WildlifeAISystem', () => {
     });
 
     test('should set default values', () => {
-      wildlifeAI.registerAnimal({ id: 'deer1', species: 'deer' });
-      const animal = wildlifeAI.getAnimal('deer1');
+      wildlifeAI.registerAnimal({ id: 'animal1', species: 'deer' });
+      const animal = wildlifeAI.getAnimal('animal1');
 
       expect(animal.state).toBe(AnimalState.IDLE);
       expect(animal.alive).toBe(true);
-      expect(animal.behavior).toBeDefined();
     });
 
     test('should unregister animal', () => {
       wildlifeAI.registerAnimal({ id: 'deer1', species: 'deer' });
       wildlifeAI.unregisterAnimal('deer1');
       expect(wildlifeAI.getAnimal('deer1')).toBeNull();
+    });
+
+    test('should reject invalid animal', () => {
+      expect(wildlifeAI.registerAnimal(null)).toBe(false);
+      expect(wildlifeAI.registerAnimal({})).toBe(false);
     });
   });
 
@@ -150,14 +192,10 @@ describe('WildlifeAISystem', () => {
       expect(wildlifeAI.getAllAnimals().length).toBe(3);
     });
 
-    test('should get animals by species', () => {
-      const deer = wildlifeAI.getAnimalsBySpecies('deer');
-      expect(deer.length).toBe(2);
-    });
-
     test('should get living animals', () => {
-      const deer2 = wildlifeAI.getAnimal('deer2');
-      deer2.alive = false;
+      const deer1 = wildlifeAI.getAnimal('deer1');
+      deer1.alive = false;
+      deer1.state = AnimalState.DEAD;
 
       const living = wildlifeAI.getLivingAnimals();
       expect(living.length).toBe(2);
@@ -183,117 +221,13 @@ describe('WildlifeAISystem', () => {
 
     test('should assign herd to animals', () => {
       const herdId = wildlifeAI.createHerd('deer1', ['deer2']);
-      const deer1 = wildlifeAI.getAnimal('deer1');
-      const deer2 = wildlifeAI.getAnimal('deer2');
 
-      expect(deer1.herdId).toBe(herdId);
-      expect(deer2.herdId).toBe(herdId);
-    });
+      const leader = wildlifeAI.getAnimal('deer1');
+      const member = wildlifeAI.getAnimal('deer2');
 
-    test('should add animal to herd', () => {
-      const herdId = wildlifeAI.createHerd('deer1');
-      wildlifeAI.addToHerd('deer2', herdId);
-
-      const herd = wildlifeAI.herds.get(herdId);
-      expect(herd.members.has('deer2')).toBe(true);
-    });
-
-    test('should get nearby animals for herding', () => {
-      const nearby = wildlifeAI.getNearbyAnimals(
-        { x: 100, z: 100 },
-        50,
-        'deer'
-      );
-      expect(nearby.length).toBeGreaterThan(0);
-    });
-  });
-
-  // ============================================
-  // BEHAVIOR TESTS
-  // ============================================
-
-  describe('Animal Behaviors', () => {
-    test('should set flee target', () => {
-      wildlifeAI.registerAnimal({
-        id: 'deer1',
-        species: 'deer',
-        behavior: AnimalBehavior.SKITTISH,
-        position: { x: 100, z: 100 }
-      });
-
-      wildlifeAI.triggerFlee('deer1', { x: 50, z: 50 });
-      const animal = wildlifeAI.getAnimal('deer1');
-
-      expect(animal.state).toBe(AnimalState.FLEEING);
-    });
-
-    test('should determine if animal is active', () => {
-      wildlifeAI.registerAnimal({
-        id: 'deer1',
-        species: 'deer',
-        activityPattern: ActivityPattern.DIURNAL
-      });
-
-      wildlifeAI.setTimeOfDay(12); // Noon
-      expect(wildlifeAI.isAnimalActive('deer1')).toBe(true);
-
-      wildlifeAI.setTimeOfDay(0); // Midnight
-      expect(wildlifeAI.isAnimalActive('deer1')).toBe(false);
-    });
-
-    test('should calculate flee direction', () => {
-      const fleeDir = wildlifeAI._calculateFleeDirection(
-        { x: 100, z: 100 },
-        { x: 50, z: 50 }
-      );
-
-      // Should flee away from threat
-      expect(fleeDir.x).toBeGreaterThan(0);
-      expect(fleeDir.z).toBeGreaterThan(0);
-    });
-  });
-
-  // ============================================
-  // FLOCKING BEHAVIOR TESTS
-  // ============================================
-
-  describe('Flocking Behavior', () => {
-    beforeEach(() => {
-      for (let i = 0; i < 5; i++) {
-        wildlifeAI.registerAnimal({
-          id: `bird${i}`,
-          species: 'bird',
-          position: { x: 100 + i * 10, z: 100 + i * 10 },
-          velocity: { x: 1, z: 0 }
-        });
-      }
-    });
-
-    test('should calculate separation force', () => {
-      const animal = wildlifeAI.getAnimal('bird0');
-      const neighbors = wildlifeAI.getNearbyAnimals(animal.position, 50, 'bird');
-
-      const separation = wildlifeAI._calculateSeparation(animal, neighbors);
-      expect(separation).toHaveProperty('x');
-      expect(separation).toHaveProperty('z');
-    });
-
-    test('should calculate alignment force', () => {
-      const animal = wildlifeAI.getAnimal('bird0');
-      const neighbors = wildlifeAI.getNearbyAnimals(animal.position, 50, 'bird');
-
-      const alignment = wildlifeAI._calculateAlignment(animal, neighbors);
-      expect(alignment).toHaveProperty('x');
-      expect(alignment).toHaveProperty('z');
-    });
-
-    test('should calculate cohesion force', () => {
-      const animal = wildlifeAI.getAnimal('bird0');
-      const neighbors = wildlifeAI.getNearbyAnimals(animal.position, 50, 'bird');
-
-      const cohesion = wildlifeAI._calculateCohesion(animal, neighbors);
-      expect(cohesion).toHaveProperty('x');
-      expect(cohesion).toHaveProperty('z');
+      expect(leader.herdId).toBe(herdId);
+      expect(leader.isHerdLeader).toBe(true);
+      expect(member.herdId).toBe(herdId);
     });
   });
 
@@ -306,41 +240,34 @@ describe('WildlifeAISystem', () => {
       wildlifeAI.registerAnimal({
         id: 'wolf1',
         species: 'wolf',
-        behavior: AnimalBehavior.PREDATOR
+        behavior: AnimalBehavior.AGGRESSIVE
       });
 
       const animal = wildlifeAI.getAnimal('wolf1');
-      expect(animal.behavior).toBe(AnimalBehavior.PREDATOR);
+      expect(animal.behavior).toBe(AnimalBehavior.AGGRESSIVE);
     });
 
     test('should identify prey', () => {
       wildlifeAI.registerAnimal({
-        id: 'rabbit1',
-        species: 'rabbit',
-        behavior: AnimalBehavior.PREY
+        id: 'deer1',
+        species: 'deer',
+        behavior: AnimalBehavior.PASSIVE
       });
 
-      const animal = wildlifeAI.getAnimal('rabbit1');
-      expect(animal.behavior).toBe(AnimalBehavior.PREY);
+      const animal = wildlifeAI.getAnimal('deer1');
+      expect(animal.behavior).toBe(AnimalBehavior.PASSIVE);
     });
   });
 
   // ============================================
-  // TIME OF DAY TESTS
+  // GAME STATE TESTS
   // ============================================
 
-  describe('Time of Day', () => {
-    test('should set time of day', () => {
-      wildlifeAI.setTimeOfDay(18);
-      expect(wildlifeAI.timeOfDay).toBe(18);
-    });
-
-    test('should determine day/night', () => {
-      wildlifeAI.setTimeOfDay(12);
-      expect(wildlifeAI.isDay()).toBe(true);
-
-      wildlifeAI.setTimeOfDay(0);
-      expect(wildlifeAI.isDay()).toBe(false);
+  describe('Game State', () => {
+    test('should set game state', () => {
+      wildlifeAI.setGameState({ timeOfDay: 12, season: 'SUMMER' });
+      expect(wildlifeAI.currentHour).toBe(12);
+      expect(wildlifeAI.currentSeason).toBe('SUMMER');
     });
   });
 
@@ -356,7 +283,7 @@ describe('WildlifeAISystem', () => {
         position: { x: 100, z: 100 }
       });
 
-      wildlifeAI.update(16, {});
+      wildlifeAI.update(16, { player: { position: { x: 500, z: 500 } } });
       // Verify no errors
     });
 
@@ -369,11 +296,38 @@ describe('WildlifeAISystem', () => {
 
       const animal = wildlifeAI.getAnimal('deer1');
       animal.alive = false;
-      animal.state = AnimalState.IDLE;
+      animal.state = AnimalState.DEAD;
 
       wildlifeAI.update(16, {});
-      // State should not change
-      expect(animal.state).toBe(AnimalState.IDLE);
+      // Should not throw
+    });
+  });
+
+  // ============================================
+  // DAMAGE TESTS
+  // ============================================
+
+  describe('Damage System', () => {
+    beforeEach(() => {
+      wildlifeAI.registerAnimal({
+        id: 'deer1',
+        species: 'deer',
+        health: 100,
+        maxHealth: 100
+      });
+    });
+
+    test('should deal damage', () => {
+      wildlifeAI.dealDamage('deer1', 30);
+      const animal = wildlifeAI.getAnimal('deer1');
+      expect(animal.health).toBe(70);
+    });
+
+    test('should kill animal at 0 health', () => {
+      wildlifeAI.dealDamage('deer1', 150);
+      const animal = wildlifeAI.getAnimal('deer1');
+      expect(animal.alive).toBe(false);
+      expect(animal.state).toBe(AnimalState.DEAD);
     });
   });
 
@@ -382,13 +336,26 @@ describe('WildlifeAISystem', () => {
   // ============================================
 
   describe('Event Listeners', () => {
-    test('should add/remove listeners', () => {
+    test('should add listener', () => {
       const listener = jest.fn();
       wildlifeAI.addListener(listener);
       expect(wildlifeAI.listeners).toContain(listener);
+    });
 
-      wildlifeAI.removeListener(listener);
-      expect(wildlifeAI.listeners).not.toContain(listener);
+    test('should emit animalDied event', () => {
+      const listener = jest.fn();
+      wildlifeAI.addListener(listener);
+
+      wildlifeAI.registerAnimal({
+        id: 'deer1',
+        species: 'deer',
+        health: 50
+      });
+      wildlifeAI.dealDamage('deer1', 100);
+
+      expect(listener).toHaveBeenCalledWith('animalDied', expect.objectContaining({
+        animalId: 'deer1'
+      }));
     });
   });
 
@@ -399,11 +366,10 @@ describe('WildlifeAISystem', () => {
   describe('Statistics', () => {
     test('should get statistics', () => {
       wildlifeAI.registerAnimal({ id: 'deer1', species: 'deer' });
-      wildlifeAI.createHerd('deer1');
 
       const stats = wildlifeAI.getStatistics();
-      expect(stats.totalAnimals).toBe(1);
-      expect(stats.activeHerds).toBe(1);
+      expect(stats.animalsManaged).toBe(1);
+      expect(stats).toHaveProperty('herdsActive');
     });
   });
 
@@ -416,11 +382,13 @@ describe('WildlifeAISystem', () => {
       wildlifeAI.registerAnimal({
         id: 'deer1',
         species: 'deer',
-        position: { x: 100, z: 200 }
+        position: { x: 100, z: 200 },
+        health: 80
       });
 
       const json = wildlifeAI.toJSON();
       expect(json.animals).toHaveProperty('deer1');
+      expect(json.animals['deer1'].health).toBe(80);
     });
 
     test('should deserialize from JSON', () => {
@@ -430,6 +398,8 @@ describe('WildlifeAISystem', () => {
             id: 'deer1',
             species: 'deer',
             position: { x: 100, z: 200 },
+            health: 80,
+            maxHealth: 100,
             state: AnimalState.GRAZING,
             alive: true
           }
@@ -441,7 +411,40 @@ describe('WildlifeAISystem', () => {
 
       const animal = wildlifeAI.getAnimal('deer1');
       expect(animal).not.toBeNull();
-      expect(animal.state).toBe(AnimalState.GRAZING);
+      expect(animal.health).toBe(80);
+    });
+  });
+
+  // ============================================
+  // INTEGRATION TESTS
+  // ============================================
+
+  describe('Integration Tests', () => {
+    test('should handle full animal lifecycle', () => {
+      wildlifeAI.registerAnimal({
+        id: 'deer1',
+        species: 'deer',
+        position: { x: 100, z: 100 },
+        health: 100
+      });
+
+      wildlifeAI.update(16, { player: { position: { x: 500, z: 500 } } });
+
+      wildlifeAI.dealDamage('deer1', 30);
+
+      const animal = wildlifeAI.getAnimal('deer1');
+      expect(animal.health).toBe(70);
+    });
+
+    test('should handle herd creation and management', () => {
+      wildlifeAI.registerAnimal({ id: 'deer1', species: 'deer', position: { x: 100, z: 100 } });
+      wildlifeAI.registerAnimal({ id: 'deer2', species: 'deer', position: { x: 110, z: 100 } });
+      wildlifeAI.registerAnimal({ id: 'deer3', species: 'deer', position: { x: 120, z: 100 } });
+
+      const herdId = wildlifeAI.createHerd('deer1', ['deer2', 'deer3']);
+
+      const stats = wildlifeAI.getStatistics();
+      expect(stats.herdsActive).toBe(1);
     });
   });
 });

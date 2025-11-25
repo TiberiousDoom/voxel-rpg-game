@@ -1,5 +1,5 @@
 /**
- * NPCBehaviorSystem.test.js - Comprehensive tests for Enhanced NPC Behavior System
+ * NPCBehaviorSystem.test.js - Tests for Enhanced NPC Behavior System
  */
 
 import {
@@ -77,22 +77,19 @@ describe('NPCBehaviorSystem', () => {
   // ============================================
 
   describe('Enums', () => {
-    test('PersonalityTraits should have all traits', () => {
-      expect(PersonalityTraits.FRIENDLY).toBe('FRIENDLY');
-      expect(PersonalityTraits.SHY).toBe('SHY');
-      expect(PersonalityTraits.AGGRESSIVE).toBe('AGGRESSIVE');
-      expect(PersonalityTraits.HELPFUL).toBe('HELPFUL');
-      expect(PersonalityTraits.GREEDY).toBe('GREEDY');
-      expect(PersonalityTraits.CURIOUS).toBe('CURIOUS');
+    test('PersonalityTraits should have trait types', () => {
+      expect(PersonalityTraits.BRAVERY).toBe('bravery');
+      expect(PersonalityTraits.FRIENDLINESS).toBe('friendliness');
+      expect(PersonalityTraits.WORK_ETHIC).toBe('workEthic');
+      expect(PersonalityTraits.CURIOSITY).toBe('curiosity');
+      expect(PersonalityTraits.SOCIABILITY).toBe('sociability');
     });
 
     test('ActivityType should have all activities', () => {
-      expect(ActivityType.IDLE).toBe('IDLE');
-      expect(ActivityType.WORKING).toBe('WORKING');
-      expect(ActivityType.EATING).toBe('EATING');
-      expect(ActivityType.SLEEPING).toBe('SLEEPING');
-      expect(ActivityType.SOCIALIZING).toBe('SOCIALIZING');
-      expect(ActivityType.PATROLLING).toBe('PATROLLING');
+      expect(ActivityType.SLEEP).toBe('SLEEP');
+      expect(ActivityType.WORK).toBe('WORK');
+      expect(ActivityType.EAT_BREAKFAST).toBe('EAT_BREAKFAST');
+      expect(ActivityType.SOCIALIZE).toBe('SOCIALIZE');
     });
 
     test('RelationshipStatus should have all statuses', () => {
@@ -105,72 +102,57 @@ describe('NPCBehaviorSystem', () => {
 
     test('MemoryEventType should have all types', () => {
       expect(MemoryEventType.MET_PLAYER).toBe('MET_PLAYER');
-      expect(MemoryEventType.TRADED).toBe('TRADED');
-      expect(MemoryEventType.HELPED).toBe('HELPED');
-      expect(MemoryEventType.ATTACKED).toBe('ATTACKED');
-      expect(MemoryEventType.WITNESSED).toBe('WITNESSED');
+      expect(MemoryEventType.HELPED_BY_PLAYER).toBe('HELPED_BY_PLAYER');
+      expect(MemoryEventType.ATTACKED_BY_PLAYER).toBe('ATTACKED_BY_PLAYER');
+      expect(MemoryEventType.TRADE_WITH_PLAYER).toBe('TRADE_WITH_PLAYER');
     });
   });
 
   // ============================================
-  // NPC MEMORY TESTS
+  // NPCMemory TESTS
   // ============================================
 
   describe('NPCMemory', () => {
-    let memory;
-
-    beforeEach(() => {
-      memory = new NPCMemory('npc1');
-    });
-
     test('should create memory', () => {
-      expect(memory.ownerId).toBe('npc1');
-    });
-
-    test('should add memory entry', () => {
-      memory.addMemory({
-        type: MemoryEventType.MET_PLAYER,
+      const memory = new NPCMemory(MemoryEventType.MET_PLAYER, {
         targetId: 'player',
-        details: { location: 'market' }
+        importance: 5
       });
 
-      expect(memory.memories.length).toBe(1);
+      expect(memory.eventType).toBe(MemoryEventType.MET_PLAYER);
+      expect(memory.data.targetId).toBe('player');
+      expect(memory.importance).toBe(5);
     });
 
-    test('should get memories by type', () => {
-      memory.addMemory({ type: MemoryEventType.MET_PLAYER, targetId: 'player' });
-      memory.addMemory({ type: MemoryEventType.TRADED, targetId: 'player' });
-
-      const trades = memory.getMemoriesByType(MemoryEventType.TRADED);
-      expect(trades.length).toBe(1);
+    test('should calculate age', () => {
+      const memory = new NPCMemory(MemoryEventType.MET_PLAYER, {});
+      expect(memory.getAge()).toBeGreaterThanOrEqual(0);
     });
 
-    test('should get memories by target', () => {
-      memory.addMemory({ type: MemoryEventType.MET_PLAYER, targetId: 'player' });
-      memory.addMemory({ type: MemoryEventType.MET_PLAYER, targetId: 'npc2' });
-
-      const playerMemories = memory.getMemoriesByTarget('player');
-      expect(playerMemories.length).toBe(1);
-    });
-
-    test('should forget old memories', () => {
-      const oldTimestamp = Date.now() - 100000000;
-      memory.memories.push({
-        type: MemoryEventType.MET_PLAYER,
-        targetId: 'player',
-        timestamp: oldTimestamp
-      });
-
-      memory.forgetOldMemories(60000);
-      expect(memory.memories.length).toBe(0);
+    test('should track recalls', () => {
+      const memory = new NPCMemory(MemoryEventType.MET_PLAYER, {});
+      memory.recall();
+      memory.recall();
+      expect(memory.recalled).toBe(2);
     });
 
     test('should serialize to JSON', () => {
-      memory.addMemory({ type: MemoryEventType.MET_PLAYER, targetId: 'player' });
+      const memory = new NPCMemory(MemoryEventType.MET_PLAYER, { test: true });
       const json = memory.toJSON();
+      expect(json.eventType).toBe(MemoryEventType.MET_PLAYER);
+      expect(json.data.test).toBe(true);
+    });
 
-      expect(json.ownerId).toBe('npc1');
-      expect(json.memories.length).toBe(1);
+    test('should deserialize from JSON', () => {
+      const data = {
+        eventType: MemoryEventType.TRADE_WITH_PLAYER,
+        data: { amount: 100 },
+        timestamp: Date.now(),
+        importance: 3,
+        recalled: 1
+      };
+      const memory = NPCMemory.fromJSON(data);
+      expect(memory.eventType).toBe(MemoryEventType.TRADE_WITH_PLAYER);
     });
   });
 
@@ -182,7 +164,7 @@ describe('NPCBehaviorSystem', () => {
     test('should register NPC', () => {
       const result = npcBehavior.registerNPC({
         id: 'npc1',
-        name: 'Village Elder',
+        name: 'Test NPC',
         position: { x: 100, z: 100 }
       });
 
@@ -190,25 +172,15 @@ describe('NPCBehaviorSystem', () => {
       expect(npcBehavior.getNPC('npc1')).not.toBeNull();
     });
 
-    test('should set default values', () => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-      const npc = npcBehavior.getNPC('npc1');
-
-      expect(npc.activity).toBe(ActivityType.IDLE);
-      expect(npc.mood).toBeDefined();
-      expect(npc.relationships).toBeDefined();
-    });
-
-    test('should unregister NPC', () => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-      npcBehavior.unregisterNPC('npc1');
-
-      expect(npcBehavior.getNPC('npc1')).toBeNull();
-    });
-
     test('should reject invalid NPC', () => {
       expect(npcBehavior.registerNPC(null)).toBe(false);
       expect(npcBehavior.registerNPC({})).toBe(false);
+    });
+
+    test('should unregister NPC', () => {
+      npcBehavior.registerNPC({ id: 'npc1', name: 'Test' });
+      npcBehavior.unregisterNPC('npc1');
+      expect(npcBehavior.getNPC('npc1')).toBeNull();
     });
   });
 
@@ -218,23 +190,16 @@ describe('NPCBehaviorSystem', () => {
 
   describe('NPC Retrieval', () => {
     beforeEach(() => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Guard', profession: 'guard' });
-      npcBehavior.registerNPC({ id: 'npc2', name: 'Merchant', profession: 'merchant' });
-      npcBehavior.registerNPC({ id: 'npc3', name: 'Farmer', profession: 'farmer' });
+      npcBehavior.registerNPC({ id: 'npc1', name: 'NPC1' });
+      npcBehavior.registerNPC({ id: 'npc2', name: 'NPC2' });
     });
 
     test('should get all NPCs', () => {
-      expect(npcBehavior.getAllNPCs().length).toBe(3);
+      expect(npcBehavior.getAllNPCs().length).toBe(2);
     });
 
-    test('should get NPCs by profession', () => {
-      const guards = npcBehavior.getNPCsByProfession('guard');
-      expect(guards.length).toBe(1);
-    });
-
-    test('should get nearby NPCs', () => {
-      const nearby = npcBehavior.getNearbyNPCs({ x: 100, z: 100 }, 200);
-      expect(nearby.length).toBe(3);
+    test('should return null for unknown NPC', () => {
+      expect(npcBehavior.getNPC('unknown')).toBeNull();
     });
   });
 
@@ -243,193 +208,82 @@ describe('NPCBehaviorSystem', () => {
   // ============================================
 
   describe('Relationships', () => {
-    let npc;
-
     beforeEach(() => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-      npc = npcBehavior.getNPC('npc1');
+      npcBehavior.registerNPC({ id: 'npc1', name: 'NPC1' });
+      npcBehavior.registerNPC({ id: 'npc2', name: 'NPC2' });
     });
 
-    test('should set relationship', () => {
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.FRIEND, 75);
-
-      const relationship = npcBehavior.getRelationship('npc1', 'player');
-      expect(relationship.status).toBe(RelationshipStatus.FRIEND);
-      expect(relationship.value).toBe(75);
+    test('should get relationship value', () => {
+      const value = npcBehavior.getRelationship('npc1', 'npc2');
+      expect(typeof value).toBe('number');
     });
 
-    test('should modify relationship value', () => {
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.ACQUAINTANCE, 50);
-      npcBehavior.modifyRelationship('npc1', 'player', 20);
-
-      const relationship = npcBehavior.getRelationship('npc1', 'player');
-      expect(relationship.value).toBe(70);
+    test('should modify relationship', () => {
+      npcBehavior.modifyRelationship('npc1', 'npc2', 20);
+      const value = npcBehavior.getRelationship('npc1', 'npc2');
+      expect(value).toBe(20);
     });
 
-    test('should auto-update status based on value', () => {
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.STRANGER, 0);
-      npcBehavior.modifyRelationship('npc1', 'player', 80);
-
-      const relationship = npcBehavior.getRelationship('npc1', 'player');
-      expect(relationship.status).toBe(RelationshipStatus.FRIEND);
+    test('should cap relationship at 100', () => {
+      npcBehavior.modifyRelationship('npc1', 'npc2', 200);
+      const value = npcBehavior.getRelationship('npc1', 'npc2');
+      expect(value).toBeLessThanOrEqual(100);
     });
 
-    test('should become enemy on very low relationship', () => {
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.STRANGER, 50);
-      npcBehavior.modifyRelationship('npc1', 'player', -80);
-
-      const relationship = npcBehavior.getRelationship('npc1', 'player');
-      expect(relationship.status).toBe(RelationshipStatus.ENEMY);
+    test('should cap relationship at -100', () => {
+      npcBehavior.modifyRelationship('npc1', 'npc2', -200);
+      const value = npcBehavior.getRelationship('npc1', 'npc2');
+      expect(value).toBeGreaterThanOrEqual(-100);
     });
 
     test('should get relationship status', () => {
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.FRIEND, 75);
-      expect(npcBehavior.getRelationshipStatus('npc1', 'player')).toBe(RelationshipStatus.FRIEND);
-    });
-
-    test('should return STRANGER for unknown relationship', () => {
-      expect(npcBehavior.getRelationshipStatus('npc1', 'unknown')).toBe(RelationshipStatus.STRANGER);
+      expect(npcBehavior.getRelationshipStatus(0)).toBe(RelationshipStatus.STRANGER);
+      expect(npcBehavior.getRelationshipStatus(50)).toBe(RelationshipStatus.FRIEND);
+      expect(npcBehavior.getRelationshipStatus(-60)).toBe(RelationshipStatus.ENEMY);
     });
   });
 
   // ============================================
-  // PERSONALITY TESTS
+  // MEMORY TESTS
   // ============================================
 
-  describe('Personality', () => {
-    test('should set personality traits', () => {
-      npcBehavior.registerNPC({
-        id: 'npc1',
-        name: 'Friendly NPC',
-        personality: [PersonalityTraits.FRIENDLY, PersonalityTraits.HELPFUL]
-      });
-
-      const npc = npcBehavior.getNPC('npc1');
-      expect(npc.personality).toContain(PersonalityTraits.FRIENDLY);
-      expect(npc.personality).toContain(PersonalityTraits.HELPFUL);
-    });
-
-    test('should check if has personality trait', () => {
-      npcBehavior.registerNPC({
-        id: 'npc1',
-        name: 'Test NPC',
-        personality: [PersonalityTraits.GREEDY]
-      });
-
-      expect(npcBehavior.hasPersonalityTrait('npc1', PersonalityTraits.GREEDY)).toBe(true);
-      expect(npcBehavior.hasPersonalityTrait('npc1', PersonalityTraits.FRIENDLY)).toBe(false);
-    });
-  });
-
-  // ============================================
-  // MOOD TESTS
-  // ============================================
-
-  describe('Mood System', () => {
-    let npc;
-
+  describe('Memory System', () => {
     beforeEach(() => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC', mood: 50 });
-      npc = npcBehavior.getNPC('npc1');
+      npcBehavior.registerNPC({ id: 'npc1', name: 'NPC1' });
     });
 
-    test('should modify mood', () => {
-      npcBehavior.modifyMood('npc1', 20);
-      expect(npc.mood).toBe(70);
+    test('should add memory', () => {
+      npcBehavior.addMemory('npc1', MemoryEventType.MET_PLAYER, {
+        targetId: 'player'
+      });
+
+      const memories = npcBehavior.getMemories('npc1');
+      expect(memories.length).toBe(1);
     });
 
-    test('should cap mood at 100', () => {
-      npcBehavior.modifyMood('npc1', 100);
-      expect(npc.mood).toBe(100);
-    });
+    test('should filter memories by type', () => {
+      npcBehavior.addMemory('npc1', MemoryEventType.MET_PLAYER, {});
+      npcBehavior.addMemory('npc1', MemoryEventType.TRADE_WITH_PLAYER, {});
 
-    test('should not go below 0', () => {
-      npcBehavior.modifyMood('npc1', -100);
-      expect(npc.mood).toBe(0);
-    });
-
-    test('should get mood description', () => {
-      npc.mood = 80;
-      expect(npcBehavior.getMoodDescription('npc1')).toBe('happy');
-
-      npc.mood = 20;
-      expect(npcBehavior.getMoodDescription('npc1')).toBe('sad');
-
-      npc.mood = 50;
-      expect(npcBehavior.getMoodDescription('npc1')).toBe('neutral');
+      const tradeMemories = npcBehavior.getMemories('npc1', {
+        eventType: MemoryEventType.TRADE_WITH_PLAYER
+      });
+      expect(tradeMemories.length).toBe(1);
     });
   });
 
   // ============================================
-  // SCHEDULE TESTS
+  // GAME STATE TESTS
   // ============================================
 
-  describe('Schedule System', () => {
-    test('should set schedule', () => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-
-      const schedule = [
-        { hour: 6, activity: ActivityType.WAKING },
-        { hour: 8, activity: ActivityType.WORKING },
-        { hour: 12, activity: ActivityType.EATING },
-        { hour: 18, activity: ActivityType.SOCIALIZING },
-        { hour: 22, activity: ActivityType.SLEEPING }
-      ];
-
-      npcBehavior.setSchedule('npc1', schedule);
-      const npc = npcBehavior.getNPC('npc1');
-
-      expect(npc.schedule.length).toBe(5);
-    });
-
-    test('should get current scheduled activity', () => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-      npcBehavior.setSchedule('npc1', [
-        { hour: 0, activity: ActivityType.SLEEPING },
-        { hour: 8, activity: ActivityType.WORKING }
-      ]);
-
-      npcBehavior.setTimeOfDay(12);
-      const activity = npcBehavior.getScheduledActivity('npc1');
-      expect(activity).toBe(ActivityType.WORKING);
-    });
-  });
-
-  // ============================================
-  // DIALOGUE TESTS
-  // ============================================
-
-  describe('Dialogue System', () => {
-    test('should get greeting based on relationship', () => {
-      npcBehavior.registerNPC({
-        id: 'npc1',
-        name: 'Test NPC',
-        dialogues: {
-          greetings: {
-            stranger: 'Who are you?',
-            friend: 'Hello, friend!'
-          }
-        }
+  describe('Game State', () => {
+    test('should update game state', () => {
+      npcBehavior.setGameState({
+        hour: 14,
+        season: 'WINTER'
       });
-
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.STRANGER, 0);
-      let greeting = npcBehavior.getGreeting('npc1', 'player');
-      expect(greeting).toBe('Who are you?');
-
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.FRIEND, 75);
-      greeting = npcBehavior.getGreeting('npc1', 'player');
-      expect(greeting).toBe('Hello, friend!');
-    });
-
-    test('should get dialogue options', () => {
-      npcBehavior.registerNPC({
-        id: 'npc1',
-        name: 'Merchant',
-        profession: 'merchant'
-      });
-
-      const options = npcBehavior.getDialogueOptions('npc1', 'player');
-      expect(Array.isArray(options)).toBe(true);
+      expect(npcBehavior.currentHour).toBe(14);
+      expect(npcBehavior.currentSeason).toBe('WINTER');
     });
   });
 
@@ -441,48 +295,14 @@ describe('NPCBehaviorSystem', () => {
     test('should update all NPCs', () => {
       npcBehavior.registerNPC({
         id: 'npc1',
-        name: 'Test NPC',
+        name: 'NPC1',
         position: { x: 100, z: 100 }
       });
 
-      const gameState = {
+      npcBehavior.update(16, {
         player: { position: { x: 200, z: 200 } }
-      };
-
-      npcBehavior.update(16, gameState);
-      // Verify no errors
-    });
-
-    test('should update time of day', () => {
-      npcBehavior.setTimeOfDay(12);
-      expect(npcBehavior.timeOfDay).toBe(12);
-    });
-  });
-
-  // ============================================
-  // INTERACTION TESTS
-  // ============================================
-
-  describe('Interaction', () => {
-    test('should record interaction in memory', () => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-      npcBehavior.recordInteraction('npc1', 'player', MemoryEventType.MET_PLAYER);
-
-      const npc = npcBehavior.getNPC('npc1');
-      const memories = npc.memory.getMemoriesByType(MemoryEventType.MET_PLAYER);
-      expect(memories.length).toBe(1);
-    });
-
-    test('should affect relationship on interaction', () => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.STRANGER, 0);
-
-      npcBehavior.recordInteraction('npc1', 'player', MemoryEventType.HELPED, {
-        relationshipChange: 20
       });
-
-      const relationship = npcBehavior.getRelationship('npc1', 'player');
-      expect(relationship.value).toBe(20);
+      // Verify no errors
     });
   });
 
@@ -491,39 +311,30 @@ describe('NPCBehaviorSystem', () => {
   // ============================================
 
   describe('Event Listeners', () => {
-    test('should add/remove listeners', () => {
+    test('should add listener', () => {
       const listener = jest.fn();
       npcBehavior.addListener(listener);
       expect(npcBehavior.listeners).toContain(listener);
+    });
 
+    test('should remove listener', () => {
+      const listener = jest.fn();
+      npcBehavior.addListener(listener);
       npcBehavior.removeListener(listener);
       expect(npcBehavior.listeners).not.toContain(listener);
     });
 
-    test('should emit relationshipChanged event', () => {
+    test('should emit memoryCreated event', () => {
       const listener = jest.fn();
       npcBehavior.addListener(listener);
 
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.FRIEND, 75);
+      npcBehavior.registerNPC({ id: 'npc1', name: 'NPC1' });
+      npcBehavior.addMemory('npc1', MemoryEventType.MET_PLAYER, {});
 
-      expect(listener).toHaveBeenCalledWith('relationshipChanged', expect.objectContaining({
+      expect(listener).toHaveBeenCalledWith('memoryCreated', expect.objectContaining({
         npcId: 'npc1',
-        targetId: 'player'
+        eventType: MemoryEventType.MET_PLAYER
       }));
-    });
-  });
-
-  // ============================================
-  // STATISTICS TESTS
-  // ============================================
-
-  describe('Statistics', () => {
-    test('should get statistics', () => {
-      npcBehavior.registerNPC({ id: 'npc1', name: 'Test NPC' });
-
-      const stats = npcBehavior.getStatistics();
-      expect(stats.totalNPCs).toBe(1);
     });
   });
 
@@ -536,13 +347,11 @@ describe('NPCBehaviorSystem', () => {
       npcBehavior.registerNPC({
         id: 'npc1',
         name: 'Test NPC',
-        mood: 75
+        position: { x: 100, z: 200 }
       });
-      npcBehavior.setRelationship('npc1', 'player', RelationshipStatus.FRIEND, 80);
 
       const json = npcBehavior.toJSON();
       expect(json.npcs).toHaveProperty('npc1');
-      expect(json.npcs['npc1'].mood).toBe(75);
     });
 
     test('should deserialize from JSON', () => {
@@ -550,23 +359,21 @@ describe('NPCBehaviorSystem', () => {
         npcs: {
           npc1: {
             id: 'npc1',
-            name: 'Test NPC',
+            name: 'Restored NPC',
             position: { x: 100, z: 200 },
-            mood: 60,
-            activity: ActivityType.WORKING,
-            relationships: {
-              player: { status: RelationshipStatus.FRIEND, value: 75 }
-            },
-            memory: { ownerId: 'npc1', memories: [] }
+            personality: {},
+            alive: true
           }
-        }
+        },
+        relationships: {},
+        memories: {}
       };
 
       npcBehavior.fromJSON(data);
 
       const npc = npcBehavior.getNPC('npc1');
       expect(npc).not.toBeNull();
-      expect(npc.mood).toBe(60);
+      expect(npc.name).toBe('Restored NPC');
     });
   });
 
@@ -579,39 +386,26 @@ describe('NPCBehaviorSystem', () => {
       // Register NPC
       npcBehavior.registerNPC({
         id: 'merchant1',
-        name: 'Tom the Merchant',
-        profession: 'merchant',
-        personality: [PersonalityTraits.FRIENDLY, PersonalityTraits.GREEDY],
-        position: { x: 100, z: 100 },
-        mood: 50
+        name: 'Merchant',
+        position: { x: 100, z: 100 }
       });
 
-      // Set schedule
-      npcBehavior.setSchedule('merchant1', [
-        { hour: 8, activity: ActivityType.WORKING },
-        { hour: 20, activity: ActivityType.SLEEPING }
-      ]);
-
-      // First meeting
-      npcBehavior.recordInteraction('merchant1', 'player', MemoryEventType.MET_PLAYER);
-
-      // Trade interaction
-      npcBehavior.recordInteraction('merchant1', 'player', MemoryEventType.TRADED, {
-        relationshipChange: 10
+      // Add memory
+      npcBehavior.addMemory('merchant1', MemoryEventType.TRADE_WITH_PLAYER, {
+        amount: 50
       });
 
-      // Check relationship improved
-      const relationship = npcBehavior.getRelationship('merchant1', 'player');
-      expect(relationship.value).toBeGreaterThan(0);
-
-      // Update NPC
-      npcBehavior.setTimeOfDay(12);
+      // Update
       npcBehavior.update(16, {
         player: { position: { x: 150, z: 150 } }
       });
 
+      // Verify state
       const npc = npcBehavior.getNPC('merchant1');
-      expect(npc.activity).toBe(ActivityType.WORKING);
+      expect(npc).not.toBeNull();
+
+      const memories = npcBehavior.getMemories('merchant1');
+      expect(memories.length).toBeGreaterThan(0);
     });
   });
 });

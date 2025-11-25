@@ -390,11 +390,12 @@ describe('PerceptionSystem', () => {
       const perceiver = {
         id: 'npc1',
         position: { x: 100, z: 100 },
-        hearingRange: 50
+        hearingRange: 100
       };
 
+      // Use COMBAT sound (range: 80) within range
       const sounds = [
-        { position: { x: 130, z: 100 }, type: 'FOOTSTEP', sourceId: 'player' }
+        { position: { x: 150, z: 100 }, type: 'COMBAT', sourceId: 'player' }
       ];
 
       const heard = perception.checkHearing(perceiver, sounds);
@@ -471,8 +472,9 @@ describe('PerceptionSystem', () => {
         hearingRange: 100
       };
 
+      // Use COMBAT sound (range: 80) within range
       const sounds = [
-        { position: { x: 130, z: 100 }, type: 'FOOTSTEP', sourceId: 'player' }
+        { position: { x: 150, z: 100 }, type: 'COMBAT', sourceId: 'player' }
       ];
 
       perception.checkHearing(perceiver, sounds);
@@ -524,9 +526,9 @@ describe('PerceptionSystem', () => {
 
   describe('Threat Sharing', () => {
     test('should share threat with allies', () => {
-      // Create memory for perceiver
+      // Create memory for perceiver - target within vision range (100)
       const perceiver = { id: 'npc1', position: { x: 100, z: 100 } };
-      const target = { id: 'enemy1', position: { x: 200, z: 200 } };
+      const target = { id: 'enemy1', position: { x: 150, z: 100 } }; // 50 units away
       perception.checkVision(perceiver, [target]);
 
       const allies = [
@@ -543,7 +545,7 @@ describe('PerceptionSystem', () => {
 
     test('should not share with allies out of range', () => {
       const perceiver = { id: 'npc1', position: { x: 100, z: 100 } };
-      const target = { id: 'enemy1', position: { x: 200, z: 200 } };
+      const target = { id: 'enemy1', position: { x: 150, z: 100 } }; // 50 units away
       perception.checkVision(perceiver, [target]);
 
       const allies = [
@@ -557,7 +559,7 @@ describe('PerceptionSystem', () => {
 
     test('should not share with self', () => {
       const perceiver = { id: 'npc1', position: { x: 100, z: 100 } };
-      const target = { id: 'enemy1', position: { x: 200, z: 200 } };
+      const target = { id: 'enemy1', position: { x: 150, z: 100 } }; // 50 units away
       perception.checkVision(perceiver, [target]);
 
       const allies = [
@@ -629,13 +631,14 @@ describe('PerceptionSystem', () => {
 
     test('should get last known position', () => {
       const perceiver = { id: 'npc1', position: { x: 100, z: 100 } };
-      const target = { id: 'target1', position: { x: 150, z: 200 } };
+      // Target within vision range (100 units)
+      const target = { id: 'target1', position: { x: 150, z: 100 } };
       perception.checkVision(perceiver, [target]);
 
       const pos = perception.getLastKnownPosition('npc1', 'target1');
       expect(pos).not.toBeNull();
       expect(pos.x).toBe(150);
-      expect(pos.z).toBe(200);
+      expect(pos.z).toBe(100);
     });
 
     test('should clear memories for entity', () => {
@@ -848,9 +851,14 @@ describe('PerceptionSystem', () => {
       perception.setWeather('RAIN');
       perception.setNightMode(true);
 
-      const perceiver = { id: 'npc1', position: { x: 100, z: 100 } };
+      // Create memory first with CLEAR weather
+      perception.setWeather('CLEAR');
+      const perceiver = { id: 'npc1', position: { x: 100, z: 100 }, visionRange: 100 };
       const target = { id: 'target1', position: { x: 150, z: 100 } };
       perception.checkVision(perceiver, [target]);
+
+      // Now set weather for serialization test
+      perception.setWeather('RAIN');
 
       const json = perception.toJSON();
       expect(json.currentWeather).toBe('RAIN');

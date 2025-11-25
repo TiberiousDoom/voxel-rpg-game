@@ -364,20 +364,28 @@ describe('EconomicAISystem', () => {
     });
 
     test('should apply reputation modifier', () => {
-      const merchant = economy.registerMerchant({
-        name: 'Test',
-        homeMarket: 'market1',
-        currentMarket: 'market1'
+      // Register market with swords for testing (higher price item)
+      economy.registerMarket('market2', {
+        initialSupply: { sword: 50 }
       });
 
+      const merchant = economy.registerMerchant({
+        name: 'Test',
+        homeMarket: 'market2',
+        currentMarket: 'market2'
+      });
+
+      // High reputation for noticeable discount
       economy.playerReputation.set(merchant.id, 50);
 
-      const normalPrice = economy.calculatePrice('bread', 'market1');
-      const discountedPrice = economy.calculatePrice('bread', 'market1', {
+      // Use sword (base price 80) to avoid rounding issues with low-price items
+      const normalPrice = economy.calculatePrice('sword', 'market2');
+      const discountedPrice = economy.calculatePrice('sword', 'market2', {
         forPlayer: true,
         merchantId: merchant.id
       });
 
+      // With 50 reputation and 0.002 effect, discount is 10%
       expect(discountedPrice).toBeLessThan(normalPrice);
     });
 
@@ -623,14 +631,16 @@ describe('EconomicAISystem', () => {
     });
 
     test('should update merchants', () => {
-      const merchant = economy.registerMerchant({
-        name: 'Test',
-        tradeRoute: ['market1', 'market2'],
-        state: 'TRAVELING'
-      });
-
       economy.registerMarket('market1');
       economy.registerMarket('market2');
+
+      const merchant = economy.registerMerchant({
+        name: 'Test',
+        tradeRoute: ['market1', 'market2']
+      });
+
+      // Set state to TRAVELING after registration (Merchant class defaults to IDLE)
+      merchant.state = 'TRAVELING';
 
       economy.update(1000);
 

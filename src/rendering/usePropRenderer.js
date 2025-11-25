@@ -2,6 +2,7 @@
  * usePropRenderer.js - Prop Rendering Hook
  *
  * Renders environmental props (trees, rocks, etc.) on canvas with:
+ * - Sprite-based rendering with fallback to colored shapes
  * - Sprite batching (group by type for performance)
  * - LOD (Level of Detail) system
  * - Z-sorting for correct depth
@@ -10,7 +11,9 @@
  * Part of Phase 3: Environmental Props & Resources
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef, useEffect } from 'react';
+import SpriteLoader from './SpriteLoader.js';
+import { ENVIRONMENT_SPRITE_MANIFEST } from '../assets/sprite-manifest.js';
 
 /**
  * LOD (Level of Detail) thresholds
@@ -124,6 +127,7 @@ const calculateLOD = (propX, propZ, cameraX, cameraZ, tileSize) => {
  * @param {boolean} options.enableLOD - Enable LOD system (default: true)
  * @param {boolean} options.enableBatching - Enable sprite batching (default: true)
  * @param {boolean} options.showPropHealth - Show health bars (default: false)
+ * @param {boolean} options.useSprites - Use sprite images (default: true)
  * @returns {object} Rendering functions
  */
 export const usePropRenderer = (options = {}) => {
@@ -131,8 +135,51 @@ export const usePropRenderer = (options = {}) => {
     tileSize = 40,
     enableLOD = true,
     enableBatching = true,
-    showPropHealth = false
+    showPropHealth = false,
+    useSprites = true
   } = options;
+
+  // Sprite loading state
+  const spriteLoaderRef = useRef(null);
+  const spritesRef = useRef({});
+  const spritesLoadedRef = useRef(false);
+
+  // Initialize sprite loader and load sprites
+  useEffect(() => {
+    if (!useSprites) return;
+
+    if (!spriteLoaderRef.current) {
+      spriteLoaderRef.current = new SpriteLoader();
+    }
+
+    const loadSprites = async () => {
+      const loader = spriteLoaderRef.current;
+      const loadPromises = Object.entries(ENVIRONMENT_SPRITE_MANIFEST).map(async ([propType, data]) => {
+        try {
+          const key = `env_${propType}`;
+          const sprite = await loader.loadSprite(key, data.sprite);
+          spritesRef.current[propType] = {
+            image: sprite,
+            size: data.size
+          };
+          return { propType, success: true };
+        } catch (error) {
+          // Silent fail - will use colored shape fallback
+          return { propType, success: false };
+        }
+      });
+
+      const results = await Promise.all(loadPromises);
+      const successCount = results.filter(r => r.success).length;
+      if (successCount > 0) {
+        spritesLoadedRef.current = true;
+        // eslint-disable-next-line no-console
+        console.log(`[PropRenderer] ${successCount}/${results.length} environment sprites loaded`);
+      }
+    };
+
+    loadSprites();
+  }, [useSprites]);
 
   /**
    * Render props within viewport
@@ -237,16 +284,57 @@ export const usePropRenderer = (options = {}) => {
     const x = prop._canvasX;
     const y = prop._canvasY;
 
-    // Get prop color (placeholder until sprites are implemented)
+    // Get prop color (fallback)
     const color = getPropColor(variant);
+
+    // Try to get sprite for this variant
+    const spriteData = spritesRef.current[variant];
+    const canUseSprite = useSprites && spritesLoadedRef.current && spriteData;
 
     // Render based on LOD level
     if (lod === LOD_LEVELS.FULL) {
-      // Full detail rendering
-      renderFullDetailProp(ctx, x, y, tileSize, color, prop, showHealth);
+      if (canUseSprite) {
+        // Sprite-based rendering
+        renderSpriteDetailProp(ctx, x, y, tileSize, spriteData, prop, showHealth);
+      } else {
+        // Full detail rendering with colored shapes (fallback)
+        renderFullDetailProp(ctx, x, y, tileSize, color, prop, showHealth);
+      }
     } else {
       // Simplified rendering (LOD_LEVELS.SIMPLE)
       renderSimpleProp(ctx, x, y, tileSize, color);
+    }
+  };
+
+  /**
+   * Render prop with sprite image
+   * @private
+   */
+  const renderSpriteDetailProp = (ctx, x, y, size, spriteData, prop, showHealth) => {
+    // Draw the sprite centered in the tile
+    const spriteWidth = spriteData.size.width;
+    const spriteHeight = spriteData.size.height;
+
+    // Scale sprite to fit tile if needed
+    const scale = Math.min(size / spriteWidth, size / spriteHeight);
+    const drawWidth = spriteWidth * scale;
+    const drawHeight = spriteHeight * scale;
+
+    // Center the sprite in the tile
+    const offsetX = (size - drawWidth) / 2;
+    const offsetY = (size - drawHeight) / 2;
+
+    ctx.drawImage(
+      spriteData.image,
+      x + offsetX,
+      y + offsetY,
+      drawWidth,
+      drawHeight
+    );
+
+    // Show health bar (if enabled)
+    if (showHealth && prop.harvestable) {
+      renderHealthBar(ctx, x, y, size, prop.health, prop.maxHealth);
     }
   };
 

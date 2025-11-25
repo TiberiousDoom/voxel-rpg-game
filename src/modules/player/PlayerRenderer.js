@@ -45,6 +45,7 @@ export class PlayerRenderer {
     this.animationFrame = 0;
     this.lastAnimationUpdate = 0;
     this.animationSpeed = 150; // ms per frame
+    this.previousAnimState = 'idle'; // Track previous state to reset frame on change
 
     // Load sprites if enabled
     if (this.config.useSprites) {
@@ -205,12 +206,22 @@ export class PlayerRenderer {
       return;
     }
 
+    // Reset animation frame when state changes to prevent out-of-bounds access
+    if (animState !== this.previousAnimState) {
+      this.animationFrame = 0;
+      this.lastAnimationUpdate = Date.now();
+      this.previousAnimState = animState;
+    }
+
     // Update animation frame
     const now = Date.now();
     if (now - this.lastAnimationUpdate > this.animationSpeed) {
       this.animationFrame = (this.animationFrame + 1) % spriteData.frameCount;
       this.lastAnimationUpdate = now;
     }
+
+    // Ensure frame index is valid (defensive check)
+    const frameIndex = Math.min(this.animationFrame, spriteData.frameCount - 1);
 
     // Determine if we should flip the sprite based on facing direction
     const flipX = player.facing === 'left';
@@ -231,7 +242,7 @@ export class PlayerRenderer {
       ctx.scale(-1, 1);
       spriteData.sheet.drawFrameFlipped(
         ctx,
-        this.animationFrame,
+        frameIndex,
         -x - drawSize / 2,
         y - drawSize / 2,
         drawSize,
@@ -241,7 +252,7 @@ export class PlayerRenderer {
     } else {
       spriteData.sheet.drawFrameFlipped(
         ctx,
-        this.animationFrame,
+        frameIndex,
         x - drawSize / 2,
         y - drawSize / 2,
         drawSize,

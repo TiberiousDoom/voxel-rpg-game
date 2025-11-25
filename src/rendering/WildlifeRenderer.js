@@ -1,7 +1,7 @@
 /**
- * MonsterRenderer.js - Monster rendering system
+ * WildlifeRenderer.js - Wildlife rendering system
  *
- * Manages rendering of all monsters on the game canvas with:
+ * Manages rendering of all wildlife animals on the game canvas with:
  * - Sprite-based rendering with fallback to circles
  * - Health bars
  * - Smooth position interpolation
@@ -10,15 +10,28 @@
 
 import { NPCPositionInterpolator } from './NPCAnimations.js';
 import SpriteLoader from './SpriteLoader.js';
-import { MONSTER_SPRITE_MANIFEST } from '../assets/sprite-manifest.js';
+import { WILDLIFE_SPRITE_MANIFEST } from '../assets/sprite-manifest.js';
 
 /**
- * Monster Renderer Class
- * Manages rendering state and logic for all monsters
+ * Wildlife color map for fallback rendering
  */
-export class MonsterRenderer {
+const WILDLIFE_COLORS = {
+  DEER: '#8B4513', // Saddle brown
+  RABBIT: '#D2B48C', // Tan
+  SHEEP: '#F5F5DC', // Beige
+  BEAR: '#5C4033', // Dark brown
+  BOAR: '#696969', // Dim gray
+  WOLF: '#808080', // Gray
+  default: '#228B22' // Forest green
+};
+
+/**
+ * Wildlife Renderer Class
+ * Manages rendering state and logic for all wildlife
+ */
+export class WildlifeRenderer {
   /**
-   * Initialize Monster Renderer
+   * Initialize Wildlife Renderer
    * @param {Object} config - Renderer configuration
    */
   constructor(config = {}) {
@@ -31,14 +44,14 @@ export class MonsterRenderer {
       ...config
     };
 
-    // Position interpolators for each monster (monsterId -> NPCPositionInterpolator)
+    // Position interpolators for each wildlife (wildlifeId -> NPCPositionInterpolator)
     this.positionInterpolators = new Map();
 
     // Sprite loading
     this.spriteLoader = new SpriteLoader();
     this.spritesLoaded = false;
     this.spriteLoadError = false;
-    this.monsterSprites = {};
+    this.wildlifeSprites = {};
 
     // Load sprites if enabled
     if (this.config.useSprites) {
@@ -51,24 +64,24 @@ export class MonsterRenderer {
   }
 
   /**
-   * Load monster sprites asynchronously
+   * Load wildlife sprites asynchronously
    * @private
    */
   async _loadSprites() {
     try {
-      const loadPromises = Object.entries(MONSTER_SPRITE_MANIFEST).map(async ([monsterType, data]) => {
+      const loadPromises = Object.entries(WILDLIFE_SPRITE_MANIFEST).map(async ([wildlifeType, data]) => {
         try {
-          const key = `monster_${monsterType}`;
+          const key = `wildlife_${wildlifeType}`;
           const sprite = await this.spriteLoader.loadSprite(key, data.sprite);
-          this.monsterSprites[monsterType] = {
+          this.wildlifeSprites[wildlifeType] = {
             image: sprite,
             size: data.size
           };
-          return { monsterType, success: true };
+          return { wildlifeType, success: true };
         } catch (error) {
           // eslint-disable-next-line no-console
-          console.warn(`[MonsterRenderer] Failed to load ${monsterType} sprite:`, error.message);
-          return { monsterType, success: false };
+          console.warn(`[WildlifeRenderer] Failed to load ${wildlifeType} sprite:`, error.message);
+          return { wildlifeType, success: false };
         }
       });
 
@@ -78,46 +91,46 @@ export class MonsterRenderer {
       if (successCount > 0) {
         this.spritesLoaded = true;
         // eslint-disable-next-line no-console
-        console.log(`[MonsterRenderer] ${successCount}/${results.length} monster sprites loaded`);
+        console.log(`[WildlifeRenderer] ${successCount}/${results.length} wildlife sprites loaded`);
       } else {
-        throw new Error('No monster sprites loaded successfully');
+        throw new Error('No wildlife sprites loaded successfully');
       }
     } catch (error) {
       this.spriteLoadError = true;
       // eslint-disable-next-line no-console
-      console.warn('[MonsterRenderer] Failed to load sprites, using circle fallback:', error.message);
+      console.warn('[WildlifeRenderer] Failed to load sprites, using circle fallback:', error.message);
     }
   }
 
   /**
-   * Get or create position interpolator for monster
+   * Get or create position interpolator for wildlife
    * @private
-   * @param {string} monsterId - Monster ID
+   * @param {string} wildlifeId - Wildlife ID
    * @param {Object} initialPosition - Initial position
    * @returns {NPCPositionInterpolator} Position interpolator
    */
-  _getPositionInterpolator(monsterId, initialPosition) {
-    if (!this.positionInterpolators.has(monsterId)) {
-      this.positionInterpolators.set(monsterId, new NPCPositionInterpolator(initialPosition));
+  _getPositionInterpolator(wildlifeId, initialPosition) {
+    if (!this.positionInterpolators.has(wildlifeId)) {
+      this.positionInterpolators.set(wildlifeId, new NPCPositionInterpolator(initialPosition));
     }
-    return this.positionInterpolators.get(monsterId);
+    return this.positionInterpolators.get(wildlifeId);
   }
 
   /**
-   * Update monster positions for smooth interpolation
+   * Update wildlife positions for smooth interpolation
    * Call this frequently (e.g., in animation frame)
-   * @param {Array<Object>} monsters - Array of monster objects
+   * @param {Array<Object>} wildlife - Array of wildlife objects
    * @param {number} deltaTime - Time since last update (ms)
    */
-  updatePositions(monsters, deltaTime = 16) {
-    for (const monster of monsters) {
-      if (!monster || !monster.id || !monster.position) continue;
+  updatePositions(wildlife, deltaTime = 16) {
+    for (const animal of wildlife) {
+      if (!animal || !animal.id || !animal.position) continue;
 
-      const interpolator = this._getPositionInterpolator(monster.id, monster.position);
+      const interpolator = this._getPositionInterpolator(animal.id, animal.position);
 
       // Update target position if changed
       const currentTarget = interpolator.targetPosition;
-      const newPosition = monster.position;
+      const newPosition = animal.position;
 
       if (
         currentTarget.x !== newPosition.x ||
@@ -133,37 +146,37 @@ export class MonsterRenderer {
   }
 
   /**
-   * Render all monsters on canvas
+   * Render all wildlife on canvas
    * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Array<Object>} monsters - Array of monster objects
+   * @param {Array<Object>} wildlife - Array of wildlife objects
    * @param {Function} worldToCanvas - Function to convert world coords to canvas coords
    */
-  renderMonsters(ctx, monsters, worldToCanvas) {
-    if (!ctx || !monsters || !worldToCanvas) return;
+  renderWildlife(ctx, wildlife, worldToCanvas) {
+    if (!ctx || !wildlife || !worldToCanvas) return;
 
     const startTime = performance.now();
 
-    for (const monster of monsters) {
-      if (!monster || !monster.id || !monster.position) continue;
+    for (const animal of wildlife) {
+      if (!animal || !animal.id || !animal.position) continue;
 
-      // Skip dead monsters (let them fade out in animation)
-      if (!monster.alive && Date.now() - monster.deathTime > 1000) {
+      // Skip dead wildlife (let them fade out in animation)
+      if (!animal.alive && animal.deathTime && Date.now() - animal.deathTime > 1000) {
         continue;
       }
 
       // Get interpolated position
-      const interpolator = this._getPositionInterpolator(monster.id, monster.position);
+      const interpolator = this._getPositionInterpolator(animal.id, animal.position);
       const renderPosition = interpolator.currentPosition;
 
       // Convert to canvas coordinates
       const canvasPos = worldToCanvas(renderPosition.x, renderPosition.z);
 
-      // Render monster
-      this._renderMonster(ctx, monster, canvasPos, interpolator);
+      // Render wildlife
+      this._renderWildlife(ctx, animal, canvasPos, interpolator);
 
       // Debug visualization if enabled
       if (this.config.debugMode) {
-        this._renderDebugInfo(ctx, monster, canvasPos, interpolator);
+        this._renderDebugInfo(ctx, animal, canvasPos, interpolator);
       }
     }
 
@@ -172,55 +185,55 @@ export class MonsterRenderer {
   }
 
   /**
-   * Render a single monster
+   * Render a single wildlife animal
    * @private
    * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} monster - Monster object
+   * @param {Object} animal - Wildlife object
    * @param {Object} canvasPos - Canvas position {x, y}
    * @param {NPCPositionInterpolator} interpolator - Position interpolator
    */
-  _renderMonster(ctx, monster, canvasPos, interpolator) {
+  _renderWildlife(ctx, animal, canvasPos, interpolator) {
     const tileSize = this.config.tileSize;
 
     // Calculate center position
     const centerX = canvasPos.x + tileSize / 2;
     const centerY = canvasPos.y + tileSize / 2;
 
-    // Get monster type (uppercase to match manifest keys)
-    const monsterType = monster.type?.toUpperCase();
-    const spriteData = this.monsterSprites[monsterType];
+    // Get wildlife type (uppercase to match manifest keys)
+    const wildlifeType = animal.type?.toUpperCase();
+    const spriteData = this.wildlifeSprites[wildlifeType];
     const shouldUseSprite = this.config.useSprites && this.spritesLoaded && !this.spriteLoadError && spriteData;
 
     if (shouldUseSprite) {
-      this._renderMonsterWithSprite(ctx, monster, centerX, centerY, interpolator, spriteData);
+      this._renderWildlifeWithSprite(ctx, animal, centerX, centerY, interpolator, spriteData);
     } else {
-      this._renderMonsterWithCircle(ctx, monster, centerX, centerY, interpolator);
+      this._renderWildlifeWithCircle(ctx, animal, centerX, centerY, interpolator);
     }
 
     // Draw health bar if damaged
     if (this.config.showHealthBars) {
-      this._renderHealthBar(ctx, monster, centerX, centerY);
+      this._renderHealthBar(ctx, animal, centerX, centerY);
     }
   }
 
   /**
-   * Render monster using sprite
+   * Render wildlife using sprite
    * @private
    * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} monster - Monster object
+   * @param {Object} animal - Wildlife object
    * @param {number} centerX - Center X position
    * @param {number} centerY - Center Y position
    * @param {NPCPositionInterpolator} interpolator - Position interpolator
    * @param {Object} spriteData - Sprite data { image, size }
    */
-  _renderMonsterWithSprite(ctx, monster, centerX, centerY, interpolator, spriteData) {
+  _renderWildlifeWithSprite(ctx, animal, centerX, centerY, interpolator, spriteData) {
     const velocity = interpolator.getVelocity();
     const isMoving = Math.abs(velocity.x) > 0.01 || Math.abs(velocity.z) > 0.01;
 
     // Death animation - fade out
     let alpha = 1.0;
-    if (!monster.alive && monster.deathTime) {
-      const timeSinceDeath = Date.now() - monster.deathTime;
+    if (!animal.alive && animal.deathTime) {
+      const timeSinceDeath = Date.now() - animal.deathTime;
       alpha = Math.max(0, 1 - (timeSinceDeath / 1000));
     }
 
@@ -229,9 +242,9 @@ export class MonsterRenderer {
 
     // Pulsing animation for idle state
     let scale = 1.0;
-    if (!isMoving && monster.alive) {
-      const pulseSpeed = 2;
-      const pulseAmount = 0.1;
+    if (!isMoving && animal.alive) {
+      const pulseSpeed = 1.5;
+      const pulseAmount = 0.05;
       scale = 1 + Math.sin(Date.now() / 1000 * pulseSpeed * Math.PI * 2) * pulseAmount;
     }
 
@@ -260,19 +273,18 @@ export class MonsterRenderer {
   }
 
   /**
-   * Render monster using circle
+   * Render wildlife using circle (fallback)
    * @private
    */
-  _renderMonsterWithCircle(ctx, monster, centerX, centerY, interpolator) {
-    // Calculate direction for facing
+  _renderWildlifeWithCircle(ctx, animal, centerX, centerY, interpolator) {
     const velocity = interpolator.getVelocity();
     const isMoving = Math.abs(velocity.x) > 0.01 || Math.abs(velocity.z) > 0.01;
 
     // Death animation - fade out
     let alpha = 1.0;
-    if (!monster.alive && monster.deathTime) {
-      const timeSinceDeath = Date.now() - monster.deathTime;
-      alpha = Math.max(0, 1 - (timeSinceDeath / 1000)); // Fade over 1 second
+    if (!animal.alive && animal.deathTime) {
+      const timeSinceDeath = Date.now() - animal.deathTime;
+      alpha = Math.max(0, 1 - (timeSinceDeath / 1000));
     }
 
     ctx.save();
@@ -281,22 +293,23 @@ export class MonsterRenderer {
 
     // Pulsing animation for idle state
     let scale = 1.0;
-    if (!isMoving && monster.alive) {
-      const pulseSpeed = 2; // Hz
-      const pulseAmount = 0.1;
+    if (!isMoving && animal.alive) {
+      const pulseSpeed = 1.5;
+      const pulseAmount = 0.05;
       scale = 1 + Math.sin(Date.now() / 1000 * pulseSpeed * Math.PI * 2) * pulseAmount;
     }
     ctx.scale(scale, scale);
 
-    // Draw monster circle
-    const radius = monster.size || 12;
-    ctx.fillStyle = monster.tint || monster.color || '#ff0000';
+    // Draw wildlife circle
+    const radius = animal.size || 10;
+    const wildlifeType = animal.type?.toUpperCase() || 'default';
+    ctx.fillStyle = WILDLIFE_COLORS[wildlifeType] || WILDLIFE_COLORS.default;
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.fill();
 
     // Draw circle outline
-    ctx.strokeStyle = monster.alive ? '#000000' : '#666666';
+    ctx.strokeStyle = animal.alive ? '#000000' : '#666666';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
@@ -304,41 +317,41 @@ export class MonsterRenderer {
 
     // Draw type letter
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 12px Arial';
+    ctx.font = 'bold 10px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const typeLetter = monster.type ? monster.type.charAt(0) : 'M';
+    const typeLetter = animal.type ? animal.type.charAt(0).toUpperCase() : 'W';
     ctx.fillText(typeLetter, 0, 0);
 
     ctx.restore();
   }
 
   /**
-   * Render health bar for monster
+   * Render health bar for wildlife
    * @private
    * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} monster - Monster object
+   * @param {Object} animal - Wildlife object
    * @param {number} centerX - Center X position
    * @param {number} centerY - Center Y position
    */
-  _renderHealthBar(ctx, monster, centerX, centerY) {
-    const health = monster.health || 0;
-    const maxHealth = monster.maxHealth || 100;
+  _renderHealthBar(ctx, animal, centerX, centerY) {
+    const health = animal.health || 0;
+    const maxHealth = animal.maxHealth || 100;
     const healthPercent = health / maxHealth;
 
-    // Only show if damaged or always show for monsters
+    // Only show if damaged
     if (healthPercent >= 1.0) return;
 
     const barWidth = 24;
     const barHeight = 4;
     const barX = centerX - barWidth / 2;
-    const barY = centerY - (monster.size || 12) - 8;
+    const barY = centerY - (animal.size || 10) - 8;
 
     // Background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(barX, barY, barWidth, barHeight);
 
-    // Health fill (red/yellow/green based on health)
+    // Health fill (green for peaceful wildlife)
     const healthColor = healthPercent > 0.6 ? '#00ff00' :
                        healthPercent > 0.3 ? '#ffff00' :
                        '#ff0000';
@@ -355,11 +368,11 @@ export class MonsterRenderer {
    * Render debug information
    * @private
    * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} monster - Monster object
+   * @param {Object} animal - Wildlife object
    * @param {Object} canvasPos - Canvas position {x, y}
    * @param {NPCPositionInterpolator} interpolator - Position interpolator
    */
-  _renderDebugInfo(ctx, monster, canvasPos, interpolator) {
+  _renderDebugInfo(ctx, animal, canvasPos, interpolator) {
     const tileSize = this.config.tileSize;
     const centerX = canvasPos.x + tileSize / 2;
     const centerY = canvasPos.y + tileSize / 2;
@@ -367,9 +380,9 @@ export class MonsterRenderer {
     // Draw velocity vector
     if (interpolator.isMoving()) {
       const velocity = interpolator.getVelocity();
-      const scale = 20; // Visual scale for velocity vector
+      const scale = 20;
 
-      ctx.strokeStyle = '#ff00ff';
+      ctx.strokeStyle = '#00ff00';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
@@ -384,21 +397,20 @@ export class MonsterRenderer {
     ctx.fillStyle = '#000000';
     ctx.font = '8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`ID: ${monster.id.slice(-6)}`, centerX, centerY - 20);
-    ctx.fillText(`State: ${monster.aiState}`, centerX, centerY - 28);
-    ctx.fillText(`HP: ${monster.health}/${monster.maxHealth}`, centerX, centerY - 36);
+    ctx.fillText(`ID: ${animal.id.slice(-6)}`, centerX, centerY - 20);
+    ctx.fillText(`State: ${animal.aiState || 'idle'}`, centerX, centerY - 28);
   }
 
   /**
-   * Cleanup resources for removed monster
-   * @param {string} monsterId - Monster ID
+   * Cleanup resources for removed wildlife
+   * @param {string} wildlifeId - Wildlife ID
    */
-  removeMonster(monsterId) {
-    this.positionInterpolators.delete(monsterId);
+  removeWildlife(wildlifeId) {
+    this.positionInterpolators.delete(wildlifeId);
   }
 
   /**
-   * Clear all monster render data
+   * Clear all wildlife render data
    */
   clear() {
     this.positionInterpolators.clear();
@@ -418,7 +430,7 @@ export class MonsterRenderer {
    */
   getStats() {
     return {
-      monsterCount: this.positionInterpolators.size,
+      wildlifeCount: this.positionInterpolators.size,
       lastRenderTime: this.lastRenderTime.toFixed(2),
       renderCount: this.renderCount,
       debugMode: this.config.debugMode
@@ -426,4 +438,4 @@ export class MonsterRenderer {
   }
 }
 
-export default MonsterRenderer;
+export default WildlifeRenderer;

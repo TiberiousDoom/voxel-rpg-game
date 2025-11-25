@@ -16,6 +16,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useBuildingRenderer } from '../rendering/useBuildingRenderer.js'; // WF3
 import { useNPCRenderer } from '../rendering/useNPCRenderer.js'; // WF4
 import { useMonsterRenderer } from '../rendering/useMonsterRenderer.js'; // Monster rendering
+import { useWildlifeRenderer } from '../rendering/useWildlifeRenderer.js'; // Wildlife rendering
 import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terrain rendering
 import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
 import { useDamageNumberRenderer } from '../rendering/useDamageNumberRenderer.js'; // Damage number rendering
@@ -279,6 +280,7 @@ function GameViewport({
   const npcsRef = useRef(npcs);
   const buildingsRef = useRef(buildings);
   const monstersRef = useRef(monsters);
+  const wildlifeRef = useRef([]); // Wildlife from store
   const lootDropsRef = useRef([]); // Loot drops from store
   const damageNumbersRef = useRef([]); // Damage numbers from store
   const hoveredPositionRef = useRef(hoveredPosition);
@@ -292,12 +294,15 @@ function GameViewport({
   const lootDrops = useGameStore((state) => state.lootDrops);
   // Subscribe to damage numbers from store
   const damageNumbers = useGameStore((state) => state.damageNumbers);
+  // Subscribe to wildlife from store
+  const wildlife = useGameStore((state) => state.wildlife);
 
   // Update refs when props change (prevents useCallback recreation)
   useEffect(() => {
     npcsRef.current = npcs;
     buildingsRef.current = buildings;
     monstersRef.current = monsters;
+    wildlifeRef.current = wildlife;
     lootDropsRef.current = lootDrops;
     damageNumbersRef.current = damageNumbers;
     hoveredPositionRef.current = hoveredPosition;
@@ -305,7 +310,7 @@ function GameViewport({
     debugModeRef.current = debugMode;
     enablePlayerMovementRef.current = enablePlayerMovement;
     // canInteract and closestInteractable updated in separate useEffect below
-  }, [npcs, buildings, monsters, lootDrops, damageNumbers, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
+  }, [npcs, buildings, monsters, wildlife, lootDrops, damageNumbers, hoveredPosition, selectedBuildingType, debugMode, enablePlayerMovement]);
 
   // Monster AI system
   const monsterAIRef = useRef(null);
@@ -481,6 +486,14 @@ function GameViewport({
 
   // Monster Renderer integration
   const monsterRenderer = useMonsterRenderer({
+    tileSize: TILE_SIZE,
+    showHealthBars: !isMobileDevice, // Hide health bars on mobile
+    enableAnimations: true,
+    debugMode: debugMode
+  });
+
+  // Wildlife Renderer integration
+  const wildlifeRenderer = useWildlifeRenderer({
     tileSize: TILE_SIZE,
     showHealthBars: !isMobileDevice, // Hide health bars on mobile
     enableAnimations: true,
@@ -820,6 +833,15 @@ function GameViewport({
              monster.position.z <= viewportBounds.bottom;
     });
 
+    // Filter visible wildlife (use ref to avoid useCallback recreation!)
+    const visibleWildlife = (wildlifeRef.current || []).filter(animal => {
+      if (!animal || !animal.position) return false;
+      return animal.position.x >= viewportBounds.left &&
+             animal.position.x <= viewportBounds.right &&
+             animal.position.z >= viewportBounds.top &&
+             animal.position.z <= viewportBounds.bottom;
+    });
+
     // Draw grid with camera offset (optimized for mobile)
     // isMobile is already cached above, use it directly!
 
@@ -1070,6 +1092,9 @@ function GameViewport({
     // Render monsters using MonsterRenderer (already filtered)
     monsterRenderer.renderMonsters(ctx, visibleMonsters, worldToCanvas);
 
+    // Render wildlife using WildlifeRenderer (already filtered)
+    wildlifeRenderer.renderWildlife(ctx, visibleWildlife, worldToCanvas);
+
     // Render loot drops (Phase 2: Loot System)
     if (lootDropsRef.current && lootDropsRef.current.length > 0) {
       const currentTime = performance.now();
@@ -1266,7 +1291,7 @@ function GameViewport({
         }
       }
     }
-  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops, renderDamageNumbers, gameManager]);
+  }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, wildlifeRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops, renderDamageNumbers, gameManager]);
 
   /**
    * Terrain tool handlers
@@ -1668,6 +1693,11 @@ function GameViewport({
         // Update monster positions before rendering
         if (monsterRenderer && monstersRef.current) {
           monsterRenderer.updatePositions(monstersRef.current, deltaTime * 1000); // Convert back to ms
+        }
+
+        // Update wildlife positions before rendering
+        if (wildlifeRenderer && wildlifeRef.current) {
+          wildlifeRenderer.updatePositions(wildlifeRef.current, deltaTime * 1000); // Convert back to ms
         }
 
         // Clean up dead monsters after fade animation completes (1 second)

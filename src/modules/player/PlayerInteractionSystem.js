@@ -14,6 +14,7 @@ export const INTERACTION_TYPES = {
   RESOURCE: 'RESOURCE',
   CHEST: 'CHEST',
   PROP: 'PROP', // Phase 3A: Harvestable props (trees, rocks, etc.)
+  DUNGEON_ENTRANCE: 'DUNGEON_ENTRANCE', // Dungeon entry points
 };
 
 /**
@@ -29,6 +30,7 @@ export class PlayerInteractionSystem {
       onResourceInteract: null,
       onChestInteract: null,
       onPropInteract: null, // Phase 3A: Prop harvesting
+      onDungeonEntranceInteract: null, // Dungeon entry points
     };
   }
 
@@ -46,8 +48,9 @@ export class PlayerInteractionSystem {
    * @param {Array} resources - List of resource nodes
    * @param {Array} chests - List of chests
    * @param {Array} props - List of harvestable props (Phase 3A)
+   * @param {Array} dungeonEntrances - List of dungeon entrance structures
    */
-  updateNearbyInteractables(buildings = [], npcs = [], resources = [], chests = [], props = []) {
+  updateNearbyInteractables(buildings = [], npcs = [], resources = [], chests = [], props = [], dungeonEntrances = []) {
     this.nearbyInteractables = [];
 
     // Check buildings
@@ -104,6 +107,24 @@ export class PlayerInteractionSystem {
             type: INTERACTION_TYPES.PROP,
             object: prop,
             position: propPosition,
+          });
+        }
+      }
+    });
+
+    // Check dungeon entrances
+    dungeonEntrances.forEach(entrance => {
+      if (entrance && entrance.position) {
+        // Get the entrance point (center of the structure's entrance)
+        const entrancePos = entrance.getEntrancePosition?.() || {
+          x: entrance.position.x + Math.floor(entrance.width / 2),
+          z: entrance.position.z + Math.floor(entrance.height / 2)
+        };
+        if (this.player.isInInteractionRange(entrancePos)) {
+          this.nearbyInteractables.push({
+            type: INTERACTION_TYPES.DUNGEON_ENTRANCE,
+            object: entrance,
+            position: entrancePos,
           });
         }
       }
@@ -181,6 +202,12 @@ export class PlayerInteractionSystem {
         }
         break;
 
+      case INTERACTION_TYPES.DUNGEON_ENTRANCE:
+        if (this.callbacks.onDungeonEntranceInteract) {
+          this.callbacks.onDungeonEntranceInteract(closest.object);
+        }
+        break;
+
       default:
         // Unknown interaction type
         break;
@@ -204,11 +231,13 @@ export function usePlayerInteraction(player, {
   resources = [],
   chests = [],
   props = [], // Phase 3A: Harvestable props
+  dungeonEntrances = [], // Dungeon entry points
   onBuildingInteract,
   onNPCInteract,
   onResourceInteract,
   onChestInteract,
   onPropInteract, // Phase 3A: Prop harvesting callback
+  onDungeonEntranceInteract, // Dungeon entry callback
   enabled = true,
 }) {
   const systemRef = useRef(null);
@@ -225,20 +254,21 @@ export function usePlayerInteraction(player, {
       onResourceInteract,
       onChestInteract,
       onPropInteract,
+      onDungeonEntranceInteract,
     });
-  }, [player, onBuildingInteract, onNPCInteract, onResourceInteract, onChestInteract, onPropInteract]);
+  }, [player, onBuildingInteract, onNPCInteract, onResourceInteract, onChestInteract, onPropInteract, onDungeonEntranceInteract]);
 
   // Update nearby interactables
   useEffect(() => {
     if (!systemRef.current || !enabled) return;
 
     const intervalId = setInterval(() => {
-      systemRef.current.updateNearbyInteractables(buildings, npcs, resources, chests, props);
+      systemRef.current.updateNearbyInteractables(buildings, npcs, resources, chests, props, dungeonEntrances);
       setNearbyInteractables(systemRef.current.getNearbyInteractables());
     }, 100); // Update 10 times per second
 
     return () => clearInterval(intervalId);
-  }, [player, buildings, npcs, resources, chests, props, enabled]);
+  }, [player, buildings, npcs, resources, chests, props, dungeonEntrances, enabled]);
 
   // Handle E key for interaction
   const handleInteract = useCallback((event) => {

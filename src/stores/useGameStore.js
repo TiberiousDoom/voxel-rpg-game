@@ -284,6 +284,60 @@ const useGameStore = create((set, get) => ({
     return true;
   },
 
+  // Fire a projectile at a monster (ranged attack with visual)
+  // Returns: { success: boolean, reason?: string }
+  fireProjectileAtMonster: (monsterId) => {
+    const state = get();
+    const monster = state.enemies.find(m => m.id === monsterId);
+
+    if (!monster || !monster.alive) {
+      return { success: false, reason: 'invalid_target' };
+    }
+
+    // Ranged attacks cost mana
+    const manaCost = 5;
+    if (state.player.mana < manaCost) {
+      return { success: false, reason: 'no_mana' };
+    }
+
+    // Consume mana
+    set(prevState => ({
+      player: { ...prevState.player, mana: prevState.player.mana - manaCost }
+    }));
+
+    // Get player position
+    const playerPos = state.player.position;
+    const monsterPos = monster.position;
+
+    // Calculate direction from player to monster
+    const dx = monsterPos.x - playerPos[0];
+    const dy = (monsterPos.y || 1) - playerPos[1];
+    const dz = monsterPos.z - playerPos[2];
+    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    // Normalize direction
+    const direction = [dx / distance, dy / distance, dz / distance];
+
+    // Calculate damage for the projectile
+    const baseDamage = state.player.damage || 10;
+
+    // Create projectile
+    const projectile = {
+      id: `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      position: [playerPos[0], playerPos[1] + 1, playerPos[2]], // Start slightly above player
+      direction: direction,
+      speed: 25,
+      damage: baseDamage,
+      color: '#ffaa00', // Orange-yellow for basic attack
+      type: 'projectile',
+      lifetime: 3,
+    };
+
+    state.addProjectile(projectile);
+
+    return { success: true };
+  },
+
   // Handle monster death with loot drops
   handleMonsterDeath: (monster) => {
     const state = get();

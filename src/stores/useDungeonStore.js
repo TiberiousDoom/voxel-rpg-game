@@ -571,7 +571,6 @@ const useDungeonStore = create((set, get) => ({
     const entranceRoom = layout.getEntranceRoom();
 
     if (!entranceRoom) {
-      console.error('[DungeonStore] Failed to create entrance room');
       return false;
     }
 
@@ -1613,10 +1612,8 @@ const useDungeonStore = create((set, get) => ({
 
     try {
       localStorage.setItem('dungeonProgress', JSON.stringify(saveData));
-      console.log('[DungeonStore] Dungeon progress saved');
       return true;
-    } catch (err) {
-      console.error('[DungeonStore] Failed to save dungeon progress:', err);
+    } catch {
       return false;
     }
   },
@@ -1636,7 +1633,6 @@ const useDungeonStore = create((set, get) => ({
 
       // Validate save version
       if (data.version !== 1) {
-        console.warn('[DungeonStore] Incompatible save version, clearing...');
         localStorage.removeItem('dungeonProgress');
         return false;
       }
@@ -1644,7 +1640,6 @@ const useDungeonStore = create((set, get) => ({
       // Check if save is too old (24 hours)
       const maxAge = 24 * 60 * 60 * 1000;
       if (Date.now() - data.timestamp > maxAge) {
-        console.warn('[DungeonStore] Save too old, clearing...');
         localStorage.removeItem('dungeonProgress');
         return false;
       }
@@ -1706,10 +1701,9 @@ const useDungeonStore = create((set, get) => ({
         transitionDirection: null
       });
 
-      console.log('[DungeonStore] Dungeon progress loaded');
       return true;
     } catch (err) {
-      console.error('[DungeonStore] Failed to load dungeon progress:', err);
+      // Failed to load dungeon progress
       localStorage.removeItem('dungeonProgress');
       return false;
     }
@@ -1721,10 +1715,9 @@ const useDungeonStore = create((set, get) => ({
   clearDungeonProgress: () => {
     try {
       localStorage.removeItem('dungeonProgress');
-      console.log('[DungeonStore] Dungeon progress cleared');
       return true;
     } catch (err) {
-      console.error('[DungeonStore] Failed to clear dungeon progress:', err);
+      // Failed to clear dungeon progress
       return false;
     }
   },

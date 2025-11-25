@@ -1,8 +1,8 @@
 # Phase 4: Advanced AI & Behavior Systems - Implementation Plan
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-25
 **Author:** Claude (AI Assistant)
-**Status:** Draft
+**Status:** Active - In Progress
 **Purpose:** Comprehensive implementation plan for Advanced AI & Behavior Systems building on Phase 3 completion
 
 ---
@@ -10,18 +10,19 @@
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)
-2. [Overview & Goals](#overview--goals)
-3. [Core AI Systems Architecture](#core-ai-systems-architecture)
-4. [Specialized AI Systems](#specialized-ai-systems)
-5. [AI Integration Layers](#ai-integration-layers)
-6. [Implementation Plan](#implementation-plan)
-7. [Technical Specifications](#technical-specifications)
-8. [UI Components](#ui-components)
-9. [Benefits & Gameplay Impact](#benefits--gameplay-impact)
-10. [Risks & Mitigation](#risks--mitigation)
-11. [Success Metrics](#success-metrics)
-12. [Future Enhancements](#future-enhancements)
-13. [References](#references)
+2. [Existing Systems Analysis](#existing-systems-analysis)
+3. [Overview & Goals](#overview--goals)
+4. [Core AI Systems Architecture](#core-ai-systems-architecture)
+5. [Specialized AI Systems](#specialized-ai-systems)
+6. [AI Integration Layers](#ai-integration-layers)
+7. [Implementation Plan](#implementation-plan)
+8. [Technical Specifications](#technical-specifications)
+9. [UI Components](#ui-components)
+10. [Benefits & Gameplay Impact](#benefits--gameplay-impact)
+11. [Risks & Mitigation](#risks--mitigation)
+12. [Success Metrics](#success-metrics)
+13. [Future Enhancements](#future-enhancements)
+14. [References](#references)
 
 ---
 
@@ -31,10 +32,66 @@ This document outlines a comprehensive plan to implement **Advanced AI & Behavio
 
 **Key Metrics:**
 - **Estimated Scope:** 7 major AI systems + 2 integration layers
-- **Test Coverage Goal:** 90%+ with 600+ comprehensive unit tests
-- **Estimated Code:** 10,000-12,000 lines
-- **Timeline:** 12 weeks (phased rollout)
+- **Test Coverage Goal:** 90%+ with 400+ comprehensive unit tests
+- **Estimated Code:** 8,000-10,000 lines
 - **Integration:** Deep integration with all Phase 3 systems
+
+---
+
+## Existing Systems Analysis
+
+### What Already Exists
+
+The following AI-related systems are already implemented and will be **enhanced** rather than replaced:
+
+#### Phase 3A: NPC System (Complete)
+**Location:** `src/modules/npc-system/`
+
+| Component | Status | Purpose |
+|-----------|--------|---------|
+| `AutonomousDecision.js` | ✅ Complete | Priority-based decision making with emergency/critical/low thresholds |
+| `NPCNeedsTracker.js` | ✅ Complete | Tracks 4 needs: FOOD, REST, SOCIAL, SHELTER |
+| `IdleTaskManager.js` | ✅ Complete | Assigns idle tasks: WANDER, SOCIALIZE, REST, INSPECT |
+| `NPCManager.js` | ✅ Complete | Core NPC lifecycle management |
+| `PathfindingService.js` | ✅ Complete | Basic NPC pathfinding |
+
+#### Monster AI System
+**Location:** `src/systems/MonsterAI.js`
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| State Machine | ✅ Complete | IDLE, CHASE, ATTACK, FLEE, DEATH, PATROL |
+| Spatial Grid | ✅ Complete | Efficient proximity queries via `SpatialGrid.js` |
+| Aggro System | ✅ Complete | Range-based detection and de-aggro |
+| Patrol Behavior | ✅ Complete | Waypoint following with pauses |
+
+#### Dungeon System (Phase 4B - Recent)
+**Location:** `src/entities/`
+
+| Component | Status | Purpose |
+|-----------|--------|---------|
+| `DungeonRoom.js` | ✅ Complete | Room entities with connections, enemies, loot |
+| `DungeonLayout.js` | ✅ Complete | Room collection with BFS pathfinding |
+| `ProceduralDungeonGenerator.js` | ✅ Complete | Procedural dungeon generation |
+
+### What Needs to Be Built
+
+The following systems are **new** and will be implemented:
+
+1. **BehaviorTree.js** - Generic behavior tree architecture (new)
+2. **PerceptionSystem.js** - Vision, hearing, memory (new)
+3. **NPCBehaviorSystem.js** - Enhanced NPC behaviors building on existing NPC system
+4. **EnemyAISystem.js** - Enhanced enemy AI with group tactics
+5. **EconomicAISystem.js** - Supply/demand, trading, merchants (new)
+6. **WildlifeAISystem.js** - Animal behaviors, herding (new)
+7. **CompanionAISystem.js** - Player companions (new)
+8. **QuestAISystem.js** - Dynamic quest generation (new)
+
+### Coordinate System Note
+
+This is a **2D top-down game**. All positions use `{x, z}` coordinates where:
+- `x` = horizontal position
+- `z` = vertical position (not y, for consistency with the codebase)
 
 ---
 
@@ -397,117 +454,102 @@ export class PathfindingSystem {
 
 ## Implementation Plan
 
-### Phase 1: Foundation (Weeks 1-2)
+### Phase 4.1: Core AI Infrastructure
 
 **Goals:** Core infrastructure for all AI systems
 
-- [ ] Implement PathfindingSystem with A* algorithm
-- [ ] Create base Behavior Tree architecture
-- [ ] Build PerceptionSystem for vision/hearing
-- [ ] Integrate with TerrainSystem navigation data
-- [ ] Write comprehensive tests (150+ tests)
+- [ ] Implement A* PathfindingSystem (enhancing existing PathfindingService)
+- [ ] Create generic BehaviorTree architecture (Selector, Sequence, Decorator, Leaf nodes)
+- [ ] Build PerceptionSystem for vision/hearing with weather integration
+- [ ] Integrate with existing TerrainSystem and SpatialGrid
 
 **Deliverables:**
-- `PathfindingSystem.js` + tests
-- `BehaviorTree.js` + tests
-- `PerceptionSystem.js` + tests
-- Integration with existing TerrainSystem
+- `src/modules/ai/PathfindingSystem.js` + tests
+- `src/modules/ai/BehaviorTree.js` + tests
+- `src/modules/ai/PerceptionSystem.js` + tests
 
 ---
 
-### Phase 2: NPC Systems (Weeks 3-4)
+### Phase 4.2: Enhanced NPC Behavior System
 
-**Goals:** Living, believable NPCs with daily routines
+**Goals:** Living, believable NPCs building on existing Phase 3A NPC system
 
-- [ ] Implement NPCBehaviorSystem with needs & schedules
-- [ ] Add social relationship tracking
-- [ ] Create daily activity scheduling
+- [ ] Extend NPCBehaviorSystem with behavior tree integration
+- [ ] Add personality traits and memory system
+- [ ] Create daily activity scheduling with seasonal awareness
 - [ ] Integrate with weather/seasonal systems
-- [ ] Write tests (80+ tests)
 
 **Deliverables:**
-- `NPCBehaviorSystem.js` + tests
-- NPC data structures
+- `src/modules/ai/NPCBehaviorSystem.js` + tests
+- Enhanced NPC data structures with personality and memory
 - Schedule definitions
-- Weather/season integration hooks
 
 ---
 
-### Phase 3: Combat AI (Weeks 5-6)
+### Phase 4.3: Enhanced Enemy AI System
 
-**Goals:** Challenging, tactical enemy encounters
+**Goals:** Challenging, tactical enemy encounters building on MonsterAI
 
-- [ ] Implement EnemyAISystem with combat behaviors
+- [ ] Implement EnemyAISystem extending MonsterAI
 - [ ] Add group tactics and formations
-- [ ] Create faction system
-- [ ] Integrate with structure guarding (StructureInteractionSystem)
-- [ ] Write tests (70+ tests)
+- [ ] Create faction system with relations
+- [ ] Integrate with dungeon guarding (DungeonRoom)
 
 **Deliverables:**
-- `EnemyAISystem.js` + tests
+- `src/modules/ai/EnemyAISystem.js` + tests
 - Faction configuration
 - Combat behavior profiles
-- Structure guard assignments
 
 ---
 
-### Phase 4: Economic Systems (Weeks 7-8)
+### Phase 4.4: Economic AI System
 
 **Goals:** Dynamic economy with real supply/demand
 
-- [ ] Implement EconomicAISystem
-- [ ] Build supply/demand pricing
-- [ ] Create merchant behaviors
-- [ ] Add trade routes between settlements
-- [ ] Write tests (60+ tests)
+- [ ] Implement EconomicAISystem with market simulation
+- [ ] Build supply/demand pricing with seasonal effects
+- [ ] Create merchant behaviors and trade routes
+- [ ] Integrate with MaterialCraftingSystem
 
 **Deliverables:**
-- `EconomicAISystem.js` + tests
-- Market simulation logic
+- `src/modules/ai/EconomicAISystem.js` + tests
+- Market data structures
 - Merchant AI behaviors
-- Integration with MaterialCraftingSystem
 
 ---
 
-### Phase 5: Specialized AI (Weeks 9-10)
+### Phase 4.5: Specialized AI Systems
 
 **Goals:** Wildlife, companions, and dynamic quests
 
-- [ ] Implement WildlifeAISystem
-- [ ] Create CompanionAISystem
-- [ ] Build QuestAISystem
-- [ ] Integrate all specialized systems
-- [ ] Write tests (120+ tests)
+- [ ] Implement WildlifeAISystem with predator/prey, herding
+- [ ] Create CompanionAISystem with follow, combat, utility behaviors
+- [ ] Build QuestAISystem with dynamic generation
 
 **Deliverables:**
-- `WildlifeAISystem.js` + tests
-- `CompanionAISystem.js` + tests
-- `QuestAISystem.js` + tests
-- Animal/companion/quest definitions
+- `src/modules/ai/WildlifeAISystem.js` + tests
+- `src/modules/ai/CompanionAISystem.js` + tests
+- `src/modules/ai/QuestAISystem.js` + tests
 
 ---
 
-### Phase 6: Polish & Integration (Weeks 11-12)
+### Phase 4.6: Integration & Testing
 
-**Goals:** Optimization, balancing, and final integration
+**Goals:** Full integration and comprehensive testing
 
-- [ ] Optimize pathfinding performance (target: <5ms)
-- [ ] Balance AI difficulty across all systems
-- [ ] Create AI debug visualization tools
-- [ ] Integration testing across all systems
+- [ ] Integration testing across all AI systems
 - [ ] Performance profiling and optimization
-- [ ] Final bug fixes and polish
+- [ ] Update documentation
 
 **Deliverables:**
-- Performance optimizations
-- AI debug UI components
 - Complete integration tests
-- Documentation updates
+- Performance optimizations
+- Updated ARCHITECTURE.md and CURRENT_STATUS.md
 
 ---
 
-**Total Estimated Tests:** 600+ comprehensive tests
-**Total Lines of Code:** 10,000-12,000 lines
+**Total Estimated Tests:** 400+ comprehensive tests
+**Total Lines of Code:** 8,000-10,000 lines
 
 ---
 
@@ -736,6 +778,6 @@ const tradingBonus = terrainSystem.getEventEffectMultiplier('tradingBonus');
 ---
 
 **Document Created:** 2025-11-24
-**Version:** 1.0
-**Branch:** `claude/phase-3-integration-01G8eCiPtqd5MdsDDDFUq1v6`
-**Review Status:** Draft - Awaiting Approval
+**Version:** 1.1 (Updated 2025-11-25 with existing systems analysis)
+**Branch:** `claude/implement-advanced-ai-game-011PGq4kArUGh6UJpXRTEtME`
+**Review Status:** Active - Implementation in Progress

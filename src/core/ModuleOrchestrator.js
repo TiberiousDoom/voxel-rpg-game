@@ -101,6 +101,16 @@ class ModuleOrchestrator {
     this.terrainJobQueue = modules.terrainJobQueue || null;
     this.terrainWorkerBehavior = modules.terrainWorkerBehavior || null;
 
+    // Phase 4: AI System Manager
+    this.aiSystemManager = modules.aiSystemManager || null;
+    if (this.aiSystemManager) {
+      // Set references to game systems
+      this.aiSystemManager.npcManager = this.npcManager;
+      this.aiSystemManager.storage = this.storage;
+      this.aiSystemManager.territoryManager = this.territoryManager;
+      this.aiSystemManager.gridManager = this.grid;
+    }
+
     // Phase 3C: Achievement bonuses (multiplicative)
     this.achievementBonuses = {
       production: 1.0,
@@ -437,6 +447,35 @@ class ModuleOrchestrator {
       }
 
       // ============================================
+      // STEP 4.7: PHASE 4 - AI SYSTEM UPDATE
+      // ============================================
+      if (this.aiSystemManager) {
+        // Calculate game hour from tick count (24 hour cycle over ~288 ticks = 24 min real time)
+        const gameHour = Math.floor((this.tickCount % 288) / 12);
+
+        // Build AI game state
+        const aiGameState = {
+          hour: gameHour,
+          weather: this.gameState.weather || 'clear',
+          playerPosition: this.gameState.playerPosition || null,
+          playerHealth: this.gameState.playerHealth || 100
+        };
+
+        // Update all AI systems
+        const aiResult = this.aiSystemManager.update(1, aiGameState);
+
+        result.phase4AI = {
+          ticksProcessed: aiResult.tick,
+          npcBehavior: aiResult.npcBehavior,
+          enemyAI: aiResult.enemyAI,
+          wildlife: aiResult.wildlife,
+          companions: aiResult.companions,
+          quests: aiResult.quests,
+          economic: aiResult.economic
+        };
+      }
+
+      // ============================================
       // STEP 5: PHASE 5 - HYBRID GAME SYSTEMS
       // ============================================
       if (this.unifiedState) {
@@ -490,6 +529,20 @@ class ModuleOrchestrator {
               combatOccurred: progressResult.combatOccurred
             };
 
+            // Phase 4: Notify AI system of expedition combat for quest progress
+            if (this.aiSystemManager && progressResult.combatOccurred && progressResult.enemiesKilled > 0) {
+              // Emit kill events for monsters killed in expedition
+              for (let i = 0; i < progressResult.enemiesKilled; i++) {
+                const monsterType = progressResult.monsterTypes?.[i] || 'MONSTER';
+                this.aiSystemManager.onCombatEvent({
+                  type: 'kill',
+                  attackerId: 'expedition_party',
+                  targetId: `expedition_monster_${i}`,
+                  position: { x: 0, z: 0 }
+                });
+              }
+            }
+
             // Check if expedition completed
             if (progressResult.completed || progressResult.failed) {
               result.expeditionComplete = {
@@ -529,6 +582,21 @@ class ModuleOrchestrator {
                   defenders,
                   waveResult.enemies
                 );
+
+                // Phase 4: Notify AI system of combat events for quest progress
+                if (this.aiSystemManager && combatResult.enemiesKilled > 0) {
+                  // Emit kill events for each enemy type killed
+                  for (const enemy of waveResult.enemies) {
+                    if (!enemy.alive) {
+                      this.aiSystemManager.onCombatEvent({
+                        type: 'kill',
+                        attackerId: 'defenders',
+                        targetId: enemy.id,
+                        position: enemy.position || { x: 0, z: 0 }
+                      });
+                    }
+                  }
+                }
 
                 // Update raid stats
                 this.raidEventManager.updateRaidStats({
@@ -976,6 +1044,11 @@ class ModuleOrchestrator {
           social: 50,
           shelter: 100
         });
+      }
+
+      // Phase 4: Register NPC with AI system for behavior, perception, etc.
+      if (this.aiSystemManager) {
+        this.aiSystemManager.registerNPC(result.npc);
       }
 
       // Update game state immediately for UI reactivity

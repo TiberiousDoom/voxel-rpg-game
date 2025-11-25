@@ -1,6 +1,6 @@
 # Documentation Archive Index
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-25
 **Purpose:** Index of all archived documentation
 
 This directory contains historical documentation. For current, authoritative docs, see the **root directory**.
@@ -17,6 +17,8 @@ documentation/
 │   └── audits/            - Audit reports, investigations
 ├── history/               - Development notes, debugging
 ├── migration/             - Migration guides
+├── archive-code/          - Archived source code
+│   └── 3d-components/     - Archived 3D game components
 └── README.md              - This file
 ```
 
@@ -110,7 +112,7 @@ Guides for migrating between versions or architectures.
 
 ---
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-25
 **Maintained By:** Project team
 # Documentation Archive
 
@@ -280,6 +282,44 @@ Migration guides for major architecture changes.
 |------|-------------|------|
 | `3D_MIGRATION_GUIDE.md` | 3D migration guide | Historical |
 | `MIGRATION.md` | General migration guide | Historical |
+
+---
+
+## 📦 Archived Source Code
+
+**Location:** `documentation/archive-code/`
+
+Archived source code that has been removed from the active codebase but preserved for reference.
+
+### 3D Components (`archive-code/3d-components/`)
+
+**Archived:** November 25, 2025
+**Reason:** Project refocused to 2D Canvas version only
+
+| File | Description |
+|------|-------------|
+| `README.md` | Archive documentation with restoration guide |
+| `App3D.jsx` | Main 3D app entry point |
+| `GameSelector.jsx` | 2D/3D mode selector |
+| `Experience.jsx` | Main 3D scene with Physics |
+| `Player.jsx` | 3D player with movement |
+| `Enemy.jsx` | 3D enemy entities |
+| `VoxelTerrain.jsx` | 3D voxel terrain |
+| `Projectile.jsx` | 3D projectiles |
+| `ParticleEffect.jsx` | 3D particle effects |
+| `DamageNumber.jsx` | 3D damage numbers |
+| `XPOrb.jsx` | 3D XP orbs |
+| `LootDrop.jsx` | 3D loot drops |
+| `TargetMarker.jsx` | 3D target markers |
+| `TouchControls.jsx` | 3D touch input |
+| `CameraRotateControls.jsx` | 3D camera controls |
+| `WaveManager.jsx` | 3D wave management |
+
+**Dependencies removed from package.json:**
+- `three` - Three.js core
+- `@react-three/fiber` - React Three.js renderer
+- `@react-three/drei` - Three.js utilities
+- `@react-three/rapier` - Physics engine
 
 ---
 

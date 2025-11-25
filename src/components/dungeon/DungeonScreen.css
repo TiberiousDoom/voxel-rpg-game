@@ -1,0 +1,657 @@
+/**
+ * DungeonScreen.css - Styling for dungeon gameplay interface
+ */
+
+.dungeon-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 600px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+  color: #e0e0e0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+}
+
+/* Header */
+.dungeon-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid #3a3a5a;
+}
+
+.dungeon-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dungeon-title h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.dungeon-type-icon {
+  font-size: 1.8rem;
+}
+
+.dungeon-progress {
+  display: flex;
+  gap: 20px;
+  font-size: 1rem;
+  color: #aaa;
+}
+
+.dungeon-progress span {
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.boss-indicator {
+  color: #ffd700 !important;
+  font-weight: bold;
+}
+
+.exit-btn {
+  padding: 8px 16px;
+  background: #6a3a3a;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.exit-btn:hover {
+  background: #8a4a4a;
+}
+
+/* Main Content Layout */
+.dungeon-content {
+  display: flex;
+  flex: 1;
+  gap: 15px;
+  padding: 15px;
+  overflow: hidden;
+}
+
+/* Left Panel */
+.dungeon-left-panel {
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Navigation Panel */
+.navigation-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.navigation-panel h3 {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.nav-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.nav-row {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-btn {
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  border: 2px solid #4a4a6a;
+  border-radius: 8px;
+  background: #2a2a4a;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn.available {
+  background: #3a4a6a;
+  border-color: #5a6a8a;
+}
+
+.nav-btn.available:hover:not(:disabled) {
+  background: #4a5a7a;
+  transform: scale(1.05);
+}
+
+.nav-btn.blocked {
+  background: #2a2a3a;
+  border-color: #3a3a4a;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-center {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+}
+
+.nav-empty {
+  width: 50px;
+  height: 50px;
+}
+
+.combat-warning {
+  margin: 10px 0 0;
+  padding: 6px;
+  background: #6a3a3a;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  color: #faa;
+}
+
+/* Center Panel */
+.dungeon-center-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 400px;
+}
+
+/* Room Display */
+.room-display {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 3px solid #4a4a6a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.room-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #4a4a6a;
+}
+
+.room-icon {
+  font-size: 1.5rem;
+}
+
+.room-name {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.cleared-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  background: #3a6a3a;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #8f8;
+}
+
+/* Enemy List */
+.enemy-list {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.no-enemies {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.no-enemies .hint {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.enemy-card {
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid #4a4a5a;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.enemy-card:hover:not(.dead) {
+  border-color: #6a6a8a;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.enemy-card.selected {
+  border-color: #8a8aaa;
+  box-shadow: 0 0 10px rgba(138, 138, 170, 0.4);
+}
+
+.enemy-card.boss {
+  border-color: #8a3a3a;
+  background: rgba(100, 30, 30, 0.3);
+}
+
+.enemy-card.elite {
+  border-color: #8a6a3a;
+  background: rgba(100, 70, 30, 0.2);
+}
+
+.enemy-card.dead {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.enemy-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.enemy-name {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.boss-phase {
+  font-size: 0.8rem;
+  color: #f88;
+  padding: 2px 6px;
+  background: rgba(200, 50, 50, 0.3);
+  border-radius: 4px;
+}
+
+.enemy-health-bar {
+  height: 20px;
+  background: #1a1a2a;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.enemy-health-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.enemy-health-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.enemy-dead-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #a00;
+  border-radius: 6px;
+}
+
+/* Combat Actions */
+.combat-actions {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid #3a3a4a;
+}
+
+.attack-btn,
+.skill-btn {
+  flex: 1;
+  padding: 14px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+
+.attack-btn {
+  background: linear-gradient(135deg, #6a3a3a 0%, #8a4a4a 100%);
+  color: #fff;
+}
+
+.attack-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8a4a4a 0%, #aa5a5a 100%);
+  transform: translateY(-2px);
+}
+
+.skill-btn {
+  background: linear-gradient(135deg, #3a6a3a 0%, #4a8a4a 100%);
+  color: #fff;
+}
+
+.skill-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4a8a4a 0%, #5aaa5a 100%);
+  transform: translateY(-2px);
+}
+
+.attack-btn:disabled,
+.skill-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Right Panel */
+.dungeon-right-panel {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Player Stats Panel */
+.player-stats-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.player-stats-panel h3 {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  width: 30px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #aaa;
+}
+
+.bar-container {
+  flex: 1;
+  height: 18px;
+  background: #1a1a2a;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.bar-fill.health {
+  background: linear-gradient(90deg, #4a8a4a, #6aaa6a);
+}
+
+.bar-fill.mana {
+  background: linear-gradient(90deg, #4a6a8a, #6a8aaa);
+}
+
+.bar-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.player-combat-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #3a3a4a;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.exit-confirm-modal {
+  background: #2a2a3e;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.exit-confirm-modal h3 {
+  margin: 0 0 16px;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.exit-confirm-modal p {
+  margin: 8px 0;
+  color: #aaa;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.confirm-btn,
+.cancel-btn {
+  flex: 1;
+  padding: 12px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.confirm-btn {
+  background: #6a3a3a;
+  color: #fff;
+}
+
+.confirm-btn:hover {
+  background: #8a4a4a;
+}
+
+.cancel-btn {
+  background: #3a4a6a;
+  color: #fff;
+}
+
+.cancel-btn:hover {
+  background: #4a5a7a;
+}
+
+/* Controls Hint */
+.controls-hint {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid #3a3a4a;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.controls-hint span {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+/* Rewards Screen */
+.dungeon-rewards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rewards-container {
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #5a5a7a;
+  border-radius: 16px;
+  padding: 40px 60px;
+  text-align: center;
+  max-width: 500px;
+}
+
+.rewards-container h2 {
+  margin: 0 0 20px;
+  font-size: 2rem;
+  color: #ffd700;
+}
+
+.death-message {
+  color: #f88;
+  margin-bottom: 20px;
+}
+
+.rewards-summary {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin: 30px 0;
+}
+
+.reward-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.reward-icon {
+  font-size: 2rem;
+}
+
+.reward-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.rewards-stats {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.rewards-stats div {
+  margin: 8px 0;
+  color: #aaa;
+}
+
+.boss-defeated {
+  color: #ffd700 !important;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.exit-button {
+  padding: 14px 40px;
+  font-size: 1.1rem;
+  background: linear-gradient(135deg, #4a6a8a 0%, #5a7a9a 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.exit-button:hover {
+  background: linear-gradient(135deg, #5a7a9a 0%, #6a8aaa 100%);
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .dungeon-content {
+    flex-direction: column;
+  }
+
+  .dungeon-left-panel,
+  .dungeon-right-panel {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .dungeon-center-panel {
+    min-width: unset;
+  }
+}

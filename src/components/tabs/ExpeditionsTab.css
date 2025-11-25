@@ -343,3 +343,143 @@
   color: rgba(226, 232, 240, 0.7);
   line-height: 1.5;
 }
+
+/* Dungeon Selection */
+.dungeon-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dungeon-description {
+  margin: 0;
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.6);
+  font-style: italic;
+}
+
+.dungeon-card.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.dungeon-card.locked:hover {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.5);
+  transform: none;
+}
+
+.dungeon-locked-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  font-size: 11px;
+  color: #f87171;
+  font-weight: 600;
+}
+
+.dungeon-difficulty {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+}
+
+.dungeon-difficulty.normal {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.dungeon-difficulty.hard {
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+}
+
+.dungeon-difficulty.very-hard {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.stat-value.locked {
+  color: #f87171;
+}
+
+.stat-value.ready {
+  color: #22c55e;
+}
+
+.enter-dungeon-btn {
+  margin-top: 8px;
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+}
+
+.enter-dungeon-btn:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+/* Player Stats in Dungeon Selection */
+.player-dungeon-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* Expedition Divider */
+.expedition-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.expedition-divider::before,
+.expedition-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.expedition-divider span {
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* In Dungeon Notice */
+.in-dungeon-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px dashed rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+}
+
+.in-dungeon-notice .expedition-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.in-dungeon-notice p {
+  margin: 4px 0;
+  font-size: 12px;
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.in-dungeon-notice p:first-of-type {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+}

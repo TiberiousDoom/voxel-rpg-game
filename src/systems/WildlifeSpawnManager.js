@@ -11,7 +11,7 @@
 /* eslint-disable no-console */
 
 import { Wildlife } from '../entities/Wildlife.js';
-import { AnimalBehavior } from '../modules/ai/WildlifeAISystem.js';
+// AnimalBehavior imported for potential future use in behavior-based spawn filtering
 
 /**
  * Default wildlife spawn configuration

@@ -14,12 +14,7 @@
  */
 
 import {
-  BehaviorTree,
   BehaviorTreeBuilder,
-  Selector,
-  Sequence,
-  Action,
-  ConditionCheck,
   Blackboard,
   NodeStatus
 } from './BehaviorTree.js';
@@ -311,7 +306,7 @@ export class NPCBehaviorSystem {
     this.perceptionSystem.update(deltaTime);
 
     // Update each NPC
-    for (const [npcId, npc] of this.npcs) {
+    for (const [, npc] of this.npcs) {
       this._updateNPC(npc, deltaTime, gameState);
     }
   }

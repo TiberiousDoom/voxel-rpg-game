@@ -10,13 +10,12 @@
  */
 
 import {
-  BehaviorTree,
   BehaviorTreeBuilder,
   Blackboard,
   NodeStatus
 } from './BehaviorTree.js';
 
-import { PathfindingSystem, distance, normalize } from './PathfindingSystem.js';
+import { PathfindingSystem, distance } from './PathfindingSystem.js';
 
 /**
  * Companion types
@@ -341,6 +340,9 @@ export class CompanionAISystem {
       case CompanionCommand.RETURN:
         companion.state = CompanionState.RETURNING;
         break;
+      default:
+        // Unknown command, no state change
+        break;
     }
 
     this.stats.commandsExecuted++;
@@ -355,7 +357,7 @@ export class CompanionAISystem {
    * @param {Object} gameState - Current game state
    */
   update(deltaTime, gameState = {}) {
-    for (const [companionId, companion] of this.companions) {
+    for (const [, companion] of this.companions) {
       if (!companion.alive) continue;
 
       this._updateCompanion(companion, deltaTime, gameState);

@@ -11,7 +11,6 @@
  */
 
 import {
-  BehaviorTree,
   BehaviorTreeBuilder,
   Blackboard,
   NodeStatus
@@ -385,8 +384,8 @@ export class WildlifeAISystem {
       case ActivityPattern.NOCTURNAL:
         return this.isNight;
       case ActivityPattern.CREPUSCULAR:
-        return this.currentHour >= 5 && this.currentHour <= 8 ||
-               this.currentHour >= 17 && this.currentHour <= 20;
+        return (this.currentHour >= 5 && this.currentHour <= 8) ||
+               (this.currentHour >= 17 && this.currentHour <= 20);
       default:
         return true;
     }
@@ -404,7 +403,7 @@ export class WildlifeAISystem {
     this._updateHerds(deltaTime);
 
     // Update each animal
-    for (const [animalId, animal] of this.animals) {
+    for (const [, animal] of this.animals) {
       if (!animal.alive) continue;
 
       // Check for hibernation

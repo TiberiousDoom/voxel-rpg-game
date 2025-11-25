@@ -529,6 +529,20 @@ class ModuleOrchestrator {
               combatOccurred: progressResult.combatOccurred
             };
 
+            // Phase 4: Notify AI system of expedition combat for quest progress
+            if (this.aiSystemManager && progressResult.combatOccurred && progressResult.enemiesKilled > 0) {
+              // Emit kill events for monsters killed in expedition
+              for (let i = 0; i < progressResult.enemiesKilled; i++) {
+                const monsterType = progressResult.monsterTypes?.[i] || 'MONSTER';
+                this.aiSystemManager.onCombatEvent({
+                  type: 'kill',
+                  attackerId: 'expedition_party',
+                  targetId: `expedition_monster_${i}`,
+                  position: { x: 0, z: 0 }
+                });
+              }
+            }
+
             // Check if expedition completed
             if (progressResult.completed || progressResult.failed) {
               result.expeditionComplete = {
@@ -568,6 +582,21 @@ class ModuleOrchestrator {
                   defenders,
                   waveResult.enemies
                 );
+
+                // Phase 4: Notify AI system of combat events for quest progress
+                if (this.aiSystemManager && combatResult.enemiesKilled > 0) {
+                  // Emit kill events for each enemy type killed
+                  for (const enemy of waveResult.enemies) {
+                    if (!enemy.alive) {
+                      this.aiSystemManager.onCombatEvent({
+                        type: 'kill',
+                        attackerId: 'defenders',
+                        targetId: enemy.id,
+                        position: enemy.position || { x: 0, z: 0 }
+                      });
+                    }
+                  }
+                }
 
                 // Update raid stats
                 this.raidEventManager.updateRaidStats({
@@ -1015,6 +1044,11 @@ class ModuleOrchestrator {
           social: 50,
           shelter: 100
         });
+      }
+
+      // Phase 4: Register NPC with AI system for behavior, perception, etc.
+      if (this.aiSystemManager) {
+        this.aiSystemManager.registerNPC(result.npc);
       }
 
       // Update game state immediately for UI reactivity

@@ -1,0 +1,63 @@
+{
+  "id": "ruins_dungeon_entrance",
+  "name": "Ancient Ruins Entrance",
+  "type": "dungeon",
+  "dungeonType": "RUINS",
+  "width": 5,
+  "height": 5,
+  "biomes": ["desert"],
+  "rarity": 0.10,
+  "requiresDryLand": true,
+  "maxHeightVariation": 2,
+  "tiles": [
+    { "type": "sand_stone", "blocking": false },
+    { "type": "crumbled_pillar", "blocking": true },
+    { "type": "ancient_tile", "blocking": false },
+    { "type": "crumbled_pillar", "blocking": true },
+    { "type": "sand_stone", "blocking": false },
+
+    { "type": "crumbled_pillar", "blocking": true },
+    { "type": "ancient_tile", "blocking": false },
+    { "type": "hieroglyph_floor", "blocking": false },
+    { "type": "ancient_tile", "blocking": false },
+    { "type": "crumbled_pillar", "blocking": true },
+
+    { "type": "ancient_tile", "blocking": false },
+    { "type": "hieroglyph_floor", "blocking": false },
+    { "type": "tomb_stairs", "blocking": false },
+    { "type": "hieroglyph_floor", "blocking": false },
+    { "type": "ancient_tile", "blocking": false },
+
+    { "type": "crumbled_pillar", "blocking": true },
+    { "type": "ancient_tile", "blocking": false },
+    { "type": "hieroglyph_floor", "blocking": false },
+    { "type": "ancient_tile", "blocking": false },
+    { "type": "crumbled_pillar", "blocking": true },
+
+    { "type": "sand_stone", "blocking": false },
+    { "type": "crumbled_pillar", "blocking": true },
+    { "type": "ancient_tile", "blocking": false },
+    { "type": "crumbled_pillar", "blocking": true },
+    { "type": "sand_stone", "blocking": false }
+  ],
+  "lootSpawns": [],
+  "npcSpawns": [
+    {
+      "x": 2,
+      "z": 1,
+      "npcType": "sand_wraith",
+      "behavior": "guard",
+      "faction": "hostile"
+    }
+  ],
+  "entrance": {
+    "x": 2,
+    "z": 2
+  },
+  "visualStyle": {
+    "primaryColor": "#c4a35a",
+    "secondaryColor": "#8b7355",
+    "accentColor": "#d4af37"
+  },
+  "description": "Crumbling ruins of an ancient civilization. Mysterious symbols glow faintly on the walls."
+}

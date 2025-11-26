@@ -14,7 +14,7 @@
  * - Statistics tracking
  */
 
-import { HaulTask, HaulTaskStatus, HaulPriority } from './HaulTask.js';
+import { HaulTask, HaulPriority } from './HaulTask.js';
 
 /**
  * HaulingManager - Coordinates hauling operations

@@ -15,7 +15,7 @@
  *   const slot = manager.findNearestResourceSlot(npcPosition, 'wood');
  */
 
-import { Stockpile, ResourceCategory, RESOURCE_CATEGORIES } from './Stockpile.js';
+import { Stockpile } from './Stockpile.js';
 
 export class StockpileManager {
   /**

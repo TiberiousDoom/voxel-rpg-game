@@ -17,8 +17,7 @@
  *   });
  */
 
-import { BlockType, getBlockRequiredMaterial } from '../voxel/BlockTypes.js';
-import { ResourceType } from '../stockpile/Stockpile.js';
+import { getBlockRequiredMaterial } from '../voxel/BlockTypes.js';
 
 /**
  * Blueprint categories

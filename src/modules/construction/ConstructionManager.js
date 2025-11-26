@@ -15,8 +15,8 @@
  *   const site = manager.placeBlueprint('wooden_house', { x: 10, y: 10, z: 0 });
  */
 
-import { Blueprint, BlueprintCategory, BlueprintTier } from './Blueprint.js';
-import { ConstructionSite, SiteStatus, BlockStatus } from './ConstructionSite.js';
+import { Blueprint } from './Blueprint.js';
+import { ConstructionSite } from './ConstructionSite.js';
 
 export class ConstructionManager {
   /**

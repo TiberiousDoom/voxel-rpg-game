@@ -18,8 +18,7 @@ import {
   Selector,
   Sequence,
   Action,
-  ConditionCheck,
-  Decorator
+  ConditionCheck
 } from '../ai/BehaviorTree.js';
 
 /**
@@ -40,13 +39,6 @@ export const BuilderState = {
  * @returns {BehaviorTree}
  */
 export function createBuilderBehavior(npcId, managers) {
-  const {
-    haulingManager,
-    constructionManager,
-    stockpileManager,
-    jobManager
-  } = managers;
-
   const blackboard = {
     npcId,
     state: BuilderState.IDLE,

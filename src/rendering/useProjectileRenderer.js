@@ -170,7 +170,7 @@ export function useProjectileRenderer(options = {}) {
       gradient.addColorStop(0, proj.color);
       gradient.addColorStop(0.4, proj.color + 'CC'); // 80% opacity
       gradient.addColorStop(0.7, proj.color + '40'); // 25% opacity
-      gradient.addColorStop(1, 'transparent');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)'); // Fully transparent
 
       ctx.beginPath();
       ctx.arc(centerX, centerY, proj.size * 2, 0, Math.PI * 2);

@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import centralized z-index variables */
+/* Import centralized design system */
+@import './styles/tokens.css';
 @import './styles/z-index-layers.css';
 
 body {

@@ -1,0 +1,164 @@
+/**
+ * ProgressBar.css - Progress bar styles using design tokens
+ */
+
+/* Base Progress Bar */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+/* Progress Bar Track */
+.progress-bar-track {
+  flex: 1;
+  height: var(--progress-height);
+  background: var(--progress-bg);
+  border-radius: var(--progress-radius);
+  overflow: hidden;
+}
+
+/* Progress Bar Fill */
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--progress-radius);
+  transition: width var(--transition-slow);
+}
+
+.progress-bar-fill:not(.progress-bar-animated) {
+  transition: none;
+}
+
+/* Progress Bar Sizes */
+.progress-bar-small .progress-bar-track {
+  height: 4px;
+}
+
+.progress-bar-medium .progress-bar-track {
+  height: 8px;
+}
+
+.progress-bar-large .progress-bar-track {
+  height: 12px;
+}
+
+/* Progress Bar Variants */
+.progress-bar-default {
+  background: var(--color-accent);
+}
+
+.progress-bar-success {
+  background: var(--color-success);
+}
+
+.progress-bar-warning {
+  background: var(--color-warning);
+}
+
+.progress-bar-danger {
+  background: var(--color-danger);
+}
+
+/* Game-specific variants */
+.progress-bar-health {
+  background: linear-gradient(90deg, #dc2626, var(--color-health));
+}
+
+.progress-bar-mana {
+  background: linear-gradient(90deg, #1d4ed8, var(--color-mana));
+}
+
+.progress-bar-stamina {
+  background: linear-gradient(90deg, #15803d, var(--color-stamina));
+}
+
+.progress-bar-xp {
+  background: linear-gradient(90deg, #7c3aed, var(--color-xp));
+}
+
+.progress-bar-gold {
+  background: linear-gradient(90deg, #d97706, var(--color-gold));
+}
+
+/* Progress Bar Label */
+.progress-bar-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Indeterminate Animation */
+.progress-bar-indeterminate {
+  width: 30% !important;
+  animation: progress-indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+/* ==================== Progress Ring ==================== */
+
+.progress-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-ring svg {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-track {
+  fill: none;
+  stroke: var(--progress-bg);
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--transition-slow);
+}
+
+/* Ring Variants */
+.progress-ring-success .progress-ring-fill {
+  stroke: var(--color-success);
+}
+
+.progress-ring-warning .progress-ring-fill {
+  stroke: var(--color-warning);
+}
+
+.progress-ring-danger .progress-ring-fill {
+  stroke: var(--color-danger);
+}
+
+.progress-ring-health .progress-ring-fill {
+  stroke: var(--color-health);
+}
+
+.progress-ring-mana .progress-ring-fill {
+  stroke: var(--color-mana);
+}
+
+.progress-ring-xp .progress-ring-fill {
+  stroke: var(--color-xp);
+}
+
+/* Ring Label */
+.progress-ring-label {
+  position: absolute;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}

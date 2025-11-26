@@ -1,0 +1,264 @@
+/**
+ * Panel.css - Shared panel styles using design tokens
+ */
+
+/* Base Panel */
+.panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Panel Sections */
+.panel-section {
+  margin-bottom: var(--space-6);
+}
+
+.panel-section:last-child {
+  margin-bottom: 0;
+}
+
+.panel-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+/* Panel List */
+.panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Empty State */
+.panel-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.panel-empty-icon {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.panel-empty-state p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.panel-empty-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* View All Button */
+.panel-view-all {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+/* ==================== Quest Card Styles ==================== */
+
+.quest-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.quest-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.quest-status {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.quest-status-done {
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+
+.quest-title {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.quest-star {
+  color: var(--color-gold);
+  flex-shrink: 0;
+}
+
+.quest-description {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.quest-chevron {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+}
+
+.quest-card-completed {
+  opacity: 0.7;
+}
+
+/* ==================== Settings Panel Styles ==================== */
+
+.settings-categories {
+  display: flex;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+  border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.settings-category {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-colors);
+}
+
+.settings-category:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.settings-category-active {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.settings-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
+}
+
+.settings-option:last-child {
+  border-bottom: none;
+}
+
+.settings-option span {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.settings-option input[type="range"] {
+  width: 120px;
+  accent-color: var(--color-accent);
+}
+
+.settings-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+}
+
+.settings-option select {
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg-elevated);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.settings-keybind {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+}
+
+.settings-keybind span {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.settings-saves-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settings-about {
+  text-align: center;
+}
+
+.settings-about h4 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.settings-about p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.settings-about-desc {
+  margin-top: var(--space-3) !important;
+  color: var(--color-text-muted) !important;
+}
+
+/* ==================== Mobile Adjustments ==================== */
+
+@media (max-width: 768px) {
+  .settings-categories {
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .settings-category {
+    padding: var(--space-2);
+  }
+
+  .settings-category span {
+    display: none;
+  }
+}

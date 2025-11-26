@@ -1,0 +1,88 @@
+/**
+ * GameLayout.css - Main layout styles using design tokens
+ */
+
+/* Layout Container */
+.game-layout {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-base);
+  overflow: hidden;
+}
+
+/* Clean Mode - Hide UI chrome */
+.game-layout-clean .game-layout-viewport {
+  padding: 0;
+}
+
+/* Viewport Area */
+.game-layout-viewport {
+  flex: 1;
+  position: relative;
+  padding-top: var(--nav-height);
+  padding-bottom: var(--nav-height);
+  overflow: hidden;
+}
+
+/* Panel Loading State */
+.panel-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.panel-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: var(--radius-full);
+  animation: panel-spin 1s linear infinite;
+}
+
+@keyframes panel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Panel Empty State */
+.panel-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ==================== Clean Mode Adjustments ==================== */
+
+.game-layout-clean .game-layout-viewport {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* ==================== Safe Area Support ==================== */
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .game-layout-viewport {
+    padding-top: calc(var(--nav-height) + env(safe-area-inset-top));
+    padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  }
+}
+
+/* ==================== Tablet/Desktop Adjustments ==================== */
+
+@media (min-width: 769px) {
+  .game-layout-viewport {
+    /* On desktop, navigation is centered so full width available */
+  }
+}

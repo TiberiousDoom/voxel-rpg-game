@@ -3,6 +3,7 @@
  */
 
 export { default as GameScreen } from './GameScreen';
+export { default as GameScreenNew } from './GameScreenNew';
 export { default as GameViewport } from './GameViewport';
 export { default as ResourcePanel } from './ResourcePanel';
 export { default as NPCPanel } from './NPCPanel';

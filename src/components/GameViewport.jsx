@@ -1350,19 +1350,9 @@ function GameViewport({
         }
       }
     } catch (error) {
-      // Don't update state in render loop - causes severe FPS drops!
-      // Just draw error message on canvas
-      if (ctx && ctx.fillText) {
-        try {
-          ctx.fillStyle = '#ff0000';
-          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '14px Arial';
-          ctx.fillText(`Error: ${error.message}`, 10, 20);
-        } catch (e) {
-          // Ignore if even error rendering fails
-        }
-      }
+      // Log error for debugging but don't disrupt the game with red screen
+      console.error('[GameViewport] Render error:', error);
+      // Continue rendering - don't fill screen with red
     }
   }, [renderBuildingsWF3, renderPlacementPreview, npcRenderer, monsterRenderer, wildlifeRenderer, renderTerrain, renderChunkBorders, worldToCanvas, getOffset, renderInteractionPrompt, isMobileDevice, renderJobOverlays, renderJobSelection, renderJobStatistics, jobs, activeTool, selectionStart, selectionEnd, canvasToWorld, renderProps, renderFloatingText, renderHarvestProgress, renderPropHighlight, renderLootSpawns, renderNPCSpawns, renderStructureEntrance, renderStructureLabel, renderStructures, renderWaterBodies, renderRiversPhase3B, renderReflections, renderLootDrops, renderDamageNumbers, renderProjectiles, gameManager]);
 
@@ -1961,18 +1951,12 @@ function GameViewport({
         }
 
       } catch (error) {
-        // Don't log or setState in animation loop - kills FPS!
-        // Just draw error on canvas
-        try {
-          ctx.fillStyle = '#ff0000';
-          ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '20px Arial';
-          ctx.textAlign = 'left';
-          ctx.fillText(`Render Error: ${error.message}`, 10, 30);
-        } catch (e) {
-          // Silent failure - can't even draw error
+        // Log error once for debugging but don't disrupt the game
+        if (!window._lastRenderError || window._lastRenderError !== error.message) {
+          console.error('[GameViewport] Animation loop error:', error);
+          window._lastRenderError = error.message;
         }
+        // Continue rendering - don't fill screen with red
       }
 
       animationId = requestAnimationFrame(animate);

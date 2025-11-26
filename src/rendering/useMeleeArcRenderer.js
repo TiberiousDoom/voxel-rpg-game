@@ -20,6 +20,16 @@ export function useMeleeArcRenderer() {
    * @param {Object} options - Arc options
    */
   const createArc = useCallback((playerPos, targetPos, options = {}) => {
+    // Validate inputs
+    if (!playerPos || typeof playerPos.x !== 'number' || typeof playerPos.z !== 'number') {
+      console.warn('[MeleeArcRenderer] Invalid playerPos:', playerPos);
+      return null;
+    }
+    if (!targetPos || typeof targetPos.x !== 'number' || typeof targetPos.z !== 'number') {
+      console.warn('[MeleeArcRenderer] Invalid targetPos:', targetPos);
+      return null;
+    }
+
     const {
       color = '#ffffff',
       duration = 250, // ms
@@ -56,81 +66,94 @@ export function useMeleeArcRenderer() {
    * @param {number} currentTime - Current time from performance.now()
    */
   const renderArcs = useCallback((ctx, worldToCanvas, tileSize, currentTime) => {
+    // Safety checks
+    if (!ctx || !worldToCanvas || !tileSize) return;
+
     // Filter out expired arcs
     arcsRef.current = arcsRef.current.filter(arc => {
+      if (!arc || !arc.startTime || !arc.duration) return false;
       const age = currentTime - arc.startTime;
       return age < arc.duration;
     });
 
     // Render each arc
     arcsRef.current.forEach(arc => {
-      const age = currentTime - arc.startTime;
-      const progress = age / arc.duration; // 0 to 1
+      try {
+        const age = currentTime - arc.startTime;
+        const progress = age / arc.duration; // 0 to 1
 
-      // Animation: arc sweeps and fades out
-      const sweepProgress = Math.min(1, progress * 1.5); // Sweep completes at 66% of duration
-      const fadeProgress = Math.max(0, (progress - 0.3) / 0.7); // Fade starts at 30%
-      const opacity = 1 - fadeProgress;
+        // Animation: arc sweeps and fades out
+        const sweepProgress = Math.min(1, progress * 1.5); // Sweep completes at 66% of duration
+        const fadeProgress = Math.max(0, (progress - 0.3) / 0.7); // Fade starts at 30%
+        const opacity = 1 - fadeProgress;
 
-      if (opacity <= 0) return;
+        if (opacity <= 0) return;
 
-      // Convert world position to canvas
-      const canvasPos = worldToCanvas(arc.x, arc.z);
-      // Offset to center of tile
-      const centerX = canvasPos.x + tileSize / 2;
-      const centerY = canvasPos.y + tileSize / 2;
+        // Convert world position to canvas
+        const canvasPos = worldToCanvas(arc.x, arc.z);
+        if (!canvasPos) return;
 
-      // Arc radius in pixels
-      const radius = arc.arcWidth * tileSize;
+        // Offset to center of tile
+        const centerX = canvasPos.x + tileSize / 2;
+        const centerY = canvasPos.y + tileSize / 2;
 
-      // Calculate start and end angles for the sweep
-      // Arc sweeps from one side to the other
-      const halfArc = arc.arcAngle / 2;
-      const baseAngle = arc.angle - Math.PI / 2; // Adjust for canvas coordinates
+        // Arc radius in pixels
+        const radius = arc.arcWidth * tileSize;
 
-      // Animate the sweep - start narrow, expand to full arc
-      const currentSweep = halfArc * sweepProgress;
-      const startAngle = baseAngle - currentSweep;
-      const endAngle = baseAngle + currentSweep;
+        // Calculate start and end angles for the sweep
+        // Arc sweeps from one side to the other
+        const halfArc = arc.arcAngle / 2;
+        const baseAngle = arc.angle - Math.PI / 2; // Adjust for canvas coordinates
 
-      ctx.save();
-      ctx.globalAlpha = opacity * 0.8;
+        // Animate the sweep - start narrow, expand to full arc
+        const currentSweep = halfArc * sweepProgress;
+        const startAngle = baseAngle - currentSweep;
+        const endAngle = baseAngle + currentSweep;
 
-      // Draw multiple arc lines for thickness effect
-      const lineWidths = [8, 5, 2];
-      const colors = [
-        arc.color,
-        '#ffffff',
-        arc.color,
-      ];
+        ctx.save();
+        ctx.globalAlpha = opacity * 0.8;
 
-      lineWidths.forEach((lineWidth, index) => {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius - index * 3, startAngle, endAngle);
-        ctx.strokeStyle = colors[index];
-        ctx.lineWidth = lineWidth;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-      });
+        // Draw multiple arc lines for thickness effect
+        const lineWidths = [8, 5, 2];
+        const colors = [
+          arc.color,
+          '#ffffff',
+          arc.color,
+        ];
 
-      // Draw trailing particles/sparkles along the arc edge
-      const particleCount = 5;
-      for (let i = 0; i < particleCount; i++) {
-        const particleProgress = (sweepProgress - i * 0.1);
-        if (particleProgress > 0 && particleProgress < 1) {
-          const particleAngle = baseAngle + (particleProgress - 0.5) * arc.arcAngle * sweepProgress;
-          const px = centerX + Math.cos(particleAngle) * radius;
-          const py = centerY + Math.sin(particleAngle) * radius;
-
+        lineWidths.forEach((lineWidth, index) => {
           ctx.beginPath();
-          ctx.arc(px, py, 3 - i * 0.4, 0, Math.PI * 2);
-          ctx.fillStyle = '#ffffff';
-          ctx.globalAlpha = opacity * (1 - i * 0.15);
-          ctx.fill();
-        }
-      }
+          ctx.arc(centerX, centerY, radius - index * 3, startAngle, endAngle);
+          ctx.strokeStyle = colors[index];
+          ctx.lineWidth = lineWidth;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        });
 
-      ctx.restore();
+        // Draw trailing particles/sparkles along the arc edge
+        const particleCount = 5;
+        for (let i = 0; i < particleCount; i++) {
+          const particleProgress = (sweepProgress - i * 0.1);
+          if (particleProgress > 0 && particleProgress < 1) {
+            const particleAngle = baseAngle + (particleProgress - 0.5) * arc.arcAngle * sweepProgress;
+            const px = centerX + Math.cos(particleAngle) * radius;
+            const py = centerY + Math.sin(particleAngle) * radius;
+
+            ctx.beginPath();
+            ctx.arc(px, py, 3 - i * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = opacity * (1 - i * 0.15);
+            ctx.fill();
+          }
+        }
+
+        ctx.restore();
+      } catch (e) {
+        // Restore canvas state if error occurred after save
+        try { ctx.restore(); } catch (_) { /* ignore */ }
+        // Silently skip this arc if rendering fails
+        console.warn('[MeleeArcRenderer] Error rendering arc:', e.message);
+      }
     });
   }, []);
 

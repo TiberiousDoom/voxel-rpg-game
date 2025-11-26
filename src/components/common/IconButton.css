@@ -1,5 +1,5 @@
 /**
- * IconButton.css - Icon button component styles
+ * IconButton.css - Icon button styles using design tokens
  */
 
 /* Base Icon Button */
@@ -7,17 +7,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 6px;
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-all);
   position: relative;
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .icon-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.icon-btn:focus-visible {
+  box-shadow: var(--input-focus-ring);
 }
 
 .icon-btn:active:not(.icon-btn-disabled) {
@@ -26,85 +30,102 @@
 
 /* Icon Button Sizes */
 .icon-btn-small {
-  width: 32px;
-  height: 32px;
-  font-size: 14px;
+  width: var(--btn-height-sm);
+  height: var(--btn-height-sm);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
 }
 
 .icon-btn-medium {
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
+  width: var(--btn-height-md);
+  height: var(--btn-height-md);
+  font-size: var(--font-size-lg);
 }
 
 .icon-btn-large {
-  width: 48px;
-  height: 48px;
-  font-size: 22px;
+  width: var(--btn-height-lg);
+  height: var(--btn-height-lg);
+  font-size: var(--font-size-xl);
+  border-radius: var(--radius-lg);
 }
 
 /* Icon Button Variants */
 .icon-btn-primary {
-  background: rgba(59, 130, 246, 0.9);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: white;
 }
 
 .icon-btn-primary:hover:not(.icon-btn-disabled) {
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
-  background: rgba(59, 130, 246, 1);
-  transform: translateY(-2px);
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  box-shadow: var(--shadow-glow-accent);
 }
 
 .icon-btn-secondary {
-  background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
-  color: #333;
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
 }
 
 .icon-btn-secondary:hover:not(.icon-btn-disabled) {
-  box-shadow: 0 4px 12px rgba(158, 158, 158, 0.4);
-  transform: translateY(-2px);
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
 }
 
 .icon-btn-danger {
-  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  background: var(--color-danger);
+  border-color: var(--color-danger);
   color: white;
 }
 
 .icon-btn-danger:hover:not(.icon-btn-disabled) {
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
-  transform: translateY(-2px);
+  background: var(--color-danger-hover);
+  box-shadow: 0 0 20px var(--color-danger-subtle);
 }
 
 .icon-btn-success {
-  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  background: var(--color-success);
+  border-color: var(--color-success);
   color: white;
 }
 
 .icon-btn-success:hover:not(.icon-btn-disabled) {
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-  transform: translateY(-2px);
+  background: var(--color-success-hover);
+  box-shadow: 0 0 20px var(--color-success-subtle);
 }
 
 .icon-btn-warning {
-  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-  color: white;
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-text-inverse);
 }
 
 .icon-btn-warning:hover:not(.icon-btn-disabled) {
-  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
-  transform: translateY(-2px);
+  background: var(--color-warning-hover);
+  box-shadow: 0 0 20px var(--color-warning-subtle);
 }
 
 .icon-btn-ghost {
   background: transparent;
-  color: #666;
+  border-color: transparent;
+  color: var(--color-text-secondary);
 }
 
 .icon-btn-ghost:hover:not(.icon-btn-disabled) {
-  background: rgba(0, 0, 0, 0.05);
-  color: #333;
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.icon-btn-outline {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.icon-btn-outline:hover:not(.icon-btn-disabled) {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-hover);
 }
 
 /* Icon Button States */
@@ -129,10 +150,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  animation: spin 1s linear infinite;
+  animation: icon-btn-spin 1s linear infinite;
 }
 
-@keyframes spin {
+@keyframes icon-btn-spin {
   from {
     transform: rotate(0deg);
   }
@@ -141,42 +162,20 @@
   }
 }
 
-/* Ripple Effect */
-.icon-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.icon-btn:active:not(.icon-btn-disabled)::after {
-  width: 100px;
-  height: 100px;
-}
-
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .icon-btn-small {
     width: 36px;
     height: 36px;
-    font-size: 15px;
   }
 
   .icon-btn-medium {
     width: 44px;
     height: 44px;
-    font-size: 20px;
   }
 
   .icon-btn-large {
     width: 52px;
     height: 52px;
-    font-size: 24px;
   }
 }

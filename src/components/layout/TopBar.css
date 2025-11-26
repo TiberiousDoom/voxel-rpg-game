@@ -1,0 +1,167 @@
+/**
+ * TopBar.css - Top bar styles using design tokens
+ */
+
+/* Top Bar Container */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-3);
+  background: var(--nav-bg);
+  border-bottom: var(--border-width-thin) solid var(--nav-border);
+  backdrop-filter: blur(10px);
+  z-index: var(--z-compact-header);
+}
+
+/* Left Section */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+/* Mobile Menu Button */
+.topbar-mobile-menu {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .topbar-mobile-menu {
+    display: flex;
+  }
+}
+
+/* Title */
+.topbar-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.topbar-game-name {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Center Section */
+.topbar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+/* Status Indicators */
+.topbar-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-full);
+}
+
+.topbar-status-paused {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+/* Right Section */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Debug Active State */
+.topbar-debug-active {
+  background: var(--color-accent-subtle) !important;
+  color: var(--color-accent) !important;
+}
+
+/* ==================== Clean Mode Indicator ==================== */
+
+.topbar-clean-mode {
+  position: fixed;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: var(--z-compact-header);
+  animation: topbar-fade-in var(--transition-slow) ease-out;
+}
+
+@keyframes topbar-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.topbar-clean-mode-exit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-all);
+  opacity: 0.6;
+}
+
+.topbar-clean-mode-exit:hover {
+  opacity: 1;
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-hover);
+}
+
+/* ==================== Mobile Adjustments ==================== */
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 var(--space-2);
+  }
+
+  .topbar-game-name {
+    font-size: var(--font-size-sm);
+  }
+
+  .topbar-center {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 0;
+  }
+}
+
+/* ==================== Safe Area Support ==================== */
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .topbar {
+    padding-top: env(safe-area-inset-top);
+    height: calc(var(--nav-height) + env(safe-area-inset-top));
+  }
+}

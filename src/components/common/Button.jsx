@@ -17,7 +17,7 @@ import './Button.css';
  * @param {Object} props
  * @param {React.ReactNode} props.children - Button content
  * @param {Function} props.onClick - Click handler
- * @param {string} props.variant - Button variant: 'primary', 'secondary', 'danger', 'success', 'warning' (default: 'primary')
+ * @param {string} props.variant - Button variant: 'primary', 'secondary', 'danger', 'success', 'warning', 'ghost', 'outline' (default: 'primary')
  * @param {string} props.size - Button size: 'small', 'medium', 'large' (default: 'medium')
  * @param {boolean} props.disabled - Disabled state
  * @param {boolean} props.loading - Loading state

@@ -224,6 +224,10 @@ export class MonsterRenderer {
       alpha = Math.max(0, 1 - (timeSinceDeath / 1000));
     }
 
+    // Hit flash effect - white flash for 100ms when hit
+    const hitFlashDuration = 100;
+    const isHitFlashing = monster.hitFlashTime && (Date.now() - monster.hitFlashTime) < hitFlashDuration;
+
     ctx.save();
     ctx.globalAlpha = alpha;
 
@@ -258,6 +262,13 @@ export class MonsterRenderer {
       drawHeight
     );
 
+    // Draw hit flash overlay
+    if (isHitFlashing) {
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillRect(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+    }
+
     ctx.restore();
   }
 
@@ -277,6 +288,10 @@ export class MonsterRenderer {
       alpha = Math.max(0, 1 - (timeSinceDeath / 1000)); // Fade over 1 second
     }
 
+    // Hit flash effect - white flash for 100ms when hit
+    const hitFlashDuration = 100;
+    const isHitFlashing = monster.hitFlashTime && (Date.now() - monster.hitFlashTime) < hitFlashDuration;
+
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.translate(centerX, centerY);
@@ -292,7 +307,9 @@ export class MonsterRenderer {
 
     // Draw monster circle - scale to 30% of tile size
     const radius = this.config.tileSize * 0.3;
-    ctx.fillStyle = monster.tint || monster.color || '#ff0000';
+
+    // Use white color during hit flash, otherwise normal color
+    ctx.fillStyle = isHitFlashing ? '#ffffff' : (monster.tint || monster.color || '#ff0000');
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -304,14 +321,16 @@ export class MonsterRenderer {
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Draw type letter - scale font with tile size
-    ctx.fillStyle = '#FFFFFF';
-    const fontSize = Math.max(10, Math.floor(this.config.tileSize * 0.2));
-    ctx.font = `bold ${fontSize}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const typeLetter = monster.type ? monster.type.charAt(0) : 'M';
-    ctx.fillText(typeLetter, 0, 0);
+    // Draw type letter - scale font with tile size (hide during flash for cleaner effect)
+    if (!isHitFlashing) {
+      ctx.fillStyle = '#FFFFFF';
+      const fontSize = Math.max(10, Math.floor(this.config.tileSize * 0.2));
+      ctx.font = `bold ${fontSize}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const typeLetter = monster.type ? monster.type.charAt(0) : 'M';
+      ctx.fillText(typeLetter, 0, 0);
+    }
 
     ctx.restore();
   }

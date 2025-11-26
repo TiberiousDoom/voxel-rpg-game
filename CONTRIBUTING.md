@@ -1,6 +1,6 @@
 # Contributing Guide
 
-**Last Updated:** November 15, 2025
+**Last Updated:** November 26, 2025
 
 Thank you for contributing to the Voxel RPG Game! This guide covers both code and documentation contributions.
 
@@ -8,11 +8,25 @@ Thank you for contributing to the Voxel RPG Game! This guide covers both code an
 
 ## Table of Contents
 
-1. [Code Contributions](#code-contributions)
-2. [Documentation Contributions](#documentation-contributions)
-3. [Documentation Standards](#documentation-standards)
-4. [File Organization](#file-organization)
-5. [Review Process](#review-process)
+1. [Required Reading](#required-reading)
+2. [Code Contributions](#code-contributions)
+3. [Documentation Contributions](#documentation-contributions)
+4. [Documentation Standards](#documentation-standards)
+5. [File Organization](#file-organization)
+6. [Review Process](#review-process)
+
+---
+
+## Required Reading
+
+Before contributing, please read the **[Game Vision](docs/VISION.md)** document. This is essential for understanding:
+
+- **What we're building:** The core experience and pillars
+- **Design principles:** Guidelines that shape every decision
+- **NPC philosophy:** Why autonomous helpers matter
+- **The world:** Setting, tone, and player journey
+
+All contributions should align with the vision. When in doubt, ask: *"Does this support the promise: Rise from ruin. Build something worth protecting. You're not alone."*
 
 ---
 
@@ -743,7 +757,7 @@ git diff --cached --name-only | grep -E '\.md$' | xargs -I{} markdown-link-check
 ---
 
 **Version:** 1.0
-**Last Updated:** November 15, 2025
+**Last Updated:** November 26, 2025
 **Maintained By:** Project maintainers
 
 For code contribution guidelines, see the "Code Contributions" section above.

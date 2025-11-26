@@ -2,8 +2,6 @@
  * BuildPanel.jsx - Building menu panel for new UI system
  *
  * Wraps the existing BuildMenu component with the new panel interface.
- * This is a migration wrapper - can be gradually replaced with
- * a fully redesigned component.
  */
 
 import React from 'react';
@@ -13,15 +11,31 @@ import './Panel.css';
 /**
  * BuildPanel component
  * @param {Object} props
- * @param {Object} props.gameState - Game state
- * @param {Object} props.gameActions - Game actions
+ * @param {Object} props.gameState - Game state from GameLayout
+ * @param {Object} props.gameActions - Game actions from GameLayout
  */
 function BuildPanel({ gameState, gameActions }) {
+  const {
+    selectedBuildingType,
+    currentTier = 'SURVIVAL',
+    gameManager,
+  } = gameState || {};
+
+  const {
+    setSelectedBuildingType,
+    spawnNPC,
+  } = gameActions || {};
+
   return (
     <div className="panel panel-build">
       <BuildMenu
-        gameState={gameState}
-        gameActions={gameActions}
+        selectedBuildingType={selectedBuildingType}
+        onSelectBuilding={setSelectedBuildingType}
+        onSpawnNPC={() => spawnNPC?.('WORKER')}
+        onAdvanceTier={() => {/* TODO: Implement tier advancement */}}
+        currentTier={currentTier}
+        buildingConfig={gameManager?.orchestrator?.buildingConfig}
+        placedBuildingCounts={{}}
         isEmbedded
       />
     </div>

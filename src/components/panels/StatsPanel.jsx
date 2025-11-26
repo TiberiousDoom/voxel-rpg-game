@@ -11,17 +11,13 @@ import './Panel.css';
 /**
  * StatsPanel component
  * @param {Object} props
- * @param {Object} props.gameState - Game state
- * @param {Object} props.gameActions - Game actions
+ * @param {Object} props.gameState - Game state from GameLayout
+ * @param {Object} props.gameActions - Game actions from GameLayout
  */
 function StatsPanel({ gameState, gameActions }) {
   return (
     <div className="panel panel-stats">
-      <StatsTab
-        gameState={gameState}
-        gameActions={gameActions}
-        isEmbedded
-      />
+      <StatsTab isEmbedded />
     </div>
   );
 }

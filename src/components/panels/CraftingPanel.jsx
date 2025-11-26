@@ -11,17 +11,13 @@ import './Panel.css';
 /**
  * CraftingPanel component
  * @param {Object} props
- * @param {Object} props.gameState - Game state
- * @param {Object} props.gameActions - Game actions
+ * @param {Object} props.gameState - Game state from GameLayout
+ * @param {Object} props.gameActions - Game actions from GameLayout
  */
 function CraftingPanel({ gameState, gameActions }) {
   return (
     <div className="panel panel-crafting">
-      <CraftingUI
-        gameState={gameState}
-        gameActions={gameActions}
-        isEmbedded
-      />
+      <CraftingUI isEmbedded />
     </div>
   );
 }

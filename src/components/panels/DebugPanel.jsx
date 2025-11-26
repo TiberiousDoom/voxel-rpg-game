@@ -1,27 +1,23 @@
 /**
  * DebugPanel.jsx - Debug tools panel for new UI system
  *
- * Wraps the existing UnifiedDebugMenu component with the new panel interface.
+ * Provides developer/debug tools within the panel system.
  */
 
 import React from 'react';
-import UnifiedDebugMenu from '../UnifiedDebugMenu';
+import DeveloperTab from '../tabs/DeveloperTab';
 import './Panel.css';
 
 /**
  * DebugPanel component
  * @param {Object} props
- * @param {Object} props.gameState - Game state
- * @param {Object} props.gameActions - Game actions
+ * @param {Object} props.gameState - Game state from GameLayout
+ * @param {Object} props.gameActions - Game actions from GameLayout
  */
 function DebugPanel({ gameState, gameActions }) {
   return (
     <div className="panel panel-debug">
-      <UnifiedDebugMenu
-        gameState={gameState}
-        gameActions={gameActions}
-        isEmbedded
-      />
+      <DeveloperTab isEmbedded />
     </div>
   );
 }

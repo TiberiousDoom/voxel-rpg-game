@@ -11,17 +11,13 @@ import './Panel.css';
 /**
  * CharacterPanel component
  * @param {Object} props
- * @param {Object} props.gameState - Game state
- * @param {Object} props.gameActions - Game actions
+ * @param {Object} props.gameState - Game state from GameLayout
+ * @param {Object} props.gameActions - Game actions from GameLayout
  */
 function CharacterPanel({ gameState, gameActions }) {
   return (
     <div className="panel panel-character">
-      <CharacterSheet
-        gameState={gameState}
-        gameActions={gameActions}
-        isEmbedded
-      />
+      <CharacterSheet isEmbedded />
     </div>
   );
 }

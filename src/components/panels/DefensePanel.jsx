@@ -11,17 +11,13 @@ import './Panel.css';
 /**
  * DefensePanel component
  * @param {Object} props
- * @param {Object} props.gameState - Game state
- * @param {Object} props.gameActions - Game actions
+ * @param {Object} props.gameState - Game state from GameLayout
+ * @param {Object} props.gameActions - Game actions from GameLayout
  */
 function DefensePanel({ gameState, gameActions }) {
   return (
     <div className="panel panel-defense">
-      <DefenseTab
-        gameState={gameState}
-        gameActions={gameActions}
-        isEmbedded
-      />
+      <DefenseTab isEmbedded />
     </div>
   );
 }

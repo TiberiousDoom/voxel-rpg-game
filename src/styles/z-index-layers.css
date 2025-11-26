@@ -85,6 +85,7 @@
 
   /* ==================== NAVIGATION (11500-11599) ==================== */
   /* Navigation must always be accessible */
+  --z-bottom-navigation: 11500;
   --z-mobile-menu-backdrop: 11498;
   --z-mobile-menu-content: 11499;
   --z-mobile-hamburger: 11550;

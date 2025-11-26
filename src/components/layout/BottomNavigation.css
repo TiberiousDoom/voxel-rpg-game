@@ -11,7 +11,7 @@
   height: var(--nav-height);
   background: var(--nav-bg);
   border-top: var(--border-width-thin) solid var(--nav-border);
-  z-index: var(--z-horizontal-tab-bar);
+  z-index: var(--z-bottom-navigation);
   backdrop-filter: blur(10px);
 }
 

@@ -1,0 +1,202 @@
+/**
+ * ZLevelControls.css - Styles for Z-level navigation controls
+ */
+
+.z-level-controls {
+  position: absolute;
+  right: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-bg-panel);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+}
+
+/* Level Indicator */
+.z-level-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.z-level-value {
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+/* Navigation Buttons */
+.z-level-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.z-level-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: var(--color-bg-elevated);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.z-level-btn:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.z-level-btn:active:not(:disabled) {
+  background: var(--color-accent-subtle);
+}
+
+.z-level-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.z-level-btn.active {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Vertical Slider */
+.z-level-slider-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 120px;
+  padding: var(--space-2) 0;
+}
+
+.z-level-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 8px;
+  height: 100%;
+  appearance: none;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.z-level-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  cursor: grab;
+  transition: transform var(--transition-fast);
+}
+
+.z-level-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.z-level-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.z-level-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: grab;
+}
+
+.z-level-marks {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.z-mark {
+  line-height: 1;
+}
+
+/* Visibility Toggle */
+.z-level-visibility {
+  margin-top: var(--space-1);
+}
+
+/* Depth Control */
+.z-level-depth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.z-level-depth-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.z-level-depth-select {
+  width: 50px;
+  padding: var(--space-1);
+  background: var(--color-bg-elevated);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  cursor: pointer;
+}
+
+.z-level-depth-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .z-level-controls {
+    right: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .z-level-slider-container {
+    height: 80px;
+  }
+
+  .z-level-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Hide on very small screens */
+@media (max-width: 480px) {
+  .z-level-controls {
+    display: none;
+  }
+}

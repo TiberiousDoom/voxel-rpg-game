@@ -30,6 +30,8 @@ const CharacterPanel = lazy(() => import('../panels/CharacterPanel'));
 const ExpeditionsPanel = lazy(() => import('../panels/ExpeditionsPanel'));
 const DefensePanel = lazy(() => import('../panels/DefensePanel'));
 const DebugPanel = lazy(() => import('../panels/DebugPanel'));
+const StockpilePanel = lazy(() => import('../panels/StockpilePanel'));
+const ConstructionPanel = lazy(() => import('../panels/ConstructionPanel'));
 
 /**
  * Panel title mapping
@@ -47,6 +49,8 @@ const PANEL_TITLES = {
   [PANEL_TYPES.EXPEDITIONS]: 'Expeditions',
   [PANEL_TYPES.DEFENSE]: 'Defense',
   [PANEL_TYPES.DEBUG]: 'Debug Tools',
+  [PANEL_TYPES.STOCKPILE]: 'Stockpiles',
+  [PANEL_TYPES.CONSTRUCTION]: 'Construction',
 };
 
 /**
@@ -90,6 +94,10 @@ function PanelContent({ panelId, ...props }) {
       return <DefensePanel {...props} />;
     case PANEL_TYPES.DEBUG:
       return <DebugPanel {...props} />;
+    case PANEL_TYPES.STOCKPILE:
+      return <StockpilePanel {...props} />;
+    case PANEL_TYPES.CONSTRUCTION:
+      return <ConstructionPanel {...props} />;
     default:
       return <div className="panel-empty">Panel not found</div>;
   }

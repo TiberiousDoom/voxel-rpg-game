@@ -47,6 +47,8 @@ import { JobTimeCalculator } from './modules/terrain-jobs/JobTimeCalculator';
 import { TerrainWorkerBehavior } from './modules/terrain-jobs/TerrainWorkerBehavior';
 // Phase 4: AI System Manager
 import { AISystemManager } from './modules/ai';
+// Phase 10: Voxel Building System
+import { VoxelBuildingOrchestrator } from './modules/voxel-building';
 // Store for AI system wiring
 import useGameStore from './stores/useGameStore';
 
@@ -263,6 +265,21 @@ export default class GameManager extends EventEmitter {
       enableQuestAI: true
     });
 
+    // Phase 10: Voxel Building System
+    const voxelBuildingOrchestrator = new VoxelBuildingOrchestrator({
+      chunkSize: 32,
+      maxHeight: 16
+    });
+
+    // Initialize voxel building with dependencies
+    voxelBuildingOrchestrator.initialize({
+      npcManager: npcManager,
+      pathfindingService: npcManager.pathfindingService
+    });
+
+    // Load default building templates
+    voxelBuildingOrchestrator.loadDefaultTemplates();
+
     return {
       grid: grid,
       spatial: spatial,
@@ -304,7 +321,9 @@ export default class GameManager extends EventEmitter {
       terrainJobQueue: terrainJobQueue,
       terrainWorkerBehavior: terrainWorkerBehavior,
       // Phase 4: AI System Manager
-      aiSystemManager: aiSystemManager
+      aiSystemManager: aiSystemManager,
+      // Phase 10: Voxel Building System
+      voxelBuildingOrchestrator: voxelBuildingOrchestrator
     };
   }
 
@@ -1046,6 +1065,49 @@ export default class GameManager extends EventEmitter {
    */
   getTerrainSystem() {
     return this.orchestrator?.terrainSystem || null;
+  }
+
+  /**
+   * Get voxel building orchestrator (Phase 10)
+   * @returns {VoxelBuildingOrchestrator} Voxel building system instance
+   */
+  getVoxelBuildingSystem() {
+    return this.orchestrator?.voxelBuildingOrchestrator || null;
+  }
+
+  /**
+   * Create a stockpile zone (Phase 10)
+   * @param {object} config - Stockpile configuration {x, y, z, width, depth, allowedResources}
+   * @returns {object} Created stockpile or null
+   */
+  createStockpile(config) {
+    const vbs = this.getVoxelBuildingSystem();
+    if (!vbs) return null;
+    return vbs.createStockpile(config);
+  }
+
+  /**
+   * Start construction from a blueprint (Phase 10)
+   * @param {string} blueprintId - Blueprint ID or template name
+   * @param {object} position - World position {x, y, z}
+   * @param {object} options - Construction options
+   * @returns {object} Construction site or null
+   */
+  startVoxelConstruction(blueprintId, position, options = {}) {
+    const vbs = this.getVoxelBuildingSystem();
+    if (!vbs) return null;
+    return vbs.startConstruction(blueprintId, position, options);
+  }
+
+  /**
+   * Register an NPC as a builder (Phase 10)
+   * @param {string} npcId - NPC identifier
+   * @returns {object} Builder controller
+   */
+  registerBuilder(npcId) {
+    const vbs = this.getVoxelBuildingSystem();
+    if (!vbs) return null;
+    return vbs.registerBuilder(npcId);
   }
 
   /**

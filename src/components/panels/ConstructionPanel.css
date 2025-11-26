@@ -1,0 +1,245 @@
+/**
+ * ConstructionPanel.css - Styles for voxel construction panel
+ */
+
+/* View Toggle */
+.construction-view-toggle {
+  display: flex;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
+}
+
+.construction-view-toggle button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* Category Filter */
+.construction-categories {
+  display: flex;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.construction-category {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-colors);
+}
+
+.construction-category:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.construction-category-active {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+
+/* Blueprint Cards */
+.construction-blueprints {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.blueprint-card {
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition-colors), var(--transition-transform);
+}
+
+.blueprint-card:hover {
+  transform: translateX(4px);
+}
+
+.blueprint-card-selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.blueprint-card-unaffordable {
+  opacity: 0.6;
+}
+
+.blueprint-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.blueprint-icon {
+  color: var(--color-accent);
+}
+
+.blueprint-name {
+  flex: 1;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.blueprint-description {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.blueprint-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.blueprint-req-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.blueprint-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.blueprint-material {
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+}
+
+.blueprint-size {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.blueprint-chevron {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+}
+
+/* Construction Sites */
+.construction-sites {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.construction-site-card {
+  margin-bottom: var(--space-2);
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.site-icon {
+  flex-shrink: 0;
+}
+
+.site-complete {
+  color: var(--color-success);
+}
+
+.site-in-progress {
+  color: var(--color-accent);
+}
+
+.site-name {
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.site-location {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.site-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Selected Blueprint */
+.construction-selected {
+  position: sticky;
+  bottom: 0;
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: var(--border-width-thin) solid var(--color-border-subtle);
+  background: var(--color-bg-primary);
+}
+
+.selected-blueprint-card h4 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.selected-blueprint-card p {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.selected-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  background: var(--color-warning-subtle);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-warning);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .construction-categories {
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  .construction-category span {
+    display: none;
+  }
+
+  .blueprint-materials {
+    flex-direction: column;
+  }
+}

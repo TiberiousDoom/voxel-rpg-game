@@ -974,3 +974,42 @@ export function blockTypeToString(blockType) {
 export function stringToBlockType(key) {
   return BlockType[key] !== undefined ? BlockType[key] : BlockType.INVALID;
 }
+
+/**
+ * Check if a block type can be mined/broken
+ * @param {number} blockType - Block type ID
+ * @returns {boolean}
+ */
+export function isMineable(blockType) {
+  return getBlockProperty(blockType, 'breakable', false);
+}
+
+/**
+ * Get resources that drop when a block is mined
+ * @param {number} blockType - Block type ID
+ * @returns {Array<{type: string, amount: number}>}
+ */
+export function getBlockResources(blockType) {
+  const dropItem = getBlockProperty(blockType, 'dropItem', null);
+  if (!dropItem) {
+    return [];
+  }
+
+  // Base drop amount is 1, can be modified by hardness
+  const hardness = getBlockProperty(blockType, 'hardness', 1);
+  const amount = Math.max(1, Math.floor(hardness / 2));
+
+  return [{
+    type: dropItem,
+    amount: amount
+  }];
+}
+
+/**
+ * Get the hardness of a block (affects mining time)
+ * @param {number} blockType - Block type ID
+ * @returns {number}
+ */
+export function getBlockHardness(blockType) {
+  return getBlockProperty(blockType, 'hardness', 1);
+}

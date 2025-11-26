@@ -679,4 +679,29 @@ export class VoxelWorld {
 
     return world;
   }
+
+  /**
+   * Get number of currently loaded chunks
+   * @returns {number}
+   */
+  getLoadedChunkCount() {
+    return this.chunks.size;
+  }
+
+  /**
+   * Reset world to initial state (clear all chunks)
+   */
+  reset() {
+    this.chunks.clear();
+    this.chunkRefs.clear();
+    this.modifiedChunks.clear();
+    this.viewerPosition = { x: 0, y: 0, z: 0 };
+    this.stats = {
+      chunksLoaded: 0,
+      chunksUnloaded: 0,
+      blocksSet: 0,
+      cacheHits: 0,
+      cacheMisses: 0
+    };
+  }
 }

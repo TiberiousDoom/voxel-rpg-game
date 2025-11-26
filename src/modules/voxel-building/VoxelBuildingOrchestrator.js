@@ -25,6 +25,7 @@ import { ConstructionManager } from '../construction/ConstructionManager.js';
 import { HaulingManager } from '../hauling/HaulingManager.js';
 import { BuilderManager } from '../building/BuilderBehavior.js';
 import { JobManager } from '../jobs/JobManager.js';
+import { TerrainToVoxelConverter } from './TerrainToVoxelConverter.js';
 
 /**
  * VoxelBuildingOrchestrator - Coordinates voxel building systems
@@ -64,9 +65,13 @@ export class VoxelBuildingOrchestrator {
       haulingManager: this.haulingManager
     });
 
+    // Terrain converter (set via initialize when terrainSystem available)
+    this.terrainConverter = null;
+
     // External references (set via initialize)
     this.npcManager = null;
     this.pathfindingService = null;
+    this.terrainSystem = null;
 
     // State
     this.enabled = true;
@@ -98,6 +103,16 @@ export class VoxelBuildingOrchestrator {
     if (dependencies.pathfindingService) {
       this.pathfindingService = dependencies.pathfindingService;
       this.haulingManager.pathfindingService = dependencies.pathfindingService;
+    }
+
+    // Initialize terrain converter if terrain system provided
+    if (dependencies.terrainSystem) {
+      this.terrainSystem = dependencies.terrainSystem;
+      this.terrainConverter = new TerrainToVoxelConverter(
+        this.terrainSystem,
+        this.voxelWorld,
+        dependencies.terrainConverterConfig || {}
+      );
     }
 
     // Wire up cross-references
@@ -426,6 +441,60 @@ export class VoxelBuildingOrchestrator {
   }
 
   // ========================================
+  // PUBLIC API: Terrain Conversion
+  // ========================================
+
+  /**
+   * Convert terrain heightmap to voxel blocks for a region
+   * @param {number} startX - Start X coordinate
+   * @param {number} startZ - Start Z coordinate
+   * @param {number} width - Width in tiles
+   * @param {number} depth - Depth in tiles
+   * @returns {object | null} Conversion result or null if no converter
+   */
+  convertTerrainRegion(startX, startZ, width, depth) {
+    if (!this.terrainConverter) {
+      return null;
+    }
+    return this.terrainConverter.convertRegion(startX, startZ, width, depth);
+  }
+
+  /**
+   * Convert terrain for a chunk
+   * @param {number} chunkX - Chunk X coordinate
+   * @param {number} chunkZ - Chunk Z coordinate
+   * @param {number} chunkSize - Chunk size in tiles (default: 32)
+   * @returns {object | null} Conversion result or null if no converter
+   */
+  convertTerrainChunk(chunkX, chunkZ, chunkSize = 32) {
+    if (!this.terrainConverter) {
+      return null;
+    }
+    return this.terrainConverter.convertChunk(chunkX, chunkZ, chunkSize);
+  }
+
+  /**
+   * Get the voxel surface level at a terrain position
+   * @param {number} x - X coordinate
+   * @param {number} z - Z coordinate
+   * @returns {number} Voxel Z level of surface
+   */
+  getVoxelSurfaceLevel(x, z) {
+    if (!this.terrainConverter) {
+      return 0;
+    }
+    return this.terrainConverter.getVoxelSurfaceLevel(x, z);
+  }
+
+  /**
+   * Check if terrain converter is available
+   * @returns {boolean}
+   */
+  hasTerrainConverter() {
+    return this.terrainConverter !== null;
+  }
+
+  // ========================================
   // STATE MANAGEMENT
   // ========================================
 
@@ -448,16 +517,17 @@ export class VoxelBuildingOrchestrator {
     return {
       ...this.stats,
       voxelWorld: {
-        loadedChunks: this.voxelWorld.getLoadedChunkCount()
+        loadedChunks: this.voxelWorld.getLoadedChunkCount?.() || 0
       },
-      stockpiles: this.stockpileManager.getStats(),
+      stockpiles: this.stockpileManager.getStats?.() || {},
       construction: {
-        activeSites: this.constructionManager.getActiveSites().length,
-        blueprints: this.constructionManager.getBlueprintCount()
+        activeSites: this.constructionManager.getActiveSites?.()?.length || 0,
+        blueprints: this.constructionManager.getBlueprintCount?.() || 0
       },
-      hauling: this.haulingManager.getStats(),
-      building: this.builderManager.getStats(),
-      jobs: this.jobManager.getStats()
+      hauling: this.haulingManager.getStats?.() || {},
+      building: this.builderManager.getStats?.() || {},
+      jobs: this.jobManager.getStats?.() || {},
+      terrainConversion: this.terrainConverter ? this.terrainConverter.getStats() : null
     };
   }
 

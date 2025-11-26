@@ -17,6 +17,7 @@
  */
 
 export { VoxelBuildingOrchestrator } from './VoxelBuildingOrchestrator.js';
+export { TerrainToVoxelConverter } from './TerrainToVoxelConverter.js';
 
 // Re-export sub-modules for direct access if needed
 export * from '../voxel/index.js';

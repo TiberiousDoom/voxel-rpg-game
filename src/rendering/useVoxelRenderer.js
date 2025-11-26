@@ -559,6 +559,233 @@ export const useVoxelRenderer = (options = {}) => {
     ctx.restore();
   }, [tileSize]);
 
+  /**
+   * Render mining designation overlays
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Array<{x, y, z, progress, assigned}>} designations - Mining designations
+   * @param {function} worldToCanvas - Coordinate converter
+   * @param {number} currentZ - Current Z-level
+   */
+  const renderMiningDesignations = useCallback((ctx, designations, worldToCanvas, currentZ) => {
+    if (!ctx || !designations || designations.length === 0) return;
+
+    ctx.save();
+
+    designations.forEach(({ x, y, z, progress, assigned }) => {
+      // Only render on current Z-level
+      if (z !== currentZ) return;
+
+      const canvasPos = worldToCanvas(x, y);
+
+      // Skip if outside viewport
+      if (canvasPos.x < -tileSize || canvasPos.y < -tileSize ||
+          canvasPos.x > ctx.canvas.width || canvasPos.y > ctx.canvas.height) {
+        return;
+      }
+
+      // Base overlay - mining designation
+      ctx.fillStyle = assigned
+        ? 'rgba(255, 150, 50, 0.3)'   // Orange if assigned
+        : 'rgba(255, 100, 100, 0.3)'; // Red if pending
+      ctx.fillRect(canvasPos.x, canvasPos.y, tileSize, tileSize);
+
+      // X mark for mining
+      ctx.strokeStyle = assigned ? 'rgba(255, 150, 50, 0.8)' : 'rgba(255, 100, 100, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(canvasPos.x + 4, canvasPos.y + 4);
+      ctx.lineTo(canvasPos.x + tileSize - 4, canvasPos.y + tileSize - 4);
+      ctx.moveTo(canvasPos.x + tileSize - 4, canvasPos.y + 4);
+      ctx.lineTo(canvasPos.x + 4, canvasPos.y + tileSize - 4);
+      ctx.stroke();
+
+      // Progress bar if mining in progress
+      if (progress > 0 && progress < 1) {
+        const barHeight = 4;
+        const barWidth = tileSize - 8;
+        const progressWidth = barWidth * progress;
+
+        // Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(canvasPos.x + 4, canvasPos.y + tileSize - 8, barWidth, barHeight);
+
+        // Progress fill
+        ctx.fillStyle = 'rgba(100, 255, 100, 0.8)';
+        ctx.fillRect(canvasPos.x + 4, canvasPos.y + tileSize - 8, progressWidth, barHeight);
+      }
+    });
+
+    ctx.restore();
+  }, [tileSize]);
+
+  /**
+   * Render NPC work indicators
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Array<{x, y, z, state, npcId}>} workers - Worker data
+   * @param {function} worldToCanvas - Coordinate converter
+   * @param {number} currentZ - Current Z-level
+   */
+  const renderWorkerIndicators = useCallback((ctx, workers, worldToCanvas, currentZ) => {
+    if (!ctx || !workers || workers.length === 0) return;
+
+    ctx.save();
+
+    workers.forEach(({ x, y, z, state, taskType }) => {
+      // Only render on current Z-level
+      if (z !== currentZ) return;
+
+      const canvasPos = worldToCanvas(x, y);
+
+      // Skip if outside viewport
+      if (canvasPos.x < -tileSize || canvasPos.y < -tileSize ||
+          canvasPos.x > ctx.canvas.width || canvasPos.y > ctx.canvas.height) {
+        return;
+      }
+
+      // Work state indicator
+      let iconColor, iconText;
+      switch (taskType) {
+        case 'mining':
+          iconColor = 'rgba(255, 200, 50, 0.9)';
+          iconText = '⛏';
+          break;
+        case 'building':
+          iconColor = 'rgba(100, 200, 255, 0.9)';
+          iconText = '🔨';
+          break;
+        case 'hauling':
+          iconColor = 'rgba(200, 150, 100, 0.9)';
+          iconText = '📦';
+          break;
+        default:
+          return;
+      }
+
+      // Draw work indicator above the block
+      ctx.fillStyle = iconColor;
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(iconText, canvasPos.x + tileSize / 2, canvasPos.y - 4);
+    });
+
+    ctx.restore();
+  }, [tileSize]);
+
+  /**
+   * Render block selection/hover highlight
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {object} selection - Selection data {x, y, z}
+   * @param {function} worldToCanvas - Coordinate converter
+   * @param {number} currentZ - Current Z-level
+   * @param {string} mode - Selection mode (select, mine, build, stockpile)
+   */
+  const renderBlockSelection = useCallback((ctx, selection, worldToCanvas, currentZ, mode = 'select') => {
+    if (!ctx || !selection) return;
+    if (selection.z !== currentZ) return;
+
+    const canvasPos = worldToCanvas(selection.x, selection.y);
+
+    ctx.save();
+
+    // Color based on mode
+    let selectionColor;
+    switch (mode) {
+      case 'mine':
+        selectionColor = 'rgba(255, 100, 100, 0.6)';
+        break;
+      case 'build':
+        selectionColor = 'rgba(100, 200, 255, 0.6)';
+        break;
+      case 'stockpile':
+        selectionColor = 'rgba(255, 200, 100, 0.6)';
+        break;
+      default:
+        selectionColor = 'rgba(255, 255, 255, 0.4)';
+    }
+
+    // Fill
+    ctx.fillStyle = selectionColor;
+    ctx.fillRect(canvasPos.x, canvasPos.y, tileSize, tileSize);
+
+    // Border
+    ctx.strokeStyle = selectionColor.replace('0.6', '1.0').replace('0.4', '0.8');
+    ctx.lineWidth = 2;
+    ctx.strokeRect(canvasPos.x + 1, canvasPos.y + 1, tileSize - 2, tileSize - 2);
+
+    ctx.restore();
+  }, [tileSize]);
+
+  /**
+   * Render region selection (drag select)
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {object} start - Start position {x, y}
+   * @param {object} end - End position {x, y}
+   * @param {function} worldToCanvas - Coordinate converter
+   * @param {string} mode - Selection mode
+   */
+  const renderRegionSelection = useCallback((ctx, start, end, worldToCanvas, mode = 'select') => {
+    if (!ctx || !start || !end) return;
+
+    const minX = Math.min(start.x, end.x);
+    const maxX = Math.max(start.x, end.x);
+    const minY = Math.min(start.y, end.y);
+    const maxY = Math.max(start.y, end.y);
+
+    const topLeft = worldToCanvas(minX, minY);
+    const bottomRight = worldToCanvas(maxX + 1, maxY + 1);
+
+    ctx.save();
+
+    // Color based on mode
+    let fillColor, strokeColor;
+    switch (mode) {
+      case 'mine':
+        fillColor = 'rgba(255, 100, 100, 0.2)';
+        strokeColor = 'rgba(255, 100, 100, 0.8)';
+        break;
+      case 'build':
+        fillColor = 'rgba(100, 200, 255, 0.2)';
+        strokeColor = 'rgba(100, 200, 255, 0.8)';
+        break;
+      case 'stockpile':
+        fillColor = 'rgba(255, 200, 100, 0.2)';
+        strokeColor = 'rgba(255, 200, 100, 0.8)';
+        break;
+      default:
+        fillColor = 'rgba(255, 255, 255, 0.2)';
+        strokeColor = 'rgba(255, 255, 255, 0.6)';
+    }
+
+    // Fill
+    ctx.fillStyle = fillColor;
+    ctx.fillRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+
+    // Border
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+    ctx.setLineDash([]);
+
+    // Dimensions label
+    const width = maxX - minX + 1;
+    const height = maxY - minY + 1;
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      `${width} x ${height}`,
+      (topLeft.x + bottomRight.x) / 2,
+      topLeft.y - 5
+    );
+
+    ctx.restore();
+  }, []);
+
   // Return memoized rendering functions
   return useMemo(() => ({
     renderLayer,
@@ -566,14 +793,22 @@ export const useVoxelRenderer = (options = {}) => {
     renderGhostBlocks,
     renderStockpileZones,
     renderZLevelIndicator,
-    renderNavigationIndicators
+    renderNavigationIndicators,
+    renderMiningDesignations,
+    renderWorkerIndicators,
+    renderBlockSelection,
+    renderRegionSelection
   }), [
     renderLayer,
     renderVoxelWorld,
     renderGhostBlocks,
     renderStockpileZones,
     renderZLevelIndicator,
-    renderNavigationIndicators
+    renderNavigationIndicators,
+    renderMiningDesignations,
+    renderWorkerIndicators,
+    renderBlockSelection,
+    renderRegionSelection
   ]);
 };
 

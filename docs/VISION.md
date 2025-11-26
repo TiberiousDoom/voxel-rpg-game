@@ -186,6 +186,22 @@ A war between powerful beings (gods or similar entities) tore reality itself. Th
 - **Rebuilding:** Civilization must be rebuilt from scratch
 - **Mystery:** What caused the war? Can it end?
 
+### The Ongoing Threat
+
+Victory is never permanent. The forces of darkness don't accept defeat:
+
+- **Portal Resurgence:** Monsters will attempt to reopen closed portals
+- **Territory Reclamation:** Undefended areas can fall back to monster control
+- **Corruption Creep:** Neglected regions slowly corrupt again
+- **Escalation:** Stronger monsters emerge to challenge growing settlements
+
+This creates meaningful choices:
+- Expand aggressively or consolidate and defend?
+- Spread NPCs thin to hold territory or concentrate forces?
+- Prioritize offense (closing new portals) or defense (protecting closed ones)?
+
+The world pushes back—your achievements matter because they require protection.
+
 ### Aesthetic
 
 - **Visual:** Voxel-based, stylized, readable at a glance

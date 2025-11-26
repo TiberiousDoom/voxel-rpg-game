@@ -203,9 +203,13 @@ const useGameStore = create((set, get) => ({
 
   updateMonster: (id, updates) =>
     set((state) => ({
-      enemies: state.enemies.map((m) =>
-        m.id === id ? { ...m, ...updates } : m
-      ),
+      enemies: state.enemies.map((m) => {
+        if (m.id === id) {
+          // Use Object.assign to preserve the Monster class prototype
+          Object.assign(m, updates);
+        }
+        return m;
+      }),
     })),
 
   clearDeadMonsters: () => {
@@ -229,6 +233,12 @@ const useGameStore = create((set, get) => ({
     const monster = state.enemies.find(m => m.id === monsterId);
 
     if (!monster || !monster.alive) {
+      return false;
+    }
+
+    // Defensive check: ensure monster has takeDamage method
+    if (typeof monster.takeDamage !== 'function') {
+      console.error('[attackMonster] Monster missing takeDamage method:', monster.id, monster);
       return false;
     }
 
@@ -717,9 +727,13 @@ const useGameStore = create((set, get) => ({
 
   updateEnemy: (id, updates) =>
     set((state) => ({
-      enemies: state.enemies.map((enemy) =>
-        enemy.id === id ? { ...enemy, ...updates } : enemy
-      ),
+      enemies: state.enemies.map((enemy) => {
+        if (enemy.id === id) {
+          // Use Object.assign to preserve class prototype (Monster methods)
+          Object.assign(enemy, updates);
+        }
+        return enemy;
+      }),
     })),
 
   removeEnemy: (id) =>

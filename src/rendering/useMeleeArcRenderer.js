@@ -149,6 +149,8 @@ export function useMeleeArcRenderer() {
 
         ctx.restore();
       } catch (e) {
+        // Restore canvas state if error occurred after save
+        try { ctx.restore(); } catch (_) { /* ignore */ }
         // Silently skip this arc if rendering fails
         console.warn('[MeleeArcRenderer] Error rendering arc:', e.message);
       }

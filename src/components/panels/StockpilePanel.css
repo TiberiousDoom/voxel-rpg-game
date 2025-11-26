@@ -1,0 +1,276 @@
+/**
+ * StockpilePanel.css - Styles for stockpile management panel
+ */
+
+/* Header Stats */
+.stockpile-stats {
+  display: flex;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.stat-item svg {
+  color: var(--color-accent);
+}
+
+/* Create Button */
+.create-stockpile-btn {
+  width: 100%;
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* Create Form */
+.create-stockpile-form {
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+}
+
+.create-stockpile-form h4 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.form-field {
+  margin-bottom: var(--space-3);
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.form-field input[type="text"],
+.form-field input[type="number"] {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-elevated);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.form-row .form-field {
+  flex: 1;
+}
+
+.category-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.category-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.category-checkbox:hover {
+  background: var(--color-bg-hover);
+}
+
+.check-icon {
+  color: var(--color-text-muted);
+}
+
+.check-icon.checked {
+  color: var(--color-accent);
+}
+
+.form-hint {
+  margin: var(--space-3) 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* Stockpile Cards */
+.stockpile-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.stockpile-card {
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.stockpile-card:hover {
+  background: var(--color-bg-hover);
+}
+
+.stockpile-card-expanded {
+  background: var(--color-bg-elevated);
+}
+
+.stockpile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.stockpile-icon {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.stockpile-name {
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.stockpile-location {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Stockpile Details (expanded) */
+.stockpile-details {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border-width-thin) solid var(--color-border-subtle);
+}
+
+.stockpile-contents h5,
+.stockpile-filters h5 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.stockpile-empty {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.stockpile-resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.stockpile-resource {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+.resource-type {
+  color: var(--color-text-secondary);
+}
+
+.resource-amount {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.stockpile-filters {
+  margin-bottom: var(--space-3);
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.filter-tag {
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-accent-subtle);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-accent);
+}
+
+.filter-tag-all {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+}
+
+.stockpile-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.stockpile-actions button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .stockpile-stats {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .category-checkboxes {
+    flex-direction: column;
+  }
+}

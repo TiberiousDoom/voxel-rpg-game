@@ -103,6 +103,9 @@ class ModuleOrchestrator {
 
     // Phase 4: AI System Manager
     this.aiSystemManager = modules.aiSystemManager || null;
+
+    // Phase 10: Voxel Building System
+    this.voxelBuildingOrchestrator = modules.voxelBuildingOrchestrator || null;
     if (this.aiSystemManager) {
       // Set references to game systems
       this.aiSystemManager.npcManager = this.npcManager;
@@ -646,6 +649,26 @@ class ModuleOrchestrator {
         }
 
         result.hybridGameMode = currentMode;
+      }
+
+      // ============================================
+      // STEP 4.8: PHASE 10 - VOXEL BUILDING SYSTEM
+      // ============================================
+      if (this.voxelBuildingOrchestrator) {
+        // Build game state for voxel building system
+        const voxelGameState = {
+          npcs: this.npcManager?.npcs || new Map(),
+          deltaTime: 1.0  // 1 second per tick
+        };
+
+        const voxelResult = this.voxelBuildingOrchestrator.update(1.0, voxelGameState);
+
+        result.phase10Voxel = {
+          hauling: voxelResult.hauling,
+          building: voxelResult.building,
+          jobs: voxelResult.jobs,
+          construction: voxelResult.construction
+        };
       }
 
       // ============================================

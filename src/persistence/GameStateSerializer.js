@@ -84,7 +84,10 @@ class GameStateSerializer {
       // Phase 3D: Tutorial System (optional)
       tutorialSystem: orchestrator.tutorialSystem ? this._serializeTutorialSystem(orchestrator.tutorialSystem) : null,
       contextHelp: orchestrator.contextHelp ? this._serializeContextHelp(orchestrator.contextHelp) : null,
-      featureUnlock: orchestrator.featureUnlock ? this._serializeFeatureUnlock(orchestrator.featureUnlock) : null
+      featureUnlock: orchestrator.featureUnlock ? this._serializeFeatureUnlock(orchestrator.featureUnlock) : null,
+
+      // Phase 10: Voxel Building System
+      voxelBuilding: orchestrator.voxelBuildingOrchestrator ? this._serializeVoxelBuilding(orchestrator.voxelBuildingOrchestrator) : null
     };
 
     return state;
@@ -144,6 +147,11 @@ class GameStateSerializer {
       }
       if (data.featureUnlock && orchestrator.featureUnlock) {
         this._deserializeFeatureUnlock(data.featureUnlock, orchestrator.featureUnlock, errors);
+      }
+
+      // Phase 10: Voxel Building System
+      if (data.voxelBuilding && orchestrator.voxelBuildingOrchestrator) {
+        this._deserializeVoxelBuilding(data.voxelBuilding, orchestrator.voxelBuildingOrchestrator, errors);
       }
 
       // Validate consistency
@@ -900,6 +908,44 @@ class GameStateSerializer {
       }
     } catch (err) {
       errors.push(`Failed to deserialize feature unlock: ${err.message}`);
+    }
+  }
+
+  // ============================================
+  // PHASE 10: VOXEL BUILDING SYSTEM SERIALIZATION
+  // ============================================
+
+  /**
+   * Serialize Voxel Building System
+   * @private
+   */
+  static _serializeVoxelBuilding(voxelBuildingOrchestrator) {
+    if (!voxelBuildingOrchestrator) return null;
+
+    try {
+      return voxelBuildingOrchestrator.toJSON();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[GameStateSerializer] Failed to serialize voxel building system:', err.message);
+      return null;
+    }
+  }
+
+  /**
+   * Deserialize Voxel Building System
+   * @private
+   */
+  static _deserializeVoxelBuilding(data, voxelBuildingOrchestrator, errors) {
+    if (!data || !voxelBuildingOrchestrator) return;
+
+    try {
+      voxelBuildingOrchestrator.fromJSON(data);
+      // eslint-disable-next-line no-console
+      console.log('[GameStateSerializer] Restored voxel building system state');
+    } catch (err) {
+      errors.push(`Voxel Building System deserialization error: ${err.message}`);
+      // eslint-disable-next-line no-console
+      console.error('[GameStateSerializer] Failed to deserialize voxel building system:', err.message);
     }
   }
 

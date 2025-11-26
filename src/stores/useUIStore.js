@@ -28,6 +28,8 @@ export const PANEL_TYPES = {
   CHARACTER: 'character',
   EXPEDITIONS: 'expeditions',
   DEFENSE: 'defense',
+  STOCKPILE: 'stockpile',
+  CONSTRUCTION: 'construction',
 };
 
 /**
@@ -59,6 +61,8 @@ export const OVERFLOW_ITEMS = [
   { id: PANEL_TYPES.EXPEDITIONS, label: 'Expeditions', icon: 'Compass' },
   { id: PANEL_TYPES.DEFENSE, label: 'Defense', icon: 'Shield' },
   { id: PANEL_TYPES.CRAFTING, label: 'Crafting', icon: 'Wrench' },
+  { id: PANEL_TYPES.STOCKPILE, label: 'Stockpiles', icon: 'Warehouse' },
+  { id: PANEL_TYPES.CONSTRUCTION, label: 'Construction', icon: 'HardHat' },
   { id: PANEL_TYPES.SETTINGS, label: 'Settings', icon: 'Settings' },
   { id: PANEL_TYPES.DEBUG, label: 'Debug', icon: 'Bug', devOnly: true },
 ];

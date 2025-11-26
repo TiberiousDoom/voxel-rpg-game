@@ -219,19 +219,20 @@ The world pushes back—your achievements matter because they require protection
 
 **Experience:**
 - Player begins as an ordinary farmer, displaced by the cataclysm
-- Meets mystical companion who offers guidance
-- Struggles to survive: finding food, building shelter, avoiding monsters
+- Discovers a wounded mystical being and chooses to rescue them
+- Struggles to survive while caring for the companion: finding food, building shelter, avoiding monsters
+- Companion slowly heals and begins offering guidance
 - Discovers first portal, learns the threat is ongoing
 - Attracts first few NPCs to fledgling camp
 
 **Goals:**
-- Establish basic shelter
+- Establish basic shelter (for yourself and the companion)
 - Secure food and water
 - Survive first monster encounters
 - Learn basic crafting and building
-- Understand the companion's nature and purpose
+- Help the companion recover; begin to understand their nature
 
-**Feelings:** Vulnerability, curiosity, small victories
+**Feelings:** Vulnerability, compassion, curiosity, small victories
 
 ### Mid Game: Growth & Ambition
 
@@ -292,33 +293,53 @@ The world pushes back—your achievements matter because they require protection
 
 ## The Companion Arc
 
-The mystical companion is central to the player's journey, serving as guide, teacher, and friend.
+The mystical companion is central to the player's journey, serving as guide, teacher, and friend. Their relationship begins with rescue and grows into true partnership.
 
-### Phase 1: The Meeting
+### The Core Dynamic
+
+**Mutual Growth:** The player and companion grow stronger together. As the player develops skills and builds their settlement, the companion heals from their wounds and regains their power. Neither outpaces the other—they rise together.
+
+### Phase 1: The Rescue
 
 **When:** Game start
 
-**Relationship:** Mysterious stranger
+**Relationship:** Rescuer and rescued
 
-**Role:**
-- Appears during player's darkest moment
-- Offers cryptic guidance
-- Demonstrates small magic to prove worth
-- Hints at deeper purpose
+**The Companion's State:**
+- Gravely wounded, barely clinging to existence
+- Power severely diminished
+- Vulnerable and in need of protection
 
-**Teaching:** Basic survival tips, world lore
+**What Happens:**
+- Player (a displaced farmer) discovers the wounded companion
+- Player chooses to help despite their own desperate situation
+- Companion stabilizes but remains weak
+- A bond forms through this act of compassion
 
-### Phase 2: Building Trust
+**The Companion Offers:**
+- Gratitude and loyalty
+- Fragments of knowledge about the cataclysm
+- Promise to repay the kindness when able
+- Basic survival guidance (what little they can manage)
+
+**Teaching:** Minimal—companion is too weak. Basic tips only.
+
+### Phase 2: Recovery & Trust
 
 **When:** Early game
 
-**Relationship:** Cautious allies
+**Relationship:** Cautious allies, growing closer
 
-**Role:**
-- Helps with settlement basics
-- Explains the portals and monsters
-- Reveals they are bound to help the player (but not why)
-- Begins teaching fundamental magic
+**The Companion's State:**
+- Slowly healing as player provides safety and care
+- Regaining fragments of power
+- Still limited but increasingly helpful
+
+**What Happens:**
+- Companion helps with settlement basics as strength allows
+- Explains the portals, monsters, and their connection to the conflict
+- Reveals they are bound to help the player (but not why yet)
+- Begins teaching fundamental magic as they recover enough to do so
 
 **Teaching:**
 - Basic magical abilities (light, minor protection)
@@ -329,13 +350,19 @@ The mystical companion is central to the player's journey, serving as guide, tea
 
 **When:** Mid game
 
-**Relationship:** Trusted friend
+**Relationship:** Trusted friends, equals
 
-**Role:**
+**The Companion's State:**
+- Substantially healed
+- Power returning in full
+- Now a capable ally, not just a guide
+
+**What Happens:**
 - Shares their origin (connected to the divine conflict)
-- Becomes more powerful as player grows
+- Their growing strength mirrors the player's achievements
 - Offers strategic advice on portals
 - Develops genuine care for player and settlement
+- Can now actively assist in dangerous situations
 
 **Teaching:**
 - Intermediate magic (combat spells, utility magic)

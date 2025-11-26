@@ -292,8 +292,13 @@ export class Stockpile {
     };
 
     // Resource filtering
+    // Only default to ALL if neither specific resources nor categories are provided
     this.allowedResources = new Set(config.allowedResources || []);
-    this.allowedCategories = new Set(config.allowedCategories || [ResourceCategory.ALL]);
+    const hasSpecificFilters = (config.allowedResources && config.allowedResources.length > 0) ||
+                               (config.allowedCategories && config.allowedCategories.length > 0);
+    this.allowedCategories = new Set(
+      config.allowedCategories || (hasSpecificFilters ? [] : [ResourceCategory.ALL])
+    );
 
     // Priority (higher = preferred for deposits)
     this.priority = config.priority || 50;

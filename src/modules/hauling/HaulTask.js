@@ -135,6 +135,10 @@ export class HaulTask {
       case HaulTaskStatus.DROPPING_OFF:
         this._updateDroppingOff(deltaTime, context);
         break;
+
+      default:
+        // PENDING state - waiting to be started
+        break;
     }
 
     return this.status;

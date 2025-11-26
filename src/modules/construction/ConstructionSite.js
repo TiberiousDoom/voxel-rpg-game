@@ -16,8 +16,6 @@
  *   });
  */
 
-import { Blueprint } from './Blueprint.js';
-
 /**
  * Block construction status
  */

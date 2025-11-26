@@ -529,7 +529,7 @@ export class VoxelWorld {
     const toUnload = this.chunks.size - this.config.maxLoadedChunks;
 
     for (let i = 0; i < toUnload && i < sortedRefs.length; i++) {
-      const [key, ref] = sortedRefs[i];
+      const ref = sortedRefs[i][1];
       this.unloadChunk(ref.chunkX, ref.chunkY);
     }
   }

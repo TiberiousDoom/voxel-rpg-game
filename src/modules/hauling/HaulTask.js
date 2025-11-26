@@ -135,6 +135,10 @@ export class HaulTask {
       case HaulTaskStatus.DROPPING_OFF:
         this._updateDroppingOff(deltaTime, context);
         break;
+
+      default:
+        // PENDING, COMPLETED, CANCELLED, FAILED states don't need updates
+        break;
     }
 
     return this.status;

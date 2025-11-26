@@ -21,6 +21,7 @@ import { useTerrainRenderer } from '../rendering/useTerrainRenderer.js'; // Terr
 import { useLootDropRenderer } from '../rendering/useLootDropRenderer.js'; // Loot drop rendering
 import { useDamageNumberRenderer } from '../rendering/useDamageNumberRenderer.js'; // Damage number rendering
 import { useProjectileRenderer } from '../rendering/useProjectileRenderer.js'; // 2D Projectile rendering
+import { useMeleeArcRenderer } from '../rendering/useMeleeArcRenderer.js'; // Melee attack arc rendering
 import { usePropRenderer } from '../rendering/usePropRenderer.js'; // Prop rendering (Phase 3)
 import { useStructureRenderer } from '../rendering/useStructureRenderer.js'; // Structure rendering (Phase 3D)
 import { useWaterRenderer } from '../rendering/useWaterRenderer.js'; // Water rendering (Phase 3B)
@@ -529,6 +530,9 @@ function GameViewport({
   const { createProjectile, updateProjectiles, renderProjectiles } = useProjectileRenderer({
     tileSize: TILE_SIZE
   });
+
+  // Melee Arc Renderer integration (melee attack visual effects)
+  const { createArc, renderArcs } = useMeleeArcRenderer();
 
   // Terrain Job Renderer integration
   const { renderJobSelection, renderJobOverlays, renderJobStatistics } = useJobRenderer();
@@ -1167,6 +1171,9 @@ function GameViewport({
     // Render 2D projectiles (ranged attacks)
     renderProjectiles(ctx, worldToCanvas);
 
+    // Render melee attack arcs
+    renderArcs(ctx, worldToCanvas, TILE_SIZE, performance.now());
+
     // Render damage numbers (Phase 3: Combat)
     if (damageNumbersRef.current && damageNumbersRef.current.length > 0) {
       const currentTime = performance.now();
@@ -1546,6 +1553,14 @@ function GameViewport({
           // Melee range - use attackMonster which handles damage, death, and loot drops
           store.attackMonster(clickedMonster.id);
           store.updatePlayer({ lastAttackTime: now });
+
+          // Create sweeping arc visual effect
+          createArc(player2DPos, monsterPos, {
+            color: '#88ccff', // Light blue slash
+            duration: 200,
+            arcWidth: 1.8,
+            arcAngle: Math.PI * 0.5, // 90 degree sweep
+          });
 
           // Set hit flash on monster for visual feedback
           clickedMonster.hitFlashTime = now;

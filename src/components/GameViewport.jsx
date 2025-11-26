@@ -1530,19 +1530,35 @@ function GameViewport({
           Math.pow(player2DPos.z - monsterPos.z, 2)
         );
 
-        const meleeRange = 2.5; // Melee attack range in units (matches monster attack ranges of 1.5-2.0)
+        const meleeRange = 2.0; // Melee attack range in units
         const store = useGameStore.getState();
+        const now = Date.now();
 
-        if (playerDistToMonster <= meleeRange) {
+        // Attack cooldown based on player attack speed (default 1 attack per second)
+        const attackSpeed = store.player.attackSpeed || 1.0;
+        const attackCooldown = 1000 / attackSpeed; // milliseconds between attacks
+        const lastAttackTime = store.player.lastAttackTime || 0;
+
+        if (now - lastAttackTime < attackCooldown) {
+          // Still on cooldown, don't attack
+          didInteract = true;
+        } else if (playerDistToMonster <= meleeRange) {
           // Melee range - use attackMonster which handles damage, death, and loot drops
           store.attackMonster(clickedMonster.id);
+          store.updatePlayer({ lastAttackTime: now });
+
+          // Set hit flash on monster for visual feedback
+          clickedMonster.hitFlashTime = now;
         } else {
           // Ranged attack - costs mana, creates visual projectile
           const manaCost = 5;
 
           if (store.player.mana >= manaCost) {
-            // Consume mana
-            store.updatePlayer({ mana: store.player.mana - manaCost });
+            // Consume mana and record attack time
+            store.updatePlayer({
+              mana: store.player.mana - manaCost,
+              lastAttackTime: now
+            });
 
             // Create projectile that will deal damage on hit
             const targetMonsterId = clickedMonster.id;
@@ -1562,6 +1578,8 @@ function GameViewport({
                 const monster = storeNow.enemies.find(m => m.id === targetMonsterId);
                 if (monster && monster.alive) {
                   storeNow.attackMonster(targetMonsterId);
+                  // Set hit flash on monster
+                  monster.hitFlashTime = Date.now();
                 }
               }
             });
@@ -2096,6 +2114,66 @@ function GameViewport({
           </ul>
         </div>
       </div>
+      )}
+
+      {/* Death Screen Modal */}
+      {enablePlayerMovement && playerRef.current && playerRef.current.health <= 0 && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <h1 style={{
+            color: '#ff4444',
+            fontSize: '48px',
+            fontWeight: 'bold',
+            textShadow: '2px 2px 8px #000',
+            marginBottom: '20px',
+          }}>YOU DIED</h1>
+          <p style={{
+            color: '#cccccc',
+            fontSize: '18px',
+            marginBottom: '30px',
+          }}>Your adventure has come to an end...</p>
+          <button
+            onClick={() => {
+              // Respawn player with full health at spawn point
+              const store = useGameStore.getState();
+              store.updatePlayer({
+                health: store.player.maxHealth,
+                mana: store.player.maxMana || 100,
+              });
+              // Reset player position to spawn point
+              if (playerRef.current) {
+                playerRef.current.position = { x: 25, z: 25 };
+                playerRef.current.health = store.player.maxHealth;
+              }
+            }}
+            style={{
+              padding: '15px 40px',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              backgroundColor: '#4a90e2',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#3a7bc8'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#4a90e2'}
+          >
+            Respawn
+          </button>
+        </div>
       )}
     </div>
   );

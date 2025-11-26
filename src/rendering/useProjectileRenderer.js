@@ -106,8 +106,8 @@ export function useProjectileRenderer(options = {}) {
       );
 
       // Hit detection: close to target OR overshot (was getting closer, now getting farther)
-      const isCloseEnough = distToTarget < 1.0; // Increased hit radius
-      const hasOvershot = distToTarget > prevDistToTarget && prevDistToTarget < 2.0;
+      const isCloseEnough = distToTarget < 0.7; // Hit radius in world units
+      const hasOvershot = distToTarget > prevDistToTarget && prevDistToTarget < 1.5;
 
       if (isCloseEnough || hasOvershot) {
         hitProjectiles.push(proj);

@@ -1952,7 +1952,8 @@ function GameViewport({
           // Update spawn system - spawn new monsters around player
           if (spawnManagerRef.current && monstersRef.current) {
             // Pass player position for spawning 6-10 tiles from player
-            const playerPos = playerPosition ? { x: playerPosition[0], z: playerPosition[2] } : null;
+            const currentPlayerPos = playerRef.current?.position;
+            const playerPos = currentPlayerPos ? { x: currentPlayerPos.x, z: currentPlayerPos.z } : null;
             const newMonsters = spawnManagerRef.current.update(monstersRef.current, deltaTime * 1000, playerPos); // Convert back to ms
             if (newMonsters.length > 0) {
               // Add new monsters to the game

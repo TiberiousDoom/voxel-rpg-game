@@ -1864,12 +1864,9 @@ function GameViewport({
         }
 
           // Update loot drops - check for auto-pickup when player is near
-          const playerPosition = useGameStore.getState().player.position;
-          if (playerPosition) {
-            useGameStore.getState().updateLootDrops({
-              x: playerPosition[0],
-              z: playerPosition[2]
-            });
+          // Use the 2D player entity position (playerRef), not the store's 3D position
+          if (playerRef.current && playerRef.current.position) {
+            useGameStore.getState().updateLootDrops(playerRef.current.position);
           }
 
           // Clean up old damage numbers (Phase 3: Combat)

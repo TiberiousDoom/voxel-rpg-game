@@ -12,9 +12,11 @@
 2. [Current State](#current-state)
 3. [Development Phases](#development-phases)
 4. [Detailed Phase Breakdown](#detailed-phase-breakdown)
-5. [Fundraising Strategy](#fundraising-strategy)
-6. [Risk Assessment](#risk-assessment)
-7. [Success Metrics](#success-metrics)
+5. [Technical Platform Decision](#technical-platform-decision)
+6. [Fundraising Strategy](#fundraising-strategy)
+7. [Additional Preparation](#additional-preparation)
+8. [Risk Assessment](#risk-assessment)
+9. [Success Metrics](#success-metrics)
 
 ---
 
@@ -386,6 +388,84 @@ Deliverable: Version 1.0
 
 ---
 
+## Technical Platform Decision
+
+### Current State: JavaScript/React
+
+The game is currently built with JavaScript/React. This was suitable for rapid prototyping but presents challenges for a game of this scope.
+
+### The Challenge
+
+| Concern | Impact |
+|---------|--------|
+| **Single-threaded** | Can't parallelize chunk loading, pathfinding, AI |
+| **Garbage collection** | Frame stutters when GC runs (noticeable in action) |
+| **WebGL limitations** | Fewer shader options, memory caps, no compute shaders |
+| **No native access** | Can't optimize hot paths in C/C++ |
+| **Platform limits** | Hard to ship on Steam (Electron works but awkward), impossible on console |
+| **Memory pressure** | Browsers limit memory; large worlds hit ceilings |
+
+### Recommended Platforms
+
+#### Option A: Unity + C# (Recommended)
+
+| Factor | Rating | Notes |
+|--------|--------|-------|
+| Performance | ★★★★☆ | Good enough for voxel games, many ship with it |
+| Development Speed | ★★★★★ | Huge ecosystem, visual editor, fast iteration |
+| Voxel Support | ★★★★☆ | Existing assets, tutorials, proven voxel games |
+| Platform Support | ★★★★★ | PC, Mac, Linux, Console, Mobile—one codebase |
+| Community | ★★★★★ | Massive, every problem has been solved |
+| Cost | ★★★☆☆ | Free until $200K revenue, then subscription |
+
+**Games built in Unity:** 7 Days to Die, Creativerse, Portal Knights
+
+#### Option B: Godot + C#/GDScript
+
+| Factor | Rating | Notes |
+|--------|--------|-------|
+| Performance | ★★★★☆ | 4.x is solid, Vulkan renderer |
+| Development Speed | ★★★★☆ | Good editor, growing ecosystem |
+| Voxel Support | ★★★☆☆ | Less than Unity, but doable |
+| Platform Support | ★★★★☆ | PC, Mac, Linux, Mobile (console harder) |
+| Community | ★★★☆☆ | Smaller but passionate, growing fast |
+| Cost | ★★★★★ | Completely free, MIT license, forever |
+
+**Good for:** Full control, no licensing concerns, open source philosophy
+
+#### Option C: Stay with JavaScript (Prototype Only)
+
+| Factor | Rating | Notes |
+|--------|--------|-------|
+| Performance | ★★☆☆☆ | Will hit limits with full vision |
+| Development Speed | ★★★★☆ | Already built, no learning curve |
+| Voxel Support | ★★☆☆☆ | Limited ecosystem |
+| Platform Support | ★★☆☆☆ | Web-focused, Steam via Electron |
+| Community | ★★★☆☆ | Game dev community is smaller |
+| Cost | ★★★★★ | Free |
+
+**Best for:** Proving concept, fundraising demo, then porting
+
+### Recommended Strategy
+
+**Hybrid Approach:**
+1. Continue JavaScript for rapid prototyping and fundraising demo
+2. Plan for port to Unity/Godot post-funding
+3. Keep architecture modular so game logic can transfer
+4. Use TypeScript strictly to ease future port
+5. Budget the port as part of Kickstarter goal
+
+### Decision Timeline
+
+| Milestone | Decision |
+|-----------|----------|
+| Now | Continue JavaScript for demo |
+| Phase 1 Complete | Evaluate: Is performance acceptable? |
+| Kickstarter Planning | Include port costs in budget if needed |
+| Post-Funding | Execute port to Unity/Godot if decided |
+
+---
+
 ## Fundraising Strategy
 
 ### Overview
@@ -565,6 +645,90 @@ Phase 5+: Sustainable Development
 - Kickstarter launch/updates
 - Early Access announcements
 - Major updates
+
+---
+
+## Additional Preparation
+
+Beyond code and fundraising, these areas need attention before and during development.
+
+### Business & Legal
+
+| Item | Description | When |
+|------|-------------|------|
+| **Business entity** | LLC or similar—protects personal assets, needed for business bank accounts | Before receiving any money |
+| **Business bank account** | Separate finances from personal | Before Kickstarter |
+| **Tax planning** | Game income, Kickstarter funds, contractor payments have tax implications | Consult accountant early |
+| **Contracts** | Written agreements with any artists, composers, collaborators | Before any work begins |
+| **Trademark search** | Ensure game name isn't already taken | Before public announcement |
+| **Trademark registration** | Protect the game name | After validation, before launch |
+| **Terms of Service** | Required for Steam, multiplayer, any user accounts | Before Early Access |
+| **Privacy Policy** | Required if collecting any user data | Before Early Access |
+
+### Art & Audio Direction
+
+| Item | Description | When |
+|------|-------------|------|
+| **Visual style guide** | Color palette, block styles, UI aesthetics—ensures consistency | Before hiring artists |
+| **Character concepts** | Companion, player, NPCs, monsters—what do they look like? | Phase 1-2 |
+| **UI/UX mockups** | Design screens before building them | Before each UI phase |
+| **Audio direction doc** | What should the game *sound* like? Reference tracks, mood | Before hiring composer |
+| **Asset pipeline** | How does art/audio get from creator into the game? | Before external assets |
+| **Asset list** | What art/audio assets are needed? Prioritized backlog | Ongoing |
+
+### Market Research
+
+| Research | Purpose | When |
+|----------|---------|------|
+| **Competitor analysis** | What similar games exist? Strengths/weaknesses? | Now |
+| **Pricing research** | What do comparable games cost? ($15? $25? $30?) | Before Kickstarter tiers |
+| **Steam tag analysis** | Which tags perform well? How to position the game? | Before store page |
+| **Audience research** | Who plays games like this? Where do they hang out? | Before marketing push |
+| **Wishlist benchmarks** | How many wishlists typically convert to sales? | Before Early Access |
+
+### Community Building
+
+| Activity | Description | When |
+|----------|-------------|------|
+| **Social media presence** | Twitter/X, TikTok, YouTube—start building audience | Now |
+| **Discord server** | Community hub for fans and testers | Before first public demo |
+| **Email newsletter** | Direct line to interested players | Now (landing page) |
+| **Development blog** | Regular updates, builds trust and interest | Ongoing |
+| **Influencer list** | YouTubers, streamers who cover similar games | Before demo release |
+| **Press list** | Journalists, outlets to contact for coverage | Before major announcements |
+
+### Playtesting Strategy
+
+| Phase | Testers | Goals |
+|-------|---------|-------|
+| **Internal** | Self, close friends | Basic functionality, obvious bugs |
+| **Alpha (Closed)** | Trusted testers (10-50), NDA | Balance, fun factor, major issues |
+| **Beta (Closed)** | Expanded group (50-200) | Polish, edge cases, varied hardware |
+| **Beta (Open)** | Public | Stress testing, final polish |
+| **Content creators** | Selected influencers | Pre-launch coverage, feedback |
+
+### Personal Preparation
+
+| Item | Description |
+|------|-------------|
+| **Financial runway** | How many months can you work without game income? Know your number. |
+| **Day job strategy** | Keep it? Go part-time? Quit after funding? Plan ahead. |
+| **Health & burnout** | Sustainable pace, regular breaks, exercise, boundaries |
+| **Support system** | People who understand the journey—other devs, supportive friends/family |
+| **Skill gaps** | What can't you do? Art? Music? Marketing? Plan to hire or learn. |
+| **Backup plan** | What if Kickstarter fails? What if the game doesn't sell? Have Plan B. |
+
+### Tools & Infrastructure
+
+| Tool | Purpose | When Needed |
+|------|---------|-------------|
+| **Project management** | Track tasks, milestones (Trello, Notion, GitHub Projects) | Now |
+| **Version control** | Already have Git—ensure good practices | Now |
+| **CI/CD pipeline** | Automated builds, testing | Phase 1 |
+| **Bug tracking** | Organized issue management | Before external testing |
+| **Analytics** | Track player behavior (optional, privacy-conscious) | Early Access |
+| **Crash reporting** | Automatic error reports | Before public release |
+| **Community management** | Tools for Discord, social media | Before community grows |
 
 ---
 

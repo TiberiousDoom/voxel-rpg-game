@@ -53,9 +53,22 @@ The complete React/JavaScript source code including:
 | Directory/File | Description |
 |----------------|-------------|
 | `docs/` | Original game vision documents |
+| `documentation/` | Complete project documentation archive |
 | `ARCHITECTURE.md` | System architecture documentation |
 | `CURRENT_STATUS.md` | Development status at time of archive |
 | `DEVELOPMENT_GUIDE.md` | Implementation patterns and formulas |
+
+### Documentation Archive (`documentation/`)
+| Directory | Description |
+|-----------|-------------|
+| `planning/` | All previous implementation plans |
+| `reports/` | Audit reports and phase completion reports |
+| `history/` | Development notes and investigations |
+| `guides/` | Performance and optimization guides |
+| `examples/` | Code examples |
+| `prototypes/` | Prototype implementations and test results |
+| `migration/` | Migration guides |
+| `3d-components/` | Archived 3D game components |
 
 ### Public Assets (Config Only)
 | File | Description |

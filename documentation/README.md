@@ -1,455 +1,87 @@
-# Documentation Archive Index
+# Documentation
 
 **Last Updated:** November 2025
-**Purpose:** Index of all archived documentation
-
-This directory contains historical documentation. For current, authoritative docs, see the **root directory**.
+**Purpose:** Project documentation and archives
 
 ---
 
-## Archive Structure
+## Current Structure
 
 ```
 documentation/
-├── planning/              - Project plans, timelines, workflows
-├── reports/
-│   ├── phase-completions/ - Phase completion reports
-│   └── audits/            - Audit reports, investigations
-├── history/               - Development notes, debugging
-├── migration/             - Migration guides
-├── archive-code/          - Archived source code
-│   ├── 3d-components/     - Archived 3D game components
-│   └── 2d-prototype/      - Archived 2D React prototype (Nov 2025)
-└── README.md              - This file
+├── README.md                   - This file
+├── planning/                   - Active planning documents
+│   └── 2D_GAME_IMPLEMENTATION_PLAN.md
+└── archive-code/               - Archived code and documentation
+    └── 2d-prototype/           - Complete 2D React prototype archive
 ```
 
 ---
 
-## Planning Documents
+## Active Documents
 
-Implementation plans, timelines, and workflow coordination.
+### Planning
 
-| File | Description | Date | Status |
-|------|-------------|------|--------|
-| `2D_GAME_IMPLEMENTATION_PLAN.md` | **Comprehensive 2D game implementation plan - all 7 phases** | Nov 2025 | **Active** |
-| `PHASE_4_DUNGEON_SYSTEM_PLAN.md` | **Detailed implementation plan for Phase 4: Dungeon System (procedural generation, bosses, encounters)** | Nov 24, 2025 | **Archived** |
-| `GAME_ENVIRONMENT_IMPLEMENTATION_PLAN.md` | **Comprehensive plan for procedural environment system (terrain, biomes, props, structures, weather)** | Nov 20, 2025 | **Active** |
-| `GAMEPLAY_FEATURES_IMPLEMENTATION_PLAN.md` | **Comprehensive plan for monsters, loot, quests, and dungeons** | Nov 18, 2025 | **Active** |
-| `SPRITE_SYSTEM_IMPLEMENTATION_PLAN.md` | Implementation plan for sprite-based rendering system | Nov 17, 2025 | Active |
-| `PHASE_4_WORKFLOWS.md` | Phase 4 parallel workflow breakdown | Nov 15, 2025 | Active |
-| `HYBRID_GAME_INTEGRATION_PLAN.md` | Plan to integrate action RPG with settlement management | Nov 15, 2025 | Active |
-| `HYBRID_CORE_SYSTEMS_SPEC.md` | Technical spec for hybrid game core systems | Nov 15, 2025 | Active |
-| `HYBRID_NPC_COMBAT_SPEC.md` | Technical spec for NPC combat system | Nov 15, 2025 | Active |
-| `HYBRID_IMPLEMENTATION_GUIDE.md` | Step-by-step implementation guide (Phase 1 only) | Nov 15, 2025 | Superseded |
-| `HYBRID_IMPLEMENTATION_GUIDE_COMPLETE.md` | **Complete implementation guide for all 8 phases** | Nov 15, 2025 | **Active** |
+| File | Description | Status |
+|------|-------------|--------|
+| [2D_GAME_IMPLEMENTATION_PLAN.md](planning/2D_GAME_IMPLEMENTATION_PLAN.md) | Comprehensive 2D game implementation plan covering all 7 development phases | **Active** |
 
 ---
 
-## Phase Completion Reports
-
-Summaries of completed phases and features.
-
-| File | Description | Date | Status |
-|------|-------------|------|--------|
-| `PHASE_1_COMPLETE.md` | Phase 1 dead code audit completion | Nov 24, 2025 | Completed |
-| `PHASE_2_BIOME_SYSTEM_COMPLETE.md` | Phase 2 biome system completion | Nov 2025 | Completed |
-| `PHASE_3_PROPS_IN_PROGRESS.md` | Phase 3 props progress | Nov 2025 | Reference |
-| `PHASE_3_PROPS_PROGRESS_UPDATE.md` | Phase 3 props progress update | Nov 2025 | Reference |
-| `PHASE_4_COMPLETION_REPORT.md` | Phase 4 completion report | Nov 2025 | Completed |
-| `WF3_IMPLEMENTATION_SUMMARY.md` | WF3 implementation summary | Nov 2025 | Completed |
-
----
-
-## Audit Reports
-
-Architecture audits, phase reviews, and comprehensive evaluations.
-
-| File | Description | Date | Status |
-|------|-------------|------|--------|
-| `COMPREHENSIVE_CODE_AUDIT_REPORT.md` | **Dead code audit - Master report (~5,000 lines)** | Nov 24, 2025 | **Active** |
-| `AUDIT_DECISIONS_RESPONSE.md` | **Dead code audit - Detailed decisions (~2,000 lines)** | Nov 24, 2025 | **Active** |
-| `EQUIPMENT_STATS_INTEGRATION_AUDIT.md` | **EquipmentStatsIntegration.js integration plan (703 lines)** | Nov 24, 2025 | **Completed** |
-| `SPATIAL_HASH_AUDIT.md` | SpatialHash integration verification (431 lines) | Nov 24, 2025 | Completed |
-| `MODAL_ZINDEX_AUDIT.md` | Modal z-index conflict audit | Nov 24, 2025 | Completed |
-| `ENTITY_DEFINITIONS_AUDIT.md` | Entity definitions verification | Nov 24, 2025 | Completed |
-| `NOTIFICATION_COMPONENTS_AUDIT.md` | Notification component audit | Nov 24, 2025 | Completed |
-
----
-
-## Development History
-
-Development notes, investigations, and debugging sessions.
-
-| File | Description | Date | Status |
-|------|-------------|------|--------|
-| `SESSION_SUMMARY_2025-11-24.md` | **Session summary - comprehensive work log** | Nov 24, 2025 | Reference |
-| `PULL_REQUEST.md` | PR description for Phase 1 + Z-Index | Nov 24, 2025 | Reference |
-| `PULL_REQUEST_PHASE2B.md` | PR description for Phase 2B integrations | Nov 24, 2025 | Reference |
-| `HANDOFF.md` | Handoff notes between sessions | Nov 24, 2025 | Reference |
-| `ANIMATION_FRAME_LEAK_FIX.md` | Animation frame leak fix notes | Nov 2025 | Completed |
-| `MEMORY_LEAK_FIXES_COMPLETE.md` | Memory leak fixes summary | Nov 2025 | Completed |
-| `TEST_VERIFICATION.md` | Test verification notes | Nov 2025 | Reference |
-| `DEPENDENCY_WARNINGS.md` | Dependency warnings documentation | Nov 2025 | Reference |
-
----
-
-## Migration Guides
-
-Guides for migrating between versions or architectures.
-
-| File | Description | Date | Status |
-|------|-------------|------|--------|
-| *(none yet)* | | | |
-
----
-
-## Quick Links
-
-**Current Documentation (Root):**
-- [README.md](../README.md) - Project overview, quick start
-- [CURRENT_STATUS.md](../CURRENT_STATUS.md) - Project status, roadmap (if exists)
-- [ARCHITECTURE.md](../ARCHITECTURE.md) - Architecture documentation
-- [DEVELOPMENT_GUIDE.md](../DEVELOPMENT_GUIDE.md) - Development patterns (if exists)
-- [CONTRIBUTING.md](../CONTRIBUTING.md) - Contribution guidelines
-
----
-
-**Last Updated:** 2025-11-25
-**Maintained By:** Project team
-# Documentation Archive
-
-This directory contains historical documentation, archived reports, and phase completion summaries.
-
-**Last Updated:** November 24, 2025
-
----
-
-## 📁 Directory Structure
-
-```
-documentation/
-├── planning/              # Project planning documents
-├── reports/
-│   ├── phase-completions/ # Phase completion reports
-│   └── audits/            # Audit reports and architecture reviews
-├── history/               # Development notes and investigations
-├── migration/             # Migration guides
-└── README.md              # This file
-```
-
----
-
-## 📚 Current Documentation (Root Directory)
-
-For current, authoritative documentation, see the **root directory**:
-
-| Document | Purpose |
-|----------|---------|
-| **[README.md](../README.md)** | Project overview, quick start, gameplay guide |
-| **[CURRENT_STATUS.md](../CURRENT_STATUS.md)** | Current status, known issues, roadmap |
-| **[ARCHITECTURE.md](../ARCHITECTURE.md)** | System architecture and design patterns |
-| **[DEVELOPMENT_GUIDE.md](../DEVELOPMENT_GUIDE.md)** | Implementation patterns, formulas, balance |
-
-**Always refer to root documentation first.** Files in this archive are historical and may be outdated.
-
----
-
-## 📋 Planning Documents
-
-**Location:** `documentation/planning/`
-
-These documents describe project planning, timelines, and implementation strategies.
-
-| File | Description | Date | Status |
-|------|-------------|------|--------|
-| `PHASE_4_ADVANCED_AI_IMPLEMENTATION_PLAN.md` | **Phase 4: Advanced AI & Behavior Systems implementation plan** | Nov 24, 2025 | **Draft** |
-| `GAMEPLAY_IMPROVEMENTS_IDEAS.md` | Gameplay improvement ideas for future implementation | Nov 16, 2025 | Active |
-| `PROJECT_TIMELINE.md` | Project timeline and milestones | Historical | Archived |
-| `IMPLEMENTATION_PLAN.md` | Implementation plan overview | Historical | Archived |
-| `PHASE_3_IMPLEMENTATION_PLAN.md` | Phase 3 implementation details | Nov 2025 | Reference |
-| `PHASE_3_TO_100_PERCENT_PLAN.md` | Plan to complete Phase 3 | Nov 2025 | Reference |
-| `WORKFLOW_TRACKING.md` | Workflow tracking | Historical | Archived |
-| `PROTOTYPE_CHECKLIST.md` | Prototype checklist | Historical | Archived |
-| `PHASE_0_TESTING_CHECKLIST.md` | Phase 0 testing checklist | Historical | Archived |
-
----
-
-## 📊 Phase Completion Reports
-
-**Location:** `documentation/reports/phase-completions/`
-
-These documents record the completion of each development phase.
-
-### Phase 1 Reports
-
-| File | Description | Date |
-|------|-------------|------|
-| `PHASE_1_COMPLETE.md` | Phase 1 completion summary | Historical |
-| `PHASE_1_1_COMPLETE.md` | Phase 1.1: BrowserSaveManager | Nov 9, 2025 |
-| `PHASE_1_2_COMPLETE.md` | Phase 1.2: React Integration | Nov 9, 2025 |
-| `PHASE_1_3_COMPLETE.md` | Phase 1.3: UI Components | Nov 9, 2025 |
-
-### Phase 2 Reports
-
-| File | Description | Date |
-|------|-------------|------|
-| `PHASE_2_COMPLETE.md` | Phase 2 completion summary | Historical |
-| `P2A_TIER_PROGRESSION_SUMMARY.md` | Phase 2A: Tier Progression | Historical |
-| `P2B_ADVANCED_BUILDINGS_SUMMARY.md` | Phase 2B: Advanced Buildings | Historical |
-| `P2D_SAVE_LOAD_FIXES.md` | Phase 2D: Save/Load fixes | Historical |
-
-### Phase 3 Reports
-
-| File | Description | Date |
-|------|-------------|------|
-| `PHASE_3_COMPLETION_REPORT.md` | Phase 3 completion summary | Nov 2025 |
-| `PHASE_3_FINAL_SUMMARY.md` | Phase 3 final summary | Nov 2025 |
-| `PHASE_3C_REVIEW.md` | Phase 3C review | Nov 2025 |
-
-### Phase 4 Reports
-
-| File | Description | Date |
-|------|-------------|------|
-| `PLAYTESTING_REPORT.md` | WF8 Balance Analysis & Playtesting Report | Nov 15, 2025 |
-| `WF8_BALANCE_CHANGELOG.md` | WF8 Balance Changelog (v1.0.0) | Nov 15, 2025 |
-
-### Other Reports
-
-| File | Description | Date |
-|------|-------------|------|
-| `BUG_FIXES_SUMMARY.md` | Runtime bug fixes summary (5 bugs fixed) | Nov 24, 2025 |
-| `WEEK4_SUMMARY.md` | Week 4 summary | Historical |
-
----
-
-## 🔍 Audit Reports
-
-**Location:** `documentation/reports/audits/`
-
-These documents contain comprehensive audits, architecture reviews, and bug investigations.
-
-### Phase Audits
-
-| File | Description | Date | Notes |
-|------|-------------|------|-------|
-| `PHASE_1_AUDIT_REPORT.md` | Phase 1 audit | Historical | |
-| `PHASE_2_AUDIT_REPORT.md` | Phase 2 audit | Historical | |
-| `PHASE_3_AUDIT_REPORT.md` | Phase 3 audit (older) | Nov 13, 2025 | **OUTDATED** - Says Phase 3C/3D NOT STARTED |
-| `PHASE_3_COMPREHENSIVE_AUDIT_2025-11-13.md` | Phase 3 comprehensive audit | Nov 13, 2025 | **MORE RECENT** - Says Phase 3C/3D COMPLETE |
-| `P2D_AUDIT_REPORT.md` | Phase 2D audit | Historical | |
-
-**⚠️ Important Note on Phase 3 Audits:**
-- `PHASE_3_AUDIT_REPORT.md` incorrectly states Phase 3C/3D are "NOT STARTED"
-- `PHASE_3_COMPREHENSIVE_AUDIT_2025-11-13.md` is the correct, updated audit showing Phase 3C/3D are "COMPLETE"
-- Always refer to the comprehensive audit for accurate Phase 3 status
-
-### Architecture Reviews
-
-| File | Description | Date |
-|------|-------------|------|
-| `CODE_INTEGRATION_AUDIT_2025-11-15.md` | Code integration audit - System integration verification | Nov 15, 2025 |
-| `ARCHITECTURE_AUDIT.md` | Architecture audit | Nov 9, 2025 |
-| `ARCHITECTURE_REVIEW.md` | Comprehensive architecture review | Historical |
-| `ARCHITECTURE_REVIEW_FINDINGS.md` | Architecture review findings | Historical |
-| `COMPREHENSIVE_AUDIT_REPORT.md` | Comprehensive audit | Historical |
-| `CRITICAL_ARCHITECTURE_AUDIT_REPORT.md` | Critical architecture audit | Historical |
-| `CRITICAL_FIXES_AND_WORKFLOWS.md` | Critical fixes and workflows | Historical |
-
----
-
-## 📝 Development History
-
-**Location:** `documentation/history/`
-
-These documents contain development notes, investigations, and historical context.
-
-| File | Description | Size | Notes |
-|------|-------------|------|-------|
-| `BUG_REPORT.md` | Runtime bug investigation (5 bugs) | Medium | Nov 24, 2025 |
-| `RUNTIME_TEST_REPORT.md` | Manual runtime testing report | Large | Nov 24, 2025 |
-| `development-notes.md` | Full conversation history | 60KB | Complete development log |
-| `PR_PHASE_2_BODY.md` | Phase 2 PR body | Small | PR template |
-| `TEST_FAILURE_INVESTIGATION.md` | Test failure investigation | Medium | Debugging notes |
-| `SAVE_LOAD_INVESTIGATION.md` | Save/load investigation | Medium | Debugging notes |
-
----
-
-## 🔄 Migration Guides
-
-**Location:** `documentation/migration/`
-
-Migration guides for major architecture changes.
-
-| File | Description | Date |
-|------|-------------|------|
-| `3D_MIGRATION_GUIDE.md` | 3D migration guide | Historical |
-| `MIGRATION.md` | General migration guide | Historical |
-
----
-
-## 📦 Archived Source Code
-
-**Location:** `documentation/archive-code/`
-
-Archived source code that has been removed from the active codebase but preserved for reference.
+## Archived Content
 
 ### 2D React Prototype (`archive-code/2d-prototype/`)
 
 **Archived:** November 2025
 **Reason:** Project transitioning to new implementation based on 2D planning documents
 
-| Directory/File | Description |
-|----------------|-------------|
-| `README.md` | Archive documentation with restoration guide |
-| `src/` | Complete React/JavaScript source code |
+The complete React/JavaScript 2D prototype has been archived, including:
+
+| Directory | Description |
+|-----------|-------------|
+| `src/` | Complete source code (components, systems, rendering, etc.) |
 | `scripts/` | Build and generation scripts |
 | `tools/` | Sprite generator and utilities |
 | `docs/` | Original game vision documents |
 | `public/` | React entry HTML and config files |
-| `ARCHITECTURE.md` | System architecture documentation |
-| `CURRENT_STATUS.md` | Development status at time of archive |
-| `DEVELOPMENT_GUIDE.md` | Implementation patterns and formulas |
-| `package.json` | NPM dependencies and scripts |
+| `documentation/` | All historical documentation (planning, reports, guides, etc.) |
+
+**Key Documents in Archive:**
+- `ARCHITECTURE.md` - System architecture documentation
+- `CURRENT_STATUS.md` - Development status at time of archive
+- `DEVELOPMENT_GUIDE.md` - Implementation patterns and formulas
+- `documentation/planning/` - All previous implementation plans
+- `documentation/reports/` - Audit reports and phase completion reports
+- `documentation/history/` - Development notes and investigations
 
 **Note:** Game assets remain in `public/assets/` and were NOT archived.
 
----
-
-### 3D Components (`archive-code/3d-components/`)
-
-**Archived:** November 25, 2025
-**Reason:** Project refocused to 2D Canvas version only
-
-| File | Description |
-|------|-------------|
-| `README.md` | Archive documentation with restoration guide |
-| `App3D.jsx` | Main 3D app entry point |
-| `GameSelector.jsx` | 2D/3D mode selector |
-| `Experience.jsx` | Main 3D scene with Physics |
-| `Player.jsx` | 3D player with movement |
-| `Enemy.jsx` | 3D enemy entities |
-| `VoxelTerrain.jsx` | 3D voxel terrain |
-| `Projectile.jsx` | 3D projectiles |
-| `ParticleEffect.jsx` | 3D particle effects |
-| `DamageNumber.jsx` | 3D damage numbers |
-| `XPOrb.jsx` | 3D XP orbs |
-| `LootDrop.jsx` | 3D loot drops |
-| `TargetMarker.jsx` | 3D target markers |
-| `TouchControls.jsx` | 3D touch input |
-| `CameraRotateControls.jsx` | 3D camera controls |
-| `WaveManager.jsx` | 3D wave management |
-
-**Dependencies removed from package.json:**
-- `three` - Three.js core
-- `@react-three/fiber` - React Three.js renderer
-- `@react-three/drei` - Three.js utilities
-- `@react-three/rapier` - Physics engine
+See [archive-code/2d-prototype/README.md](archive-code/2d-prototype/README.md) for restoration instructions.
 
 ---
 
-## 🗂️ File Organization
+## Root Directory Documents
 
-### What Stays in Root
+The following documents remain in the project root:
 
-Only **current, authoritative** documentation:
-- README.md - Project overview
-- CURRENT_STATUS.md - Current status
-- ARCHITECTURE.md - Architecture docs
-- DEVELOPMENT_GUIDE.md - Developer guide
-
-### What Goes in Archive
-
-Everything else:
-- Historical reports
-- Outdated audits
-- Phase completion summaries
-- Investigation notes
-- Planning documents
-- Migration guides
+| Document | Purpose |
+|----------|---------|
+| **[README.md](../README.md)** | Project overview |
+| **[CONTRIBUTING.md](../CONTRIBUTING.md)** | Contribution guidelines |
+| **[LICENSE](../LICENSE)** | Project license |
 
 ---
 
-## 📖 How to Use This Archive
+## Planning Documents (Root)
 
-### Finding Information
+The new 2D game planning documents are in the project root `planning/` directory:
 
-1. **Current Info** → Check root directory first (`README.md`, `CURRENT_STATUS.md`, etc.)
-2. **Historical Context** → Check `history/` for development notes
-3. **Phase Details** → Check `reports/phase-completions/` for phase-specific info
-4. **Architecture History** → Check `reports/audits/` for architecture reviews
-5. **Planning Context** → Check `planning/` for project plans
-
-### Navigation Tips
-
-- Start with root documentation
-- Use this index to find archived docs
-- Check file dates for recency
-- Prefer comprehensive reports over individual audits
-- Watch for conflicting information (see Phase 3 audit note above)
+| Document | Purpose |
+|----------|---------|
+| [VISION_2D.md](../planning/VISION_2D.md) | Game vision for 2D implementation |
+| [ROADMAP_2D.md](../planning/ROADMAP_2D.md) | Development roadmap for 2D game |
+| [NPC_SYSTEM_DESIGN_2D.md](../planning/NPC_SYSTEM_DESIGN_2D.md) | NPC system architecture for 2D |
 
 ---
 
-## ⚠️ Important Notes
-
-### Outdated/Conflicting Information
-
-Some archived documents may contain **outdated or conflicting information**:
-
-**Phase 3 Status:**
-- ❌ `PHASE_3_AUDIT_REPORT.md` says Phase 3C/3D are "NOT STARTED" (OUTDATED)
-- ✅ `PHASE_3_COMPREHENSIVE_AUDIT_2025-11-13.md` says Phase 3C/3D are "COMPLETE" (CORRECT)
-- ✅ Root `CURRENT_STATUS.md` reflects accurate Phase 3 completion
-
-**When in doubt:**
-- Root documentation is authoritative
-- Newer audit reports supersede older ones
-- Check `CURRENT_STATUS.md` for latest project state
-
-### Version Control
-
-All files in this archive are version-controlled. To see the history of any file:
-
-```bash
-git log --follow documentation/path/to/file.md
-```
-
----
-
-## 📊 Archive Statistics
-
-| Category | File Count | Notes |
-|----------|-----------|-------|
-| Planning | 9 files | Project plans and timelines |
-| Phase Completions | 12 files | Phase 1, 2, 3 completion reports |
-| Audits | 12 files | Architecture and phase audits |
-| History | 4 files | Development notes (60KB total) |
-| Migration | 2 files | Migration guides |
-| **Total** | **39 files** | Moved from root directory + new audits |
-
-**Root Cleanup Result:**
-- **Before:** 43 markdown files in root
-- **After:** 4 markdown files in root (README, CURRENT_STATUS, ARCHITECTURE, DEVELOPMENT_GUIDE)
-- **Reduction:** 91% fewer files in root ✅
-
----
-
-## 🔗 Quick Links
-
-**Current Documentation:**
-- [README.md](../README.md) - Start here
-- [CURRENT_STATUS.md](../CURRENT_STATUS.md) - Project status
-- [ARCHITECTURE.md](../ARCHITECTURE.md) - Architecture
-- [DEVELOPMENT_GUIDE.md](../DEVELOPMENT_GUIDE.md) - Development guide
-
-**Archive Sections:**
-- [Planning](planning/) - Project planning
-- [Phase Completions](reports/phase-completions/) - Phase reports
-- [Audits](reports/audits/) - Audit reports
-- [History](history/) - Development history
-- [Migration](migration/) - Migration guides
-
----
-
-**Archive Created:** November 15, 2025
-**Purpose:** Consolidate documentation, improve navigation
-**Maintained By:** Project maintainers
+**Maintained By:** Project team

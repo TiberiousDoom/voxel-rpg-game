@@ -1,6 +1,6 @@
 # Documentation Archive Index
 
-**Last Updated:** 2025-11-25
+**Last Updated:** November 2025
 **Purpose:** Index of all archived documentation
 
 This directory contains historical documentation. For current, authoritative docs, see the **root directory**.
@@ -18,7 +18,8 @@ documentation/
 ├── history/               - Development notes, debugging
 ├── migration/             - Migration guides
 ├── archive-code/          - Archived source code
-│   └── 3d-components/     - Archived 3D game components
+│   ├── 3d-components/     - Archived 3D game components
+│   └── 2d-prototype/      - Archived 2D React prototype (Nov 2025)
 └── README.md              - This file
 ```
 
@@ -30,7 +31,8 @@ Implementation plans, timelines, and workflow coordination.
 
 | File | Description | Date | Status |
 |------|-------------|------|--------|
-| `PHASE_4_DUNGEON_SYSTEM_PLAN.md` | **Detailed implementation plan for Phase 4: Dungeon System (procedural generation, bosses, encounters)** | Nov 24, 2025 | **Draft** |
+| `2D_GAME_IMPLEMENTATION_PLAN.md` | **Comprehensive 2D game implementation plan - all 7 phases** | Nov 2025 | **Active** |
+| `PHASE_4_DUNGEON_SYSTEM_PLAN.md` | **Detailed implementation plan for Phase 4: Dungeon System (procedural generation, bosses, encounters)** | Nov 24, 2025 | **Archived** |
 | `GAME_ENVIRONMENT_IMPLEMENTATION_PLAN.md` | **Comprehensive plan for procedural environment system (terrain, biomes, props, structures, weather)** | Nov 20, 2025 | **Active** |
 | `GAMEPLAY_FEATURES_IMPLEMENTATION_PLAN.md` | **Comprehensive plan for monsters, loot, quests, and dungeons** | Nov 18, 2025 | **Active** |
 | `SPRITE_SYSTEM_IMPLEMENTATION_PLAN.md` | Implementation plan for sprite-based rendering system | Nov 17, 2025 | Active |
@@ -290,6 +292,28 @@ Migration guides for major architecture changes.
 **Location:** `documentation/archive-code/`
 
 Archived source code that has been removed from the active codebase but preserved for reference.
+
+### 2D React Prototype (`archive-code/2d-prototype/`)
+
+**Archived:** November 2025
+**Reason:** Project transitioning to new implementation based on 2D planning documents
+
+| Directory/File | Description |
+|----------------|-------------|
+| `README.md` | Archive documentation with restoration guide |
+| `src/` | Complete React/JavaScript source code |
+| `scripts/` | Build and generation scripts |
+| `tools/` | Sprite generator and utilities |
+| `docs/` | Original game vision documents |
+| `public/` | React entry HTML and config files |
+| `ARCHITECTURE.md` | System architecture documentation |
+| `CURRENT_STATUS.md` | Development status at time of archive |
+| `DEVELOPMENT_GUIDE.md` | Implementation patterns and formulas |
+| `package.json` | NPM dependencies and scripts |
+
+**Note:** Game assets remain in `public/assets/` and were NOT archived.
+
+---
 
 ### 3D Components (`archive-code/3d-components/`)
 

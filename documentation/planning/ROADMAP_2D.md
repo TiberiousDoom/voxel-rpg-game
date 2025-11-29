@@ -28,6 +28,20 @@ A 2D RPG survival base-building game where an ordinary farmer, guided by a mysti
 
 ### Platform Choice Options
 
+#### Web/TypeScript (Current Implementation)
+
+| Factor | Rating | Notes |
+|--------|--------|-------|
+| Performance | ★★★★☆ | Excellent with modern browsers |
+| Development Speed | ★★★★★ | Rapid iteration, hot reload |
+| 2D Support | ★★★★☆ | Canvas API, good for tilemaps |
+| Platform Support | ★★★★★ | **All platforms via browser + PWA** |
+| Mobile Support | ★★★★★ | **Native touch, instant play** |
+| Community | ★★★★★ | Massive web ecosystem |
+| Cost | ★★★★★ | Free, open source tools |
+
+**Key Advantage:** Instant mobile play via PWA—no app store approval needed.
+
 #### Unity 2D
 
 | Factor | Rating | Notes |
@@ -36,6 +50,7 @@ A 2D RPG survival base-building game where an ordinary farmer, guided by a mysti
 | Development Speed | ★★★★★ | Huge ecosystem, visual editor |
 | 2D Support | ★★★★★ | Tilemap, 2D physics, Sprite |
 | Platform Support | ★★★★★ | PC, Mac, Linux, Console, Mobile |
+| Mobile Support | ★★★★☆ | Good, requires native builds |
 | Community | ★★★★★ | Massive, problems are solved |
 | Cost | ★★★☆☆ | Free until $200K revenue |
 
@@ -47,10 +62,24 @@ A 2D RPG survival base-building game where an ordinary farmer, guided by a mysti
 | Development Speed | ★★★★☆ | Excellent scene system |
 | 2D Support | ★★★★★ | Native 2D engine, tilemaps |
 | Platform Support | ★★★★☆ | PC, Mac, Linux, Mobile, Web |
+| Mobile Support | ★★★★☆ | Web export for PWA, native builds |
 | Community | ★★★★☆ | Growing rapidly |
 | Cost | ★★★★★ | Completely free, MIT license |
 
 **Reference Games:** Terraria, Stardew Valley, Rimworld, Starbound
+
+### Target Platforms
+
+| Platform | Priority | Distribution |
+|----------|----------|--------------|
+| **Web (PWA)** | Primary | GitHub Pages, itch.io |
+| **Mobile Web** | Primary | PWA install from browser |
+| **Desktop (Web)** | Primary | Electron wrapper or native browser |
+| iOS (Native) | Secondary | App Store (post-launch) |
+| Android (Native) | Secondary | Google Play (post-launch) |
+| Steam | Secondary | Steam release for visibility |
+
+**Mobile-First Strategy:** Launch as PWA first, then native apps for stores.
 
 ### Development Strategy
 
@@ -80,11 +109,11 @@ A 2D RPG survival base-building game where an ordinary farmer, guided by a mysti
 ## Development Phases
 
 ### Phase 0: Foundation
-**Goal:** Establish core 2D systems
+**Goal:** Establish core 2D systems with mobile support
 
 ```
 Duration: 2-3 months
-Deliverable: Technical foundation
+Deliverable: Technical foundation (desktop + mobile)
 ```
 
 #### Tasks
@@ -93,22 +122,28 @@ Deliverable: Technical foundation
 - [ ] Tile type registry and configuration
 - [ ] Basic player controller (movement, camera)
 - [ ] Save/Load system architecture
-- [ ] Input system setup
-- [ ] Basic UI framework
+- [ ] Input system setup (keyboard, mouse, gamepad, **touch**)
+- [ ] Basic UI framework (**responsive**)
+- [ ] **Touch input system (virtual joystick, touch buttons)**
+- [ ] **Responsive layout system (phone/tablet/desktop)**
+- [ ] **PWA manifest and service worker**
 
 #### Exit Criteria
 - Player can move through a 2D tile-based world
 - Tiles can be placed and removed
 - Game state can be saved and loaded
+- **Touch controls work on mobile devices**
+- **UI adapts to different screen sizes**
+- **Game installable as PWA**
 
 ---
 
 ### Phase 1: Playable Prototype
-**Goal:** Create the core survival gameplay loop
+**Goal:** Create the core survival gameplay loop (playable on all platforms)
 
 ```
 Duration: 2-3 months
-Deliverable: Playable survival demo
+Deliverable: Playable survival demo (desktop + mobile)
 Fundraising Milestone: "Proof of Concept" demo
 ```
 
@@ -121,10 +156,12 @@ Fundraising Milestone: "Proof of Concept" demo
 | Basic Crafting | Essential tools and items | Critical |
 | Day/Night Cycle | Time progression, darkness danger | High |
 | Simple Threats | Basic monster spawns | High |
-| Basic UI | HUD, inventory screen | Critical |
+| Basic UI | HUD, inventory screen (**responsive**) | Critical |
+| **Touch Interactions** | **Tap-to-interact, drag-to-build** | Critical |
+| **Mobile Performance** | **60 FPS on mid-range phones** | Critical |
 
 #### Demo Scenario
-> *Player spawns in a generated world. They must gather resources, craft tools, build a shelter, and survive the first night when monsters emerge.*
+> *Player spawns in a generated world. They must gather resources, craft tools, build a shelter, and survive the first night when monsters emerge. **Works seamlessly on phone, tablet, or desktop.***
 
 ---
 
@@ -244,22 +281,24 @@ Deliverable: Multiplayer beta
 ---
 
 ### Phase 7: Launch Preparation
-**Goal:** Ship-ready game
+**Goal:** Ship-ready game on all platforms
 
 ```
 Duration: 2-3 months
-Deliverable: Version 1.0
+Deliverable: Version 1.0 (all platforms)
 ```
 
 #### Tasks
 | Task | Description | Priority |
 |------|-------------|----------|
-| QA & Bug Fixing | Comprehensive testing | Critical |
-| Performance Optimization | Stable frame rates | Critical |
-| Platform Builds | Windows, Mac, Linux | Critical |
-| Store Presence | Steam, itch.io pages | Critical |
-| Marketing Materials | Trailers, screenshots | High |
-| Launch Trailer | Polished video | High |
+| QA & Bug Fixing | Comprehensive testing (all platforms) | Critical |
+| Performance Optimization | Stable frame rates (including mobile) | Critical |
+| Platform Builds | Windows, Mac, Linux, **Web/PWA** | Critical |
+| **Mobile App Builds** | **iOS, Android native wrappers** | High |
+| Store Presence | Steam, itch.io, **App Store, Google Play** | Critical |
+| Marketing Materials | Trailers, screenshots (**mobile screenshots**) | High |
+| Launch Trailer | Polished video (**show mobile gameplay**) | High |
+| **App Store Assets** | **Icons, descriptions, screenshots for stores** | High |
 
 ---
 
@@ -560,7 +599,9 @@ Beyond code and fundraising, these areas need attention.
 | Metric | Target |
 |--------|--------|
 | Build stability | <1 crash per hour |
-| Performance | 60 FPS on mid-range hardware |
+| Performance (Desktop) | 60 FPS on mid-range hardware |
+| **Performance (Mobile)** | **60 FPS on 2-year-old mid-range phones** |
+| **Touch responsiveness** | **<50ms input latency on mobile** |
 | Test coverage | >70% for core systems |
 
 ### Community Metrics (Pre-Launch)
@@ -571,14 +612,26 @@ Beyond code and fundraising, these areas need attention.
 | Newsletter subscribers | 500+ |
 | Social media followers | 2,000+ |
 | Steam wishlists | 10,000+ |
+| **PWA installs** | **1,000+** |
 
 ### Launch Metrics
 
 | Metric | Target |
 |--------|--------|
 | Steam review score | 80%+ positive |
-| Day 1 sales | 10-20% of wishlists |
+| **App Store rating** | **4.0+ stars** |
+| **Google Play rating** | **4.0+ stars** |
+| Day 1 sales/downloads | 10-20% of wishlists |
 | Refund rate | <10% |
+| **Mobile retention (D7)** | **>20%** |
+
+### Cross-Platform Metrics
+
+| Metric | Target |
+|--------|--------|
+| **Mobile % of players** | **>30%** |
+| **Cross-platform saves** | **<1% sync failures** |
+| **Session length (mobile)** | **Average 15+ minutes** |
 
 ---
 

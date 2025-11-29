@@ -11,11 +11,12 @@
 1. [Vision Statement](#vision-statement)
 2. [Core Pillars](#core-pillars)
 3. [Design Principles](#design-principles)
-4. [The World](#the-world)
-5. [Player Journey](#player-journey)
-6. [The Companion Arc](#the-companion-arc)
-7. [NPC Philosophy](#npc-philosophy)
-8. [Inspirations & Differentiation](#inspirations--differentiation)
+4. [Platform Philosophy](#platform-philosophy)
+5. [The World](#the-world)
+6. [Player Journey](#player-journey)
+7. [The Companion Arc](#the-companion-arc)
+8. [NPC Philosophy](#npc-philosophy)
+9. [Inspirations & Differentiation](#inspirations--differentiation)
 
 ---
 
@@ -79,12 +80,14 @@ Player agency is paramount:
 - No "right way" to play
 - The sandbox is always available
 
-#### 5. Connect (Multiplayer)
-Building together:
+#### 5. Connect (Multiplayer & Cross-Platform)
+Building together, anywhere:
 - Solo play with companion is complete experience
 - Multiplayer enhances but doesn't replace solo
 - Shared settlements and cooperative building
 - Friends can drop in and out
+- **Play on any device:** Desktop, tablet, or phone
+- **Seamless transitions:** Start on PC, continue on mobile
 
 ---
 
@@ -161,6 +164,102 @@ These principles guide all design decisions:
 - Hide critical systems from new players
 - Require wiki reading to play effectively
 - Punish players for not knowing hidden mechanics
+
+---
+
+## Platform Philosophy
+
+### Play Anywhere
+
+The game should be accessible wherever players want to play. Mobile is not an afterthought—it's a first-class platform.
+
+#### Core Principle: One Game, All Platforms
+
+**Do:**
+- Design UI and controls to work on all screen sizes
+- Ensure touch controls feel native, not ported
+- Sync progress between devices (cloud save)
+- Maintain visual fidelity across platforms
+- Respect each platform's conventions and expectations
+
+**Don't:**
+- Make mobile a "lesser" version
+- Require different content for different platforms
+- Force players to choose between platforms
+- Ignore platform-specific capabilities
+
+### Touch-First Design
+
+While the game supports keyboard, mouse, and gamepad, the UI and interactions must work excellently on touch screens.
+
+**Touch Control Principles:**
+- Virtual joystick for movement (appears on touch)
+- Context-sensitive action buttons (adapt to situation)
+- Long-press for secondary actions
+- Pinch-to-zoom for camera control
+- Drag gestures for building placement
+- Large, thumb-friendly touch targets (minimum 44pt)
+
+**Touch Should Feel:**
+- Responsive (no input lag)
+- Precise (accurate tile selection)
+- Forgiving (generous hit areas)
+- Discoverable (clear affordances)
+
+### Responsive UI Design
+
+**Screen Size Adaptation:**
+
+| Device Type | Min Screen | UI Scale | Layout |
+|-------------|------------|----------|--------|
+| Phone (Portrait) | 320px | 1.0x-1.5x | Single column, stacked panels |
+| Phone (Landscape) | 568px | 1.0x-1.5x | Split view, side panels |
+| Tablet | 768px | 1.0x | Flexible layout, docked panels |
+| Desktop | 1024px+ | 1.0x-0.75x | Full layout, multiple panels |
+
+**Responsive Principles:**
+- UI elements reflow based on available space
+- Critical information always visible
+- Inventory and menus adapt to screen orientation
+- Text scales appropriately for readability
+
+### Mobile-Specific Considerations
+
+**Performance:**
+- Target 60 FPS on mid-range devices (2-3 years old)
+- Minimize battery drain (reduce unnecessary updates)
+- Manage memory for devices with 3-4GB RAM
+- Support background pause/resume seamlessly
+
+**Session Length:**
+- Design for short sessions (5-15 minutes)
+- Also support long sessions (hours)
+- Clear stopping points and autosave
+- Quick resume to last state
+
+**Connectivity:**
+- Offline-first design (no internet required for single-player)
+- Graceful handling of connectivity changes
+- Minimal data usage for cloud sync
+- Optional push notifications for events
+
+### Progressive Web App (PWA) Support
+
+The web build should function as a PWA for easy mobile access:
+- Installable to home screen
+- Works offline after initial load
+- Push notifications (optional)
+- Full-screen gameplay
+- Native-like experience
+
+### Cross-Platform Sync
+
+**Cloud Save Features:**
+- Automatic sync when online
+- Manual sync option
+- Conflict resolution (prefer most recent)
+- Multiple save slots synced
+- Progress, settings, and achievements
 
 ---
 

@@ -11,6 +11,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.2 | 2025-11-29 | **Added comprehensive mobile/touch support specs** |
 | 1.1 | 2025-11-28 | Consolidated planning docs, aligned terminology, removed timeline estimates |
 | 1.0 | 2025-11-28 | Initial technical specification |
 
@@ -260,15 +261,114 @@ SaveData:
 
 **Default bindings:**
 
-| Action | Keyboard | Gamepad |
-|--------|----------|---------|
-| Move | WASD / Arrows | Left Stick |
-| Sprint | Shift | Left Trigger |
-| Interact | E | A Button |
-| Attack | Left Click | Right Trigger |
-| Cancel | Escape | B Button |
-| Inventory | I | Start |
-| Build Menu | B | Select |
+| Action | Keyboard | Gamepad | Touch |
+|--------|----------|---------|-------|
+| Move | WASD / Arrows | Left Stick | Virtual Joystick |
+| Sprint | Shift | Left Trigger | Sprint Button / Double-tap |
+| Interact | E | A Button | Tap on target |
+| Attack | Left Click | Right Trigger | Attack Button |
+| Cancel | Escape | B Button | Back gesture / X Button |
+| Inventory | I | Start | Inventory Button |
+| Build Menu | B | Select | Build Button |
+| Zoom | Scroll / +/- | Right Stick | Pinch Gesture |
+
+### Touch Input System
+
+**Virtual Joystick:**
+```
+VirtualJoystick:
+  position: Vector2              # Screen position (bottom-left default)
+  radius: float                  # Touch area radius (80px default)
+  innerRadius: float             # Knob radius (30px default)
+  deadzone: float                # 0.1 default
+  opacity: float                 # 0.5 when not touched, 0.8 when active
+  showOnTouch: bool              # Appear where finger touches (true)
+```
+
+**Touch Button:**
+```
+TouchButton:
+  position: Vector2              # Screen position
+  size: Vector2                  # Minimum 44x44 points
+  icon: Sprite
+  action: InputAction
+  showLabel: bool
+  hapticFeedback: bool           # Vibrate on press (optional)
+```
+
+**Gesture Support:**
+- **Tap:** Select tile, interact with object
+- **Double-tap:** Sprint toggle
+- **Long-press:** Secondary action (1 second hold)
+- **Pinch:** Zoom in/out
+- **Two-finger pan:** Pan camera (when zoomed)
+- **Drag:** Build placement, inventory drag
+
+**Touch Configuration:**
+```
+TouchConfig:
+  joystickSide: 'left' | 'right'  # Which side for movement
+  buttonLayout: 'default' | 'compact' | 'spread'
+  sensitivity: float              # 0.5 to 2.0
+  hapticEnabled: bool
+  showJoystickAlways: bool        # Or only on touch
+```
+
+### Responsive UI System
+
+**Breakpoints:**
+```
+Breakpoints:
+  phone: 0-599px                 # Single column, stacked
+  phoneLandscape: 600-767px      # Split view
+  tablet: 768-1023px             # Side panels
+  desktop: 1024px+               # Full layout
+```
+
+**UI Scaling:**
+```
+UIScale:
+  phone: 1.25                    # Larger touch targets
+  tablet: 1.0                    # Standard
+  desktop: 1.0                   # Standard
+
+  minTouchTarget: 44px           # Apple HIG minimum
+  preferredTouchTarget: 48px     # Material Design recommended
+```
+
+**Responsive Layout:**
+- HUD adapts position based on screen size
+- Inventory uses grid on tablet/desktop, list on phone
+- Panels stack vertically on phone, dock on sides for tablet+
+- Action buttons reposition for comfortable thumb reach
+
+### PWA Configuration
+
+**manifest.json:**
+```
+PWAManifest:
+  name: "Voxel RPG"
+  short_name: "VoxelRPG"
+  display: "fullscreen"
+  orientation: "any"             # Support portrait and landscape
+  background_color: "#0f0f23"
+  theme_color: "#e94560"
+  icons: [192x192, 512x512]
+  start_url: "/"
+  scope: "/"
+```
+
+**Service Worker:**
+- Cache all game assets for offline play
+- Background sync for cloud saves
+- Push notifications for events (optional)
+- Update notification when new version available
+
+**Mobile Optimizations:**
+- Lazy load non-critical assets
+- Compress textures for mobile (WebP)
+- Reduce particle effects on low-end devices
+- Throttle background updates when not focused
 
 ### Exit Criteria (Measurable)
 
@@ -276,6 +376,11 @@ SaveData:
 - [ ] Tile operations: SetTile/GetTile < 1ms
 - [ ] Save/load: Complete cycle < 5 seconds for 10 regions
 - [ ] Input latency: < 50ms from press to visible response
+- [ ] **Touch latency: < 50ms from touch to visible response**
+- [ ] **Virtual joystick: Smooth movement, no drift**
+- [ ] **Responsive UI: Correct layout on 320px to 2560px screens**
+- [ ] **PWA: Installable, works offline**
+- [ ] **Mobile performance: 60 FPS on iPhone 12 / Pixel 5 equivalent**
 - [ ] All automated unit tests passing
 
 ---
@@ -727,20 +832,40 @@ QuestStage:
 
 ### Performance Targets
 
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Frame rate | 60 FPS | Mid-range hardware (GTX 1060 / RX 580) |
-| Load time | < 10 seconds | Cold start to gameplay |
-| Memory | < 2 GB | Peak during normal play |
-| Save size | < 50 MB | Large world with 20 NPCs |
+| Metric | Desktop Target | Mobile Target | Measurement Method |
+|--------|----------------|---------------|-------------------|
+| Frame rate | 60 FPS | 60 FPS | GTX 1060 / iPhone 12 |
+| Load time | < 10 seconds | < 15 seconds | Cold start to gameplay |
+| Memory | < 2 GB | < 500 MB | Peak during normal play |
+| Save size | < 50 MB | < 50 MB | Large world with 20 NPCs |
+| **Battery** | N/A | **< 15% per hour** | Active gameplay |
+| **Touch latency** | N/A | **< 50ms** | Touch to response |
+| **Asset size** | < 200 MB | **< 100 MB** | Total download |
 
 ### Platform Builds
 
 | Platform | Format | Notes |
 |----------|--------|-------|
-| Windows | .exe installer, .zip | 32 and 64 bit |
+| **Web/PWA** | **Static site** | **Primary - works everywhere** |
+| Windows | .exe installer, .zip | 32 and 64 bit (Electron wrapper) |
 | macOS | .app bundle, .dmg | Signed and notarized |
 | Linux | .AppImage, .tar.gz | Tested on Ubuntu LTS |
+| **iOS** | **.ipa (App Store)** | **PWA wrapper or Capacitor** |
+| **Android** | **.apk, .aab (Play Store)** | **PWA wrapper or Capacitor** |
+
+### Mobile Build Requirements
+
+**iOS:**
+- Minimum iOS version: 14.0
+- Required capabilities: Game Center (optional), Push (optional)
+- App Store screenshots: 6.5" and 5.5" displays
+- Privacy nutrition labels
+
+**Android:**
+- Minimum SDK: API 26 (Android 8.0)
+- Target SDK: Latest stable
+- Play Store screenshots: Phone and tablet
+- App bundle format required
 
 ### Exit Criteria (Measurable)
 
@@ -761,8 +886,13 @@ QuestStage:
 | Colorblind modes | 3 alternative palettes | High |
 | Text scaling | 75% to 200% | High |
 | Key rebinding | Full remapping | High |
+| **Touch control customization** | **Joystick position, button layout** | **High** |
 | Subtitles | All dialogue | High |
 | Screen reader | UI descriptions | Medium |
+| **Large touch targets** | **Minimum 44pt, adjustable** | **High** |
+| **Reduced motion** | **Disable camera shake, reduce animations** | **Medium** |
+| **One-handed mode** | **All controls reachable with one hand** | **Medium** |
+| **External controller** | **Support Bluetooth controllers on mobile** | **Medium** |
 
 ### Localization
 
@@ -793,7 +923,9 @@ QuestStage:
 | Unit | Core systems | Fully automated |
 | Integration | System interactions | Automated where possible |
 | Performance | Frame rate, memory | Automated benchmarks |
+| **Mobile Performance** | **Touch, battery, memory** | **Device lab / BrowserStack** |
 | Playtest | User experience | Manual, structured |
+| **Mobile Playtest** | **Touch UX, screen sizes** | **Manual, device matrix** |
 
 ### Testing Schedule
 
@@ -801,6 +933,28 @@ QuestStage:
 - **Per feature:** Integration tests
 - **Per phase:** Internal playtest (structured feedback form)
 - **Pre-milestone:** External playtest (10+ testers)
+- **Per phase:** **Mobile device testing (phone + tablet)**
+
+### Mobile Testing Matrix
+
+| Device Category | Examples | Testing Focus |
+|-----------------|----------|---------------|
+| **Low-end phone** | iPhone SE, Pixel 4a | Performance, memory |
+| **Mid-range phone** | iPhone 12, Pixel 6 | Baseline experience |
+| **High-end phone** | iPhone 15 Pro, Pixel 8 Pro | Visual quality |
+| **Small tablet** | iPad Mini | Layout adaptation |
+| **Large tablet** | iPad Pro | Full UI layout |
+
+### Touch Testing Checklist
+
+- [ ] Virtual joystick responds accurately
+- [ ] All buttons reachable with thumbs (ergonomics)
+- [ ] Pinch zoom works smoothly
+- [ ] Tap targets are large enough (44pt+)
+- [ ] Long-press timing feels natural
+- [ ] No accidental taps during gameplay
+- [ ] Landscape and portrait orientations work
+- [ ] Split-screen/multitasking doesn't break layout
 
 ---
 

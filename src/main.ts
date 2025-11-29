@@ -2,14 +2,30 @@
  * Main entry point for the Voxel RPG game demo
  *
  * This initializes the game engine and renders a playable demo.
+ * Integrates all Phase 0/1 systems per 2D_GAME_IMPLEMENTATION_PLAN.md
  */
 
-import { WorldGenerator, BiomeType, getBiomeManager } from './world';
-import { getSurvivalManager, getInventoryManager, getCraftingManager, getResourceManager } from './systems';
+import { WorldGenerator, BiomeType, getBiomeManager, RegionManager } from './world';
+import { getSurvivalManager, getInventoryManager, getCraftingManager, getResourceManager, SaveManager } from './systems';
 import { getEventBus } from './core/EventBus';
+import { CameraSystem } from './entities/CameraSystem';
+import { UIManager } from './ui/UIManager';
+import { PanelType } from './core/types';
 
 // ============================================================================
-// Game Demo
+// Player State Enum (matches PlayerController)
+// ============================================================================
+
+enum PlayerState {
+  Idle = 'idle',
+  Walking = 'walking',
+  Running = 'running',
+  Interacting = 'interacting',
+  InMenu = 'inMenu',
+}
+
+// ============================================================================
+// Game Demo - Integrates all Phase 0/1 systems
 // ============================================================================
 
 class GameDemo {
@@ -18,21 +34,31 @@ class GameDemo {
   private worldGen: WorldGenerator;
   private survival = getSurvivalManager();
   private inventory = getInventoryManager();
+  private eventBus = getEventBus();
+
+  // Integrated systems
+  private camera: CameraSystem;
+  private regionManager: RegionManager;
+  private uiManager: UIManager;
+  private saveManager: SaveManager;
 
   // Player state
   private playerX = 0;
   private playerY = 0;
   private playerSpeed = 5;
   private isSprinting = false;
+  private playerState: PlayerState = PlayerState.Idle;
+  private worldSeed: number;
 
-  // Camera
-  private cameraX = 0;
-  private cameraY = 0;
+  // Camera settings (now managed by CameraSystem)
   private tileSize = 16;
-  private zoom = 2;
 
   // Input state
   private keys: Set<string> = new Set();
+
+  // Game time tracking
+  private totalPlaytime = 0;
+  private gameDay = 1;
 
   // Biome colors for rendering
   private biomeColors: Record<BiomeType, string> = {
@@ -53,13 +79,41 @@ class GameDemo {
     this.ctx = this.canvas.getContext('2d')!;
 
     // Initialize world generator with random seed
-    const seed = Math.floor(Math.random() * 1000000);
-    this.worldGen = new WorldGenerator({ seed });
+    this.worldSeed = Math.floor(Math.random() * 1000000);
+    this.worldGen = new WorldGenerator({ seed: this.worldSeed });
+
+    // Initialize Phase 0 systems
+    this.camera = new CameraSystem({
+      followSpeed: 5.0,
+      deadzone: 0.5,
+      minZoom: 0.5,
+      maxZoom: 2.0,
+      viewportWidth: 25,
+      viewportHeight: 19,
+    });
+    this.camera.initialize();
+    this.camera.setZoom(2.0);
+
+    this.regionManager = new RegionManager({
+      regionSize: 64,
+      loadDistance: 2,
+      unloadDistance: 3,
+    });
+    this.regionManager.initialize();
+
+    this.uiManager = new UIManager();
+    this.uiManager.initialize();
+
+    this.saveManager = new SaveManager();
+    this.saveManager.initialize();
 
     // Find spawn point
     const spawn = this.worldGen.findSpawnPoint();
     this.playerX = spawn.x;
     this.playerY = spawn.y;
+
+    // Initialize camera at spawn
+    this.camera.snapTo(spawn.x, spawn.y);
 
     // Give starting items
     this.inventory.addItem('wood', 10);
@@ -69,33 +123,186 @@ class GameDemo {
     // Initialize survival manager
     this.survival.initialize();
 
+    // Check for autosave
+    if (this.saveManager.saveExists('autosave')) {
+      console.log('[GameDemo] Autosave found - press L to load');
+    }
+
+    // Enable autosave every 60 seconds
+    this.saveManager.enableAutosave(60);
+
     this.setupInput();
+    this.setupSaveSystem();
     this.startGameLoop();
 
-    console.log(`[GameDemo] Started with seed ${seed}, spawn at (${spawn.x}, ${spawn.y})`);
+    console.log(`[GameDemo] Started with seed ${this.worldSeed}, spawn at (${spawn.x}, ${spawn.y})`);
+    console.log('[GameDemo] Controls: WASD=Move, Shift=Sprint, E=Interact, I=Inventory, B=Build, ESC=Pause');
+    console.log('[GameDemo] Controls: +/-=Zoom, 1=Eat berries, S=Save, L=Load');
+  }
+
+  private setupSaveSystem(): void {
+    // Configure save manager with game state provider
+    this.saveManager.setStateProvider({
+      getPlayerPosition: () => ({ x: this.playerX, y: this.playerY }),
+      getPlayerHealth: () => this.survival.getHealth(),
+      getPlayerMaxHealth: () => 100,
+      getPlayerInventory: () => this.inventory.serialize(),
+      getWorldSeed: () => this.worldSeed,
+      getModifiedTiles: () => [], // Will be populated when tilemap is modified
+      getTotalPlaytime: () => this.totalPlaytime,
+      getGameDay: () => this.gameDay,
+    });
+
+    // Configure save manager with game state consumer
+    this.saveManager.setStateConsumer({
+      loadPlayerPosition: (pos) => {
+        this.playerX = pos.x;
+        this.playerY = pos.y;
+        this.camera.snapTo(pos.x, pos.y);
+      },
+      loadPlayerHealth: (current, _max) => {
+        // Note: SurvivalManager doesn't have setHealth, would need to add
+        console.log(`[GameDemo] Load health: ${current}`);
+      },
+      loadPlayerInventory: (items) => {
+        this.inventory.clear();
+        for (const item of items) {
+          this.inventory.addItem(item.itemId, item.quantity);
+        }
+      },
+      loadWorldSeed: (seed) => {
+        this.worldSeed = seed;
+        this.worldGen = new WorldGenerator({ seed });
+      },
+      loadModifiedTiles: (_tiles) => {
+        // Will apply tile changes when tilemap is integrated
+      },
+      loadPlaytime: (seconds) => {
+        this.totalPlaytime = seconds;
+      },
+      loadGameDay: (day) => {
+        this.gameDay = day;
+      },
+    });
   }
 
   private setupInput(): void {
     window.addEventListener('keydown', (e) => {
+      // Don't process input when in menu state (except cancel)
+      if (this.playerState === PlayerState.InMenu && e.code !== 'Escape') {
+        return;
+      }
+
       this.keys.add(e.code);
 
       // Handle one-time actions
-      if (e.code === 'KeyE') {
-        this.interact();
-      }
-      if (e.code === 'Digit1') {
-        // Eat berries
-        if (this.inventory.hasItem('berries')) {
-          this.inventory.removeItem('berries', 1);
-          this.survival.consume('berries');
-          console.log('[GameDemo] Ate berries');
-        }
+      switch (e.code) {
+        case 'KeyE':
+          this.interact();
+          break;
+        case 'KeyI':
+          this.toggleInventory();
+          break;
+        case 'KeyB':
+          this.toggleBuildMenu();
+          break;
+        case 'Escape':
+          this.handleEscape();
+          break;
+        case 'Digit1':
+          this.eatBerries();
+          break;
+        case 'Equal': // + key
+        case 'NumpadAdd':
+          this.camera.zoomIn();
+          break;
+        case 'Minus':
+        case 'NumpadSubtract':
+          this.camera.zoomOut();
+          break;
+        case 'KeyS':
+          if (e.ctrlKey) {
+            e.preventDefault();
+            this.quickSave();
+          }
+          break;
+        case 'KeyL':
+          if (e.ctrlKey) {
+            e.preventDefault();
+            this.quickLoad();
+          }
+          break;
       }
     });
 
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code);
     });
+  }
+
+  private toggleInventory(): void {
+    this.uiManager.togglePanel(PanelType.Inventory, true);
+    if (this.uiManager.isPanelOpen(PanelType.Inventory)) {
+      this.playerState = PlayerState.InMenu;
+      console.log('[GameDemo] Inventory opened');
+    } else {
+      this.playerState = PlayerState.Idle;
+      console.log('[GameDemo] Inventory closed');
+    }
+  }
+
+  private toggleBuildMenu(): void {
+    this.uiManager.togglePanel(PanelType.Build, true);
+    if (this.uiManager.isPanelOpen(PanelType.Build)) {
+      this.playerState = PlayerState.InMenu;
+      console.log('[GameDemo] Build menu opened');
+    } else {
+      this.playerState = PlayerState.Idle;
+      console.log('[GameDemo] Build menu closed');
+    }
+  }
+
+  private handleEscape(): void {
+    // If any modal is open, close it
+    if (this.uiManager.hasOpenModal()) {
+      this.uiManager.closeTopModal();
+      if (!this.uiManager.hasOpenModal()) {
+        this.playerState = PlayerState.Idle;
+      }
+      console.log('[GameDemo] Closed modal');
+    } else {
+      // Toggle pause menu
+      this.uiManager.togglePanel(PanelType.Pause, true);
+      if (this.uiManager.isPanelOpen(PanelType.Pause)) {
+        this.playerState = PlayerState.InMenu;
+        console.log('[GameDemo] Game paused');
+      } else {
+        this.playerState = PlayerState.Idle;
+        console.log('[GameDemo] Game resumed');
+      }
+    }
+  }
+
+  private eatBerries(): void {
+    if (this.inventory.hasItem('berries')) {
+      this.inventory.removeItem('berries', 1);
+      this.survival.consume('berries');
+      console.log('[GameDemo] Ate berries');
+    }
+  }
+
+  private quickSave(): void {
+    this.saveManager.saveGame('quicksave');
+    console.log('[GameDemo] Quick saved!');
+  }
+
+  private quickLoad(): void {
+    if (this.saveManager.saveExists('quicksave')) {
+      this.saveManager.loadGame('quicksave');
+      console.log('[GameDemo] Quick loaded!');
+    } else {
+      console.log('[GameDemo] No quicksave found');
+    }
   }
 
   private interact(): void {
@@ -136,6 +343,39 @@ class GameDemo {
   }
 
   private update(deltaTime: number): void {
+    // Track playtime
+    this.totalPlaytime += deltaTime;
+
+    // Skip movement when in menu
+    if (this.playerState !== PlayerState.InMenu) {
+      this.updateMovement(deltaTime);
+    }
+
+    // Update camera with deadzone
+    this.camera.setTarget(this.playerX, this.playerY);
+    const gameTime = {
+      totalSeconds: this.totalPlaytime,
+      deltaTime,
+      gameHour: 12,
+      gameDay: this.gameDay,
+      isPaused: this.playerState === PlayerState.InMenu,
+    };
+    this.camera.lateUpdate(deltaTime, gameTime);
+
+    // Update region manager (for tile streaming)
+    this.regionManager.update(deltaTime, gameTime);
+
+    // Update survival (simulated time)
+    this.survival.update(deltaTime, gameTime);
+
+    // Update UI manager
+    this.uiManager.update(deltaTime, gameTime);
+
+    // Update UI display
+    this.updateUI();
+  }
+
+  private updateMovement(deltaTime: number): void {
     // Handle movement
     let dx = 0;
     let dy = 0;
@@ -168,23 +408,18 @@ class GameDemo {
     if (biomeManager.isWalkable(biome)) {
       this.playerX = newX;
       this.playerY = newY;
+
+      // Emit player moved event for other systems
+      this.eventBus.emit('player:moved', { position: { x: this.playerX, y: this.playerY } });
     }
 
-    // Update camera
-    this.cameraX = this.playerX;
-    this.cameraY = this.playerY;
-
-    // Update survival (simulated time)
-    this.survival.update(deltaTime, {
-      totalSeconds: 0,
-      deltaTime,
-      gameHour: 12,
-      gameDay: 1,
-      isPaused: false,
-    });
-
-    // Update UI
-    this.updateUI();
+    // Update player state
+    const isMoving = dx !== 0 || dy !== 0;
+    if (isMoving) {
+      this.playerState = this.isSprinting ? PlayerState.Running : PlayerState.Walking;
+    } else {
+      this.playerState = PlayerState.Idle;
+    }
   }
 
   private updateUI(): void {
@@ -199,7 +434,13 @@ class GameDemo {
 
   private render(): void {
     const { width, height } = this.canvas;
-    const scaledTileSize = this.tileSize * this.zoom;
+    const zoom = this.camera.getZoom();
+    const scaledTileSize = this.tileSize * zoom;
+
+    // Get camera position (with deadzone applied)
+    const cameraPos = this.camera.getPosition();
+    const cameraX = cameraPos.x;
+    const cameraY = cameraPos.y;
 
     // Clear
     this.ctx.fillStyle = '#0f0f23';
@@ -209,8 +450,8 @@ class GameDemo {
     const tilesX = Math.ceil(width / scaledTileSize) + 2;
     const tilesY = Math.ceil(height / scaledTileSize) + 2;
 
-    const startTileX = Math.floor(this.cameraX - tilesX / 2);
-    const startTileY = Math.floor(this.cameraY - tilesY / 2);
+    const startTileX = Math.floor(cameraX - tilesX / 2);
+    const startTileY = Math.floor(cameraY - tilesY / 2);
 
     // Render tiles
     for (let x = 0; x < tilesX; x++) {
@@ -221,8 +462,8 @@ class GameDemo {
         const biome = this.worldGen.getBiomeAt(worldX, worldY);
         const color = this.biomeColors[biome];
 
-        const screenX = (worldX - this.cameraX + tilesX / 2) * scaledTileSize;
-        const screenY = (worldY - this.cameraY + tilesY / 2) * scaledTileSize;
+        const screenX = (worldX - cameraX + tilesX / 2) * scaledTileSize;
+        const screenY = (worldY - cameraY + tilesY / 2) * scaledTileSize;
 
         // Draw tile
         this.ctx.fillStyle = color;
@@ -251,14 +492,14 @@ class GameDemo {
     this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
     this.ctx.lineWidth = 1;
     for (let x = 0; x <= tilesX; x++) {
-      const screenX = (x - (this.cameraX % 1)) * scaledTileSize;
+      const screenX = (x - (cameraX % 1)) * scaledTileSize;
       this.ctx.beginPath();
       this.ctx.moveTo(screenX, 0);
       this.ctx.lineTo(screenX, height);
       this.ctx.stroke();
     }
     for (let y = 0; y <= tilesY; y++) {
-      const screenY = (y - (this.cameraY % 1)) * scaledTileSize;
+      const screenY = (y - (cameraY % 1)) * scaledTileSize;
       this.ctx.beginPath();
       this.ctx.moveTo(0, screenY);
       this.ctx.lineTo(width, screenY);
@@ -298,25 +539,67 @@ class GameDemo {
       this.ctx.stroke();
     }
 
-    // Draw coordinates
+    // Draw coordinates and game info
     this.ctx.fillStyle = '#fff';
     this.ctx.font = '12px monospace';
     this.ctx.fillText(
-      `Pos: (${Math.floor(this.playerX)}, ${Math.floor(this.playerY)})`,
+      `Pos: (${Math.floor(this.playerX)}, ${Math.floor(this.playerY)}) | Zoom: ${zoom.toFixed(1)}x | State: ${this.playerState}`,
       10,
-      height - 40
+      height - 55
     );
 
     const currentBiome = this.worldGen.getBiomeAt(
       Math.floor(this.playerX),
       Math.floor(this.playerY)
     );
-    this.ctx.fillText(`Biome: ${currentBiome}`, 10, height - 25);
+    const regionId = this.regionManager.getRegionId(
+      Math.floor(this.playerX / 64),
+      Math.floor(this.playerY / 64)
+    );
+    this.ctx.fillText(`Biome: ${currentBiome} | Region: ${regionId} | Regions Loaded: ${this.regionManager.getLoadedRegionCount()}`, 10, height - 40);
     this.ctx.fillText(
       `Inventory: Wood(${this.inventory.getItemCount('wood')}) Stone(${this.inventory.getItemCount('stone')}) Berries(${this.inventory.getItemCount('berries')})`,
       10,
+      height - 25
+    );
+    this.ctx.fillText(
+      `Playtime: ${this.formatPlaytime(this.totalPlaytime)} | Day ${this.gameDay}`,
+      10,
       height - 10
     );
+
+    // Draw UI overlays when panels are open
+    if (this.uiManager.hasOpenModal()) {
+      this.renderModalOverlay();
+    }
+  }
+
+  private formatPlaytime(seconds: number): string {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  private renderModalOverlay(): void {
+    const { width, height } = this.canvas;
+
+    // Darken background
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    this.ctx.fillRect(0, 0, width, height);
+
+    // Draw panel name
+    const topModal = this.uiManager.getTopModal();
+    if (topModal) {
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = 'bold 24px sans-serif';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(topModal.toUpperCase(), width / 2, height / 2 - 20);
+
+      this.ctx.font = '14px monospace';
+      this.ctx.fillText('Press ESC to close', width / 2, height / 2 + 20);
+      this.ctx.textAlign = 'left';
+    }
   }
 }
 

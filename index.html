@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voxel RPG - 2D Colony Survival</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #16213e;
+      padding: 1rem 2rem;
+      border-bottom: 2px solid #0f3460;
+    }
+
+    header h1 {
+      color: #e94560;
+      font-size: 1.8rem;
+    }
+
+    header p {
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    #game-container {
+      background: #0f0f23;
+      border: 2px solid #0f3460;
+      border-radius: 8px;
+      width: 800px;
+      height: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #game-canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .demo-info {
+      margin-top: 1.5rem;
+      text-align: center;
+      max-width: 600px;
+    }
+
+    .demo-info h2 {
+      color: #e94560;
+      margin-bottom: 0.5rem;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+      background: #16213e;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+
+    .control-group h3 {
+      color: #e94560;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .control-group ul {
+      list-style: none;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    .control-group li {
+      margin: 0.25rem 0;
+    }
+
+    .control-group kbd {
+      background: #0f3460;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      font-family: monospace;
+      color: #fff;
+    }
+
+    .stats-bar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .stat {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .stat-health { color: #e94560; }
+    .stat-hunger { color: #f39c12; }
+    .stat-stamina { color: #3498db; }
+
+    .version {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 11px;
+      color: #555;
+    }
+
+    footer {
+      background: #16213e;
+      padding: 1rem;
+      text-align: center;
+      color: #666;
+      font-size: 0.8rem;
+      border-top: 2px solid #0f3460;
+    }
+
+    footer a {
+      color: #e94560;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏰 Voxel RPG</h1>
+    <p>2D Colony Survival Game - Phase 1 Demo</p>
+  </header>
+
+  <main>
+    <div id="game-container">
+      <canvas id="game-canvas" width="800" height="600"></canvas>
+      <div class="stats-bar">
+        <div class="stat stat-health">❤️ Health: <span id="health">100</span></div>
+        <div class="stat stat-hunger">🍖 Hunger: <span id="hunger">100</span></div>
+        <div class="stat stat-stamina">⚡ Stamina: <span id="stamina">100</span></div>
+      </div>
+      <div class="version">v0.1.0 - Phase 1</div>
+    </div>
+
+    <div class="demo-info">
+      <h2>Phase 1: Playable Prototype</h2>
+      <p>Explore the procedurally generated world with 10 unique biomes. Gather resources, craft items, and survive!</p>
+
+      <div class="controls">
+        <div class="control-group">
+          <h3>Movement</h3>
+          <ul>
+            <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> - Move</li>
+            <li><kbd>Shift</kbd> - Sprint</li>
+            <li><kbd>E</kbd> - Interact</li>
+          </ul>
+        </div>
+        <div class="control-group">
+          <h3>Actions</h3>
+          <ul>
+            <li><kbd>I</kbd> - Inventory</li>
+            <li><kbd>B</kbd> - Build Menu</li>
+            <li><kbd>Esc</kbd> - Pause</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Built with TypeScript & Vite | <a href="https://github.com/TiberiousDoom/voxel-rpg-game">View on GitHub</a></p>
+  </footer>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

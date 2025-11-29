@@ -1,176 +1,115 @@
-# 2D Game Implementation Plan
+# 2D Game Technical Specification
 
-**Last Updated:** November 2025
+**Last Updated:** 2025-11-28
 **Status:** Active
-**Purpose:** Comprehensive technical implementation plan for the 2D RPG survival base-building game
+**Purpose:** Technical implementation details for the 2D RPG survival base-building game
+**Scope:** This document covers **how** to implement features. For **what/why/when**, see [ROADMAP_2D.md](ROADMAP_2D.md).
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.1 | 2025-11-28 | Consolidated planning docs, aligned terminology, removed timeline estimates |
+| 1.0 | 2025-11-28 | Initial technical specification |
+
+---
+
+## Quick Reference
+
+### Document Relationships
+
+| Document | Purpose | Use When |
+|----------|---------|----------|
+| [VISION_2D.md](VISION_2D.md) | Creative vision, design principles | Understanding **why** decisions are made |
+| [ROADMAP_2D.md](ROADMAP_2D.md) | Phase overview, milestones, fundraising | Planning **what** to build and **when** |
+| [NPC_SYSTEM_DESIGN_2D.md](NPC_SYSTEM_DESIGN_2D.md) | NPC behavior architecture | Implementing NPC systems |
+| This document | Technical specifications | Implementing **how** to build features |
+
+### Core Architecture Components
+
+| Component | Purpose | Reference |
+|-----------|---------|-----------|
+| BuildingOrchestrator | Central coordinator for all NPC work systems | [NPC_SYSTEM_DESIGN_2D.md](NPC_SYSTEM_DESIGN_2D.md) |
+| TilemapManager | Tile placement, layers, autotiling | [Tilemap System](#tilemap-system) |
+| TaskManager | Task creation, claiming, execution | [Task System](#task-system) |
+| RegionManager | World streaming, region loading | [Region System](#region-system) |
+
+### Tile Layer Standard (5 Layers)
+
+*Per NPC_SYSTEM_DESIGN_2D.md:*
+
+| Layer | Index | Purpose |
+|-------|-------|---------|
+| Background | 0 | Decorative, no collision |
+| Ground | 1 | Terrain, floors |
+| Objects | 2 | Furniture, resources, items |
+| Walls | 3 | Structures, barriers |
+| Foreground | 4 | Visual overlays, roofs |
+
+### Task Types (Standard)
+
+*Per NPC_SYSTEM_DESIGN_2D.md:*
+
+| Type | Description |
+|------|-------------|
+| MINE | Extract a tile at position |
+| HAUL | Move resource from A to B |
+| BUILD | Place tile at construction site |
+| DELIVER | Bring materials to construction site |
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
-2. [Project Overview](#project-overview)
-3. [Technical Architecture](#technical-architecture)
-4. [Phase 0: Foundation](#phase-0-foundation)
-5. [Phase 1: Playable Prototype](#phase-1-playable-prototype)
-6. [Phase 2: Colony Alpha](#phase-2-colony-alpha)
-7. [Phase 3: Combat & Threats](#phase-3-combat--threats)
-8. [Phase 4: The Companion](#phase-4-the-companion)
-9. [Phase 5: Content & Polish](#phase-5-content--polish)
-10. [Phase 6: Multiplayer](#phase-6-multiplayer)
-11. [Phase 7: Launch Preparation](#phase-7-launch-preparation)
-12. [Cross-Cutting Concerns](#cross-cutting-concerns)
-13. [Testing Strategy](#testing-strategy)
-14. [Risk Mitigation](#risk-mitigation)
-15. [Success Criteria](#success-criteria)
-
----
-
-## Executive Summary
-
-### Vision
-> *Rise from ruin. Build something worth protecting. You're not alone.*
-
-This document provides a detailed technical implementation plan for a 2D RPG survival base-building game where players rebuild civilization with the help of autonomous NPCs in a world torn by divine conflict.
-
-### Core Experience
-- **Primary Feeling:** Satisfaction through achievement
-- **Gameplay Focus:** Building, growing settlements, reclaiming territory
-- **Unique Selling Point:** Autonomous NPCs that feel like companions, not tools
-
-### Technology Decision
-
-| Option | Recommendation | Rationale |
-|--------|---------------|-----------|
-| **Unity 2D** | ★★★★★ Primary | Mature ecosystem, excellent 2D support, broad platform reach |
-| **Godot 4** | ★★★★☆ Alternative | Free/open source, native 2D, growing community |
-
-### Timeline Summary
-
-| Phase | Duration | Milestone |
-|-------|----------|-----------|
-| Phase 0 | 2-3 months | Technical foundation |
-| Phase 1 | 2-3 months | Playable survival demo |
-| Phase 2 | 2-3 months | Colony management demo |
-| Phase 3 | 2-3 months | Combat and defense demo |
-| Phase 4 | 2-3 months | Story and magic demo |
-| Phase 5 | 3-4 months | Feature-complete single-player |
-| Phase 6 | 2-3 months | Multiplayer beta |
-| Phase 7 | 2-3 months | Launch-ready 1.0 |
-
-**Total: 17-24 months**
-
----
-
-## Project Overview
-
-### Core Pillars (Priority Order)
-
-1. **Build** - Transform wilderness into fortified village, tile by tile
-2. **Grow** - Attract NPCs with personalities who live and work alongside you
-3. **Reclaim** - Close portals, clear monsters, take back the world
-4. **Choose** - Engage story when you want; sandbox is always there
-5. **Connect** - Play solo or build together with friends
-
-### Design Principles
-
-| Principle | Implementation |
-|-----------|----------------|
-| NPCs feel helpful, never a chore | Autonomous task finding, smart defaults |
-| Player is participant, not just manager | Direct gameplay alongside delegation |
-| Progression feels earned | Meaningful achievements gate advancement |
-| World feels alive | NPCs have schedules, weather affects gameplay |
-| Complexity is discoverable | Start simple, reveal depth over time |
-
-### Reference Games
-
-| Game | What We Learn |
-|------|---------------|
-| **Terraria** | 2D exploration, progression, boss battles |
-| **Rimworld** | Autonomous colonist behavior, simulation depth |
-| **Stardew Valley** | Charm, NPC relationships, accessibility |
-| **Dwarf Fortress** | NPC autonomy, emergent behavior |
+1. [Technical Architecture](#technical-architecture)
+2. [Phase 0: Foundation](#phase-0-foundation)
+3. [Phase 1: Playable Prototype](#phase-1-playable-prototype)
+4. [Phase 2: Colony Alpha](#phase-2-colony-alpha)
+5. [Phase 3: Combat & Threats](#phase-3-combat--threats)
+6. [Phase 4: The Companion](#phase-4-the-companion)
+7. [Phase 5: Content & Polish](#phase-5-content--polish)
+8. [Phase 6: Multiplayer](#phase-6-multiplayer)
+9. [Phase 7: Launch Preparation](#phase-7-launch-preparation)
+10. [Cross-Cutting Concerns](#cross-cutting-concerns)
+11. [Testing Strategy](#testing-strategy)
 
 ---
 
 ## Technical Architecture
 
-### High-Level Architecture
+### System Overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Game Application                          │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │   Render    │  │    Input    │  │    Audio    │             │
-│  │   System    │  │   System    │  │   System    │             │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘             │
-│         │                │                │                      │
-│  ┌──────┴────────────────┴────────────────┴──────┐              │
-│  │                 Game Engine                     │              │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐          │              │
-│  │  │ Entity  │ │  Event  │ │  State  │          │              │
-│  │  │ Manager │ │   Bus   │ │ Manager │          │              │
-│  │  └─────────┘ └─────────┘ └─────────┘          │              │
-│  └──────────────────┬────────────────────────────┘              │
-│                     │                                            │
-│  ┌──────────────────┴────────────────────────────┐              │
-│  │              Game Systems Layer                │              │
-│  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ │              │
-│  │  │  NPC   │ │Building│ │ Combat │ │  Quest │ │              │
-│  │  │ System │ │ System │ │ System │ │ System │ │              │
-│  │  └────────┘ └────────┘ └────────┘ └────────┘ │              │
-│  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ │              │
-│  │  │Resource│ │ Portal │ │ Magic  │ │Companion│ │              │
-│  │  │ System │ │ System │ │ System │ │ System │ │              │
-│  │  └────────┘ └────────┘ └────────┘ └────────┘ │              │
-│  └──────────────────┬────────────────────────────┘              │
-│                     │                                            │
-│  ┌──────────────────┴────────────────────────────┐              │
-│  │                World Layer                     │              │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐         │              │
-│  │  │ Tilemap │ │ Region  │ │Pathfind │         │              │
-│  │  │ Manager │ │ Manager │ │  Grid   │         │              │
-│  │  └─────────┘ └─────────┘ └─────────┘         │              │
-│  └───────────────────────────────────────────────┘              │
-│                                                                  │
-│  ┌───────────────────────────────────────────────┐              │
-│  │              Data Layer                        │              │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐         │              │
-│  │  │  Save   │ │  Config │ │  Asset  │         │              │
-│  │  │ Manager │ │ Manager │ │ Manager │         │              │
-│  │  └─────────┘ └─────────┘ └─────────┘         │              │
-│  └───────────────────────────────────────────────┘              │
-└─────────────────────────────────────────────────────────────────┘
-```
+The game uses a layered architecture with the BuildingOrchestrator (per [NPC_SYSTEM_DESIGN_2D.md](NPC_SYSTEM_DESIGN_2D.md)) coordinating NPC work systems.
 
-### Tilemap Architecture
+### BuildingOrchestrator Integration
 
-```
-Tile Layers (bottom to top):
-┌─────────────────────────────────────┐
-│  Layer 5: Foreground (overlays)     │  ← Roofs, weather effects
-├─────────────────────────────────────┤
-│  Layer 4: Entities (NPCs, monsters) │  ← Y-sorted sprites
-├─────────────────────────────────────┤
-│  Layer 3: Objects (furniture)       │  ← Interactable items
-├─────────────────────────────────────┤
-│  Layer 2: Walls (structures)        │  ← Building walls, barriers
-├─────────────────────────────────────┤
-│  Layer 1: Ground (floors, paths)    │  ← Walkable surfaces
-├─────────────────────────────────────┤
-│  Layer 0: Background (terrain)      │  ← Grass, dirt, water
-└─────────────────────────────────────┘
-```
+*Reference: [NPC_SYSTEM_DESIGN_2D.md](NPC_SYSTEM_DESIGN_2D.md) - Architecture Overview*
+
+The BuildingOrchestrator serves as the central coordinator:
+
+**Subsystems managed:**
+- TilemapManager (tile world)
+- MiningManager (extraction tasks)
+- HaulingManager (transport tasks)
+- StockpileManager (storage zones)
+- ConstructionManager (building tasks)
+
+**Key responsibilities:**
+- Initialize and update all subsystems
+- Route events between systems
+- Provide public API for game code
 
 ### Data Structures
 
 #### Tile Definition
+
 ```
 TileType:
   id: string                    # Unique identifier
   name: string                  # Display name
-  layer: int                    # Which layer (0-5)
+  layer: int                    # 0-4 per layer standard
   walkable: bool                # Can entities walk here?
   hardness: float               # Mining time multiplier (0 = instant)
   transparent: bool             # Does light pass through?
@@ -179,12 +118,15 @@ TileType:
   buildRequirements: Resource[] # Materials needed to place
 ```
 
+*Note: This structure aligns with NPC_SYSTEM_DESIGN_2D.md TileType definition.*
+
 #### Entity Definition
+
 ```
 Entity:
   id: string                    # Unique identifier
   type: EntityType              # NPC, Monster, Player, Item
-  position: Vector2             # World position
+  position: Vector2             # World position (tile coordinates)
   velocity: Vector2             # Current movement
   facing: Direction             # N, S, E, W
   state: StateMachine           # Current behavior state
@@ -192,253 +134,111 @@ Entity:
 ```
 
 #### NPC Definition
+
+*Extends NPC_SYSTEM_DESIGN_2D.md worker definition:*
+
 ```
 NPC extends Entity:
   name: string                  # Generated name
   personality: PersonalityTraits
   skills: SkillLevels
   needs: NeedLevels             # Hunger, rest, happiness
-  currentTask: Task             # What they're doing
+  currentTask: Task             # What they're doing (MINE, HAUL, BUILD, DELIVER)
   inventory: Inventory
   relationships: Map<NPC, int>  # Social connections
   schedule: DailySchedule       # Work/rest times
 ```
 
-### Event System
+#### Task Definition
+
+*Per NPC_SYSTEM_DESIGN_2D.md Task Structure:*
 
 ```
-Core Events:
-├── World Events
-│   ├── TilePlaced(position, tileType)
-│   ├── TileRemoved(position)
-│   ├── RegionLoaded(regionId)
-│   └── RegionUnloaded(regionId)
-├── Entity Events
-│   ├── EntitySpawned(entity)
-│   ├── EntityDespawned(entity)
-│   ├── EntityMoved(entity, from, to)
-│   └── EntityDamaged(entity, amount, source)
-├── NPC Events
-│   ├── TaskStarted(npc, task)
-│   ├── TaskCompleted(npc, task)
-│   ├── NeedCritical(npc, needType)
-│   └── RelationshipChanged(npc1, npc2, delta)
-├── Building Events
-│   ├── ConstructionStarted(site)
-│   ├── ConstructionProgress(site, percent)
-│   ├── ConstructionCompleted(site)
-│   └── BuildingDestroyed(building)
-├── Combat Events
-│   ├── CombatStarted(entities)
-│   ├── AttackPerformed(attacker, target, damage)
-│   ├── EntityKilled(entity, killer)
-│   └── CombatEnded(result)
-└── Portal Events
-    ├── PortalDiscovered(portal)
-    ├── PortalActivated(portal)
-    ├── PortalClosed(portal)
-    └── TerritoryReclaimed(region)
+Task:
+  id: string                    # Unique identifier
+  type: TaskType                # MINE, HAUL, BUILD, DELIVER
+  position: Vector2Int          # Tile coordinates
+  priority: int                 # 1-5
+  status: TaskStatus            # PENDING, CLAIMED, IN_PROGRESS, COMPLETED
+  assignedNpc: NpcId            # Or null
+  createdAt: timestamp
+  data: type-specific data
 ```
 
 ---
 
 ## Phase 0: Foundation
 
-**Duration:** 2-3 months
 **Goal:** Establish core engine systems
+**Reference:** [ROADMAP_2D.md - Phase 0](ROADMAP_2D.md)
 
-### 0.1 Project Setup
+### Tilemap System
 
-#### Tasks
-| Task | Description | Priority |
-|------|-------------|----------|
-| Project structure | Create folder hierarchy, configure build | Critical |
-| Version control | Git setup, branching strategy, CI/CD | Critical |
-| Engine configuration | Unity/Godot project settings | Critical |
-| Asset pipeline | Import settings for sprites, audio | High |
-| Code standards | Linting, formatting, documentation | High |
+#### TilemapManager
 
-#### Folder Structure
-```
-project/
-├── Assets/                     # Unity: All assets
-│   ├── Sprites/
-│   │   ├── Tiles/
-│   │   ├── NPCs/
-│   │   ├── Monsters/
-│   │   ├── Buildings/
-│   │   ├── Items/
-│   │   └── UI/
-│   ├── Audio/
-│   │   ├── Music/
-│   │   ├── SFX/
-│   │   └── Ambient/
-│   ├── Prefabs/
-│   ├── Scenes/
-│   ├── Scripts/
-│   │   ├── Core/              # Engine systems
-│   │   ├── World/             # Tilemap, regions
-│   │   ├── Entities/          # Player, NPCs, monsters
-│   │   ├── Systems/           # Game systems
-│   │   ├── UI/                # User interface
-│   │   └── Data/              # ScriptableObjects
-│   ├── Data/
-│   │   ├── Tiles/
-│   │   ├── Items/
-│   │   ├── Recipes/
-│   │   └── NPCs/
-│   └── Resources/             # Runtime-loaded assets
-├── Packages/                   # Package dependencies
-├── ProjectSettings/            # Engine settings
-└── Documentation/
-```
-
-### 0.2 Tilemap System
-
-#### Core Components
-
-**TilemapManager**
-```
-Responsibilities:
-- Manage multiple tile layers
+**Responsibilities:**
+- Manage 5 tile layers (per layer standard above)
 - Handle tile placement/removal
 - Coordinate with autotiling
 - Emit tile change events
 
-Methods:
-- SetTile(position, layer, tileType)
-- GetTile(position, layer) → TileType
-- RemoveTile(position, layer)
-- GetTilesInRegion(bounds) → Tile[]
-- IsWalkable(position) → bool
-```
+**Methods:**
+- `SetTile(position, layer, tileType)`
+- `GetTile(position, layer) → TileType`
+- `RemoveTile(position, layer)`
+- `GetTilesInRegion(bounds) → Tile[]`
+- `IsWalkable(position) → bool`
 
-**AutotileSystem**
-```
-Responsibilities:
-- Calculate tile variants based on neighbors
-- Update adjacent tiles when tile changes
-- Support multiple autotile patterns
+#### AutotileSystem
 
-Patterns Supported:
+**Supported patterns:**
 - 4-bit (16 variants) - Simple walls
 - 8-bit (47 variants) - Terrain transitions
 - Custom rules for special tiles
-```
 
-**RegionManager**
-```
-Responsibilities:
-- Load/unload world regions
-- Stream regions based on player position
-- Manage region boundaries
-- Handle cross-region entities
+**Implementation approach:**
+1. On tile change, get 4 or 8 neighbors
+2. Calculate bitmask from neighbor matching
+3. Select variant sprite from atlas
+4. Propagate update to affected neighbors
 
-Region Size: 64x64 tiles (configurable)
-Load Distance: 2 regions in each direction
-Unload Distance: 3 regions in each direction
-```
+#### Region System
 
-#### Implementation Steps
+*Note: Called "Region Manager" in NPC_SYSTEM_DESIGN_2D.md performance section.*
 
-1. **Week 1-2: Basic Tilemap**
-   - [ ] Create TilemapManager class
-   - [ ] Implement SetTile/GetTile operations
-   - [ ] Create tile layer rendering
-   - [ ] Add tile type registry
-   - [ ] Test: Place and remove tiles
+**Configuration:**
+- Region size: 64x64 tiles
+- Load distance: 2 regions in each direction
+- Unload distance: 3 regions in each direction
 
-2. **Week 3-4: Autotiling**
-   - [ ] Implement 4-bit autotiling for walls
-   - [ ] Implement 8-bit autotiling for terrain
-   - [ ] Create tile variant atlases
-   - [ ] Add neighbor update propagation
-   - [ ] Test: Terrain blends correctly
+**Responsibilities:**
+- Load/unload world regions based on player position
+- Serialize region data for save/load
+- Handle cross-region entity queries
+- Pause tasks in unloaded regions (per NPC_SYSTEM_DESIGN_2D.md)
 
-3. **Week 5-6: Region System**
-   - [ ] Create RegionManager class
-   - [ ] Implement region loading/unloading
-   - [ ] Add region serialization
-   - [ ] Handle cross-region queries
-   - [ ] Test: Walk across region boundaries
+### Player Controller
 
-### 0.3 Player Controller
-
-#### Components
-
-**PlayerController**
-```
-Responsibilities:
-- Handle input for movement
-- Manage player state machine
-- Coordinate with animation system
-- Handle tile interactions
-
-States:
+**States:**
 - Idle
 - Walking
 - Running
 - Interacting
 - InMenu
 - Combat
-```
 
-**PlayerCamera**
-```
-Responsibilities:
-- Follow player smoothly
-- Handle camera bounds
-- Support zoom levels
-- Shake effects for impacts
-
-Settings:
-- Follow Speed: 5.0
+**Camera settings:**
+- Follow speed: 5.0
 - Deadzone: 0.5 units
-- Min Zoom: 0.5x
-- Max Zoom: 2.0x
-```
+- Zoom range: 0.5x to 2.0x
 
-#### Implementation Steps
+### Save/Load System
 
-1. **Week 1: Movement**
-   - [ ] Create PlayerController class
-   - [ ] Implement 8-directional movement
-   - [ ] Add collision detection with tiles
-   - [ ] Create player state machine
-   - [ ] Test: Player moves and collides
+**Save data structure:**
 
-2. **Week 2: Camera & Polish**
-   - [ ] Implement smooth camera follow
-   - [ ] Add camera bounds clamping
-   - [ ] Create zoom functionality
-   - [ ] Add movement animations
-   - [ ] Test: Camera feels responsive
-
-### 0.4 Save/Load System
-
-#### Architecture
-
-```
-SaveSystem:
-├── SaveManager
-│   ├── CreateSave(slot) → SaveData
-│   ├── LoadSave(slot) → GameState
-│   ├── DeleteSave(slot)
-│   └── GetSaveSlots() → SaveSlot[]
-├── Serializers
-│   ├── WorldSerializer
-│   ├── EntitySerializer
-│   ├── PlayerSerializer
-│   └── SystemSerializer
-└── Migration
-    ├── VersionDetector
-    └── MigrationPipeline
-```
-
-**Save Data Structure**
 ```
 SaveData:
-  version: string               # Save format version
+  version: string               # For migrations
   timestamp: DateTime
   playtime: TimeSpan
   world:
@@ -456,905 +256,220 @@ SaveData:
   settings: GameSettings
 ```
 
-#### Implementation Steps
+### Input System
 
-1. **Week 1: Core Save System**
-   - [ ] Create SaveManager class
-   - [ ] Implement JSON serialization
-   - [ ] Create save slot management
-   - [ ] Add autosave functionality
-   - [ ] Test: Save and load basic data
+**Default bindings:**
 
-2. **Week 2: Full Serialization**
-   - [ ] Serialize world state
-   - [ ] Serialize entity positions
-   - [ ] Serialize inventory/progress
-   - [ ] Add version migrations
-   - [ ] Test: Full game state persists
+| Action | Keyboard | Gamepad |
+|--------|----------|---------|
+| Move | WASD / Arrows | Left Stick |
+| Sprint | Shift | Left Trigger |
+| Interact | E | A Button |
+| Attack | Left Click | Right Trigger |
+| Cancel | Escape | B Button |
+| Inventory | I | Start |
+| Build Menu | B | Select |
 
-### 0.5 Input System
+### Exit Criteria (Measurable)
 
-#### Input Mapping
-
-```
-Default Bindings:
-├── Movement
-│   ├── Move: WASD / Arrow Keys / Left Stick
-│   └── Sprint: Shift / Left Trigger
-├── Actions
-│   ├── Interact: E / A Button
-│   ├── Attack: Left Click / Right Trigger
-│   ├── Secondary: Right Click / Left Bumper
-│   └── Cancel: Escape / B Button
-├── UI
-│   ├── Inventory: I / Start
-│   ├── Build Menu: B / Select
-│   ├── Pause: Escape / Start
-│   └── Quick Slots: 1-9 / D-Pad
-└── Camera
-    ├── Zoom In: Scroll Up / Right Bumper
-    └── Zoom Out: Scroll Down / Left Bumper
-```
-
-#### Implementation Steps
-
-1. **Week 1: Input System**
-   - [ ] Create InputManager class
-   - [ ] Implement keyboard input
-   - [ ] Add mouse input
-   - [ ] Create input rebinding UI
-   - [ ] Test: All inputs work
-
-2. **Week 2: Controller Support**
-   - [ ] Add gamepad input
-   - [ ] Implement input switching
-   - [ ] Add input icons (KB/Controller)
-   - [ ] Test: Seamless input switching
-
-### 0.6 UI Framework
-
-#### Core UI Components
-
-```
-UI System:
-├── UIManager
-│   ├── ShowPanel(panelType)
-│   ├── HidePanel(panelType)
-│   ├── PushModal(modal)
-│   └── PopModal()
-├── Panels
-│   ├── HUDPanel (always visible)
-│   ├── InventoryPanel
-│   ├── BuildPanel
-│   ├── NPCPanel
-│   ├── SettingsPanel
-│   └── PausePanel
-└── Common Components
-    ├── Button
-    ├── Tooltip
-    ├── ProgressBar
-    ├── ItemSlot
-    └── TabContainer
-```
-
-#### Implementation Steps
-
-1. **Week 1: Core UI**
-   - [ ] Create UIManager class
-   - [ ] Implement panel system
-   - [ ] Create common UI components
-   - [ ] Add tooltip system
-   - [ ] Test: Panels open/close
-
-2. **Week 2: HUD**
-   - [ ] Create health/hunger bars
-   - [ ] Add quick action slots
-   - [ ] Create minimap frame
-   - [ ] Add resource counters
-   - [ ] Test: HUD displays correctly
-
-### Phase 0 Exit Criteria
-
-- [ ] Player can move through tile-based world
-- [ ] Tiles can be placed and removed
-- [ ] Camera follows player smoothly
-- [ ] Game state saves and loads correctly
-- [ ] Basic UI framework functional
-- [ ] Input works for keyboard and controller
+- [ ] Player movement: 60 FPS with 1000+ tiles loaded
+- [ ] Tile operations: SetTile/GetTile < 1ms
+- [ ] Save/load: Complete cycle < 5 seconds for 10 regions
+- [ ] Input latency: < 50ms from press to visible response
+- [ ] All automated unit tests passing
 
 ---
 
 ## Phase 1: Playable Prototype
 
-**Duration:** 2-3 months
 **Goal:** Create core survival gameplay loop
-**Milestone:** "Proof of Concept" demo
+**Reference:** [ROADMAP_2D.md - Phase 1](ROADMAP_2D.md)
 
-### 1.1 World Generation
+### World Generation
 
-#### Procedural Generation System
+#### Noise Configuration
 
-```
-WorldGenerator:
-├── NoiseGenerator
-│   ├── Perlin noise for terrain height
-│   ├── Simplex noise for moisture
-│   └── Voronoi for biome regions
-├── BiomeMapper
-│   ├── DetermineBiome(height, moisture)
-│   └── ApplyBiomeRules(region)
-├── FeaturePlacer
-│   ├── PlaceTrees(density, biome)
-│   ├── PlaceOres(rarity, depth)
-│   ├── PlaceWater(heightThreshold)
-│   └── PlaceStructures(frequency)
-└── SpawnPointSelector
-    └── FindSafeSpawn(criteria)
-```
+| Noise Type | Purpose | Octaves | Scale |
+|------------|---------|---------|-------|
+| Perlin | Height map | 4 | 0.01 |
+| Simplex | Moisture | 3 | 0.015 |
+| Voronoi | Biome regions | - | 0.005 |
 
-#### Biome Definitions
+#### Biome Mapping
 
-| Biome | Height | Moisture | Features |
-|-------|--------|----------|----------|
-| Ocean | < 0.3 | Any | Water, fish, coral |
-| Beach | 0.3-0.35 | Any | Sand, shells, driftwood |
-| Plains | 0.35-0.6 | < 0.4 | Grass, flowers, rabbits |
-| Forest | 0.35-0.6 | 0.4-0.7 | Trees, bushes, deer |
-| Swamp | 0.35-0.5 | > 0.7 | Mud, reeds, frogs |
-| Hills | 0.6-0.75 | Any | Stone, ore, goats |
-| Mountains | > 0.75 | Any | Rock, snow, caves |
-| Desert | 0.35-0.6 | < 0.2 | Sand, cacti, scorpions |
-
-#### Implementation Steps
-
-1. **Week 1-2: Terrain Generation**
-   - [ ] Implement noise generators
-   - [ ] Create height map generation
-   - [ ] Add moisture map generation
-   - [ ] Combine into biome map
-   - [ ] Test: Varied terrain generates
-
-2. **Week 3-4: Feature Placement**
-   - [ ] Place trees by biome rules
-   - [ ] Place ore deposits
-   - [ ] Add water bodies
-   - [ ] Place environmental props
-   - [ ] Test: Features appear correctly
-
-3. **Week 5: Polish & Seed System**
-   - [ ] Implement world seeds
-   - [ ] Add generation parameters
-   - [ ] Create preview system
-   - [ ] Optimize generation speed
-   - [ ] Test: Seeds reproduce worlds
-
-### 1.2 Resource Gathering
-
-#### Resource Types
+*Illustrative logic - actual thresholds require tuning:*
 
 ```
-Resource Categories:
-├── Raw Materials
-│   ├── Wood (from trees)
-│   ├── Stone (from rocks)
-│   ├── Fiber (from plants)
-│   └── Clay (from riverbanks)
-├── Ores
-│   ├── Iron Ore
-│   ├── Copper Ore
-│   ├── Gold Ore
-│   └── Crystal
-├── Food
-│   ├── Berries
-│   ├── Mushrooms
-│   ├── Meat (from hunting)
-│   └── Fish (from water)
-└── Special
-    ├── Monster Drops
-    ├── Portal Shards
-    └── Ancient Artifacts
+# This is illustrative pseudocode, not implementation
+DetermineBiome(height, moisture):
+  if height < 0.3: return Ocean
+  if height < 0.35: return Beach
+  if height > 0.75: return Mountains
+  if moisture < 0.2: return Desert
+  if moisture < 0.4: return Plains
+  if moisture < 0.7: return Forest
+  return Swamp
 ```
 
-#### Gathering System
+### Resource System
 
-```
-GatheringSystem:
-  - DetectGatherableInRange(position, radius)
-  - StartGathering(entity, target)
-  - ProcessGatheringTick(deltaTime)
-  - CompleteGathering(entity, target)
-  - DropResources(position, drops)
+**Categories:**
 
-GatheringAction:
-  target: GatherableObject
-  progress: float (0-1)
-  tool: ToolType (affects speed)
-  gatherer: Entity
-```
+| Category | Examples | Gathering Method |
+|----------|----------|------------------|
+| Raw Materials | Wood, Stone, Fiber | Direct gathering |
+| Ores | Iron, Copper, Gold | Mining (hardness-based) |
+| Food | Berries, Mushrooms, Meat | Foraging, hunting |
+| Special | Monster drops, Portal shards | Combat, exploration |
 
-#### Implementation Steps
+### Crafting System
 
-1. **Week 1: Gatherable Objects**
-   - [ ] Create Gatherable component
-   - [ ] Implement tree gathering
-   - [ ] Implement rock mining
-   - [ ] Add plant harvesting
-   - [ ] Test: Resources drop from sources
-
-2. **Week 2: Tools & Efficiency**
-   - [ ] Create tool types (axe, pickaxe, etc.)
-   - [ ] Implement tool efficiency modifiers
-   - [ ] Add tool durability
-   - [ ] Create gathering animations
-   - [ ] Test: Tools affect gathering speed
-
-### 1.3 Inventory System
-
-#### Data Structure
-
-```
-Inventory:
-  slots: InventorySlot[]
-  maxSlots: int
-
-InventorySlot:
-  item: Item
-  quantity: int
-
-Item:
-  id: string
-  name: string
-  category: ItemCategory
-  maxStack: int
-  icon: Sprite
-  properties: ItemProperties
-```
-
-#### Inventory Operations
-
-```
-InventoryManager:
-  - AddItem(item, quantity) → remaining
-  - RemoveItem(item, quantity) → success
-  - HasItem(item, quantity) → bool
-  - GetItemCount(item) → int
-  - SwapSlots(slot1, slot2)
-  - SplitStack(slot, amount)
-  - MergeStacks(source, target)
-```
-
-#### Implementation Steps
-
-1. **Week 1: Core Inventory**
-   - [ ] Create Inventory class
-   - [ ] Implement add/remove operations
-   - [ ] Create item definitions
-   - [ ] Add stack management
-   - [ ] Test: Items stack correctly
-
-2. **Week 2: Inventory UI**
-   - [ ] Create inventory grid UI
-   - [ ] Implement drag-and-drop
-   - [ ] Add item tooltips
-   - [ ] Create quick-use slots
-   - [ ] Test: UI interactions work
-
-### 1.4 Crafting System
-
-#### Recipe Structure
+**Recipe structure:**
 
 ```
 Recipe:
   id: string
-  name: string
-  category: CraftingCategory
-  inputs: RecipeInput[]
-  output: RecipeOutput
+  inputs: {item: Item, quantity: int, consumed: bool}[]
+  output: {item: Item, quantity: int}
   craftTime: float
-  requiredStation: StationType
-  unlockedBy: UnlockCondition
-
-RecipeInput:
-  item: Item
-  quantity: int
-  consumed: bool (some recipes use but don't consume)
-
-RecipeOutput:
-  item: Item
-  quantity: int
-  qualityRange: (min, max)
+  requiredStation: StationType  # None for hand-crafting
 ```
 
-#### Crafting Categories
+### Survival Mechanics
 
-| Category | Station Required | Example Items |
-|----------|------------------|---------------|
-| Basic | None (hands) | Wooden tools, torches |
-| Workbench | Workbench | Stone tools, simple furniture |
-| Forge | Forge + Fuel | Metal tools, weapons |
-| Alchemy | Alchemy Station | Potions, enchantments |
-| Advanced | Workshop | Complex machinery |
+**Player needs:**
 
-#### Implementation Steps
+| Need | Decay Rate | Critical Threshold | Effect When Critical |
+|------|------------|-------------------|---------------------|
+| Health | Via damage | 0 | Death |
+| Hunger | 2.0/hour | 20 | Health drain, speed reduction |
+| Stamina | Via actions | 0 | Cannot sprint, reduced actions |
 
-1. **Week 1: Recipe System**
-   - [ ] Create Recipe data structure
-   - [ ] Implement recipe registry
-   - [ ] Create crafting logic
-   - [ ] Add station requirements
-   - [ ] Test: Items craft correctly
+### Exit Criteria (Measurable)
 
-2. **Week 2: Crafting UI**
-   - [ ] Create recipe browser
-   - [ ] Show craftable/uncraftable states
-   - [ ] Add recipe search/filter
-   - [ ] Create crafting queue
-   - [ ] Test: UI shows correct info
-
-### 1.5 Survival Mechanics
-
-#### Player Needs
-
-```
-SurvivalNeeds:
-  health:
-    current: float
-    max: float
-    regenRate: float (when fed)
-
-  hunger:
-    current: float (100 = full)
-    decayRate: float (per game hour)
-    starvationThreshold: 0
-    starvationDamage: float
-
-  stamina:
-    current: float
-    max: float
-    regenRate: float
-    sprintCost: float
-```
-
-#### Environmental Hazards
-
-| Hazard | Effect | Mitigation |
-|--------|--------|------------|
-| Darkness | Monsters spawn more | Torches, campfires |
-| Cold | Stamina drain | Shelter, warm clothes |
-| Heat | Thirst (future) | Shade, water |
-| Rain | Slower movement | Shelter, raincoat |
-
-#### Implementation Steps
-
-1. **Week 1: Health & Hunger**
-   - [ ] Create SurvivalSystem
-   - [ ] Implement hunger decay
-   - [ ] Add health regeneration
-   - [ ] Create food consumption
-   - [ ] Test: Player needs food
-
-2. **Week 2: Environmental Effects**
-   - [ ] Add day/night cycle
-   - [ ] Implement light levels
-   - [ ] Add temperature (basic)
-   - [ ] Create status effect UI
-   - [ ] Test: Environment affects player
-
-### 1.6 Basic Building
-
-#### Building Placement
-
-```
-BuildingSystem:
-  - EnterBuildMode(blueprintId)
-  - ShowPlacementPreview(position)
-  - ValidatePlacement(position) → PlacementResult
-  - PlaceBuilding(position, rotation)
-  - CancelBuildMode()
-
-PlacementResult:
-  valid: bool
-  reason: string (if invalid)
-  resourcesAvailable: bool
-  terrainSuitable: bool
-  noCollisions: bool
-```
-
-#### Starter Buildings
-
-| Building | Cost | Function |
-|----------|------|----------|
-| Campfire | 5 Wood, 3 Stone | Light, warmth, cooking |
-| Workbench | 20 Wood | Basic crafting |
-| Storage Chest | 15 Wood | 20 item slots |
-| Wooden Wall | 5 Wood | Defense, room creation |
-| Wooden Door | 8 Wood | Controllable access |
-| Bed | 10 Wood, 5 Fiber | Respawn point, rest |
-
-#### Implementation Steps
-
-1. **Week 1: Placement System**
-   - [ ] Create BuildingSystem
-   - [ ] Implement placement preview
-   - [ ] Add placement validation
-   - [ ] Create resource consumption
-   - [ ] Test: Buildings place correctly
-
-2. **Week 2: Building Functions**
-   - [ ] Implement campfire (light + cooking)
-   - [ ] Create workbench (crafting station)
-   - [ ] Add storage chest (extra inventory)
-   - [ ] Implement bed (respawn)
-   - [ ] Test: Buildings function
-
-### 1.7 Day/Night & Basic Threats
-
-#### Time System
-
-```
-TimeSystem:
-  gameTime: float (0-24 hours)
-  dayLength: float (real seconds per game day)
-
-  Dawn: 5:00-7:00
-  Day: 7:00-18:00
-  Dusk: 18:00-20:00
-  Night: 20:00-5:00
-
-Events:
-  - OnHourChanged(hour)
-  - OnDayPhaseChanged(phase)
-  - OnNewDay(day)
-```
-
-#### Monster Spawning
-
-```
-BasicSpawnSystem:
-  - SpawnRadius: 30-50 tiles from player
-  - DespawnRadius: 60 tiles from player
-  - MaxMonsters: 10 (night), 3 (day)
-  - SpawnCooldown: 30 seconds
-
-SpawnRules:
-  - Night: Any dark area outside light
-  - Day: Only in caves/dungeons
-  - Near portals: Always (proximity based)
-```
-
-#### Starter Monsters
-
-| Monster | Health | Damage | Behavior | Drops |
-|---------|--------|--------|----------|-------|
-| Slime | 20 | 5 | Passive until attacked | Gel |
-| Zombie | 40 | 10 | Aggressive at night | Rotten flesh |
-| Skeleton | 30 | 15 | Aggressive, ranged | Bones, arrows |
-
-#### Implementation Steps
-
-1. **Week 1: Time & Lighting**
-   - [ ] Create TimeSystem
-   - [ ] Implement day/night cycle
-   - [ ] Add dynamic lighting
-   - [ ] Create light sources
-   - [ ] Test: Day/night transitions
-
-2. **Week 2: Monster Spawning**
-   - [ ] Create SpawnSystem
-   - [ ] Implement spawn rules
-   - [ ] Create basic monster AI
-   - [ ] Add monster prefabs
-   - [ ] Test: Monsters spawn at night
-
-3. **Week 3: Basic Combat**
-   - [ ] Create CombatSystem
-   - [ ] Implement player attacks
-   - [ ] Add monster attacks
-   - [ ] Create damage numbers
-   - [ ] Test: Combat works
-
-### Phase 1 Exit Criteria
-
-- [ ] Procedural world generates with biomes
-- [ ] Player can gather resources
-- [ ] Inventory and crafting functional
-- [ ] Hunger system requires food gathering
-- [ ] Day/night cycle with monster spawns
-- [ ] Basic combat allows survival
-- [ ] Can build shelter and basic structures
-- [ ] Save/load preserves all progress
+- [ ] World generation: < 10 seconds for starting region
+- [ ] Biome variety: 5+ distinct biomes in average world
+- [ ] Crafting: 20+ recipes functional
+- [ ] Survival loop: Player can survive 3+ in-game days without exploits
+- [ ] Performance: 60 FPS with full survival systems active
 
 ---
 
 ## Phase 2: Colony Alpha
 
-**Duration:** 2-3 months
 **Goal:** Transform solo survival into settlement building with NPCs
-**Milestone:** "Settlement Simulation" demo
+**Reference:** [ROADMAP_2D.md - Phase 2](ROADMAP_2D.md), [NPC_SYSTEM_DESIGN_2D.md](NPC_SYSTEM_DESIGN_2D.md)
 
-### 2.1 NPC Spawning & Attraction
+### NPC Work System
 
-#### Settlement Attraction System
+*This section implements the architecture defined in [NPC_SYSTEM_DESIGN_2D.md](NPC_SYSTEM_DESIGN_2D.md).*
 
-```
-SettlementAttraction:
-  factors:
-    - Housing availability (beds)
-    - Food supply (days of food)
-    - Safety (walls, defenses)
-    - Amenities (crafting stations)
-    - Reputation (quests completed)
+#### Worker State Machine
 
-  attractionScore = sum(factor * weight)
-  spawnChance = attractionScore / threshold
-  checkInterval = 1 game day
-```
+*Per NPC_SYSTEM_DESIGN_2D.md - NPC Worker Behavior:*
 
-#### NPC Arrival
+| State | Description | Transitions To |
+|-------|-------------|----------------|
+| IDLE | No task, waiting | SEEKING_TASK |
+| SEEKING_TASK | Looking for work | TRAVELING_TO_TASK |
+| TRAVELING_TO_TASK | Moving to task | MINING, HAULING, BUILDING |
+| MINING | Extracting tile | IDLE (on complete) |
+| HAULING_PICKUP | Getting resource | HAULING_DELIVERY |
+| HAULING_DELIVERY | Delivering resource | IDLE |
+| BUILDING | Placing tile | IDLE |
 
-| Requirement | NPCs Attracted |
-|-------------|----------------|
-| 1 bed, campfire | 1st settler |
-| 3 beds, workbench | 2nd settler |
-| 5 beds, walls | 3rd settler |
-| Per 2 beds after | +1 settler (max 20) |
+#### Task Selection
 
-#### Implementation Steps
-
-1. **Week 1: Attraction System**
-   - [ ] Create AttractionCalculator
-   - [ ] Track settlement statistics
-   - [ ] Implement spawn chance
-   - [ ] Create arrival events
-   - [ ] Test: NPCs arrive over time
-
-2. **Week 2: NPC Initialization**
-   - [ ] Generate NPC names
-   - [ ] Assign random traits
-   - [ ] Set initial skills
-   - [ ] Create arrival animation
-   - [ ] Test: NPCs are unique
-
-### 2.2 NPC Personality System
-
-#### Personality Traits
+*Illustrative pseudocode per NPC_SYSTEM_DESIGN_2D.md:*
 
 ```
-PersonalityTraits:
-  // Core traits (scale -1 to 1)
-  industriousness: float    # Lazy ↔ Hardworking
-  sociability: float        # Reclusive ↔ Social
-  courage: float            # Cowardly ↔ Brave
-  patience: float           # Impatient ↔ Patient
-
-  // Preferences (affects happiness)
-  preferredWork: WorkType[]
-  dislikedWork: WorkType[]
-  hobbies: Hobby[]
-```
-
-#### Trait Effects
-
-| Trait | Effect |
-|-------|--------|
-| High Industriousness | +20% work speed, less breaks |
-| Low Industriousness | -20% work speed, more breaks |
-| High Sociability | Mood boost from interactions |
-| Low Sociability | Needs less social, more alone time |
-| High Courage | Will fight threats, guards |
-| Low Courage | Flees from danger, avoids combat |
-
-#### Implementation Steps
-
-1. **Week 1: Trait System**
-   - [ ] Create PersonalityTraits class
-   - [ ] Implement trait generation
-   - [ ] Add trait effects to behavior
-   - [ ] Create trait UI display
-   - [ ] Test: Traits affect behavior
-
-2. **Week 2: Preferences**
-   - [ ] Add work preferences
-   - [ ] Implement hobby system
-   - [ ] Create preference matching
-   - [ ] Add happiness modifiers
-   - [ ] Test: NPCs prefer certain work
-
-### 2.3 NPC Needs System
-
-#### Need Types
-
-```
-NPCNeeds:
-  hunger:
-    current: float (0-100)
-    decayRate: 2.0 per hour
-    criticalThreshold: 20
-
-  rest:
-    current: float (0-100)
-    decayRate: 1.5 per hour
-    criticalThreshold: 15
-
-  happiness:
-    current: float (0-100)
-    factors: HappinessFactor[]
-
-  social:
-    current: float (0-100)
-    decayRate: 0.5 per hour (modified by sociability)
-```
-
-#### Happiness Factors
-
-| Factor | Effect |
-|--------|--------|
-| Good housing | +10 |
-| Poor housing | -10 |
-| Well fed | +5 |
-| Hungry | -15 |
-| Doing preferred work | +10 |
-| Doing disliked work | -10 |
-| Social needs met | +5 |
-| Lonely | -10 |
-| Recent danger | -5 to -20 |
-| Settlement prospering | +5 |
-
-#### Implementation Steps
-
-1. **Week 1: Basic Needs**
-   - [ ] Create NPCNeedsSystem
-   - [ ] Implement hunger/rest decay
-   - [ ] Add need satisfaction behaviors
-   - [ ] Create need priority logic
-   - [ ] Test: NPCs seek food/rest
-
-2. **Week 2: Happiness System**
-   - [ ] Implement happiness calculation
-   - [ ] Add happiness factors
-   - [ ] Create mood display
-   - [ ] Add unhappiness consequences
-   - [ ] Test: Happiness affects behavior
-
-### 2.4 Autonomous Work System
-
-#### Task Finding Algorithm
-
-```
+# Reference implementation - see NPC_SYSTEM_DESIGN_2D.md for details
 FindBestTask(npc):
   availableTasks = GetUnclaimedTasks()
   validTasks = Filter(availableTasks, npc.CanPerform)
 
-  scoredTasks = []
-  for task in validTasks:
-    score = CalculateTaskScore(npc, task)
-    scoredTasks.Add((task, score))
+  # Score based on distance, priority, preference, skill
+  scoredTasks = Score(validTasks, npc)
 
-  return scoredTasks.OrderByDescending(score).First()
-
-CalculateTaskScore(npc, task):
-  baseScore = task.priority * 100
-  distancePenalty = Distance(npc.position, task.position) * 2
-  preferenceBonus = npc.Prefers(task.type) ? 50 : 0
-  skillBonus = npc.GetSkill(task.type) * 10
-
-  return baseScore - distancePenalty + preferenceBonus + skillBonus
+  return scoredTasks.Best()
 ```
 
-#### Work Types
+### Stockpile System
 
-| Work Type | Tasks | Required Skill |
-|-----------|-------|----------------|
-| Mining | Mine designated tiles | Mining |
-| Logging | Chop marked trees | Woodcutting |
-| Hauling | Move items to stockpiles | None |
-| Building | Construct at build sites | Construction |
-| Farming | Plant, tend, harvest | Farming |
-| Cooking | Prepare meals | Cooking |
-| Crafting | Use workstations | Varies |
-| Guarding | Patrol, defend | Combat |
+*Per NPC_SYSTEM_DESIGN_2D.md - Stockpile System:*
 
-#### Implementation Steps
-
-1. **Week 1: Task System**
-   - [ ] Create TaskManager
-   - [ ] Implement task creation
-   - [ ] Add task claiming
-   - [ ] Create task execution
-   - [ ] Test: Tasks complete correctly
-
-2. **Week 2: Work Assignment**
-   - [ ] Implement FindBestTask
-   - [ ] Add work priorities
-   - [ ] Create work scheduling
-   - [ ] Add skill effects
-   - [ ] Test: NPCs choose work smartly
-
-3. **Week 3: Specialized Work**
-   - [ ] Implement mining tasks
-   - [ ] Add construction tasks
-   - [ ] Create hauling tasks
-   - [ ] Add farming tasks
-   - [ ] Test: All work types function
-
-### 2.5 Stockpile System
-
-#### Stockpile Definition
+**Stockpile structure:**
 
 ```
 Stockpile:
   id: string
-  bounds: Rect
+  bounds: Rect                  # Area in tiles
   allowedCategories: ResourceCategory[]
-  priority: int (1-5)
+  priority: int                 # 1-5
   slots: StockpileSlot[]
 
 StockpileSlot:
   position: Vector2Int
   item: Item
   quantity: int
-  reserved: bool
+  reserved: bool                # For active haul tasks
   reservedBy: TaskId
 ```
 
-#### Stockpile Operations
+**Operations:**
+- `FindNearestDeposit(position, resourceType) → StockpileSlot`
+- `FindNearestWithdraw(position, resourceType) → StockpileSlot`
+- `ReserveSlot(stockpileId, slotIndex)`
+- `ReleaseReservation(stockpileId, slotIndex)`
 
-```
-StockpileManager:
-  - CreateStockpile(bounds, categories)
-  - DeleteStockpile(id)
-  - FindDepositSlot(item) → StockpileSlot
-  - FindWithdrawSlot(item) → StockpileSlot
-  - ReserveSlot(slot, taskId)
-  - ReleaseReservation(slot)
-  - GetTotalStorage(item) → int
-```
+### Construction System
 
-#### Implementation Steps
+*Per NPC_SYSTEM_DESIGN_2D.md - Construction System:*
 
-1. **Week 1: Stockpile Core**
-   - [ ] Create Stockpile class
-   - [ ] Implement stockpile zones
-   - [ ] Add item filtering
-   - [ ] Create slot management
-   - [ ] Test: Items store in stockpiles
-
-2. **Week 2: Hauling Integration**
-   - [ ] Create haul tasks for drops
-   - [ ] Implement deposit logic
-   - [ ] Add withdrawal logic
-   - [ ] Create priority system
-   - [ ] Test: NPCs haul automatically
-
-### 2.6 Construction System
-
-#### Blueprint System
-
-```
-Blueprint:
-  id: string
-  name: string
-  size: Vector2Int
-  tiles: TilePlacement[]
-  requirements: ResourceRequirement[]
-  buildOrder: int[] (tile indices)
-
-ConstructionSite:
-  blueprint: Blueprint
-  position: Vector2Int
-  status: ConstructionStatus
-  deliveredMaterials: Map<Item, int>
-  progress: Map<int, float> (per tile)
-```
-
-#### Construction Flow
-
-```
+**Construction flow:**
 1. Player places blueprint → Site created (PLANNED)
-2. System generates delivery tasks for materials
+2. System generates DELIVER tasks for materials
 3. Haulers deliver materials → Site becomes IN_PROGRESS
-4. System generates build tasks (in order)
-5. Builders place tiles (respecting build order)
+4. System generates BUILD tasks (respecting build order)
+5. Builders place tiles
 6. All tiles complete → Site becomes COMPLETED
-7. Site converts to actual building
-```
 
-#### Implementation Steps
+**Build order for structural integrity:**
+1. Foundation/Floor (layer 1)
+2. Walls (layer 3)
+3. Objects/Furniture (layer 2)
+4. Foreground/Roof (layer 4)
 
-1. **Week 1: Blueprint System**
-   - [ ] Create Blueprint data structure
-   - [ ] Implement blueprint placement
-   - [ ] Add placement validation
-   - [ ] Create construction site
-   - [ ] Test: Blueprints place correctly
+### Personality System
 
-2. **Week 2: Construction Tasks**
-   - [ ] Generate delivery tasks
-   - [ ] Generate build tasks
-   - [ ] Implement build order
-   - [ ] Track construction progress
-   - [ ] Test: NPCs build structures
+**Trait scales (-1 to 1):**
 
-3. **Week 3: Building Completion**
-   - [ ] Convert sites to buildings
-   - [ ] Activate building functions
-   - [ ] Add construction animations
-   - [ ] Create construction UI
-   - [ ] Test: Buildings complete and work
+| Trait | Low End | High End | Effect |
+|-------|---------|----------|--------|
+| Industriousness | Lazy | Hardworking | Work speed ±20% |
+| Sociability | Reclusive | Social | Social need decay rate |
+| Courage | Cowardly | Brave | Combat willingness |
+| Patience | Impatient | Patient | Task abandonment threshold |
 
-### 2.7 Zone Designation
+### Exit Criteria (Measurable)
 
-#### Zone Types
-
-| Zone | Purpose | Behavior |
-|------|---------|----------|
-| Stockpile | Store resources | Haulers deposit items |
-| Farm | Grow crops | Farmers plant/harvest |
-| Mining | Extract resources | Miners dig tiles |
-| Logging | Harvest trees | Loggers cut trees |
-| Restricted | No entry | NPCs avoid area |
-| Meeting | Socializing | NPCs gather here |
-
-#### Implementation Steps
-
-1. **Week 1: Zone System**
-   - [ ] Create ZoneManager
-   - [ ] Implement zone painting
-   - [ ] Add zone types
-   - [ ] Create zone UI
-   - [ ] Test: Zones designate correctly
-
-2. **Week 2: Zone Behaviors**
-   - [ ] Mining zones generate tasks
-   - [ ] Farm zones track plots
-   - [ ] Restricted zones block pathing
-   - [ ] Meeting zones attract idle NPCs
-   - [ ] Test: Zones affect behavior
-
-### Phase 2 Exit Criteria
-
-- [ ] NPCs arrive based on settlement quality
-- [ ] NPCs have unique personalities
-- [ ] NPCs autonomously find and perform work
-- [ ] Stockpile system organizes resources
-- [ ] Construction system builds structures
-- [ ] Zone designation controls work areas
-- [ ] NPC needs (hunger, rest, happiness) functional
-- [ ] Save/load preserves NPC state
+- [ ] NPC pathfinding: < 10ms for 100-tile path
+- [ ] Task throughput: 50+ tasks/second processing
+- [ ] NPC count: 20 NPCs at 60 FPS
+- [ ] Stockpile operations: < 1ms for find/reserve
+- [ ] Construction: Building completes with correct tile order
+- [ ] Idle time: NPCs spend < 10% time idle when tasks available
 
 ---
 
 ## Phase 3: Combat & Threats
 
-**Duration:** 2-3 months
 **Goal:** Add meaningful conflict and territory system
-**Milestone:** "Reclaim the World" demo
+**Reference:** [ROADMAP_2D.md - Phase 3](ROADMAP_2D.md)
 
-### 3.1 Combat System
+### Combat System
 
-#### Combat Architecture
-
-```
-CombatSystem:
-├── DamageCalculator
-│   ├── CalculateDamage(attacker, defender, attack)
-│   ├── ApplyDefense(damage, defense)
-│   └── ApplyModifiers(damage, modifiers)
-├── AttackExecutor
-│   ├── MeleeAttack(attacker, target)
-│   ├── RangedAttack(attacker, target, projectile)
-│   └── AreaAttack(attacker, center, radius)
-├── HitDetection
-│   ├── CheckMeleeHit(attacker, target, range)
-│   ├── CheckProjectileHit(projectile, targets)
-│   └── GetEntitiesInArea(center, radius)
-└── StatusEffects
-    ├── ApplyEffect(target, effect)
-    ├── RemoveEffect(target, effect)
-    └── ProcessEffects(deltaTime)
-```
-
-#### Damage Formula
+**Damage formula:**
 
 ```
 BaseDamage = WeaponDamage + (Strength * 0.5)
@@ -1362,438 +477,101 @@ Defense = ArmorValue + (Constitution * 0.3)
 FinalDamage = max(1, BaseDamage - Defense) * CritMultiplier * StatusModifiers
 ```
 
-#### Implementation Steps
+**Attack types:**
 
-1. **Week 1: Damage System**
-   - [ ] Create DamageCalculator
-   - [ ] Implement stat-based damage
-   - [ ] Add defense calculations
-   - [ ] Create critical hits
-   - [ ] Test: Damage calculates correctly
+| Type | Implementation | Use Case |
+|------|----------------|----------|
+| Melee | Hitbox in facing direction | Close combat |
+| Ranged | Projectile entity spawned | Distance combat |
+| Area | Circle/cone check from origin | Spells, explosions |
 
-2. **Week 2: Attack Types**
-   - [ ] Implement melee attacks
-   - [ ] Add ranged attacks
-   - [ ] Create projectile system
-   - [ ] Add area attacks
-   - [ ] Test: All attack types work
+### Monster AI
 
-3. **Week 3: Status Effects**
-   - [ ] Create StatusEffect system
-   - [ ] Implement poison, burn, slow
-   - [ ] Add effect visuals
-   - [ ] Create effect UI
-   - [ ] Test: Effects apply correctly
+**Behavior types:**
 
-### 3.2 Player Combat
+| Behavior | Description | Examples |
+|----------|-------------|----------|
+| Passive | Flees when attacked | Slime, rabbit |
+| Neutral | Attacks if provoked | Wolf, boar |
+| Aggressive | Attacks on sight | Zombie, skeleton |
+| Territorial | Attacks near territory | Spider, bear |
 
-#### Player Combat Abilities
+**State machine:**
+- IDLE → ALERT (target detected)
+- ALERT → COMBAT (if aggressive) or FLEE (if passive/hurt)
+- COMBAT → IDLE (target lost) or FLEE (health low)
+- FLEE → IDLE (safe distance reached)
 
-```
-PlayerCombat:
-  primaryAttack: Attack (bound to left click)
-  secondaryAttack: Attack (bound to right click)
-  dodgeRoll: Ability (invincibility frames)
-  block: Ability (damage reduction while held)
+### Portal System
 
-  comboCooldown: float
-  dodgeCooldown: float
-  staminaCost: Map<Action, float>
-```
+**Portal states:**
 
-#### Weapon Types
+| State | Behavior |
+|-------|----------|
+| DORMANT | Not spawning, can activate |
+| ACTIVE | Spawning monsters per spawn rate |
+| CLOSING | Player attempting to close |
+| CLOSED | Defeated, territory reclaimed |
+| REOPENING | Monsters attempting to reopen |
 
-| Type | Speed | Range | Special |
-|------|-------|-------|---------|
-| Sword | Medium | Short | Combo attacks |
-| Axe | Slow | Short | Bonus vs structures |
-| Spear | Medium | Medium | Thrust attack |
-| Bow | Slow | Long | Charge for damage |
-| Staff | Medium | Medium | Magic scaling |
+**Closing requirements by level:**
 
-#### Implementation Steps
+| Level | Monster Kill Count | Boss Required |
+|-------|-------------------|---------------|
+| 1 | 10 | No |
+| 2 | 20 | Mini-boss |
+| 3 | 30 | Boss |
+| 4 | 50 | Elite boss |
 
-1. **Week 1: Basic Combat**
-   - [ ] Create PlayerCombatController
-   - [ ] Implement attack input
-   - [ ] Add weapon switching
-   - [ ] Create attack animations
-   - [ ] Test: Player can attack
+### Territory System
 
-2. **Week 2: Advanced Combat**
-   - [ ] Add dodge roll
-   - [ ] Implement blocking
-   - [ ] Create combo system
-   - [ ] Add stamina costs
-   - [ ] Test: Combat feels responsive
+**Territory states:**
 
-### 3.3 NPC Combat
+| State | Effects |
+|-------|---------|
+| CORRUPTED | Portal active, debuffs, high spawn rate |
+| CONTESTED | Portal closed, monsters remain |
+| CLAIMED | Safe, building allowed |
+| FORTIFIED | Defended, production bonuses |
 
-#### Guard Behavior
+### Exit Criteria (Measurable)
 
-```
-GuardAI:
-  states:
-    - Patrol: Walk between patrol points
-    - Alert: Investigate threat
-    - Combat: Engage enemy
-    - Retreat: Return when threat gone
-
-  patrolRoute: Vector2[]
-  alertRange: 10 tiles
-  combatRange: 8 tiles
-  retreatThreshold: 0.2 health
-```
-
-#### Combat Roles
-
-| Role | Behavior | Equipment |
-|------|----------|-----------|
-| Guard | Melee, defensive | Sword + Shield |
-| Archer | Ranged, kiting | Bow + Light armor |
-| Healer | Support, stays back | Staff + Robes |
-
-#### Implementation Steps
-
-1. **Week 1: NPC Combat AI**
-   - [ ] Create CombatAI component
-   - [ ] Implement threat detection
-   - [ ] Add target selection
-   - [ ] Create attack behavior
-   - [ ] Test: NPCs fight threats
-
-2. **Week 2: Guard System**
-   - [ ] Create Guard role
-   - [ ] Implement patrol routes
-   - [ ] Add alert states
-   - [ ] Create guard stations
-   - [ ] Test: Guards patrol and respond
-
-### 3.4 Monster AI
-
-#### Monster Behavior Types
-
-```
-MonsterBehaviors:
-  - Passive: Flees when attacked (slime, rabbit)
-  - Neutral: Attacks if provoked (wolf, boar)
-  - Aggressive: Attacks on sight (zombie, skeleton)
-  - Territorial: Attacks near territory (spider, bear)
-  - Hunter: Stalks then attacks (shadow, wraith)
-```
-
-#### Monster State Machine
-
-```
-MonsterStateMachine:
-  Idle:
-    - Wander randomly
-    - Check for targets in range
-    → Alert (if target found)
-
-  Alert:
-    - Face target
-    - Decide fight or flee
-    → Combat (if aggressive)
-    → Flee (if passive/hurt)
-
-  Combat:
-    - Move toward target
-    - Attack when in range
-    - Use abilities
-    → Idle (if target lost)
-    → Flee (if health low)
-
-  Flee:
-    - Move away from threat
-    - Don't attack
-    → Idle (if safe)
-```
-
-#### Implementation Steps
-
-1. **Week 1: Monster AI Core**
-   - [ ] Create MonsterAI component
-   - [ ] Implement state machine
-   - [ ] Add behavior types
-   - [ ] Create target tracking
-   - [ ] Test: Monsters behave correctly
-
-2. **Week 2: Monster Variety**
-   - [ ] Create unique monster types
-   - [ ] Add special abilities
-   - [ ] Implement boss monsters
-   - [ ] Add monster spawn rules
-   - [ ] Test: Monster variety works
-
-### 3.5 Portal System
-
-#### Portal Definition
-
-```
-Portal:
-  id: string
-  position: Vector2
-  type: PortalType
-  level: int (difficulty)
-  status: PortalStatus
-  corruptionRadius: float
-  spawnRate: float
-  maxMonsters: int
-  closingRequirements: ClosingRequirements
-
-PortalStatus:
-  - DORMANT: Not spawning, can activate
-  - ACTIVE: Spawning monsters
-  - CLOSING: Player attempting to close
-  - CLOSED: Defeated, territory reclaimed
-  - REOPENING: Monsters trying to reopen
-```
-
-#### Portal Levels
-
-| Level | Difficulty | Monsters | Close Requirement |
-|-------|------------|----------|-------------------|
-| 1 | Easy | Slimes, Zombies | Kill 10 monsters |
-| 2 | Medium | Skeletons, Wolves | Kill 20 + mini-boss |
-| 3 | Hard | Orcs, Spiders | Kill 30 + boss |
-| 4 | Very Hard | Demons, Dragons | Kill 50 + elite boss |
-
-#### Implementation Steps
-
-1. **Week 1: Portal Core**
-   - [ ] Create Portal entity
-   - [ ] Implement spawn behavior
-   - [ ] Add corruption spread
-   - [ ] Create closing mechanic
-   - [ ] Test: Portals spawn monsters
-
-2. **Week 2: Portal Progression**
-   - [ ] Add portal levels
-   - [ ] Create boss spawns
-   - [ ] Implement closing rewards
-   - [ ] Add territory reclamation
-   - [ ] Test: Closing portals works
-
-### 3.6 Territory Control
-
-#### Territory System
-
-```
-TerritorySystem:
-  regions: Map<RegionId, TerritoryStatus>
-
-TerritoryStatus:
-  - CORRUPTED: Portal active, high danger
-  - CONTESTED: Portal closed, monsters remain
-  - CLAIMED: Safe, can build
-  - FORTIFIED: Defended, bonuses apply
-
-TransitionRules:
-  CORRUPTED → CONTESTED: Close portal
-  CONTESTED → CLAIMED: Clear remaining monsters
-  CLAIMED → FORTIFIED: Build defenses
-  FORTIFIED → CLAIMED: Defenses destroyed
-  CLAIMED → CONTESTED: Portal reopens
-```
-
-#### Implementation Steps
-
-1. **Week 1: Territory System**
-   - [ ] Create TerritoryManager
-   - [ ] Implement region status
-   - [ ] Add status transitions
-   - [ ] Create territory UI
-   - [ ] Test: Territory status changes
-
-2. **Week 2: Territory Effects**
-   - [ ] Corrupted: Debuffs, monster spawns
-   - [ ] Claimed: Building allowed
-   - [ ] Fortified: Production bonuses
-   - [ ] Add territory map
-   - [ ] Test: Territory affects gameplay
-
-### 3.7 Defensive Structures
-
-#### Defense Buildings
-
-| Building | Cost | Function | HP |
-|----------|------|----------|-----|
-| Wooden Wall | 10 Wood | Blocks pathing | 100 |
-| Stone Wall | 20 Stone | Stronger block | 300 |
-| Gate | 30 Wood/Stone | Controlled access | 150/450 |
-| Watchtower | 50 Wood, 30 Stone | Extends vision, archer post | 200 |
-| Spike Trap | 20 Wood, 10 Iron | Damages enemies | 50 |
-| Ballista | 100 Wood, 50 Iron | Auto-attacks enemies | 300 |
-
-#### Implementation Steps
-
-1. **Week 1: Defensive Buildings**
-   - [ ] Create wall building system
-   - [ ] Implement gates
-   - [ ] Add watchtowers
-   - [ ] Create trap system
-   - [ ] Test: Defenses block enemies
-
-2. **Week 2: Active Defenses**
-   - [ ] Implement ballista AI
-   - [ ] Add arrow towers
-   - [ ] Create trap triggers
-   - [ ] Add repair mechanics
-   - [ ] Test: Defenses attack enemies
-
-### Phase 3 Exit Criteria
-
-- [ ] Player combat is responsive and satisfying
-- [ ] NPCs can fight and defend settlement
-- [ ] Multiple monster types with unique behaviors
-- [ ] Portal system with spawning and closing
-- [ ] Territory control with status effects
-- [ ] Defensive structures protect settlement
-- [ ] Combat balancing feels fair
-- [ ] Save/load preserves combat state
+- [ ] Combat frame time: < 2ms for 20 combatants
+- [ ] Hit detection accuracy: 99%+ correct hits registered
+- [ ] Monster AI decisions: < 1ms per monster per frame
+- [ ] Portal spawn rate: Correct monsters/minute per level
+- [ ] Territory transitions: State changes within 1 frame of condition met
 
 ---
 
 ## Phase 4: The Companion
 
-**Duration:** 2-3 months
 **Goal:** Implement mystical companion and magic system
-**Milestone:** "Rise Together" demo
+**Reference:** [ROADMAP_2D.md - Phase 4](ROADMAP_2D.md), [VISION_2D.md - The Companion Arc](VISION_2D.md)
 
-### 4.1 Companion System
+### Companion System
 
-#### Companion Entity
+**Recovery phases:**
 
-```
-Companion:
-  // Core
-  id: string
-  name: string
-  position: Vector2
+| Phase | Trigger | Teaching Available |
+|-------|---------|-------------------|
+| CRITICAL | Game start | Basic guidance only |
+| RECOVERING | First settlement | Tier 1 spells |
+| HEALTHY | Close 3 portals | Tier 2-3 spells |
+| AWAKENED | Story completion | Tier 4 spells |
 
-  // Recovery state
-  health: float (0-100)
-  recoveryPhase: RecoveryPhase
-  powerLevel: float
+**Companion progression links to player progress per [VISION_2D.md](VISION_2D.md).**
 
-  // Relationship
-  trust: float (0-100)
-  conversationsHad: int
-  secretsRevealed: int
+### Magic System
 
-  // Abilities
-  abilities: CompanionAbility[]
-  passiveBonuses: PassiveBonus[]
-
-RecoveryPhase:
-  - CRITICAL: Phase 1, barely functional
-  - RECOVERING: Phase 2, regaining strength
-  - HEALTHY: Phase 3, full power
-  - AWAKENED: Phase 4, unlocked memories
-```
-
-#### Companion Progression
-
-| Phase | Trigger | Companion State | Player Benefits |
-|-------|---------|-----------------|-----------------|
-| 1 | Game start | Wounded, limited | Basic guidance |
-| 2 | First settlement | Recovering | Basic magic teaching |
-| 3 | Close 3 portals | Healthy | Advanced magic |
-| 4 | Story completion | Awakened | Master magic, lore |
-
-#### Implementation Steps
-
-1. **Week 1: Companion Core**
-   - [ ] Create Companion entity
-   - [ ] Implement recovery system
-   - [ ] Add companion following
-   - [ ] Create companion UI
-   - [ ] Test: Companion follows player
-
-2. **Week 2: Companion Progression**
-   - [ ] Implement recovery phases
-   - [ ] Add progression triggers
-   - [ ] Create phase transitions
-   - [ ] Add companion abilities
-   - [ ] Test: Companion grows stronger
-
-### 4.2 Dialogue System
-
-#### Dialogue Architecture
+**Spell structure:**
 
 ```
-DialogueSystem:
-├── DialogueManager
-│   ├── StartConversation(npcId)
-│   ├── SelectChoice(choiceIndex)
-│   ├── EndConversation()
-│   └── GetCurrentNode() → DialogueNode
-├── DialogueData
-│   ├── nodes: Map<nodeId, DialogueNode>
-│   ├── startNode: nodeId
-│   └── conditions: DialogueCondition[]
-└── DialogueUI
-    ├── ShowDialogue(node)
-    ├── ShowChoices(choices)
-    └── HideDialogue()
-
-DialogueNode:
-  id: string
-  speaker: string
-  text: string
-  choices: DialogueChoice[]
-  actions: DialogueAction[]
-  conditions: Condition[]
-
-DialogueChoice:
-  text: string
-  nextNode: nodeId
-  conditions: Condition[]
-  consequences: Consequence[]
-```
-
-#### Implementation Steps
-
-1. **Week 1: Dialogue Core**
-   - [ ] Create DialogueManager
-   - [ ] Implement dialogue flow
-   - [ ] Add choice handling
-   - [ ] Create dialogue UI
-   - [ ] Test: Conversations work
-
-2. **Week 2: Companion Dialogue**
-   - [ ] Write companion dialogue
-   - [ ] Add relationship effects
-   - [ ] Create lore reveals
-   - [ ] Add teaching dialogues
-   - [ ] Test: Companion conversations
-
-### 4.3 Magic System
-
-#### Magic Architecture
-
-```
-MagicSystem:
-├── SpellRegistry
-│   └── spells: Map<spellId, SpellDefinition>
-├── SpellCaster
-│   ├── CastSpell(caster, spell, target)
-│   ├── CheckRequirements(caster, spell)
-│   └── ApplySpellEffects(spell, target)
-├── ManaSystem
-│   ├── current: float
-│   ├── max: float
-│   └── regenRate: float
-└── SpellBook
-    └── learnedSpells: Spell[]
-
 SpellDefinition:
   id: string
   name: string
-  description: string
-  school: MagicSchool
-  tier: int (1-4)
+  school: MagicSchool          # Light, Fire, Nature, Arcane
+  tier: int                    # 1-4
   manaCost: float
   castTime: float
   cooldown: float
@@ -1801,222 +579,53 @@ SpellDefinition:
   effects: SpellEffect[]
 ```
 
-#### Magic Schools
+**Spell tiers and requirements:**
 
-| School | Focus | Example Spells |
-|--------|-------|----------------|
-| Light | Healing, protection | Heal, Shield, Purify |
-| Fire | Damage, burning | Fireball, Flame Wave |
-| Nature | Growth, terrain | Grow Plants, Entangle |
-| Arcane | Utility, teleport | Blink, Slow Time |
-
-#### Spell Tiers
-
-| Tier | Requirement | Examples |
-|------|-------------|----------|
+| Tier | Requirement | Example Spells |
+|------|-------------|----------------|
 | 1 | Companion Phase 2 | Light, Minor Heal |
 | 2 | Companion Phase 3 | Fireball, Shield |
 | 3 | Close 5 portals | Chain Lightning, Mass Heal |
 | 4 | Companion Phase 4 | Time Stop, Resurrection |
 
-#### Implementation Steps
+### Dialogue System
 
-1. **Week 1: Magic Core**
-   - [ ] Create MagicSystem
-   - [ ] Implement mana system
-   - [ ] Add spell casting
-   - [ ] Create spell effects
-   - [ ] Test: Spells cast correctly
-
-2. **Week 2: Spell Variety**
-   - [ ] Create healing spells
-   - [ ] Add damage spells
-   - [ ] Implement utility spells
-   - [ ] Create spell visuals
-   - [ ] Test: Spell variety works
-
-3. **Week 3: Magic Progression**
-   - [ ] Implement spell learning
-   - [ ] Add companion teaching
-   - [ ] Create spell book UI
-   - [ ] Balance mana costs
-   - [ ] Test: Magic progression works
-
-### 4.4 Teaching Mechanic
-
-#### Teaching System
+**Dialogue node structure:**
 
 ```
-TeachingSystem:
-  availableLessons: Lesson[]
-  completedLessons: Lesson[]
-  currentLesson: Lesson
-
-Lesson:
+DialogueNode:
   id: string
-  spell: Spell
-  requirements: LessonRequirement[]
-  dialogueTree: DialogueTree
-  practiceRequired: bool
-
-TeachingFlow:
-  1. Companion offers lesson (based on recovery)
-  2. Player initiates dialogue
-  3. Companion explains spell
-  4. Player practices (tutorial)
-  5. Spell added to spellbook
+  speaker: string
+  text: string
+  choices: DialogueChoice[]
+  actions: DialogueAction[]    # Effects on selection
+  conditions: Condition[]      # When node is available
 ```
 
-#### Implementation Steps
+### Exit Criteria (Measurable)
 
-1. **Week 1: Teaching System**
-   - [ ] Create TeachingSystem
-   - [ ] Implement lesson flow
-   - [ ] Add practice mode
-   - [ ] Create teaching dialogue
-   - [ ] Test: Can learn spells
-
-2. **Week 2: Teaching Content**
-   - [ ] Create all lesson content
-   - [ ] Add practice challenges
-   - [ ] Implement unlock sequence
-   - [ ] Polish teaching UI
-   - [ ] Test: Learning feels good
-
-### 4.5 Story Hooks
-
-#### Lore Discovery
-
-```
-LoreSystem:
-  discoveredLore: Set<LoreId>
-  loreItems: LoreItem[]
-
-LoreItem:
-  id: string
-  title: string
-  content: string
-  discoveryMethod: DiscoveryMethod
-  unlocksDialogue: DialogueId
-
-DiscoveryMethod:
-  - EXPLORE: Find in world
-  - COMPANION: Companion reveals
-  - QUEST: Complete quest
-  - ITEM: Examine special item
-```
-
-#### Story Mysteries
-
-| Mystery | Hints | Revelation |
-|---------|-------|------------|
-| Cataclysm cause | Scattered tablets | Companion's memory |
-| Companion's identity | Companion dialogue | Phase 4 revelation |
-| Portal origin | Portal exploration | Major portal boss |
-| World's fate | Multiple sources | Endgame content |
-
-#### Implementation Steps
-
-1. **Week 1: Lore System**
-   - [ ] Create LoreSystem
-   - [ ] Implement lore discovery
-   - [ ] Add lore UI (journal)
-   - [ ] Create lore items
-   - [ ] Test: Lore discoverable
-
-2. **Week 2: Story Integration**
-   - [ ] Write lore content
-   - [ ] Add companion story
-   - [ ] Create mystery breadcrumbs
-   - [ ] Implement revelations
-   - [ ] Test: Story engages
-
-### Phase 4 Exit Criteria
-
-- [ ] Companion follows and recovers
-- [ ] Dialogue system with choices
-- [ ] Magic system with multiple spells
-- [ ] Teaching mechanic for learning spells
-- [ ] Lore discovery system
-- [ ] Companion progression through phases
-- [ ] Story hooks engage player
-- [ ] Save/load preserves companion state
+- [ ] Companion follow: Stays within 5 tiles of player, no stuck states
+- [ ] Spell casting: < 100ms from input to effect visible
+- [ ] Dialogue flow: No dead-end dialogue states
+- [ ] Teaching progression: All spells learnable through normal play
+- [ ] Mana balance: Player can cast 5+ spells before depleted at each tier
 
 ---
 
 ## Phase 5: Content & Polish
 
-**Duration:** 3-4 months
 **Goal:** Full game experience with narrative content
-**Milestone:** "Early Access Ready" build
+**Reference:** [ROADMAP_2D.md - Phase 5](ROADMAP_2D.md)
 
-### 5.1 Full Narrative
+### Quest System
 
-#### Story Structure
-
-```
-MainStory:
-  Act 1: Survival & Discovery
-    - Tutorial/introduction
-    - Find companion
-    - Establish settlement
-
-  Act 2: Growth & Understanding
-    - Learn about cataclysm
-    - Close regional portals
-    - Companion recovers
-
-  Act 3: Revelation & Choice
-    - Discover truth
-    - Face major portal
-    - Companion's fate choice
-
-  Epilogue: (varies by choice)
-    - Settlement flourishes
-    - World begins healing
-```
-
-#### Implementation Steps
-
-1. **Week 1-2: Act 1 Content**
-   - [ ] Write Act 1 dialogue
-   - [ ] Create tutorial sequence
-   - [ ] Add companion introduction
-   - [ ] Test: Act 1 plays through
-
-2. **Week 3-4: Act 2 Content**
-   - [ ] Write Act 2 dialogue
-   - [ ] Create lore discoveries
-   - [ ] Add story quests
-   - [ ] Test: Act 2 plays through
-
-3. **Week 5-6: Act 3 Content**
-   - [ ] Write Act 3 dialogue
-   - [ ] Create climax content
-   - [ ] Implement choices
-   - [ ] Add epilogue
-   - [ ] Test: Full story complete
-
-### 5.2 Quest System
-
-#### Quest Types
-
-| Type | Description | Example |
-|------|-------------|---------|
-| Main | Story progression | "Close the Northern Portal" |
-| Side | Optional content | "Help the traveling merchant" |
-| Settlement | Colony goals | "Build a watchtower" |
-| Daily | Repeatable | "Gather 50 wood" |
-| Discovery | Exploration | "Find the ancient ruins" |
-
-#### Quest Structure
+**Quest structure:**
 
 ```
 Quest:
   id: string
   name: string
-  description: string
-  type: QuestType
+  type: QuestType              # Main, Side, Settlement, Daily
   stages: QuestStage[]
   rewards: Reward[]
   prerequisites: Quest[]
@@ -2025,300 +634,121 @@ QuestStage:
   description: string
   objectives: Objective[]
   onComplete: Action[]
-
-Objective:
-  type: ObjectiveType
-  target: string
-  required: int
-  current: int
 ```
 
-#### Implementation Steps
+**Objective types:**
+- COLLECT: Gather X of item
+- KILL: Defeat X of enemy type
+- BUILD: Construct specific building
+- EXPLORE: Discover location
+- TALK: Speak with NPC
 
-1. **Week 1: Quest System**
-   - [ ] Create QuestManager
-   - [ ] Implement quest tracking
-   - [ ] Add objective types
-   - [ ] Create quest UI
-   - [ ] Test: Quests track progress
+### Audio System
 
-2. **Week 2-3: Quest Content**
-   - [ ] Create main quests
-   - [ ] Add side quests
-   - [ ] Create settlement quests
-   - [ ] Add discovery quests
-   - [ ] Test: Quest variety
+**Audio categories:**
 
-### 5.3 Audio Implementation
+| Category | Behavior | Examples |
+|----------|----------|----------|
+| Music | Crossfade on change, duck for SFX | Exploration, combat themes |
+| SFX | Polyphonic, distance-based volume | Attacks, UI clicks |
+| Ambient | Loop, blend between biomes | Wind, birds, water |
 
-#### Audio Categories
+### Exit Criteria (Measurable)
 
-```
-AudioSystem:
-├── Music
-│   ├── MenuTheme
-│   ├── ExplorationThemes[]
-│   ├── CombatThemes[]
-│   ├── SettlementThemes[]
-│   └── BossThemes[]
-├── SFX
-│   ├── UI (clicks, opens)
-│   ├── Combat (hits, spells)
-│   ├── Environment (footsteps, ambient)
-│   └── Building (hammering, completion)
-└── Ambient
-    ├── BiomeAmbience[]
-    ├── WeatherSounds[]
-    └── TimeOfDaySounds[]
-```
-
-#### Implementation Steps
-
-1. **Week 1: Audio System**
-   - [ ] Create AudioManager
-   - [ ] Implement music system
-   - [ ] Add SFX system
-   - [ ] Create ambient system
-   - [ ] Test: Audio plays correctly
-
-2. **Week 2: Audio Content**
-   - [ ] Add placeholder music
-   - [ ] Implement SFX
-   - [ ] Add ambient sounds
-   - [ ] Create audio settings
-   - [ ] Test: Audio atmosphere
-
-### 5.4 Visual Polish
-
-#### Visual Improvements
-
-| Category | Improvements |
-|----------|--------------|
-| Animations | Smooth transitions, more frames |
-| Particles | Combat effects, ambient particles |
-| Lighting | Dynamic shadows, light sources |
-| Weather | Rain, snow, fog effects |
-| UI | Animations, polish, feedback |
-
-#### Implementation Steps
-
-1. **Week 1: Animation Polish**
-   - [ ] Add animation transitions
-   - [ ] Create more animation frames
-   - [ ] Add idle variations
-   - [ ] Polish combat animations
-   - [ ] Test: Animations smooth
-
-2. **Week 2: Effects**
-   - [ ] Add particle effects
-   - [ ] Create weather effects
-   - [ ] Implement lighting improvements
-   - [ ] Add screen effects
-   - [ ] Test: Visual polish
-
-### 5.5 Balance Pass
-
-#### Balance Areas
-
-| Area | Parameters | Goal |
-|------|------------|------|
-| Combat | Damage, health, speed | Fair challenge |
-| Economy | Resource rates, costs | Meaningful choices |
-| Progression | XP curves, unlocks | Satisfying pace |
-| NPCs | Efficiency, needs decay | Helpful, not OP |
-| Difficulty | Enemy scaling | Adjustable |
-
-#### Implementation Steps
-
-1. **Week 1: Data Analysis**
-   - [ ] Implement metrics logging
-   - [ ] Analyze playtest data
-   - [ ] Identify problem areas
-   - [ ] Create balance spreadsheet
-   - [ ] Document findings
-
-2. **Week 2: Balance Adjustments**
-   - [ ] Adjust combat balance
-   - [ ] Tune economy
-   - [ ] Fix progression issues
-   - [ ] Test difficulty levels
-   - [ ] Validate changes
-
-### 5.6 Tutorial Completion
-
-#### Tutorial Stages
-
-| Stage | Teaches | Trigger |
-|-------|---------|---------|
-| Movement | WASD, camera | Game start |
-| Gathering | Resource collection | First resource |
-| Crafting | Recipe system | Has materials |
-| Building | Placement | Has building materials |
-| Combat | Attacks, dodge | First enemy |
-| NPCs | Settlement basics | First NPC arrives |
-| Magic | Spell casting | Companion teaches |
-
-#### Implementation Steps
-
-1. **Week 1: Tutorial System**
-   - [ ] Create TutorialManager
-   - [ ] Implement hint triggers
-   - [ ] Add skip option
-   - [ ] Create tutorial UI
-   - [ ] Test: Tutorial guides
-
-2. **Week 2: Tutorial Content**
-   - [ ] Write all tutorial text
-   - [ ] Create tutorial markers
-   - [ ] Add contextual hints
-   - [ ] Polish tutorial flow
-   - [ ] Test: New players succeed
-
-### Phase 5 Exit Criteria
-
-- [ ] Full narrative playable
-- [ ] Quest system with variety
-- [ ] Audio atmosphere complete
-- [ ] Visual polish implemented
-- [ ] Game balance validated
-- [ ] Tutorial teaches effectively
-- [ ] 10+ hours of content
-- [ ] Ready for Early Access
+- [ ] Story completable: Main quest start to finish without blockers
+- [ ] Quest variety: 30+ unique quests
+- [ ] Audio coverage: Sound for all player actions
+- [ ] Balance validation: 80%+ playtesters complete tutorial
+- [ ] Content hours: 10+ hours of unique content
 
 ---
 
 ## Phase 6: Multiplayer
 
-**Duration:** 2-3 months
 **Goal:** Cooperative settlement building
-**Milestone:** Multiplayer beta
+**Reference:** [ROADMAP_2D.md - Phase 6](ROADMAP_2D.md)
 
-### 6.1 Network Architecture
+### Network Architecture
 
-#### Architecture Decision
-
-```
-Options:
-1. Client-Server (Dedicated)
-   + Authoritative, cheat-resistant
-   + Scales to many players
-   - Requires server hosting
-
-2. Client-Server (Player Host)
-   + No infrastructure needed
-   + Lower latency for host
-   - Host advantage
-
-3. Peer-to-Peer
-   + No server needed
-   + Equal for all players
-   - Complex state sync
-   - NAT traversal issues
-
-Recommendation: Client-Server (Player Host)
+**Recommended: Client-Server (Player Host)**
 - Appropriate for co-op gameplay
-- Simpler to implement
 - No infrastructure costs
-```
+- Simpler than peer-to-peer
 
-### 6.2 State Synchronization
+### State Synchronization
 
-#### Sync Categories
+**Sync priorities:**
 
-| Category | Sync Method | Priority |
-|----------|-------------|----------|
-| Player position | Frequent, interpolated | High |
-| Combat actions | Immediate, validated | High |
-| World changes | Event-based | Medium |
-| NPC state | Periodic snapshot | Medium |
-| UI state | Not synced | N/A |
+| Data Type | Sync Method | Frequency |
+|-----------|-------------|-----------|
+| Player position | Interpolated | Every frame |
+| Combat actions | Immediate, validated | On action |
+| World changes | Event-based | On change |
+| NPC state | Periodic snapshot | 4x/second |
+| UI state | Not synced | - |
 
-### 6.3 Implementation Steps
+### Permission System
 
-1. **Week 1-2: Network Core**
-   - [ ] Choose networking library
-   - [ ] Implement host/join
-   - [ ] Add player sync
-   - [ ] Create connection UI
-   - [ ] Test: Players connect
+**Permission levels:**
 
-2. **Week 3-4: Game Sync**
-   - [ ] Sync world state
-   - [ ] Sync entities
-   - [ ] Sync combat
-   - [ ] Handle disconnection
-   - [ ] Test: State stays synced
+| Level | Capabilities |
+|-------|-------------|
+| Guest | Move, basic interact |
+| Member | Build, use stockpiles |
+| Trusted | Demolish, assign NPCs |
+| Admin | All permissions, kick players |
 
-3. **Week 5-6: Permissions**
-   - [ ] Implement build permissions
-   - [ ] Add role system
-   - [ ] Create admin controls
-   - [ ] Test multiplayer scenarios
+### Exit Criteria (Measurable)
 
-### Phase 6 Exit Criteria
-
-- [ ] Players can host/join games
-- [ ] World state synchronizes
-- [ ] Combat works in multiplayer
-- [ ] Permissions system functional
-- [ ] Handles 4+ players
-- [ ] Network performance acceptable
+- [ ] Connection: Host/join works on LAN and internet
+- [ ] Latency tolerance: Playable with 200ms ping
+- [ ] Player count: 4 players at 60 FPS
+- [ ] Desync rate: < 1 desync per hour of play
+- [ ] Disconnect handling: Graceful, no data loss
 
 ---
 
 ## Phase 7: Launch Preparation
 
-**Duration:** 2-3 months
 **Goal:** Ship-ready game
-**Milestone:** Version 1.0
+**Reference:** [ROADMAP_2D.md - Phase 7](ROADMAP_2D.md)
 
-### 7.1 QA & Bug Fixing
+### Quality Assurance
 
-- [ ] Full regression testing
-- [ ] Platform testing (Win/Mac/Linux)
-- [ ] Performance profiling
-- [ ] Memory leak testing
-- [ ] Save compatibility testing
+**Test coverage targets:**
 
-### 7.2 Performance Optimization
+| System | Unit Test Coverage | Integration Tests |
+|--------|-------------------|-------------------|
+| Core engine | 80% | Yes |
+| Combat | 70% | Yes |
+| NPC behavior | 70% | Yes |
+| Save/load | 90% | Yes |
+| UI | 50% | Manual |
 
-- [ ] Profile all systems
-- [ ] Optimize render pipeline
-- [ ] Reduce memory usage
-- [ ] Improve load times
-- [ ] Target: 60 FPS on mid-range hardware
+### Performance Targets
 
-### 7.3 Platform Builds
+| Metric | Target | Measurement Method |
+|--------|--------|-------------------|
+| Frame rate | 60 FPS | Mid-range hardware (GTX 1060 / RX 580) |
+| Load time | < 10 seconds | Cold start to gameplay |
+| Memory | < 2 GB | Peak during normal play |
+| Save size | < 50 MB | Large world with 20 NPCs |
 
-- [ ] Windows build (32/64 bit)
-- [ ] macOS build
-- [ ] Linux build
-- [ ] Create installers
-- [ ] Test on multiple configurations
+### Platform Builds
 
-### 7.4 Store Presence
+| Platform | Format | Notes |
+|----------|--------|-------|
+| Windows | .exe installer, .zip | 32 and 64 bit |
+| macOS | .app bundle, .dmg | Signed and notarized |
+| Linux | .AppImage, .tar.gz | Tested on Ubuntu LTS |
 
-- [ ] Steam store page
-- [ ] Store description
-- [ ] Screenshots (10+)
-- [ ] Trailer video
-- [ ] Demo build (optional)
+### Exit Criteria (Measurable)
 
-### 7.5 Marketing Materials
-
-- [ ] Launch trailer
-- [ ] Press kit
-- [ ] Social media assets
-- [ ] Review copies preparation
-
-### Phase 7 Exit Criteria
-
-- [ ] No critical bugs
-- [ ] Performance targets met
-- [ ] All platform builds working
-- [ ] Store pages live
-- [ ] Marketing materials ready
-- [ ] Launch day prepared
+- [ ] Crash rate: < 1 per 10 hours of play
+- [ ] Critical bugs: 0 known
+- [ ] Performance: Meets all targets above
+- [ ] Platform coverage: All 3 platforms passing smoke tests
+- [ ] Store pages: Live with all required assets
 
 ---
 
@@ -2326,48 +756,31 @@ Recommendation: Client-Server (Player Host)
 
 ### Accessibility
 
-| Feature | Implementation |
-|---------|----------------|
-| Colorblind modes | Alternative color palettes |
-| Text scaling | Adjustable UI scale |
-| Key rebinding | Full remapping support |
-| Subtitles | All dialogue captioned |
-| Screen reader | UI element descriptions |
+| Feature | Implementation | Priority |
+|---------|---------------|----------|
+| Colorblind modes | 3 alternative palettes | High |
+| Text scaling | 75% to 200% | High |
+| Key rebinding | Full remapping | High |
+| Subtitles | All dialogue | High |
+| Screen reader | UI descriptions | Medium |
 
 ### Localization
 
-```
-Localization System:
-- All strings in localization files
+**Requirements:**
+- All player-visible strings in localization files
 - Support for RTL languages
-- Date/number formatting
-- Font fallbacks for character sets
-- Initial: English, German, French, Spanish
-```
+- Date/number formatting per locale
+- Font fallbacks for non-Latin scripts
 
-### Analytics
+**Initial languages:** English, German, French, Spanish
 
-```
-Tracked Metrics:
-- Session length
-- Feature usage
-- Progression milestones
-- Death causes
-- NPC behavior patterns
-- Performance data
-```
+### Analytics (Optional)
 
-### Modding Support (Future)
-
-```
-Moddable Content:
-- Item definitions
-- Recipe definitions
-- NPC templates
-- Building blueprints
-- Quest definitions
-- Dialogue trees
-```
+**Tracked metrics:**
+- Session length and frequency
+- Feature usage rates
+- Progression milestones reached
+- Performance data (opt-in)
 
 ---
 
@@ -2377,65 +790,37 @@ Moddable Content:
 
 | Type | Coverage | Automation |
 |------|----------|------------|
-| Unit Tests | Core systems | Full |
-| Integration Tests | System interactions | Partial |
-| Playtest | User experience | Manual |
-| Performance Tests | Frame rate, memory | Automated |
-| Regression Tests | Previous bugs | Automated |
+| Unit | Core systems | Fully automated |
+| Integration | System interactions | Automated where possible |
+| Performance | Frame rate, memory | Automated benchmarks |
+| Playtest | User experience | Manual, structured |
 
 ### Testing Schedule
 
-- **Daily:** Automated unit tests
-- **Weekly:** Integration test suite
-- **Bi-weekly:** Internal playtest
-- **Monthly:** External playtest
-- **Per-phase:** Full regression
-
----
-
-## Risk Mitigation
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Scope creep | High | High | Strict phase gates, MVP focus |
-| Performance issues | Medium | High | Profile early and often |
-| Save corruption | Low | Critical | Robust serialization, backups |
-| Multiplayer complexity | High | Medium | Design single-player first |
-| Burnout | Medium | High | Sustainable pace, milestones |
-
----
-
-## Success Criteria
-
-### Development Metrics
-
-| Metric | Target |
-|--------|--------|
-| Build stability | < 1 crash per hour |
-| Frame rate | 60 FPS on mid-range |
-| Load time | < 10 seconds |
-| Save size | < 50 MB |
-| Test coverage | > 70% core systems |
-
-### Launch Metrics
-
-| Metric | Target |
-|--------|--------|
-| Steam reviews | 80%+ positive |
-| Day 1 sales | 10-20% of wishlists |
-| Refund rate | < 10% |
-| Average playtime | 15+ hours |
+- **Per commit:** Automated unit tests
+- **Per feature:** Integration tests
+- **Per phase:** Internal playtest (structured feedback form)
+- **Pre-milestone:** External playtest (10+ testers)
 
 ---
 
 ## References
 
-- [Game Vision (2D)](../../planning/VISION_2D.md)
-- [Development Roadmap (2D)](../../planning/ROADMAP_2D.md)
-- [NPC System Design (2D)](../../planning/NPC_SYSTEM_DESIGN_2D.md)
-- [Archived 2D Prototype](../archive-code/2d-prototype/README.md)
+### Planning Documents
+
+- [VISION_2D.md](VISION_2D.md) - Creative vision and design principles
+- [ROADMAP_2D.md](ROADMAP_2D.md) - Development phases and milestones
+- [NPC_SYSTEM_DESIGN_2D.md](NPC_SYSTEM_DESIGN_2D.md) - NPC behavior architecture (primary reference for Phase 2)
+
+### Archived Reference
+
+- [2D Prototype Archive](../archive-code/2d-prototype/README.md) - Previous implementation for algorithm reference
+
+### Project Standards
+
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) - Documentation and contribution guidelines
 
 ---
 
-**Document Created:** November 2025
-**Version:** 1.0
+**Document Purpose:** Technical specification for implementation
+**Companion Documents:** VISION_2D.md (why), ROADMAP_2D.md (what/when), NPC_SYSTEM_DESIGN_2D.md (NPC details)

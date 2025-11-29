@@ -1,6 +1,6 @@
 # Documentation
 
-**Last Updated:** November 2025
+**Last Updated:** 2025-11-28
 **Purpose:** Project documentation and archives
 
 ---
@@ -11,6 +11,9 @@
 documentation/
 ├── README.md                   - This file
 ├── planning/                   - Active planning documents
+│   ├── VISION_2D.md
+│   ├── ROADMAP_2D.md
+│   ├── NPC_SYSTEM_DESIGN_2D.md
 │   └── 2D_GAME_IMPLEMENTATION_PLAN.md
 └── archive-code/               - Archived code and documentation
     └── 2d-prototype/           - Complete 2D React prototype archive
@@ -18,13 +21,26 @@ documentation/
 
 ---
 
-## Active Documents
+## Active Planning Documents
 
-### Planning
+All planning documents are consolidated in `documentation/planning/`:
 
-| File | Description | Status |
-|------|-------------|--------|
-| [2D_GAME_IMPLEMENTATION_PLAN.md](planning/2D_GAME_IMPLEMENTATION_PLAN.md) | Comprehensive 2D game implementation plan covering all 7 development phases | **Active** |
+| Document | Purpose | Use When |
+|----------|---------|----------|
+| [VISION_2D.md](planning/VISION_2D.md) | Creative vision, design principles | Understanding **why** decisions are made |
+| [ROADMAP_2D.md](planning/ROADMAP_2D.md) | Phase overview, milestones, fundraising | Planning **what** to build and **when** |
+| [NPC_SYSTEM_DESIGN_2D.md](planning/NPC_SYSTEM_DESIGN_2D.md) | NPC behavior architecture | Implementing NPC systems |
+| [2D_GAME_IMPLEMENTATION_PLAN.md](planning/2D_GAME_IMPLEMENTATION_PLAN.md) | Technical specifications | Implementing **how** to build features |
+
+### Document Relationships
+
+```
+VISION_2D.md (Why)
+     ↓
+ROADMAP_2D.md (What/When)
+     ↓
+2D_GAME_IMPLEMENTATION_PLAN.md (How) ←→ NPC_SYSTEM_DESIGN_2D.md (NPC Details)
+```
 
 ---
 
@@ -69,18 +85,6 @@ The following documents remain in the project root:
 | **[README.md](../README.md)** | Project overview |
 | **[CONTRIBUTING.md](../CONTRIBUTING.md)** | Contribution guidelines |
 | **[LICENSE](../LICENSE)** | Project license |
-
----
-
-## Planning Documents (Root)
-
-The new 2D game planning documents are in the project root `planning/` directory:
-
-| Document | Purpose |
-|----------|---------|
-| [VISION_2D.md](../planning/VISION_2D.md) | Game vision for 2D implementation |
-| [ROADMAP_2D.md](../planning/ROADMAP_2D.md) | Development roadmap for 2D game |
-| [NPC_SYSTEM_DESIGN_2D.md](../planning/NPC_SYSTEM_DESIGN_2D.md) | NPC system architecture for 2D |
 
 ---
 

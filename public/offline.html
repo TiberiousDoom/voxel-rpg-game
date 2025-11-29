@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voxel RPG - Offline</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0f0f23;
+      color: #eee;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      color: #e94560;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #888;
+      max-width: 400px;
+      margin-bottom: 1.5rem;
+    }
+
+    button {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #d63851;
+    }
+
+    .status {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #16213e;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .online {
+      color: #82e0aa;
+    }
+  </style>
+</head>
+<body>
+  <div class="icon">📡</div>
+  <h1>You're Offline</h1>
+  <p>It looks like you've lost your internet connection. Some features may not be available until you're back online.</p>
+  <button onclick="location.reload()">Try Again</button>
+
+  <div class="status" id="status">
+    Checking connection...
+  </div>
+
+  <script>
+    function updateStatus() {
+      const statusEl = document.getElementById('status');
+      if (navigator.onLine) {
+        statusEl.innerHTML = '<span class="online">✓ Connection restored!</span> Refreshing...';
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        statusEl.textContent = 'Still offline. Your progress is saved locally.';
+      }
+    }
+
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    updateStatus();
+  </script>
+</body>
+</html>

@@ -2,125 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VoxelRPG">
+  <meta name="theme-color" content="#e94560">
+  <meta name="description" content="2D RPG survival base-building game with autonomous NPCs">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
   <title>Voxel RPG - 2D Colony Survival</title>
+
   <style>
+    /* ============================================
+       CSS Reset & Base
+       ============================================ */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      overscroll-behavior: none;
     }
 
     body {
-      background: #1a1a2e;
+      background: #0f0f23;
       color: #eee;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
     }
 
+    /* Safe area padding for notched devices */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+
+    /* ============================================
+       Header - Responsive
+       ============================================ */
     header {
       background: #16213e;
-      padding: 1rem 2rem;
+      padding: 0.5rem 1rem;
       border-bottom: 2px solid #0f3460;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px; /* Touch target minimum */
     }
 
     header h1 {
       color: #e94560;
-      font-size: 1.8rem;
+      font-size: 1.2rem;
     }
 
     header p {
       color: #888;
-      font-size: 0.9rem;
+      font-size: 0.75rem;
     }
 
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-    }
-
+    /* ============================================
+       Game Container - Responsive Canvas
+       ============================================ */
     #game-container {
-      background: #0f0f23;
-      border: 2px solid #0f3460;
-      border-radius: 8px;
-      width: 800px;
-      height: 600px;
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       overflow: hidden;
+      background: #0f0f23;
     }
 
     #game-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
+      touch-action: none;
     }
 
-    .demo-info {
-      margin-top: 1.5rem;
-      text-align: center;
-      max-width: 600px;
-    }
-
-    .demo-info h2 {
-      color: #e94560;
-      margin-bottom: 0.5rem;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
-      margin-top: 1rem;
-      background: #16213e;
-      padding: 1rem;
-      border-radius: 8px;
-    }
-
-    .control-group h3 {
-      color: #e94560;
-      font-size: 0.9rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .control-group ul {
-      list-style: none;
-      font-size: 0.85rem;
-      color: #aaa;
-    }
-
-    .control-group li {
-      margin: 0.25rem 0;
-    }
-
-    .control-group kbd {
-      background: #0f3460;
-      padding: 0.15rem 0.4rem;
-      border-radius: 3px;
-      font-family: monospace;
-      color: #fff;
-    }
-
+    /* ============================================
+       HUD Overlay - Responsive Positioning
+       ============================================ */
     .stats-bar {
       position: absolute;
       top: 10px;
       left: 10px;
+      right: 10px;
       display: flex;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 10;
     }
 
     .stat {
       background: rgba(0, 0, 0, 0.7);
-      padding: 5px 10px;
+      padding: 6px 12px;
       border-radius: 4px;
       font-size: 12px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
 
     .stat-health { color: #e94560; }
@@ -133,69 +139,457 @@
       right: 10px;
       font-size: 11px;
       color: #555;
+      pointer-events: none;
+      z-index: 10;
     }
 
+    /* ============================================
+       Controls Info Panel - Hidden on Mobile
+       ============================================ */
+    .controls-panel {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #888;
+      max-width: 300px;
+      pointer-events: none;
+      z-index: 10;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .controls-panel kbd {
+      background: #0f3460;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      color: #fff;
+      font-size: 10px;
+    }
+
+    /* ============================================
+       Footer - Hidden on Mobile
+       ============================================ */
     footer {
       background: #16213e;
-      padding: 1rem;
+      padding: 0.5rem;
       text-align: center;
       color: #666;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       border-top: 2px solid #0f3460;
+      flex-shrink: 0;
     }
 
     footer a {
       color: #e94560;
       text-decoration: none;
     }
+
+    /* ============================================
+       Loading Screen
+       ============================================ */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0f0f23;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease-out;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #16213e;
+      border-top-color: #e94560;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 1rem;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    /* ============================================
+       PWA Install Prompt
+       ============================================ */
+    #install-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: #16213e;
+      padding: 1rem;
+      border-radius: 12px;
+      border: 2px solid #0f3460;
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #install-prompt.visible {
+      display: flex;
+    }
+
+    #install-prompt .icon {
+      font-size: 2rem;
+    }
+
+    #install-prompt .text {
+      flex: 1;
+    }
+
+    #install-prompt .text h3 {
+      color: #e94560;
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    #install-prompt .text p {
+      color: #888;
+      font-size: 0.8rem;
+    }
+
+    #install-prompt button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    #install-button {
+      background: #e94560;
+      color: white;
+    }
+
+    #dismiss-button {
+      background: transparent;
+      color: #888;
+    }
+
+    /* ============================================
+       Responsive Breakpoints
+       Per spec: phone (0-599), phoneLandscape (600-767), tablet (768-1023), desktop (1024+)
+       ============================================ */
+
+    /* Phone Portrait (0-599px) */
+    @media (max-width: 599px) {
+      header {
+        padding: 0.4rem 0.75rem;
+      }
+
+      header h1 {
+        font-size: 1rem;
+      }
+
+      header p {
+        display: none;
+      }
+
+      .stats-bar {
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        gap: 4px;
+      }
+
+      .stat {
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+
+      .controls-panel {
+        display: none; /* Hide keyboard controls on mobile */
+      }
+
+      footer {
+        display: none; /* Hide footer on mobile to maximize game area */
+      }
+
+      .version {
+        font-size: 9px;
+        bottom: 5px;
+        right: 5px;
+      }
+
+      #install-prompt {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        padding: 0.75rem;
+      }
+    }
+
+    /* Phone Landscape (600-767px) */
+    @media (min-width: 600px) and (max-width: 767px) {
+      header {
+        padding: 0.4rem 1rem;
+      }
+
+      header h1 {
+        font-size: 1.1rem;
+      }
+
+      .controls-panel {
+        display: none;
+      }
+
+      footer {
+        display: none;
+      }
+    }
+
+    /* Tablet (768-1023px) */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      header h1 {
+        font-size: 1.3rem;
+      }
+
+      .stat {
+        padding: 6px 14px;
+        font-size: 13px;
+      }
+
+      .controls-panel {
+        max-width: 250px;
+      }
+    }
+
+    /* Desktop (1024px+) */
+    @media (min-width: 1024px) {
+      header {
+        padding: 0.75rem 2rem;
+      }
+
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      header p {
+        font-size: 0.85rem;
+      }
+
+      .stats-bar {
+        top: 15px;
+        left: 15px;
+        gap: 10px;
+      }
+
+      .stat {
+        padding: 8px 16px;
+        font-size: 14px;
+      }
+
+      .controls-panel {
+        bottom: 15px;
+        left: 15px;
+        max-width: 350px;
+        font-size: 12px;
+      }
+
+      footer {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+      }
+    }
+
+    /* Landscape orientation adjustments */
+    @media (orientation: landscape) and (max-height: 500px) {
+      header {
+        display: none;
+      }
+
+      .stats-bar {
+        flex-direction: column;
+        width: auto;
+        right: auto;
+      }
+
+      .version {
+        top: 10px;
+        bottom: auto;
+      }
+    }
+
+    /* High DPI screens */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      .stat, .controls-panel {
+        border: 0.5px solid rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    /* Reduced motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      .loading-spinner {
+        animation: none;
+        border-top-color: #e94560;
+        border-right-color: #e94560;
+      }
+
+      #loading-screen,
+      #install-prompt {
+        transition: none;
+      }
+    }
+
+    /* Dark mode is default, but respect light mode preference */
+    @media (prefers-color-scheme: light) {
+      /* Keep dark theme for game - it's a dark-themed game */
+    }
   </style>
 </head>
 <body>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Loading Voxel RPG...</p>
+  </div>
+
+  <!-- Header -->
   <header>
-    <h1>🏰 Voxel RPG</h1>
-    <p>2D Colony Survival Game - Phase 1 Demo</p>
+    <div>
+      <h1>Voxel RPG</h1>
+      <p>2D Colony Survival - Phase 1 Demo</p>
+    </div>
   </header>
 
-  <main>
-    <div id="game-container">
-      <canvas id="game-canvas" width="800" height="600"></canvas>
-      <div class="stats-bar">
-        <div class="stat stat-health">❤️ Health: <span id="health">100</span></div>
-        <div class="stat stat-hunger">🍖 Hunger: <span id="hunger">100</span></div>
-        <div class="stat stat-stamina">⚡ Stamina: <span id="stamina">100</span></div>
-      </div>
-      <div class="version">v0.1.0 - Phase 1</div>
+  <!-- Game Container -->
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div class="stats-bar">
+      <div class="stat stat-health">Health: <span id="health">100</span></div>
+      <div class="stat stat-hunger">Hunger: <span id="hunger">100</span></div>
+      <div class="stat stat-stamina">Stamina: <span id="stamina">100</span></div>
     </div>
-
-    <div class="demo-info">
-      <h2>Phase 1: Playable Prototype</h2>
-      <p>Explore the procedurally generated world with 10 unique biomes. Gather resources, craft items, and survive!</p>
-
-      <div class="controls">
-        <div class="control-group">
-          <h3>Movement</h3>
-          <ul>
-            <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> - Move</li>
-            <li><kbd>Shift</kbd> - Sprint</li>
-            <li><kbd>E</kbd> - Interact</li>
-          </ul>
-        </div>
-        <div class="control-group">
-          <h3>Actions</h3>
-          <ul>
-            <li><kbd>I</kbd> - Inventory</li>
-            <li><kbd>B</kbd> - Build Menu</li>
-            <li><kbd>Esc</kbd> - Pause</li>
-          </ul>
-        </div>
-      </div>
+    <div class="controls-panel" id="controls-panel">
+      <kbd>WASD</kbd> Move &nbsp;
+      <kbd>Shift</kbd> Sprint &nbsp;
+      <kbd>E</kbd> Interact &nbsp;
+      <kbd>I</kbd> Inventory &nbsp;
+      <kbd>B</kbd> Build
     </div>
-  </main>
+    <div class="version">v0.1.0</div>
+  </div>
 
+  <!-- Footer (hidden on mobile) -->
   <footer>
     <p>Built with TypeScript & Vite | <a href="https://github.com/TiberiousDoom/voxel-rpg-game">View on GitHub</a></p>
   </footer>
 
+  <!-- PWA Install Prompt -->
+  <div id="install-prompt">
+    <div class="icon">📱</div>
+    <div class="text">
+      <h3>Install Voxel RPG</h3>
+      <p>Add to home screen for the best experience</p>
+    </div>
+    <button id="dismiss-button">Later</button>
+    <button id="install-button">Install</button>
+  </div>
+
+  <!-- Service Worker Registration & PWA Install -->
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/voxel-rpg-game/sw.js')
+          .then((registration) => {
+            console.log('[PWA] Service Worker registered:', registration.scope);
+
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New content available, notify user
+                  console.log('[PWA] New content available, refresh to update');
+                }
+              });
+            });
+          })
+          .catch((error) => {
+            console.log('[PWA] Service Worker registration failed:', error);
+          });
+      });
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installPrompt = document.getElementById('install-prompt');
+    const installButton = document.getElementById('install-button');
+    const dismissButton = document.getElementById('dismiss-button');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // Check if user hasn't dismissed recently
+      const dismissed = localStorage.getItem('pwa-install-dismissed');
+      if (!dismissed || Date.now() - parseInt(dismissed) > 7 * 24 * 60 * 60 * 1000) {
+        installPrompt.classList.add('visible');
+      }
+    });
+
+    installButton.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+
+      console.log('[PWA] Install prompt outcome:', outcome);
+      deferredPrompt = null;
+      installPrompt.classList.remove('visible');
+    });
+
+    dismissButton.addEventListener('click', () => {
+      installPrompt.classList.remove('visible');
+      localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    });
+
+    window.addEventListener('appinstalled', () => {
+      console.log('[PWA] App installed');
+      installPrompt.classList.remove('visible');
+      deferredPrompt = null;
+    });
+
+    // Hide loading screen when game is ready
+    window.addEventListener('game-ready', () => {
+      document.getElementById('loading-screen').classList.add('hidden');
+    });
+
+    // Fallback: hide loading screen after timeout
+    setTimeout(() => {
+      document.getElementById('loading-screen').classList.add('hidden');
+    }, 3000);
+  </script>
+
+  <!-- Game Entry Point -->
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

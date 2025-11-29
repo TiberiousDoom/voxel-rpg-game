@@ -4,7 +4,7 @@
  * Supports typed events with strong typing for event payloads.
  */
 
-import type { Vector2, Vector2Int, TileLayer, Entity } from './types';
+import type { Vector2, Vector2Int, TileLayer, Entity, GestureEvent, ResponsiveConfig, Breakpoint, InputAction } from './types';
 
 // ============================================================================
 // Event Definitions
@@ -30,14 +30,19 @@ export interface GameEvents {
   'player:inventoryChanged': { itemId: string; delta: number };
 
   // Input Events
-  'input:actionPressed': { action: string };
-  'input:actionReleased': { action: string };
+  'input:actionPressed': { action: InputAction | string };
+  'input:actionReleased': { action: InputAction | string };
   'input:mouseClicked': { button: number; position: Vector2; worldPosition: Vector2 };
   'input:mouseMoved': { position: Vector2; worldPosition: Vector2 };
   'input:gamepadConnected': { index: number; id: string };
   'input:gamepadDisconnected': { index: number; id: string };
   'input:leftStickMoved': { x: number; y: number };
   'input:rightStickMoved': { x: number; y: number };
+
+  // Touch Input Events (Phase 0 Mobile)
+  'input:touchJoystickMoved': { x: number; y: number };
+  'input:touchTap': GestureEvent;
+  'input:gesture': GestureEvent;
 
   // Time Events
   'time:hourChanged': { hour: number; day: number };
@@ -50,6 +55,7 @@ export interface GameEvents {
   'ui:panelClosed': { panel: string };
   'ui:tooltipShow': { content: string; position: Vector2 };
   'ui:tooltipHide': Record<string, never>;
+  'ui:breakpointChanged': { breakpoint: Breakpoint; config: ResponsiveConfig };
 
   // Save Events
   'save:started': { slot: string };

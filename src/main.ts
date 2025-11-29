@@ -2,15 +2,17 @@
  * Main entry point for the Voxel RPG game demo
  *
  * This initializes the game engine and renders a playable demo.
- * Integrates all Phase 0/1 systems per 2D_GAME_IMPLEMENTATION_PLAN.md
+ * Integrates all Phase 0/1 systems per 2D_GAME_IMPLEMENTATION_PLAN.md v1.2
+ * Including mobile/touch support and responsive canvas.
  */
 
 import { WorldGenerator, BiomeType, getBiomeManager, RegionManager } from './world';
-import { getSurvivalManager, getInventoryManager, getCraftingManager, getResourceManager, SaveManager } from './systems';
+import { getSurvivalManager, getInventoryManager, getCraftingManager, getResourceManager, SaveManager, getTouchInputManager } from './systems';
 import { getEventBus } from './core/EventBus';
 import { CameraSystem } from './entities/CameraSystem';
 import { UIManager } from './ui/UIManager';
-import { PanelType } from './core/types';
+import { PanelType, InputAction, GestureType } from './core/types';
+import type { GestureEvent } from './core/types';
 
 // ============================================================================
 // Player State Enum (matches PlayerController)
@@ -25,7 +27,7 @@ enum PlayerState {
 }
 
 // ============================================================================
-// Game Demo - Integrates all Phase 0/1 systems
+// Game Demo - Integrates all Phase 0/1 systems including mobile
 // ============================================================================
 
 class GameDemo {
@@ -35,6 +37,7 @@ class GameDemo {
   private survival = getSurvivalManager();
   private inventory = getInventoryManager();
   private eventBus = getEventBus();
+  private touchInput = getTouchInputManager();
 
   // Integrated systems
   private camera: CameraSystem;
@@ -78,6 +81,9 @@ class GameDemo {
     this.canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     this.ctx = this.canvas.getContext('2d')!;
 
+    // Set up responsive canvas
+    this.setupResponsiveCanvas();
+
     // Initialize world generator with random seed
     this.worldSeed = Math.floor(Math.random() * 1000000);
     this.worldGen = new WorldGenerator({ seed: this.worldSeed });
@@ -107,6 +113,10 @@ class GameDemo {
     this.saveManager = new SaveManager();
     this.saveManager.initialize();
 
+    // Initialize touch input system
+    this.touchInput.initialize();
+    this.touchInput.setCanvas(this.canvas);
+
     // Find spawn point
     const spawn = this.worldGen.findSpawnPoint();
     this.playerX = spawn.x;
@@ -132,12 +142,55 @@ class GameDemo {
     this.saveManager.enableAutosave(60);
 
     this.setupInput();
+    this.setupTouchInput();
     this.setupSaveSystem();
     this.startGameLoop();
 
+    // Emit game ready event for loading screen
+    window.dispatchEvent(new CustomEvent('game-ready'));
+
+    const isMobile = this.touchInput.getCapabilities().isMobile;
     console.log(`[GameDemo] Started with seed ${this.worldSeed}, spawn at (${spawn.x}, ${spawn.y})`);
-    console.log('[GameDemo] Controls: WASD=Move, Shift=Sprint, E=Interact, I=Inventory, B=Build, ESC=Pause');
-    console.log('[GameDemo] Controls: +/-=Zoom, 1=Eat berries, S=Save, L=Load');
+    if (isMobile) {
+      console.log('[GameDemo] Mobile device detected - touch controls enabled');
+    } else {
+      console.log('[GameDemo] Controls: WASD=Move, Shift=Sprint, E=Interact, I=Inventory, B=Build, ESC=Pause');
+      console.log('[GameDemo] Controls: +/-=Zoom, 1=Eat berries, Ctrl+S=Save, Ctrl+L=Load');
+    }
+  }
+
+  /**
+   * Set up responsive canvas that fills the container
+   */
+  private setupResponsiveCanvas(): void {
+    const container = this.canvas.parentElement;
+    if (!container) return;
+
+    const resize = () => {
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+
+      // Set canvas size to container size with device pixel ratio
+      this.canvas.width = rect.width * dpr;
+      this.canvas.height = rect.height * dpr;
+
+      // Scale context to account for DPR
+      this.ctx.scale(dpr, dpr);
+
+      // Set CSS size
+      this.canvas.style.width = `${rect.width}px`;
+      this.canvas.style.height = `${rect.height}px`;
+    };
+
+    // Initial resize
+    resize();
+
+    // Resize on window resize
+    window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', () => {
+      // Delay for orientation change to complete
+      setTimeout(resize, 100);
+    });
   }
 
   private setupSaveSystem(): void {
@@ -237,6 +290,60 @@ class GameDemo {
 
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code);
+    });
+  }
+
+  /**
+   * Set up touch input event handlers
+   */
+  private setupTouchInput(): void {
+    // Listen for touch actions from TouchInputManager
+    this.eventBus.on('input:actionPressed', (event) => {
+      const action = event.action as InputAction;
+      switch (action) {
+        case InputAction.Interact:
+          this.interact();
+          break;
+        case InputAction.Inventory:
+          this.toggleInventory();
+          break;
+        case InputAction.BuildMenu:
+          this.toggleBuildMenu();
+          break;
+        case InputAction.Cancel:
+          this.handleEscape();
+          break;
+        case InputAction.Sprint:
+          this.isSprinting = true;
+          break;
+        case InputAction.ZoomIn:
+          this.camera.zoomIn();
+          break;
+        case InputAction.ZoomOut:
+          this.camera.zoomOut();
+          break;
+      }
+    });
+
+    this.eventBus.on('input:actionReleased', (event) => {
+      if (event.action === InputAction.Sprint) {
+        this.isSprinting = false;
+      }
+    });
+
+    // Listen for tap gestures for interaction
+    this.eventBus.on('input:touchTap', (event: GestureEvent) => {
+      if (event.type === GestureType.Tap && this.playerState !== PlayerState.InMenu) {
+        // Tap to interact with nearby objects
+        this.interact();
+      }
+    });
+
+    // Listen for gesture events
+    this.eventBus.on('input:gesture', (event: GestureEvent) => {
+      if (event.type === GestureType.DoubleTap) {
+        // Double tap toggles sprint briefly handled by TouchInputManager
+      }
     });
   }
 
@@ -371,12 +478,15 @@ class GameDemo {
     // Update UI manager
     this.uiManager.update(deltaTime, gameTime);
 
+    // Update touch input manager
+    this.touchInput.update(deltaTime, gameTime);
+
     // Update UI display
     this.updateUI();
   }
 
   private updateMovement(deltaTime: number): void {
-    // Handle movement
+    // Handle keyboard movement
     let dx = 0;
     let dy = 0;
 
@@ -385,14 +495,24 @@ class GameDemo {
     if (this.keys.has('KeyA') || this.keys.has('ArrowLeft')) dx -= 1;
     if (this.keys.has('KeyD') || this.keys.has('ArrowRight')) dx += 1;
 
-    // Normalize diagonal movement
-    if (dx !== 0 && dy !== 0) {
+    // Add touch joystick input
+    const touchJoystick = this.touchInput.getJoystickInput();
+    if (touchJoystick.x !== 0 || touchJoystick.y !== 0) {
+      dx = touchJoystick.x;
+      dy = touchJoystick.y;
+    }
+
+    // Normalize diagonal movement (only for keyboard input, touch is already normalized)
+    if (!this.touchInput.isJoystickActive() && dx !== 0 && dy !== 0) {
       dx *= 0.707;
       dy *= 0.707;
     }
 
-    // Sprint
-    this.isSprinting = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
+    // Sprint - check keyboard and touch
+    const keyboardSprint = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
+    const touchSprint = this.touchInput.isActionActive(InputAction.Sprint);
+    this.isSprinting = keyboardSprint || touchSprint || this.isSprinting;
+
     const speedMultiplier = this.isSprinting && this.survival.canSprint() ? 1.8 : 1;
     const hungerMultiplier = this.survival.getSpeedMultiplier();
 
@@ -419,6 +539,10 @@ class GameDemo {
       this.playerState = this.isSprinting ? PlayerState.Running : PlayerState.Walking;
     } else {
       this.playerState = PlayerState.Idle;
+      // Reset sprint when stopped (for touch toggle)
+      if (!keyboardSprint && !touchSprint) {
+        this.isSprinting = false;
+      }
     }
   }
 
@@ -433,7 +557,18 @@ class GameDemo {
   }
 
   private render(): void {
-    const { width, height } = this.canvas;
+    // Get actual display size (CSS pixels, not canvas pixels)
+    const displayWidth = this.canvas.clientWidth;
+    const displayHeight = this.canvas.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+
+    // Reset transform and clear with actual canvas size
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.scale(dpr, dpr);
+
+    const width = displayWidth;
+    const height = displayHeight;
+
     const zoom = this.camera.getZoom();
     const scaledTileSize = this.tileSize * zoom;
 
@@ -475,8 +610,8 @@ class GameDemo {
         );
 
         // Add some detail noise
-        const height = this.worldGen.getHeightAt(worldX, worldY);
-        if (height > 0.6) {
+        const tileHeight = this.worldGen.getHeightAt(worldX, worldY);
+        if (tileHeight > 0.6) {
           this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
           this.ctx.fillRect(
             Math.floor(screenX),
@@ -488,22 +623,24 @@ class GameDemo {
       }
     }
 
-    // Draw grid lines (subtle)
-    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-    this.ctx.lineWidth = 1;
-    for (let x = 0; x <= tilesX; x++) {
-      const screenX = (x - (cameraX % 1)) * scaledTileSize;
-      this.ctx.beginPath();
-      this.ctx.moveTo(screenX, 0);
-      this.ctx.lineTo(screenX, height);
-      this.ctx.stroke();
-    }
-    for (let y = 0; y <= tilesY; y++) {
-      const screenY = (y - (cameraY % 1)) * scaledTileSize;
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, screenY);
-      this.ctx.lineTo(width, screenY);
-      this.ctx.stroke();
+    // Draw grid lines (subtle) - only on desktop
+    if (!this.touchInput.getCapabilities().isMobile) {
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+      this.ctx.lineWidth = 1;
+      for (let x = 0; x <= tilesX; x++) {
+        const screenX = (x - (cameraX % 1)) * scaledTileSize;
+        this.ctx.beginPath();
+        this.ctx.moveTo(screenX, 0);
+        this.ctx.lineTo(screenX, height);
+        this.ctx.stroke();
+      }
+      for (let y = 0; y <= tilesY; y++) {
+        const screenY = (y - (cameraY % 1)) * scaledTileSize;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, screenY);
+        this.ctx.lineTo(width, screenY);
+        this.ctx.stroke();
+      }
     }
 
     // Draw player (center of screen)
@@ -539,7 +676,24 @@ class GameDemo {
       this.ctx.stroke();
     }
 
-    // Draw coordinates and game info
+    // Draw debug info (only on desktop or tablet)
+    const breakpoint = this.touchInput.getResponsiveConfig().currentBreakpoint;
+    if (breakpoint === 'desktop' || breakpoint === 'tablet') {
+      this.renderDebugInfo(width, height, zoom);
+    }
+
+    // Draw touch controls (only on touch devices)
+    if (this.touchInput.isTouchEnabled()) {
+      this.touchInput.render(this.ctx);
+    }
+
+    // Draw UI overlays when panels are open
+    if (this.uiManager.hasOpenModal()) {
+      this.renderModalOverlay(width, height);
+    }
+  }
+
+  private renderDebugInfo(width: number, height: number, zoom: number): void {
     this.ctx.fillStyle = '#fff';
     this.ctx.font = '12px monospace';
     this.ctx.fillText(
@@ -567,11 +721,6 @@ class GameDemo {
       10,
       height - 10
     );
-
-    // Draw UI overlays when panels are open
-    if (this.uiManager.hasOpenModal()) {
-      this.renderModalOverlay();
-    }
   }
 
   private formatPlaytime(seconds: number): string {
@@ -581,9 +730,7 @@ class GameDemo {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
 
-  private renderModalOverlay(): void {
-    const { width, height } = this.canvas;
-
+  private renderModalOverlay(width: number, height: number): void {
     // Darken background
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     this.ctx.fillRect(0, 0, width, height);
@@ -597,7 +744,8 @@ class GameDemo {
       this.ctx.fillText(topModal.toUpperCase(), width / 2, height / 2 - 20);
 
       this.ctx.font = '14px monospace';
-      this.ctx.fillText('Press ESC to close', width / 2, height / 2 + 20);
+      const closeText = this.touchInput.isTouchEnabled() ? 'Tap outside to close' : 'Press ESC to close';
+      this.ctx.fillText(closeText, width / 2, height / 2 + 20);
       this.ctx.textAlign = 'left';
     }
   }
@@ -613,9 +761,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Log system info
   const resourceManager = getResourceManager();
   const craftingManager = getCraftingManager();
+  const touchInput = getTouchInputManager();
 
   console.log(`[Voxel RPG] Resources loaded: ${resourceManager.getResourceCount()}`);
   console.log(`[Voxel RPG] Recipes loaded: ${craftingManager.getRecipeCount()}`);
+  console.log(`[Voxel RPG] Touch support: ${touchInput.getCapabilities().hasTouch ? 'Yes' : 'No'}`);
+  console.log(`[Voxel RPG] Mobile device: ${touchInput.getCapabilities().isMobile ? 'Yes' : 'No'}`);
 
   // Start game
   new GameDemo();

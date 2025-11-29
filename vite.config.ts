@@ -17,6 +17,16 @@ export default defineConfig({
     target: 'ES2022',
     outDir: 'dist',
     sourcemap: true,
+    lib: {
+      entry: resolve(__dirname, 'src/index.ts'),
+      name: 'VoxelRPG',
+      fileName: (format) => `voxel-rpg.${format}.js`,
+      formats: ['es', 'umd'],
+    },
+    rollupOptions: {
+      // No external dependencies for now
+      external: [],
+    },
   },
   server: {
     port: 3000,

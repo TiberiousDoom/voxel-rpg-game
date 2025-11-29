@@ -34,6 +34,10 @@ export interface GameEvents {
   'input:actionReleased': { action: string };
   'input:mouseClicked': { button: number; position: Vector2; worldPosition: Vector2 };
   'input:mouseMoved': { position: Vector2; worldPosition: Vector2 };
+  'input:gamepadConnected': { index: number; id: string };
+  'input:gamepadDisconnected': { index: number; id: string };
+  'input:leftStickMoved': { x: number; y: number };
+  'input:rightStickMoved': { x: number; y: number };
 
   // Time Events
   'time:hourChanged': { hour: number; day: number };

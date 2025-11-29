@@ -7,7 +7,8 @@
 
 import type { GameSystem } from '@core/GameEngine';
 import { getEventBus } from '@core/EventBus';
-import type { Vector2, Direction, GameTime, InputAction } from '@core/types';
+import { Direction } from '@core/types';
+import type { Vector2, GameTime, InputAction } from '@core/types';
 
 // ============================================================================
 // Player State
@@ -55,6 +56,8 @@ export class PlayerController implements GameSystem {
 
   // Input state
   private moveInput: Vector2 = { x: 0, y: 0 };
+  private digitalMoveInput: Vector2 = { x: 0, y: 0 }; // D-pad/keyboard
+  private analogMoveInput: Vector2 = { x: 0, y: 0 };  // Left stick
   private isSprinting = false;
 
   // Collision callback (set by game to check tile walkability)
@@ -74,6 +77,9 @@ export class PlayerController implements GameSystem {
     eventBus.on('input:actionPressed', this.onActionPressed.bind(this));
     eventBus.on('input:actionReleased', this.onActionReleased.bind(this));
 
+    // Subscribe to gamepad analog stick for smooth movement
+    eventBus.on('input:leftStickMoved', this.onLeftStickMoved.bind(this));
+
     console.log('[PlayerController] Initialized');
   }
 
@@ -85,21 +91,21 @@ export class PlayerController implements GameSystem {
   }
 
   /**
-   * Handle action pressed events
+   * Handle action pressed events (digital input: keyboard/D-pad)
    */
   private onActionPressed(event: { action: string }): void {
     switch (event.action) {
       case 'moveUp':
-        this.moveInput.y = -1;
+        this.digitalMoveInput.y = -1;
         break;
       case 'moveDown':
-        this.moveInput.y = 1;
+        this.digitalMoveInput.y = 1;
         break;
       case 'moveLeft':
-        this.moveInput.x = -1;
+        this.digitalMoveInput.x = -1;
         break;
       case 'moveRight':
-        this.moveInput.x = 1;
+        this.digitalMoveInput.x = 1;
         break;
       case 'sprint':
         this.isSprinting = true;
@@ -108,28 +114,54 @@ export class PlayerController implements GameSystem {
         this.interact();
         break;
     }
+    this.updateCombinedInput();
   }
 
   /**
-   * Handle action released events
+   * Handle action released events (digital input: keyboard/D-pad)
    */
   private onActionReleased(event: { action: string }): void {
     switch (event.action) {
       case 'moveUp':
-        if (this.moveInput.y < 0) this.moveInput.y = 0;
+        if (this.digitalMoveInput.y < 0) this.digitalMoveInput.y = 0;
         break;
       case 'moveDown':
-        if (this.moveInput.y > 0) this.moveInput.y = 0;
+        if (this.digitalMoveInput.y > 0) this.digitalMoveInput.y = 0;
         break;
       case 'moveLeft':
-        if (this.moveInput.x < 0) this.moveInput.x = 0;
+        if (this.digitalMoveInput.x < 0) this.digitalMoveInput.x = 0;
         break;
       case 'moveRight':
-        if (this.moveInput.x > 0) this.moveInput.x = 0;
+        if (this.digitalMoveInput.x > 0) this.digitalMoveInput.x = 0;
         break;
       case 'sprint':
         this.isSprinting = false;
         break;
+    }
+    this.updateCombinedInput();
+  }
+
+  /**
+   * Handle left stick input (analog input from gamepad)
+   */
+  private onLeftStickMoved(event: { x: number; y: number }): void {
+    this.analogMoveInput = { x: event.x, y: event.y };
+    this.updateCombinedInput();
+  }
+
+  /**
+   * Combine digital and analog input (analog takes priority when active)
+   */
+  private updateCombinedInput(): void {
+    const analogLength = Math.sqrt(
+      this.analogMoveInput.x ** 2 + this.analogMoveInput.y ** 2
+    );
+
+    // Use analog if active (magnitude > small threshold), otherwise digital
+    if (analogLength > 0.1) {
+      this.moveInput = { ...this.analogMoveInput };
+    } else {
+      this.moveInput = { ...this.digitalMoveInput };
     }
   }
 

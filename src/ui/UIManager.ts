@@ -6,7 +6,8 @@
 
 import type { GameSystem } from '@core/GameEngine';
 import { getEventBus } from '@core/EventBus';
-import type { PanelType, UIState, Vector2, GameTime } from '@core/types';
+import { PanelType } from '@core/types';
+import type { UIState, Vector2, GameTime } from '@core/types';
 
 // ============================================================================
 // UIManager Implementation

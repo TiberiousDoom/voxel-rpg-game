@@ -79,37 +79,132 @@ const VARIANT_MAP_4BIT: Record<number, number> = {
 // ============================================================================
 
 /**
- * For 8-bit autotiling, we need a more complex mapping.
- * The corners are only considered if both adjacent edges are present.
- * This reduces 256 possibilities to 47 unique variants.
+ * Complete lookup table for 8-bit autotiling (47 unique variants).
+ * Maps the masked bitmask (after removing irrelevant corners) to tile variant index.
+ *
+ * Variant indices are organized as follows:
+ * 0-15:  Base 4-directional patterns (no relevant corners)
+ * 16-46: Patterns with corner variations
+ *
+ * The tile atlas should be arranged in this order for correct rendering.
+ */
+const VARIANT_MAP_8BIT: Map<number, number> = new Map([
+  // ============ No edges (isolated) ============
+  [0, 0],
+
+  // ============ Single edge (4 end caps) ============
+  [Neighbor8.North, 1],
+  [Neighbor8.East, 2],
+  [Neighbor8.South, 3],
+  [Neighbor8.West, 4],
+
+  // ============ Two opposite edges (2 straight pieces) ============
+  [Neighbor8.North | Neighbor8.South, 5],
+  [Neighbor8.East | Neighbor8.West, 6],
+
+  // ============ Two adjacent edges - outer corners (4 patterns × 2 corner states = 8) ============
+  // NE corner area
+  [Neighbor8.North | Neighbor8.East, 7],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.NorthEast, 8],
+  // SE corner area
+  [Neighbor8.East | Neighbor8.South, 9],
+  [Neighbor8.East | Neighbor8.South | Neighbor8.SouthEast, 10],
+  // SW corner area
+  [Neighbor8.South | Neighbor8.West, 11],
+  [Neighbor8.South | Neighbor8.West | Neighbor8.SouthWest, 12],
+  // NW corner area
+  [Neighbor8.North | Neighbor8.West, 13],
+  [Neighbor8.North | Neighbor8.West | Neighbor8.NorthWest, 14],
+
+  // ============ Three edges - T junctions (4 patterns × 4 corner states = 16) ============
+  // Missing West (has N, E, S - corners NE and SE matter)
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South, 15],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.NorthEast, 16],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.SouthEast, 17],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.NorthEast | Neighbor8.SouthEast, 18],
+
+  // Missing North (has E, S, W - corners SE and SW matter)
+  [Neighbor8.East | Neighbor8.South | Neighbor8.West, 19],
+  [Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthEast, 20],
+  [Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthWest, 21],
+  [Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthEast | Neighbor8.SouthWest, 22],
+
+  // Missing East (has N, S, W - corners NW and SW matter)
+  [Neighbor8.North | Neighbor8.South | Neighbor8.West, 23],
+  [Neighbor8.North | Neighbor8.South | Neighbor8.West | Neighbor8.NorthWest, 24],
+  [Neighbor8.North | Neighbor8.South | Neighbor8.West | Neighbor8.SouthWest, 25],
+  [Neighbor8.North | Neighbor8.South | Neighbor8.West | Neighbor8.NorthWest | Neighbor8.SouthWest, 26],
+
+  // Missing South (has N, E, W - corners NW and NE matter)
+  [Neighbor8.North | Neighbor8.East | Neighbor8.West, 27],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.West | Neighbor8.NorthEast, 28],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.West | Neighbor8.NorthWest, 29],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.West | Neighbor8.NorthEast | Neighbor8.NorthWest, 30],
+
+  // ============ Four edges - center pieces (16 corner combinations) ============
+  // All 4 edges present, varying corners
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West, 31],
+  // 1 corner
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.NorthEast, 32],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthEast, 33],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthWest, 34],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.NorthWest, 35],
+  // 2 adjacent corners
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.NorthEast | Neighbor8.SouthEast, 36],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthEast | Neighbor8.SouthWest, 37],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthWest | Neighbor8.NorthWest, 38],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.NorthWest | Neighbor8.NorthEast, 39],
+  // 2 opposite corners
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.NorthEast | Neighbor8.SouthWest, 40],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.NorthWest | Neighbor8.SouthEast, 41],
+  // 3 corners
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.NorthEast | Neighbor8.SouthEast | Neighbor8.SouthWest, 42],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthEast | Neighbor8.SouthWest | Neighbor8.NorthWest, 43],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.SouthWest | Neighbor8.NorthWest | Neighbor8.NorthEast, 44],
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West | Neighbor8.NorthWest | Neighbor8.NorthEast | Neighbor8.SouthEast, 45],
+  // 4 corners (fully surrounded)
+  [Neighbor8.North | Neighbor8.East | Neighbor8.South | Neighbor8.West |
+   Neighbor8.NorthEast | Neighbor8.SouthEast | Neighbor8.SouthWest | Neighbor8.NorthWest, 46],
+]);
+
+/**
+ * Mask out corners that don't have both adjacent edges present.
+ * This is required because corners are only visually relevant when
+ * both adjacent cardinal neighbors are also present.
+ */
+function maskIrrelevantCorners(bitmask: number): number {
+  let masked = bitmask;
+
+  // NorthWest corner: needs both North and West edges
+  if ((bitmask & Neighbor8.NorthWest) && !((bitmask & Neighbor8.North) && (bitmask & Neighbor8.West))) {
+    masked &= ~Neighbor8.NorthWest;
+  }
+
+  // NorthEast corner: needs both North and East edges
+  if ((bitmask & Neighbor8.NorthEast) && !((bitmask & Neighbor8.North) && (bitmask & Neighbor8.East))) {
+    masked &= ~Neighbor8.NorthEast;
+  }
+
+  // SouthWest corner: needs both South and West edges
+  if ((bitmask & Neighbor8.SouthWest) && !((bitmask & Neighbor8.South) && (bitmask & Neighbor8.West))) {
+    masked &= ~Neighbor8.SouthWest;
+  }
+
+  // SouthEast corner: needs both South and East edges
+  if ((bitmask & Neighbor8.SouthEast) && !((bitmask & Neighbor8.South) && (bitmask & Neighbor8.East))) {
+    masked &= ~Neighbor8.SouthEast;
+  }
+
+  return masked;
+}
+
+/**
+ * Calculate the 8-bit autotile variant index from a neighbor bitmask.
+ * Returns a variant index 0-46 for use with the tile atlas.
  */
 function calculate8BitVariant(bitmask: number): number {
-  // First, mask out corners that don't have both adjacent edges
-  let maskedBitmask = bitmask;
-
-  // NorthWest corner: needs North (2) and West (8)
-  if ((bitmask & Neighbor8.NorthWest) && !((bitmask & Neighbor8.North) && (bitmask & Neighbor8.West))) {
-    maskedBitmask &= ~Neighbor8.NorthWest;
-  }
-
-  // NorthEast corner: needs North (2) and East (16)
-  if ((bitmask & Neighbor8.NorthEast) && !((bitmask & Neighbor8.North) && (bitmask & Neighbor8.East))) {
-    maskedBitmask &= ~Neighbor8.NorthEast;
-  }
-
-  // SouthWest corner: needs South (64) and West (8)
-  if ((bitmask & Neighbor8.SouthWest) && !((bitmask & Neighbor8.South) && (bitmask & Neighbor8.West))) {
-    maskedBitmask &= ~Neighbor8.SouthWest;
-  }
-
-  // SouthEast corner: needs South (64) and East (16)
-  if ((bitmask & Neighbor8.SouthEast) && !((bitmask & Neighbor8.South) && (bitmask & Neighbor8.East))) {
-    maskedBitmask &= ~Neighbor8.SouthEast;
-  }
-
-  // Map the masked bitmask to a variant index (0-46)
-  // This is a simplified mapping - in practice you'd have a lookup table
-  return maskedBitmask % 47;
+  const maskedBitmask = maskIrrelevantCorners(bitmask);
+  return VARIANT_MAP_8BIT.get(maskedBitmask) ?? 0;
 }
 
 // ============================================================================

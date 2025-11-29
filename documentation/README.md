@@ -1,6 +1,6 @@
 # Documentation
 
-**Last Updated:** 2025-11-28
+**Last Updated:** 2025-11-29
 **Purpose:** Project documentation and archives
 
 ---
@@ -15,6 +15,9 @@ documentation/
 │   ├── ROADMAP_2D.md
 │   ├── NPC_SYSTEM_DESIGN_2D.md
 │   └── 2D_GAME_IMPLEMENTATION_PLAN.md
+├── reports/
+│   └── audits/                 - Audit reports
+│       └── IMPLEMENTATION_AUDIT_2025-11-29.md
 └── archive-code/               - Archived code and documentation
     └── 2d-prototype/           - Complete 2D React prototype archive
 ```
@@ -41,6 +44,16 @@ ROADMAP_2D.md (What/When)
      ↓
 2D_GAME_IMPLEMENTATION_PLAN.md (How) ←→ NPC_SYSTEM_DESIGN_2D.md (NPC Details)
 ```
+
+---
+
+## Audit Reports
+
+Reports comparing implementation against documentation:
+
+| File | Description | Date |
+|------|-------------|------|
+| [IMPLEMENTATION_AUDIT_2025-11-29.md](reports/audits/IMPLEMENTATION_AUDIT_2025-11-29.md) | Phase 0/1 implementation audit | 2025-11-29 |
 
 ---
 

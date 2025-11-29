@@ -53,8 +53,9 @@ Reports comparing implementation against documentation:
 
 | File | Description | Date |
 |------|-------------|------|
-| [IMPLEMENTATION_AUDIT_2025-11-29-v2.md](reports/audits/IMPLEMENTATION_AUDIT_2025-11-29-v2.md) | **Mobile compliance audit (v1.2 spec)** | 2025-11-29 |
-| [IMPLEMENTATION_AUDIT_2025-11-29.md](reports/audits/IMPLEMENTATION_AUDIT_2025-11-29.md) | Phase 0/1 desktop audit (superseded) | 2025-11-29 |
+| [IMPLEMENTATION_AUDIT_2025-11-29-v3.md](reports/audits/IMPLEMENTATION_AUDIT_2025-11-29-v3.md) | **Phase 0 mobile complete** | 2025-11-29 |
+| [IMPLEMENTATION_AUDIT_2025-11-29-v2.md](reports/audits/IMPLEMENTATION_AUDIT_2025-11-29-v2.md) | Mobile gap analysis (resolved) | 2025-11-29 |
+| [IMPLEMENTATION_AUDIT_2025-11-29.md](reports/audits/IMPLEMENTATION_AUDIT_2025-11-29.md) | Phase 0/1 desktop audit | 2025-11-29 |
 
 ---
 

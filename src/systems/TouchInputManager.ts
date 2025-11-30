@@ -56,12 +56,29 @@ const DEFAULT_JOYSTICK_CONFIG: VirtualJoystickConfig = {
   showOnTouch: true,
 };
 
-// Default touch buttons for right side
-const DEFAULT_TOUCH_BUTTONS: TouchButtonConfig[] = [
+// Default touch buttons for right side - these are RELATIVE positions from corner
+// x: negative = from right edge, positive = from left edge
+// y: negative = from bottom edge
+interface ButtonRelativePosition {
+  id: string;
+  relativeX: number; // Offset from edge (negative = from right)
+  relativeY: number; // Offset from bottom (negative = from bottom)
+  width: number;
+  height: number;
+  icon: string;
+  label: string;
+  action: InputAction;
+  showLabel: boolean;
+  hapticFeedback: boolean;
+}
+
+const BUTTON_DEFINITIONS: ButtonRelativePosition[] = [
   {
     id: 'interact',
-    position: { x: -80, y: -180 },
-    size: { x: 56, y: 56 },
+    relativeX: -80,
+    relativeY: -180,
+    width: 56,
+    height: 56,
     icon: 'E',
     label: 'Interact',
     action: InputAction.Interact,
@@ -70,8 +87,10 @@ const DEFAULT_TOUCH_BUTTONS: TouchButtonConfig[] = [
   },
   {
     id: 'sprint',
-    position: { x: -150, y: -110 },
-    size: { x: 56, y: 56 },
+    relativeX: -150,
+    relativeY: -110,
+    width: 56,
+    height: 56,
     icon: '⚡',
     label: 'Sprint',
     action: InputAction.Sprint,
@@ -80,8 +99,10 @@ const DEFAULT_TOUCH_BUTTONS: TouchButtonConfig[] = [
   },
   {
     id: 'inventory',
-    position: { x: -80, y: -40 },
-    size: { x: 48, y: 48 },
+    relativeX: -80,
+    relativeY: -100,
+    width: 48,
+    height: 48,
     icon: '📦',
     label: 'Inventory',
     action: InputAction.Inventory,
@@ -90,8 +111,10 @@ const DEFAULT_TOUCH_BUTTONS: TouchButtonConfig[] = [
   },
   {
     id: 'build',
-    position: { x: -150, y: -40 },
-    size: { x: 48, y: 48 },
+    relativeX: -150,
+    relativeY: -100,
+    width: 48,
+    height: 48,
     icon: '🔨',
     label: 'Build',
     action: InputAction.BuildMenu,
@@ -99,6 +122,18 @@ const DEFAULT_TOUCH_BUTTONS: TouchButtonConfig[] = [
     hapticFeedback: true,
   },
 ];
+
+// Convert definitions to initial button configs
+const DEFAULT_TOUCH_BUTTONS: TouchButtonConfig[] = BUTTON_DEFINITIONS.map(def => ({
+  id: def.id,
+  position: { x: 0, y: 0 }, // Will be calculated in updateButtonPositions
+  size: { x: def.width, y: def.height },
+  icon: def.icon,
+  label: def.label,
+  action: def.action,
+  showLabel: def.showLabel,
+  hapticFeedback: def.hapticFeedback,
+}));
 
 // ============================================================================
 // TouchInputManager Implementation
@@ -235,51 +270,80 @@ export class TouchInputManager implements GameSystem {
 
   /**
    * Update button positions based on screen size and layout
+   * Uses BUTTON_DEFINITIONS for original relative positions to avoid mutation issues
    */
   private updateButtonPositions(): void {
     const { screenWidth, screenHeight, uiScale } = this.responsiveConfig;
     const scaledSize = TOUCH_TARGET_SIZES.preferred * uiScale;
 
+    // Get safe area insets for notched devices
+    const safeAreaBottom = this.getSafeAreaInset('bottom');
+    const safeAreaRight = this.getSafeAreaInset('right');
+    const safeAreaLeft = this.getSafeAreaInset('left');
+
+    // Calculate usable area
+    const usableHeight = screenHeight - safeAreaBottom;
+
     // Update joystick position based on side preference
+    const joystickPadding = 30 + safeAreaBottom;
     if (this.config.joystickSide === 'left') {
       this.joystickConfig.position = {
-        x: this.joystickConfig.radius + 20,
-        y: screenHeight - this.joystickConfig.radius - 20,
+        x: this.joystickConfig.radius + 20 + safeAreaLeft,
+        y: screenHeight - this.joystickConfig.radius - joystickPadding,
       };
     } else {
       this.joystickConfig.position = {
-        x: screenWidth - this.joystickConfig.radius - 20,
-        y: screenHeight - this.joystickConfig.radius - 20,
+        x: screenWidth - this.joystickConfig.radius - 20 - safeAreaRight,
+        y: screenHeight - this.joystickConfig.radius - joystickPadding,
       };
     }
 
-    // Update button positions (right side by default, left side if joystick is right)
+    // Update button positions using ORIGINAL definitions (not mutated positions)
     const buttonSide = this.config.joystickSide === 'left' ? 'right' : 'left';
-    const baseX = buttonSide === 'right' ? screenWidth : 0;
+    const buttonPadding = 20 + safeAreaBottom;
 
     this.buttons.forEach((button, index) => {
-      // Convert relative positions to absolute
-      const relX = button.position.x;
-      const relY = button.position.y;
+      const def = BUTTON_DEFINITIONS[index];
+      if (!def) return;
+
+      // Calculate scaled size first
+      const scaledWidth = Math.max(def.width * uiScale, scaledSize);
+      const scaledHeight = Math.max(def.height * uiScale, scaledSize);
+
+      // Calculate absolute position from relative offsets
+      let absoluteX: number;
+      let absoluteY: number;
 
       if (buttonSide === 'right') {
-        button.position = {
-          x: baseX + relX,
-          y: screenHeight + relY,
-        };
+        // Buttons on right side: relativeX is offset from right edge
+        absoluteX = screenWidth + def.relativeX - safeAreaRight;
+        absoluteY = screenHeight + def.relativeY - buttonPadding;
       } else {
-        button.position = {
-          x: -relX,
-          y: screenHeight + relY,
-        };
+        // Buttons on left side: mirror the x position
+        absoluteX = -def.relativeX + safeAreaLeft;
+        absoluteY = screenHeight + def.relativeY - buttonPadding;
       }
 
-      // Ensure minimum touch target size
-      button.size = {
-        x: Math.max(button.size.x * uiScale, scaledSize),
-        y: Math.max(button.size.y * uiScale, scaledSize),
-      };
+      // Update button with calculated positions and sizes
+      button.position = { x: absoluteX, y: absoluteY };
+      button.size = { x: scaledWidth, y: scaledHeight };
     });
+  }
+
+  /**
+   * Get safe area inset value (for notched devices)
+   */
+  private getSafeAreaInset(side: 'top' | 'bottom' | 'left' | 'right'): number {
+    // Try to get CSS env() value
+    const testEl = document.createElement('div');
+    testEl.style.position = 'fixed';
+    testEl.style[side] = '0';
+    testEl.style[side === 'top' || side === 'bottom' ? 'height' : 'width'] = `env(safe-area-inset-${side}, 0px)`;
+    document.body.appendChild(testEl);
+    const rect = testEl.getBoundingClientRect();
+    document.body.removeChild(testEl);
+
+    return side === 'top' || side === 'bottom' ? rect.height : rect.width;
   }
 
   /**

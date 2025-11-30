@@ -246,7 +246,24 @@ class GameDemo {
         return;
       }
 
-      this.keys.add(e.code);
+      // Handle hotkeys with modifiers BEFORE adding to movement keys
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.code) {
+          case 'KeyS':
+            e.preventDefault();
+            this.quickSave();
+            return; // Don't add to movement keys
+          case 'KeyL':
+            e.preventDefault();
+            this.quickLoad();
+            return; // Don't add to movement keys
+        }
+      }
+
+      // Only add to movement keys if no Ctrl/Meta modifier (allows Shift for sprint)
+      if (!e.ctrlKey && !e.metaKey) {
+        this.keys.add(e.code);
+      }
 
       // Handle one-time actions
       switch (e.code) {
@@ -273,23 +290,23 @@ class GameDemo {
         case 'NumpadSubtract':
           this.camera.zoomOut();
           break;
-        case 'KeyS':
-          if (e.ctrlKey) {
-            e.preventDefault();
-            this.quickSave();
-          }
-          break;
-        case 'KeyL':
-          if (e.ctrlKey) {
-            e.preventDefault();
-            this.quickLoad();
-          }
-          break;
       }
     });
 
     window.addEventListener('keyup', (e) => {
       this.keys.delete(e.code);
+    });
+
+    // Handle window blur - clear all keys when focus lost
+    window.addEventListener('blur', () => {
+      this.keys.clear();
+    });
+
+    // Handle click to dismiss modal (desktop)
+    this.canvas.addEventListener('click', () => {
+      if (this.playerState === PlayerState.InMenu) {
+        this.handleEscape();
+      }
     });
   }
 
@@ -331,11 +348,16 @@ class GameDemo {
       }
     });
 
-    // Listen for tap gestures for interaction
+    // Listen for tap gestures for interaction or modal dismissal
     this.eventBus.on('input:touchTap', (event: GestureEvent) => {
-      if (event.type === GestureType.Tap && this.playerState !== PlayerState.InMenu) {
-        // Tap to interact with nearby objects
-        this.interact();
+      if (event.type === GestureType.Tap) {
+        if (this.playerState === PlayerState.InMenu) {
+          // Tap to dismiss modal on mobile
+          this.handleEscape();
+        } else {
+          // Tap to interact with nearby objects
+          this.interact();
+        }
       }
     });
 
@@ -511,7 +533,19 @@ class GameDemo {
     // Sprint - check keyboard and touch
     const keyboardSprint = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
     const touchSprint = this.touchInput.isActionActive(InputAction.Sprint);
-    this.isSprinting = keyboardSprint || touchSprint || this.isSprinting;
+
+    // On desktop: sprint only while Shift is held
+    // On mobile: touchSprint from button or event-toggled isSprinting persists until player stops
+    if (this.touchInput.getCapabilities().isMobile) {
+      // Mobile: use touch button or toggled state (set via events)
+      if (touchSprint) {
+        this.isSprinting = true;
+      }
+      // isSprinting can also be set by touch toggle events, and resets when player stops (handled below)
+    } else {
+      // Desktop: sprint only while Shift is held
+      this.isSprinting = keyboardSprint;
+    }
 
     const speedMultiplier = this.isSprinting && this.survival.canSprint() ? 1.8 : 1;
     const hungerMultiplier = this.survival.getSpeedMultiplier();

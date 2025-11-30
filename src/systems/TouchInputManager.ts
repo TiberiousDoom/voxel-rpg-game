@@ -75,8 +75,8 @@ interface ButtonRelativePosition {
 const BUTTON_DEFINITIONS: ButtonRelativePosition[] = [
   {
     id: 'interact',
-    relativeX: -80,
-    relativeY: -180,
+    relativeX: -70,
+    relativeY: -140,
     width: 56,
     height: 56,
     icon: 'E',
@@ -87,8 +87,8 @@ const BUTTON_DEFINITIONS: ButtonRelativePosition[] = [
   },
   {
     id: 'sprint',
-    relativeX: -150,
-    relativeY: -110,
+    relativeX: -140,
+    relativeY: -140,
     width: 56,
     height: 56,
     icon: '⚡',
@@ -99,8 +99,8 @@ const BUTTON_DEFINITIONS: ButtonRelativePosition[] = [
   },
   {
     id: 'inventory',
-    relativeX: -80,
-    relativeY: -100,
+    relativeX: -70,
+    relativeY: -60,
     width: 48,
     height: 48,
     icon: '📦',
@@ -111,8 +111,8 @@ const BUTTON_DEFINITIONS: ButtonRelativePosition[] = [
   },
   {
     id: 'build',
-    relativeX: -150,
-    relativeY: -100,
+    relativeX: -140,
+    relativeY: -60,
     width: 48,
     height: 48,
     icon: '🔨',
@@ -332,18 +332,23 @@ export class TouchInputManager implements GameSystem {
 
   /**
    * Get safe area inset value (for notched devices)
+   * Uses CSS custom property set by viewport-fit=cover
    */
   private getSafeAreaInset(side: 'top' | 'bottom' | 'left' | 'right'): number {
-    // Try to get CSS env() value
+    // Try to read computed CSS env() value via a properly styled element
     const testEl = document.createElement('div');
-    testEl.style.position = 'fixed';
-    testEl.style[side] = '0';
-    testEl.style[side === 'top' || side === 'bottom' ? 'height' : 'width'] = `env(safe-area-inset-${side}, 0px)`;
+    testEl.style.cssText = `
+      position: fixed;
+      ${side}: 0;
+      pointer-events: none;
+      visibility: hidden;
+      padding-${side}: env(safe-area-inset-${side}, 0px);
+    `;
     document.body.appendChild(testEl);
-    const rect = testEl.getBoundingClientRect();
+    const computed = window.getComputedStyle(testEl);
+    const paddingValue = parseFloat(computed.getPropertyValue(`padding-${side}`)) || 0;
     document.body.removeChild(testEl);
-
-    return side === 'top' || side === 'bottom' ? rect.height : rect.width;
+    return paddingValue;
   }
 
   /**

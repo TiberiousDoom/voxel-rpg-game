@@ -315,6 +315,7 @@ class GameDemo {
    */
   private setupTouchInput(): void {
     // Listen for touch actions from TouchInputManager
+    // Note: Sprint is handled via direct polling in updateMovement() for consistent behavior
     this.eventBus.on('input:actionPressed', (event) => {
       const action = event.action as InputAction;
       switch (action) {
@@ -330,21 +331,12 @@ class GameDemo {
         case InputAction.Cancel:
           this.handleEscape();
           break;
-        case InputAction.Sprint:
-          this.isSprinting = true;
-          break;
         case InputAction.ZoomIn:
           this.camera.zoomIn();
           break;
         case InputAction.ZoomOut:
           this.camera.zoomOut();
           break;
-      }
-    });
-
-    this.eventBus.on('input:actionReleased', (event) => {
-      if (event.action === InputAction.Sprint) {
-        this.isSprinting = false;
       }
     });
 
@@ -534,18 +526,9 @@ class GameDemo {
     const keyboardSprint = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
     const touchSprint = this.touchInput.isActionActive(InputAction.Sprint);
 
-    // On desktop: sprint only while Shift is held
-    // On mobile: touchSprint from button or event-toggled isSprinting persists until player stops
-    if (this.touchInput.getCapabilities().isMobile) {
-      // Mobile: use touch button or toggled state (set via events)
-      if (touchSprint) {
-        this.isSprinting = true;
-      }
-      // isSprinting can also be set by touch toggle events, and resets when player stops (handled below)
-    } else {
-      // Desktop: sprint only while Shift is held
-      this.isSprinting = keyboardSprint;
-    }
+    // Sprint is active when shift is held (desktop) or sprint button is pressed (mobile)
+    // Both platforms use direct button state for consistency
+    this.isSprinting = keyboardSprint || touchSprint;
 
     const speedMultiplier = this.isSprinting && this.survival.canSprint() ? 1.8 : 1;
     const hungerMultiplier = this.survival.getSpeedMultiplier();
@@ -573,10 +556,6 @@ class GameDemo {
       this.playerState = this.isSprinting ? PlayerState.Running : PlayerState.Walking;
     } else {
       this.playerState = PlayerState.Idle;
-      // Reset sprint when stopped (for touch toggle)
-      if (!keyboardSprint && !touchSprint) {
-        this.isSprinting = false;
-      }
     }
   }
 

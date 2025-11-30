@@ -256,3 +256,163 @@ export interface UIState {
   tooltipContent: string | null;
   tooltipPosition: Vector2 | null;
 }
+
+// ============================================================================
+// Touch Input Types
+// Per 2D_GAME_IMPLEMENTATION_PLAN.md v1.2 - Touch Input System
+// ============================================================================
+
+/**
+ * Virtual Joystick Configuration
+ * Per spec: position, radius (80px), innerRadius (30px), deadzone (0.1), opacity
+ */
+export interface VirtualJoystickConfig {
+  position: Vector2;              // Screen position (bottom-left default)
+  radius: number;                 // Touch area radius (80px default)
+  innerRadius: number;            // Knob radius (30px default)
+  deadzone: number;               // 0.1 default
+  opacity: number;                // 0.5 when not touched, 0.8 when active
+  activeOpacity: number;          // Opacity when touched
+  showOnTouch: boolean;           // Appear where finger touches (true)
+}
+
+/**
+ * Touch Button Configuration
+ * Per spec: position, size (min 44x44), icon, action, hapticFeedback
+ */
+export interface TouchButtonConfig {
+  id: string;
+  position: Vector2;              // Screen position
+  size: Vector2;                  // Minimum 44x44 points
+  icon: string;                   // Icon name/path
+  label?: string;                 // Optional label text
+  action: InputAction;            // Action to trigger
+  showLabel: boolean;
+  hapticFeedback: boolean;        // Vibrate on press (optional)
+}
+
+/**
+ * Gesture types supported
+ * Per spec: tap, double-tap, long-press, pinch, two-finger pan, drag
+ */
+export enum GestureType {
+  Tap = 'tap',
+  DoubleTap = 'doubleTap',
+  LongPress = 'longPress',
+  Pinch = 'pinch',
+  TwoFingerPan = 'twoFingerPan',
+  Drag = 'drag',
+  Swipe = 'swipe',
+}
+
+/**
+ * Gesture event data
+ */
+export interface GestureEvent {
+  type: GestureType;
+  position: Vector2;              // Screen position
+  worldPosition?: Vector2;        // World position (if available)
+  scale?: number;                 // For pinch gesture (1.0 = no change)
+  delta?: Vector2;                // For pan/drag gestures
+  direction?: Direction;          // For swipe gestures
+  duration?: number;              // For long-press (ms held)
+}
+
+/**
+ * Touch Configuration
+ * Per spec: joystickSide, buttonLayout, sensitivity, hapticEnabled
+ */
+export interface TouchConfig {
+  enabled: boolean;               // Whether touch controls are enabled
+  joystickSide: 'left' | 'right'; // Which side for movement
+  buttonLayout: 'default' | 'compact' | 'spread';
+  sensitivity: number;            // 0.5 to 2.0
+  hapticEnabled: boolean;
+  showJoystickAlways: boolean;    // Or only on touch
+  doubleTapTime: number;          // Max ms between taps for double-tap
+  longPressTime: number;          // Ms to hold for long-press
+}
+
+/**
+ * Touch state tracking
+ */
+export interface TouchState {
+  active: boolean;
+  identifier: number;
+  startPosition: Vector2;
+  currentPosition: Vector2;
+  startTime: number;
+}
+
+// ============================================================================
+// Responsive UI Types
+// Per 2D_GAME_IMPLEMENTATION_PLAN.md v1.2 - Responsive UI System
+// ============================================================================
+
+/**
+ * Screen breakpoints
+ * Per spec: phone (0-599), phoneLandscape (600-767), tablet (768-1023), desktop (1024+)
+ */
+export enum Breakpoint {
+  Phone = 'phone',
+  PhoneLandscape = 'phoneLandscape',
+  Tablet = 'tablet',
+  Desktop = 'desktop',
+}
+
+/**
+ * Breakpoint thresholds in pixels
+ */
+export const BREAKPOINT_THRESHOLDS = {
+  phone: 0,
+  phoneLandscape: 600,
+  tablet: 768,
+  desktop: 1024,
+} as const;
+
+/**
+ * UI Scale factors per breakpoint
+ * Per spec: phone 1.25, tablet/desktop 1.0
+ */
+export const UI_SCALE_FACTORS = {
+  phone: 1.25,
+  phoneLandscape: 1.1,
+  tablet: 1.0,
+  desktop: 1.0,
+} as const;
+
+/**
+ * Touch target sizes
+ * Per spec: min 44px, preferred 48px
+ */
+export const TOUCH_TARGET_SIZES = {
+  minimum: 44,
+  preferred: 48,
+} as const;
+
+/**
+ * Responsive UI Configuration
+ */
+export interface ResponsiveConfig {
+  currentBreakpoint: Breakpoint;
+  screenWidth: number;
+  screenHeight: number;
+  pixelRatio: number;
+  uiScale: number;
+  isTouch: boolean;
+  isLandscape: boolean;
+}
+
+/**
+ * Device capabilities
+ */
+export interface DeviceCapabilities {
+  hasTouch: boolean;
+  hasGamepad: boolean;
+  hasMouse: boolean;
+  hasKeyboard: boolean;
+  supportsHaptic: boolean;
+  supportsFullscreen: boolean;
+  isMobile: boolean;
+  isStandalone: boolean;          // PWA installed
+}

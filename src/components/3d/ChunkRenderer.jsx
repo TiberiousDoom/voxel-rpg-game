@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { chunkOriginWorld, VOXEL_SIZE } from '../../systems/chunks/coordinates.js';
+import { chunkOriginWorld } from '../../systems/chunks/coordinates.js';
 
 /**
  * Individual chunk mesh component

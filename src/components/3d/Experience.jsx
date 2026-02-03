@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Physics, RigidBody } from '@react-three/rapier';
 import Player from './Player';

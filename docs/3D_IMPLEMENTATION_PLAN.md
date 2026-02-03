@@ -3,6 +3,20 @@
 **Created:** February 3, 2026
 **Based on:** VISION.md and ROADMAP.md
 **Target:** React Three Fiber / Three.js 3D Game
+**Philosophy:** Making a fun game, not shipping a product
+
+---
+
+## Planning Approach
+
+This plan provides high-level phase structure. **Each phase requires a detailed implementation plan and exit criteria document before starting.** We won't lock in specifics until we're ready to begin that phase—this keeps us flexible and lets the game evolve organically.
+
+### For Each Phase, Before Starting:
+1. Create `docs/phases/PHASE_X_DETAILED_PLAN.md`
+2. Define specific tasks with acceptance criteria
+3. Identify technical unknowns and research needs
+4. Set exit criteria (what "done" looks like)
+5. Review what we learned from previous phase
 
 ---
 
@@ -40,8 +54,11 @@
 
 | System | Status | Work Needed |
 |--------|--------|-------------|
+| Chunk-based rendering | Not started | Critical for performance |
+| LOD system | Not started | Critical for large worlds |
+| Network architecture | Not started | Design from start for multiplayer |
 | Procedural World Gen | Module exists | Integrate with VoxelTerrain |
-| Save/Load | Module exists | Adapt for 3D state |
+| Save/Load | Module exists | Adapt for 3D + multiplayer state |
 | NPC Settlers | AI exists | 3D rendering, task visuals |
 | Portal System | Not started | Core feature |
 | The Companion | AI exists | 3D model, teaching system |
@@ -49,350 +66,484 @@
 | Building Placement | Module exists | 3D placement UI |
 | Audio | Not started | Music, SFX |
 | Full UI | Partial (HUD) | Menus, inventory screens |
+| 3D Assets | Not started | Models, animations (learning required) |
 
 ---
 
-## Phase 0: Foundation Completion (Current)
+## Performance Strategy
 
-**Goal:** Ensure core 3D systems are stable and connected to existing modules
+### The Challenges We Face
 
-**Duration:** 2-4 weeks
+React Three Fiber / Three.js on the web has real limitations we need to design around:
 
-### Tasks
+#### 1. Single-Threaded JavaScript
+**Problem:** Heavy computation blocks rendering, causing stutters.
 
-#### 0.1 Terrain & World Integration
-- [ ] Connect `VoxelTerrain` to `WorldGenerator` module for procedural generation
-- [ ] Implement biome-based coloring (use `BiomeManager`)
-- [ ] Add chunk loading/unloading for performance
-- [ ] Integrate height-based block types (grass, dirt, stone, bedrock)
+**Mitigation Strategy:**
+- **Web Workers** for expensive operations:
+  - Terrain generation runs in worker, sends results to main thread
+  - Pathfinding calculations off main thread
+  - Save/Load serialization in worker
+- **Time-slicing:** Break large operations into chunks across frames
+  - Generate 1 chunk per frame, not all at once
+  - Process AI in batches (10 NPCs per frame, not 100)
+- **RequestIdleCallback:** Use browser idle time for non-urgent work
 
-#### 0.2 Save/Load System
-- [ ] Adapt `SaveSystem` module for 3D player position
-- [ ] Save/restore terrain modifications
-- [ ] Save enemy states and spawns
-- [ ] Save player progression and inventory
-- [ ] Implement auto-save
+#### 2. Garbage Collection Stutters
+**Problem:** Creating/destroying objects triggers GC pauses.
 
-#### 0.3 Player Controller Polish
-- [ ] WASD keyboard movement (currently tap-to-move)
-- [ ] Jump with collision detection
-- [ ] Block interaction (break/place)
-- [ ] Smooth camera follow
+**Mitigation Strategy:**
+- **Object pooling:** Reuse objects instead of creating new ones
+  - Pool for Vector3, Matrix4, Color objects
+  - Pool for particles, projectiles, damage numbers
+  - Pool for chunk mesh data
+- **Avoid allocations in hot paths:**
+  - Pre-allocate arrays for render loops
+  - Reuse temporary calculation objects
+  - Cache frequently accessed computations
+- **Typed Arrays:** Use Float32Array, Int32Array for large data sets
 
-#### 0.4 Basic Inventory UI
-- [ ] Inventory screen (items grid)
-- [ ] Equipment slots display
-- [ ] Item tooltips
-- [ ] Drag-and-drop equipping
+#### 3. WebGL Memory Caps
+**Problem:** Browsers limit GPU memory; large worlds exceed limits.
 
-### Exit Criteria
-- Player can walk through procedurally generated terrain
-- Game saves and loads correctly
-- Basic inventory management works
+**Mitigation Strategy:**
+- **Aggressive chunk unloading:** Only keep nearby chunks in GPU memory
+- **Texture atlases:** Single texture for all block types
+- **Geometry instancing:** Already using InstancedMesh (good!)
+- **LOD (Level of Detail):** Distant chunks use simpler geometry
+- **Memory budgeting:** Track GPU memory usage, enforce limits
 
----
+#### 4. No Compute Shaders
+**Problem:** Can't offload parallel computation to GPU like native engines.
 
-## Phase 1: Playable Prototype
+**Mitigation Strategy:**
+- **Accept the limitation:** Some effects won't be possible
+- **Simpler alternatives:**
+  - Baked lighting instead of real-time GI
+  - Particle limits (hundreds, not thousands)
+  - Simpler water/weather effects
+- **WebGPU future:** Plan architecture to migrate when WebGPU is stable
 
-**Goal:** Core survival gameplay loop
-**Duration:** 6-8 weeks
+### Performance Targets
 
-### 1.1 World Generation (Weeks 1-2)
-- [ ] Noise-based procedural terrain (integrate `NoiseGenerator`)
-- [ ] Multiple biomes with distinct appearances
-  - Forest (trees, grass)
-  - Plains (rolling hills)
-  - Mountains (steep terrain, caves)
-  - Desert (sand, cacti)
-- [ ] Resource distribution (ore veins, trees, rocks)
-- [ ] World seed system for reproducible worlds
-- [ ] Water bodies (rivers, lakes from `WaterBodySystem`)
-
-### 1.2 Survival Mechanics (Weeks 3-4)
-- [ ] Hunger system
-  - Hunger bar depletes over time
-  - Eating food restores hunger
-  - Starvation damages health
-- [ ] Health regeneration tied to hunger
-- [ ] Stamina for sprinting/combat (already partial)
-- [ ] Death and respawn system (already partial)
-- [ ] Day/night cycle (integrate `SeasonalSystem`)
-  - Visual lighting changes
-  - Monsters more active at night
-
-### 1.3 Resource Gathering (Weeks 5-6)
-- [ ] Mining blocks (hold click to break)
-- [ ] Block drops as items
-- [ ] Tree chopping
-- [ ] Resource collection particles
-- [ ] Tool effectiveness (pickaxe mines faster than hands)
-
-### 1.4 Crafting System (Weeks 7-8)
-- [ ] Crafting UI screen
-- [ ] Recipe discovery
-- [ ] Basic tools: pickaxe, axe, sword, shovel
-- [ ] Basic building blocks: wooden planks, stone bricks
-- [ ] Workbench mechanic (advanced recipes require workbench)
-- [ ] Integrate existing `MaterialCraftingSystem`
-
-### Deliverable
-> Player spawns in a procedurally generated world. They gather resources, craft tools, build a shelter, and survive the night when monsters emerge.
+| Metric | Target | How We'll Measure |
+|--------|--------|-------------------|
+| Frame rate | 60 FPS on mid-range hardware | Browser dev tools, stats.js |
+| Frame time | <16ms average, <33ms spikes | Performance profiling |
+| Memory | <1GB total, <512MB GPU | Browser task manager |
+| Load time | <5s initial, <100ms per chunk | Performance timing API |
 
 ---
 
-## Phase 2: Colony Alpha
+## Chunk Loading & LOD Strategy
 
-**Goal:** NPC settlement building
-**Duration:** 6-8 weeks
+### Chunk System Architecture
 
-### 2.1 NPC Settlers (Weeks 1-2)
-- [ ] 3D NPC model/mesh
-- [ ] NPC spawning (attracted by settlement size)
-- [ ] NPC idle animations
-- [ ] NPC nameplate/health bar
-- [ ] Integrate `NPCBehaviorSystem` for autonomous work
+```
+World
+├── ChunkManager (coordinates loading/unloading)
+│   ├── ActiveChunks (Map<chunkKey, Chunk>)
+│   ├── LoadQueue (priority queue)
+│   └── UnloadQueue (chunks marked for removal)
+│
+├── Chunk (32×32×64 voxels)
+│   ├── VoxelData (Uint8Array - block types)
+│   ├── HeightMap (optimization for surface)
+│   ├── Mesh (Three.js InstancedMesh or merged geometry)
+│   ├── LODLevel (0=full, 1=half, 2=quarter)
+│   └── State (loading, ready, dirty, unloading)
+│
+└── ChunkWorker (Web Worker)
+    ├── Terrain generation
+    ├── Mesh building
+    └── Lighting calculation
+```
 
-### 2.2 Personality System (Weeks 3-4)
-- [ ] Personality traits (hardworking, lazy, brave, timid)
-- [ ] Trait effects on behavior
-- [ ] NPC preferences (job types, social)
-- [ ] Simple dialogue when interacted with
-- [ ] Mood system (happy, content, unhappy)
+### Loading Strategy
 
-### 2.3 Autonomous Work (Weeks 5-6)
-- [ ] Task finding (NPCs seek work automatically)
-- [ ] Mining tasks (integrate `MiningTask` module)
-- [ ] Hauling tasks (move items to stockpiles)
-- [ ] Building tasks (construct player blueprints)
-- [ ] Guard tasks (patrol and defend)
-- [ ] Farming tasks (plant, tend, harvest)
+1. **View Distance Rings:**
+   - Ring 0 (0-2 chunks): Full detail, all features
+   - Ring 1 (2-4 chunks): Full detail, reduced particles
+   - Ring 2 (4-8 chunks): LOD level 1 (half resolution)
+   - Ring 3 (8-12 chunks): LOD level 2 (quarter resolution)
+   - Beyond Ring 3: Not loaded
 
-### 2.4 Settlement Management (Weeks 7-8)
-- [ ] Stockpile zones (designate storage areas)
-- [ ] Zone types: mining, farming, storage
-- [ ] Building placement system (3D blueprints)
-- [ ] Building types: house, storage, workshop, barracks
-- [ ] NPC housing assignment
-- [ ] Settlement stats overlay
+2. **Priority Loading:**
+   - Direction player is facing loads first
+   - Chunks player is moving toward prioritized
+   - Underground chunks only load when player is underground
 
-### Deliverable
-> Player establishes a settlement. NPCs arrive over time, each with distinct personalities. The settlement grows as NPCs autonomously mine, build, and manage resources.
+3. **Background Loading:**
+   - Generate terrain data in Web Worker
+   - Build mesh geometry in Web Worker
+   - Transfer to main thread via Transferable objects
+   - Add to scene during requestIdleCallback
 
----
+### LOD Implementation
 
-## Phase 3: Combat & Threats
+**LOD Level 0 (Full):** Every voxel rendered
+- Used for: Player's chunk + immediate neighbors
+- Voxel size: 1×1×1
 
-**Goal:** Meaningful conflict and portal system
-**Duration:** 6-8 weeks
+**LOD Level 1 (Half):** 2×2×2 voxel groups merged
+- Used for: 2-4 chunks away
+- 8× fewer instances
+- Pick dominant block type for group
 
-### 3.1 Enhanced Combat (Weeks 1-2)
-- [ ] Melee combat combos
-- [ ] Ranged weapons (bow, crossbow)
-- [ ] Dodging/rolling (already partial)
-- [ ] Blocking with shields
-- [ ] Combat animations
-- [ ] Integrate `DefenseCombatEngine`
+**LOD Level 2 (Quarter):** 4×4×4 voxel groups merged
+- Used for: 4-8 chunks away
+- 64× fewer instances
+- Heightmap-only rendering (surface blocks)
 
-### 3.2 Monster Variety (Weeks 3-4)
-- [ ] Monster types with unique behaviors
-  - Zombie (slow, swarm)
-  - Skeleton (ranged)
-  - Spider (fast, climbing)
-  - Golem (slow, tanky)
-  - Wraith (phase through walls)
-- [ ] Boss monsters
-- [ ] Monster 3D models (voxel-style)
-- [ ] Enhance `EnemyAISystem` behaviors
+**LOD Level 3 (Impostor):** Flat billboard or very low-poly
+- Used for: 8+ chunks away
+- Consider: Just render horizon silhouette
 
-### 3.3 Portal System (Weeks 5-6)
-- [ ] Portal 3D model (swirling vortex effect)
-- [ ] Portal spawning monsters over time
-- [ ] Portal levels (difficulty tiers)
-- [ ] Portal closing mechanic (damage core, ritual)
-- [ ] Portal reopening if undefended
-- [ ] Corruption visual effect around portals
+### Unloading Strategy
 
-### 3.4 Territory & Defense (Weeks 7-8)
-- [ ] Territory claiming system
-- [ ] Corruption spread from portals
-- [ ] Defensive structures: walls, gates, towers
-- [ ] Guard posts with NPC defenders
-- [ ] Raid events (integrate `RaidEventManager`)
-- [ ] Territory map overlay
-
-### Deliverable
-> Player's settlement is threatened by a nearby portal. They build defenses, train guards, and assault the portal to close it. Undefended portals reopen.
+1. **Distance-based:** Chunks beyond view distance queued for unload
+2. **Memory pressure:** If approaching memory limit, force unload furthest
+3. **Graceful:** Fade out before removing, avoid pop-in
+4. **State preservation:** Dirty chunks (player modified) saved before unload
 
 ---
 
-## Phase 4: The Companion
+## Multiplayer Architecture (Designed From Start)
 
-**Goal:** Magic system and companion narrative
-**Duration:** 6-8 weeks
+### Why Design For Multiplayer Early
 
-### 4.1 Companion Implementation (Weeks 1-2)
-- [ ] Unique companion 3D model
-- [ ] Companion follows player
-- [ ] Companion has recovery states (wounded → recovering → healthy)
-- [ ] Companion healing tied to settlement progress
-- [ ] Integrate `CompanionAISystem`
+Adding multiplayer to a single-player game is notoriously difficult. By designing the architecture from the start, we:
+- Avoid massive refactoring later
+- Keep game state properly separated
+- Build with authority/replication in mind
+- Can test single-player as "multiplayer with one player"
 
-### 4.2 Dialogue System (Weeks 3-4)
-- [ ] Dialogue UI (speech bubbles or panel)
-- [ ] Conversation trees
-- [ ] Companion lore revelations
-- [ ] Triggered dialogue (events, milestones)
-- [ ] Relationship tracking
+### Architecture Overview
 
-### 4.3 Magic System (Weeks 5-6)
-- [ ] Spell learning (companion teaches)
-- [ ] Spell types:
-  - Light (illumination)
-  - Heal (restore health)
-  - Fireball (ranged damage)
-  - Shield (protection)
-  - Telekinesis (move objects)
-- [ ] Spell casting animations/effects
-- [ ] Mana costs and cooldowns (already partial)
-- [ ] Spell progression/upgrades
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Game Instance                         │
+├─────────────────────────────────────────────────────────┤
+│  AuthoritativeState (source of truth)                   │
+│  ├── World state (chunks, entities, time)               │
+│  ├── Player states (all players)                        │
+│  ├── NPC states                                         │
+│  └── Settlement state                                   │
+├─────────────────────────────────────────────────────────┤
+│  NetworkLayer (abstracted)                              │
+│  ├── Single-player: Direct state access                 │
+│  ├── Host: State + broadcast to clients                 │
+│  └── Client: Receive state, send inputs                 │
+├─────────────────────────────────────────────────────────┤
+│  LocalPrediction (client-side)                          │
+│  ├── Predicted player movement                          │
+│  ├── Predicted interactions                             │
+│  └── Reconciliation with server state                   │
+└─────────────────────────────────────────────────────────┘
+```
 
-### 4.4 Story Hooks (Weeks 7-8)
-- [ ] Lore items (discoverable journals, ruins)
-- [ ] World mysteries (ancient structures)
-- [ ] Companion backstory revelations
-- [ ] Optional story quests
-- [ ] Quest tracking UI
+### Key Principles
 
-### Deliverable
-> Player discovers and rescues the wounded companion. As the settlement grows, the companion heals and teaches magic. Fragments of world history are revealed through dialogue.
+1. **State Authority:**
+   - Single source of truth for all game state
+   - In single-player: local state is authoritative
+   - In multiplayer: host's state is authoritative
 
----
+2. **Input-Based Networking:**
+   - Clients send inputs, not state changes
+   - Server validates and applies inputs
+   - Prevents cheating, ensures consistency
 
-## Phase 5: Content & Polish
+3. **State Replication:**
+   - Only replicate what's needed (relevancy)
+   - Delta compression (send changes, not full state)
+   - Priority system (player actions > distant NPC)
 
-**Goal:** Complete single-player experience
-**Duration:** 8-12 weeks
+4. **Client Prediction:**
+   - Predict own movement locally (feels responsive)
+   - Reconcile when server state arrives
+   - Roll back and replay if prediction was wrong
 
-### 5.1 Audio Implementation (Weeks 1-3)
-- [ ] Background music (biome-specific)
-- [ ] Combat music
-- [ ] Ambient sounds (birds, wind, water)
-- [ ] UI sounds (clicks, notifications)
-- [ ] Combat sounds (hits, spells, monster sounds)
-- [ ] NPC voice clips
+### Multiplayer Scope
 
-### 5.2 Visual Polish (Weeks 4-6)
-- [ ] Weather effects (rain, snow, fog)
-- [ ] Day/night lighting
-- [ ] Particle effects enhancement
-- [ ] Animation polish
-- [ ] Post-processing (bloom, color grading)
-- [ ] Performance optimization
+- **Player count:** 2-4 players (co-op focused)
+- **Topology:** Player-hosted (one player is host)
+- **Networking:** WebRTC for peer-to-peer, WebSocket fallback
+- **Session:** Drop-in/drop-out, host migration if host leaves
 
-### 5.3 Quest System (Weeks 7-9)
-- [ ] Quest types: kill, collect, build, explore
-- [ ] Quest givers (companion, NPCs)
-- [ ] Quest rewards
-- [ ] Main story questline (optional)
-- [ ] Side quests
-- [ ] Quest journal UI
+### Single-Player Mode
 
-### 5.4 Game Balance (Weeks 10-12)
-- [ ] Difficulty settings
-- [ ] Progression curve tuning
-- [ ] Combat balance
-- [ ] Economy balance
-- [ ] Tutorial/onboarding
-- [ ] Accessibility options
-
-### Deliverable
-> Complete single-player experience with full audio, polished visuals, quest content, and balanced gameplay.
+Single-player is just multiplayer with:
+- Local player is both client and host
+- No network latency simulation needed
+- All state access is direct
+- Same code paths, easier testing
 
 ---
 
-## Phase 6: Multiplayer (Optional)
+## 3D Asset Creation
 
-**Goal:** Cooperative play
-**Duration:** 8-12 weeks
+### The Challenge
 
-### Technical Requirements
-- [ ] Network architecture decision (WebSocket, WebRTC)
-- [ ] State synchronization
-- [ ] Lag compensation
-- [ ] Conflict resolution
+Creating 3D voxel-style characters, creatures, and objects is a skill I need to develop or find help with.
 
-### Features
-- [ ] 2-4 player co-op
-- [ ] Shared settlement
-- [ ] Permission system
-- [ ] Drop-in/drop-out
-- [ ] Chat system
+### Options to Explore
 
----
+1. **Learn It:**
+   - MagicaVoxel (free, voxel-focused)
+   - Blockbench (free, Minecraft-style)
+   - Blender (free, powerful, steep learning curve)
+   - Start simple: cube characters, basic animations
 
-## Phase 7: Launch Preparation
+2. **Find Collaborators:**
+   - Game dev communities (r/gamedev, itch.io forums)
+   - Art-focused Discord servers
+   - Commission specific pieces
 
-**Goal:** Release-ready game
-**Duration:** 6-8 weeks
+3. **Asset Stores:**
+   - Kenney.nl (free voxel assets)
+   - itch.io game assets
+   - OpenGameArt.org
+   - Be careful with licensing
 
-### Tasks
-- [ ] Comprehensive QA testing
-- [ ] Bug fixing sprint
-- [ ] Performance optimization
-- [ ] Platform builds (web, desktop via Electron)
-- [ ] Store page creation
-- [ ] Marketing materials
-- [ ] Press kit
-- [ ] Launch trailer
+4. **Procedural Generation:**
+   - Generate simple creatures from rules
+   - Combine modular parts
+   - Won't work for everything, but helps
 
----
+### Asset Pipeline
 
-## Technical Priorities
+Whatever the source, we need:
+1. Model in voxel format or low-poly
+2. Export to GLTF/GLB (Three.js standard)
+3. Rig for animation (if animated)
+4. Import into React Three Fiber
+5. Optimize (texture atlas, LOD variants)
 
-### Immediate (Phase 0)
-1. **WorldGenerator → VoxelTerrain integration** - Connect existing terrain generation to 3D rendering
-2. **SaveSystem adaptation** - Enable persistence for 3D game state
-3. **Keyboard controls** - Add WASD movement option
+### Starting Point
 
-### Short-term (Phase 1)
-1. **Chunk-based rendering** - Performance for large worlds
-2. **Block interaction** - Mining and placing blocks
-3. **Crafting UI** - Connect existing system to 3D interface
-
-### Medium-term (Phases 2-3)
-1. **NPC 3D rendering** - Visual representation of settlers
-2. **Building placement** - 3D blueprint system
-3. **Portal effects** - Core threat mechanic
-
-### Long-term (Phases 4-5)
-1. **Magic VFX** - Spell casting visuals
-2. **Audio engine** - Music and sound effects
-3. **Quest system** - Narrative content delivery
+Begin with placeholder cube characters. Gameplay first, pretty models later. A fun game with cube people is better than a pretty game that isn't fun.
 
 ---
 
-## Risk Mitigation
+## The Phases
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Performance with many voxels | High | Chunk loading, LOD, instancing (already using) |
-| Three.js memory limits | Medium | Chunk unloading, texture atlasing |
-| Complex NPC pathfinding in 3D | High | Navmesh, hierarchical pathfinding |
-| Scope creep | High | Strict phase gates, MVP per phase |
-| AI system integration | Medium | Thorough testing, fallback behaviors |
+### Phase 0: Foundation
+**Estimated Duration:** 8-12 weeks
+**Focus:** Core architecture that everything else builds on
+
+#### Goals
+- Chunk-based world rendering with LOD
+- Multiplayer-ready state architecture
+- Web Worker integration for performance
+- Save/Load system
+- Player controller with keyboard + mouse
+- Basic inventory system
+- Object pooling for GC mitigation
+
+#### Key Deliverables
+- Player walks through infinite procedurally generated terrain
+- Chunks load/unload based on distance
+- Distant terrain renders at lower detail
+- Game state saves and loads
+- Architecture supports future multiplayer
+
+#### Technical Research Needed
+- Web Worker communication patterns
+- Three.js InstancedMesh pooling
+- Zustand state architecture for multiplayer
+- WebRTC/WebSocket library evaluation
+
+*Detailed plan: Create `docs/phases/PHASE_0_DETAILED_PLAN.md` before starting*
 
 ---
 
-## Success Metrics Per Phase
+### Phase 1: Survival & Gathering
+**Estimated Duration:** 8-12 weeks
+**Focus:** Core survival gameplay loop
 
-| Phase | Key Metric |
-|-------|------------|
-| 0 | Game saves/loads, procedural terrain renders |
-| 1 | Player survives 3 in-game days |
-| 2 | 5+ NPCs work autonomously |
-| 3 | Player closes first portal |
-| 4 | Player learns 3+ spells from companion |
-| 5 | 10+ hour complete playthrough |
+#### Goals
+- Hunger, health, stamina systems
+- Day/night cycle with lighting
+- Resource gathering (mining, chopping)
+- Basic crafting system
+- Simple threats (night monsters)
+- Death and respawn
+
+#### Key Deliverables
+- Player can survive multiple in-game days
+- Crafting tools makes gathering faster
+- Night is dangerous, shelter matters
+- Core loop is engaging
+
+*Detailed plan: Create `docs/phases/PHASE_1_DETAILED_PLAN.md` before starting*
+
+---
+
+### Phase 2: NPCs & Settlement
+**Estimated Duration:** 10-14 weeks
+**Focus:** Colony building with autonomous NPCs
+
+#### Goals
+- NPC 3D models and rendering
+- NPCs join settlement over time
+- Personality and mood systems
+- Autonomous work (mining, building, hauling)
+- Building placement system
+- Zone designation
+- NPC needs (food, rest, shelter)
+
+#### Key Deliverables
+- Settlement grows organically with NPCs
+- NPCs feel like individuals, not robots
+- Player directs, NPCs execute
+- Settlement management is satisfying
+
+#### Asset Needs
+- NPC character models (multiple variants)
+- Building models (house, workshop, etc.)
+- Animation sets (walk, work, idle)
+
+*Detailed plan: Create `docs/phases/PHASE_2_DETAILED_PLAN.md` before starting*
+
+---
+
+### Phase 3: Combat & Portals
+**Estimated Duration:** 10-14 weeks
+**Focus:** Meaningful conflict and the core threat mechanic
+
+#### Goals
+- Enhanced combat (melee, ranged, dodge, block)
+- Monster variety with unique behaviors
+- Portal system (spawning, closing, reopening)
+- Territory and corruption mechanics
+- Defensive structures
+- NPC guards and military
+- Raid events
+
+#### Key Deliverables
+- Combat feels impactful and skill-based
+- Portals are genuine threats
+- Defense building is strategic
+- Territory control matters
+
+#### Asset Needs
+- Monster models (5+ types)
+- Weapon models
+- Portal visual effects
+- Defensive structure models
+
+*Detailed plan: Create `docs/phases/PHASE_3_DETAILED_PLAN.md` before starting*
+
+---
+
+### Phase 4: The Companion & Magic
+**Estimated Duration:** 10-14 weeks
+**Focus:** The unique companion relationship and magic system
+
+#### Goals
+- Companion NPC with special AI
+- Companion recovery arc (wounded → healthy)
+- Dialogue system
+- Magic learning from companion
+- Spell casting with visual effects
+- Lore and world mysteries
+- Story content (optional engagement)
+
+#### Key Deliverables
+- Companion feels like a real character
+- Magic is fun to use and learn
+- Story adds depth without forcing engagement
+- World feels mysterious and worth exploring
+
+#### Asset Needs
+- Companion character model (unique design)
+- Spell visual effects
+- Lore item models
+- Dialogue UI
+
+*Detailed plan: Create `docs/phases/PHASE_4_DETAILED_PLAN.md` before starting*
+
+---
+
+### Phase 5: Polish & Content
+**Estimated Duration:** 12-16 weeks
+**Focus:** Making everything feel good
+
+#### Goals
+- Audio (music, SFX, ambient)
+- Visual polish (weather, particles, lighting)
+- Quest system
+- More content (biomes, monsters, items)
+- Tutorial and onboarding
+- Accessibility options
+- Performance optimization pass
+
+#### Key Deliverables
+- Game feels polished and complete
+- Audio enhances atmosphere
+- Plenty of content to explore
+- Runs well on target hardware
+
+*Detailed plan: Create `docs/phases/PHASE_5_DETAILED_PLAN.md` before starting*
+
+---
+
+### Phase 6: Multiplayer Implementation
+**Estimated Duration:** 12-16 weeks
+**Focus:** Activating the multiplayer architecture
+
+#### Goals
+- Network layer implementation
+- Player synchronization
+- Shared settlement mechanics
+- Permission system
+- Host migration
+- Chat and communication
+- Testing across network conditions
+
+#### Key Deliverables
+- 2-4 players can play together
+- Feels responsive despite latency
+- Shared settlement works cooperatively
+- Drop-in/drop-out is seamless
+
+*Detailed plan: Create `docs/phases/PHASE_6_DETAILED_PLAN.md` before starting*
+
+---
+
+### Phase 7: Release & Beyond
+**Estimated Duration:** Ongoing
+**Focus:** Sharing the game and continuing development
+
+#### Goals
+- Platform builds (web, desktop)
+- Store presence (itch.io, Steam)
+- Community building
+- Bug fixing and updates
+- New content based on feedback
+- Mod support (maybe)
+
+*Detailed plan: Create as we approach this phase*
+
+---
+
+## Total Timeline
+
+| Phase | Duration | Cumulative |
+|-------|----------|------------|
+| 0: Foundation | 8-12 weeks | 8-12 weeks |
+| 1: Survival | 8-12 weeks | 16-24 weeks |
+| 2: NPCs | 10-14 weeks | 26-38 weeks |
+| 3: Combat | 10-14 weeks | 36-52 weeks |
+| 4: Companion | 10-14 weeks | 46-66 weeks |
+| 5: Polish | 12-16 weeks | 58-82 weeks |
+| 6: Multiplayer | 12-16 weeks | 70-98 weeks |
+| 7: Release | Ongoing | — |
+
+**Realistic total: 1.5 - 2 years**
+
+This is a hobby project made for fun. These timelines are loose guides, not deadlines. Some phases might go faster if we're in the zone; some might take longer if life happens. That's fine.
 
 ---
 
@@ -401,29 +552,413 @@
 ```
 Existing Modules → 3D Integration Point
 ─────────────────────────────────────────
-WorldGenerator    → VoxelTerrain.jsx
-BiomeManager      → Terrain coloring
-ChunkManager      → Dynamic loading
-SaveSystem        → Game state persistence
-NPCBehaviorSystem → NPC.jsx (new)
-CompanionAISystem → Companion.jsx (new)
-EnemyAISystem     → Enemy.jsx
+WorldGenerator    → ChunkManager → VoxelTerrain chunks
+BiomeManager      → Terrain coloring, prop placement
+ChunkManager      → New 3D ChunkManager wrapper
+SaveSystem        → NetworkState serialization
+NPCBehaviorSystem → NPC.jsx (new component)
+CompanionAISystem → Companion.jsx (new component)
+EnemyAISystem     → Enemy.jsx enhancement
 DefenseCombatEngine → Combat system
-RaidEventManager  → Wave spawning
+RaidEventManager  → Wave spawning, multiplayer sync
 MaterialCrafting  → CraftingUI.jsx (new)
 BuildingConfig    → BuildingPlacer.jsx (new)
-EventSystem       → World events
-WeatherSystem     → Visual effects
+EventSystem       → World events, replicated to clients
+WeatherSystem     → Visual effects, network synced
 ```
 
 ---
 
-## Recommended Starting Point
+## Automated Testing Strategy
 
-Begin with **Phase 0.1: Terrain & World Integration** since:
-1. The `VoxelTerrain` component just got fixed (colors working)
-2. `WorldGenerator` module already exists
-3. This provides immediate visual progress
-4. Foundation for all future features
+### Testing Philosophy
 
-First task: Create a bridge between `WorldGenerator.generateChunk()` and `VoxelTerrain`'s voxel data format.
+Tests serve two purposes:
+1. **Catch regressions** - Don't break what works
+2. **Enable refactoring** - Change code confidently
+
+We're not chasing 100% coverage. We test what matters: game systems, state management, and critical paths. Visual rendering is harder to test automatically—we'll rely on manual playtesting for that.
+
+### Test Categories
+
+#### 1. Unit Tests (Jest)
+**What:** Individual functions and classes in isolation
+**When:** Run on every commit, must pass to merge
+**Coverage Target:** 70%+ for game systems modules
+
+**What to test:**
+- Pure functions (damage calculation, pathfinding algorithms)
+- State reducers and actions
+- Data transformations
+- Utility functions
+
+**What NOT to test:**
+- React component rendering (use integration tests)
+- Third-party library internals
+- Simple getters/setters
+
+```
+src/
+├── modules/
+│   ├── ai/__tests__/           ✅ Unit tests
+│   ├── combat/__tests__/       ✅ Unit tests
+│   ├── crafting/__tests__/     ✅ Unit tests
+│   └── ...
+```
+
+#### 2. Integration Tests (Jest + React Testing Library)
+**What:** Multiple modules working together
+**When:** Run on every commit
+**Focus:** State flows, system interactions
+
+**Key integration tests:**
+- Player takes damage → health updates → UI reflects change
+- NPC receives task → pathfinding runs → task completes
+- Save game → reload → state matches
+- Chunk loads → terrain generates → mesh builds
+
+```javascript
+// Example: Combat integration test
+test('player attack damages enemy and triggers loot on death', () => {
+  const gameState = createTestGameState();
+  const enemy = spawnEnemy(gameState, { health: 10 });
+
+  playerAttack(gameState, enemy, { damage: 15 });
+
+  expect(enemy.health).toBe(0);
+  expect(enemy.isDead).toBe(true);
+  expect(gameState.lootDrops).toHaveLength(1);
+});
+```
+
+#### 3. Component Tests (React Testing Library)
+**What:** React components render correctly and respond to interactions
+**When:** Run on every commit
+**Focus:** UI behavior, not visual appearance
+
+**What to test:**
+- Components render without crashing
+- User interactions trigger expected callbacks
+- State changes reflect in UI
+- Loading/error states display correctly
+
+**Mocking strategy for 3D:**
+- Mock `@react-three/fiber` Canvas
+- Mock `@react-three/rapier` physics
+- Test component logic, not Three.js internals
+
+```javascript
+// Example: Inventory component test
+test('clicking item shows tooltip', () => {
+  render(<InventoryUI items={mockItems} />);
+
+  fireEvent.click(screen.getByText('Iron Sword'));
+
+  expect(screen.getByRole('tooltip')).toHaveTextContent('Damage: 10');
+});
+```
+
+#### 4. State Management Tests (Zustand)
+**What:** Store actions produce correct state changes
+**When:** Run on every commit
+**Focus:** All state mutations are intentional and correct
+
+```javascript
+// Example: Game store test
+test('takeDamage reduces health and triggers death at zero', () => {
+  const store = createGameStore({ health: 15, maxHealth: 100 });
+
+  store.getState().takeDamage(20);
+
+  expect(store.getState().health).toBe(0);
+  expect(store.getState().isDead).toBe(true);
+});
+```
+
+#### 5. Performance Tests
+**What:** Automated benchmarks for critical operations
+**When:** Run weekly or before releases
+**Focus:** Catch performance regressions
+
+**Benchmarks to track:**
+- Chunk generation time (target: <50ms)
+- Pathfinding for 100 NPCs (target: <16ms total)
+- State serialization for save (target: <100ms)
+- Frame time with 50 enemies (target: <16ms)
+
+```javascript
+// Example: Performance benchmark
+describe('ChunkGenerator performance', () => {
+  test('generates chunk within time budget', () => {
+    const start = performance.now();
+
+    generateChunk({ x: 0, z: 0 });
+
+    const elapsed = performance.now() - start;
+    expect(elapsed).toBeLessThan(50); // 50ms budget
+  });
+});
+```
+
+#### 6. Snapshot Tests (Limited Use)
+**What:** Detect unexpected changes in serialized output
+**When:** Run on commit
+**Use sparingly:** Only for stable data structures
+
+**Good candidates:**
+- Save file format
+- Network message format
+- Configuration schemas
+
+**Bad candidates:**
+- UI components (too brittle)
+- Generated terrain (intentionally random)
+
+#### 7. Multiplayer Tests
+**What:** Network synchronization and state consistency
+**When:** Run on multiplayer-related changes
+**Focus:** State stays consistent across simulated clients
+
+**Test scenarios:**
+- Two clients see same world state
+- Input from client A affects client B's view
+- Disconnection/reconnection preserves state
+- Conflicting actions resolve consistently
+
+```javascript
+// Example: Multiplayer sync test
+test('block placement syncs to all clients', async () => {
+  const [host, client1, client2] = createTestSession(3);
+
+  host.placeBlock({ x: 10, y: 5, z: 10, type: 'stone' });
+  await waitForSync();
+
+  expect(client1.getBlock(10, 5, 10)).toBe('stone');
+  expect(client2.getBlock(10, 5, 10)).toBe('stone');
+});
+```
+
+### CI/CD Pipeline
+
+```yaml
+# .github/workflows/test.yml
+name: Test Suite
+
+on: [push, pull_request]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run test:coverage
+      - uses: codecov/codecov-action@v3
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npm run test:integration
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint
+
+  performance:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npm run test:perf
+      - name: Compare to baseline
+        run: npm run perf:compare
+```
+
+### Test Scripts in package.json
+
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:unit": "jest --testPathPattern='__tests__/.*\\.test\\.'",
+    "test:integration": "jest --testPathPattern='integration'",
+    "test:perf": "jest --testPathPattern='perf' --runInBand",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "perf:compare": "node scripts/compare-perf-baseline.js"
+  }
+}
+```
+
+### Test Coverage Targets by Phase
+
+| Phase | Module | Target | Notes |
+|-------|--------|--------|-------|
+| 0 | ChunkManager | 80% | Critical for everything |
+| 0 | State/Store | 80% | Foundation for multiplayer |
+| 0 | SaveSystem | 90% | Data loss is unacceptable |
+| 1 | Survival systems | 70% | Hunger, health, stamina |
+| 1 | Crafting | 70% | Recipe system |
+| 2 | NPC AI | 70% | Behavior trees, task system |
+| 2 | Building | 70% | Placement, construction |
+| 3 | Combat | 80% | Damage, abilities |
+| 3 | Portal system | 70% | Spawning, closing |
+| 4 | Dialogue | 60% | Less critical |
+| 4 | Magic | 70% | Spell effects |
+| 6 | Networking | 90% | Must be reliable |
+
+### What We DON'T Automate
+
+Some things are better tested by playing:
+
+- **Visual quality** - Does it look good? (Manual)
+- **Fun factor** - Is it enjoyable? (Playtesting)
+- **Game feel** - Does combat feel impactful? (Playtesting)
+- **Performance perception** - Does it feel smooth? (Manual profiling)
+- **Edge cases in 3D** - Physics glitches, camera issues (Manual)
+
+### Test Data and Fixtures
+
+Maintain a set of test fixtures:
+
+```
+src/__fixtures__/
+├── gameStates/
+│   ├── newGame.json         # Fresh start
+│   ├── midGame.json         # Settlement with NPCs
+│   └── lateGame.json        # Full features unlocked
+├── chunks/
+│   ├── flatTerrain.json     # Simple test terrain
+│   └── complexTerrain.json  # Mountains, caves
+├── npcs/
+│   └── testNPCs.json        # Various personality types
+└── items/
+    └── testItems.json       # All item types
+```
+
+### Running Tests Locally
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- ChunkManager.test.js
+
+# Run tests matching pattern
+npm test -- --grep "chunk loading"
+
+# Run with coverage
+npm test -- --coverage
+
+# Watch mode during development
+npm test -- --watch
+
+# Run performance benchmarks
+npm run test:perf
+```
+
+### When to Write Tests
+
+1. **Before fixing a bug:** Write a test that fails, then fix
+2. **When adding game systems:** Test the logic, not the rendering
+3. **When touching state management:** Verify state transitions
+4. **When changing save format:** Ensure backwards compatibility
+5. **When optimizing:** Benchmark before and after
+
+### Mocking Strategy for 3D Components
+
+Three.js and React Three Fiber are hard to test. Our approach:
+
+```javascript
+// src/__mocks__/@react-three/fiber.js
+export const Canvas = ({ children }) => <div data-testid="canvas">{children}</div>;
+export const useFrame = jest.fn();
+export const useThree = () => ({
+  camera: { position: { set: jest.fn() } },
+  scene: {},
+  gl: {}
+});
+
+// src/__mocks__/@react-three/rapier.js
+export const RigidBody = ({ children }) => <div>{children}</div>;
+export const useRapier = () => ({ world: {} });
+
+// src/__mocks__/three.js
+export class Vector3 {
+  constructor(x = 0, y = 0, z = 0) {
+    this.x = x; this.y = y; this.z = z;
+  }
+  set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; }
+  // ... other methods as needed
+}
+```
+
+This lets us test component logic without WebGL context.
+
+---
+
+## Risk Register
+
+| Risk | Impact | Likelihood | Mitigation |
+|------|--------|------------|------------|
+| WebGL performance limits hit | High | Medium | Aggressive LOD, chunk limits, profiling early |
+| Multiplayer complexity explodes | High | Medium | Simple scope (2-4 co-op), design early |
+| Asset creation bottleneck | Medium | High | Start simple, placeholder art, learn tools |
+| Scope creep | Medium | High | Phase gates, "fun first" focus |
+| Burnout | High | Medium | It's for fun—take breaks, no deadlines |
+| Browser compatibility issues | Medium | Low | Test across browsers early |
+| Three.js breaking changes | Low | Low | Pin versions, test upgrades |
+
+---
+
+## Success Criteria
+
+Not shipping metrics. Not sales numbers. This is for fun.
+
+**The game is successful when:**
+- Playing it makes me smile
+- I want to show it to friends
+- Building a settlement feels satisfying
+- Combat feels impactful
+- The companion feels like a character I care about
+- NPCs feel like individuals
+- The world feels alive and worth exploring
+- Playing with friends is better than playing alone
+
+---
+
+## Next Steps
+
+1. **Create Phase 0 detailed plan** (`docs/phases/PHASE_0_DETAILED_PLAN.md`)
+2. **Research Web Worker patterns** for terrain generation
+3. **Prototype chunk loading** in isolation
+4. **Design state architecture** for multiplayer readiness
+5. **Experiment with MagicaVoxel** for asset creation
+
+---
+
+## References
+
+- [Game Vision](../documentation/archive-code/2d-prototype/docs/VISION.md)
+- [Development Roadmap](../documentation/archive-code/2d-prototype/docs/ROADMAP.md)
+- [NPC Building System](../documentation/archive-code/2d-prototype/docs/NPC_BUILDING_SYSTEM.md)
+
+---
+
+**Remember: We're making this for fun. If it stops being fun, step back and figure out why.**

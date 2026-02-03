@@ -107,7 +107,7 @@ const VoxelTerrain = ({ size = 50, voxelSize = 2 }) => {
       receiveShadow
     >
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial vertexColors />
+      <meshStandardMaterial />
     </instancedMesh>
   );
 };

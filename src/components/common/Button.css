@@ -1,0 +1,214 @@
+/**
+ * Button.css - Button component styles using design tokens
+ */
+
+/* Base Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--btn-padding-md);
+  min-height: var(--btn-height-md);
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  cursor: pointer;
+  transition: var(--transition-all);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:focus {
+  outline: none;
+}
+
+.btn:focus-visible {
+  box-shadow: var(--input-focus-ring);
+}
+
+.btn:active:not(.btn-disabled) {
+  transform: scale(0.98);
+}
+
+/* Button Variants */
+.btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+}
+
+.btn-primary:hover:not(.btn-disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  box-shadow: var(--shadow-glow-accent);
+}
+
+.btn-primary:active:not(.btn-disabled) {
+  background: var(--color-accent-active);
+}
+
+.btn-secondary {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.btn-secondary:hover:not(.btn-disabled) {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: white;
+}
+
+.btn-danger:hover:not(.btn-disabled) {
+  background: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
+  box-shadow: 0 0 20px var(--color-danger-subtle);
+}
+
+.btn-success {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.btn-success:hover:not(.btn-disabled) {
+  background: var(--color-success-hover);
+  border-color: var(--color-success-hover);
+  box-shadow: 0 0 20px var(--color-success-subtle);
+}
+
+.btn-warning {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-text-inverse);
+}
+
+.btn-warning:hover:not(.btn-disabled) {
+  background: var(--color-warning-hover);
+  border-color: var(--color-warning-hover);
+  box-shadow: 0 0 20px var(--color-warning-subtle);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+
+.btn-ghost:hover:not(.btn-disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.btn-outline:hover:not(.btn-disabled) {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-hover);
+}
+
+/* Button Sizes */
+.btn-small {
+  padding: var(--btn-padding-sm);
+  min-height: var(--btn-height-sm);
+  font-size: var(--font-size-xs);
+  gap: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+
+.btn-medium {
+  padding: var(--btn-padding-md);
+  min-height: var(--btn-height-md);
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+}
+
+.btn-large {
+  padding: var(--btn-padding-lg);
+  min-height: var(--btn-height-lg);
+  font-size: var(--font-size-base);
+  gap: var(--space-3);
+  border-radius: var(--radius-lg);
+}
+
+/* Button States */
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-loading {
+  cursor: wait;
+}
+
+/* Button Content */
+.btn-text {
+  display: inline-block;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+}
+
+.btn-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: btn-spin 1s linear infinite;
+}
+
+@keyframes btn-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Full Width Button */
+.btn-full {
+  width: 100%;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  .btn-small {
+    min-height: 36px;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .btn-medium {
+    min-height: 48px;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .btn-large {
+    min-height: 56px;
+    padding: var(--space-4) var(--space-6);
+  }
+}

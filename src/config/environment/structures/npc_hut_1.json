@@ -1,0 +1,54 @@
+{
+  "id": "npc_hut_1",
+  "name": "Wooden Hut",
+  "type": "dwelling",
+  "width": 4,
+  "height": 4,
+  "biomes": ["plains", "forest"],
+  "rarity": 0.5,
+  "requiresDryLand": true,
+  "maxHeightVariation": 1,
+  "tiles": [
+    { "type": "wood_wall", "blocking": true },
+    { "type": "wood_wall", "blocking": true },
+    { "type": "wood_wall", "blocking": true },
+    { "type": "wood_wall", "blocking": true },
+
+    { "type": "wood_wall", "blocking": true },
+    { "type": "wood_floor", "blocking": false },
+    { "type": "wood_floor", "blocking": false },
+    { "type": "wood_wall", "blocking": true },
+
+    { "type": "wood_wall", "blocking": true },
+    { "type": "wood_floor", "blocking": false },
+    { "type": "bed", "blocking": true },
+    { "type": "wood_wall", "blocking": true },
+
+    { "type": "wood_wall", "blocking": true },
+    { "type": "door", "blocking": false },
+    { "type": "wood_wall", "blocking": true },
+    { "type": "wood_wall", "blocking": true }
+  ],
+  "lootSpawns": [
+    {
+      "x": 1,
+      "z": 1,
+      "lootTable": "dwelling_common",
+      "chance": 0.4
+    }
+  ],
+  "npcSpawns": [
+    {
+      "x": 2,
+      "z": 1,
+      "npcType": "villager",
+      "behavior": "guard_home",
+      "faction": "neutral"
+    }
+  ],
+  "entrance": {
+    "x": 1,
+    "z": 3
+  },
+  "description": "Simple wooden hut inhabited by a villager."
+}

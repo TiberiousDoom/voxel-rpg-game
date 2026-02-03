@@ -1,0 +1,294 @@
+/**
+ * StatsTab.css - Styling for settlement statistics tab
+ */
+
+.stats-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px;
+}
+
+/* Stats Section */
+.stats-section {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.stats-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.stats-icon {
+  font-size: 18px;
+}
+
+.stats-section-header h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.stat-label {
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.stat-value.green {
+  color: #10b981;
+}
+
+.stat-value.yellow {
+  color: #f59e0b;
+}
+
+.stat-value.red {
+  color: #ef4444;
+}
+
+.stat-value.blue {
+  color: #3b82f6;
+}
+
+.stat-value.purple {
+  color: #a855f7;
+}
+
+/* Morale */
+.morale-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.morale-bar {
+  width: 100%;
+  height: 24px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.morale-fill {
+  height: 100%;
+  transition: width 0.5s ease, background 0.3s ease;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.morale-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.morale-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.morale-status {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tier Info */
+.tier-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.current-tier,
+.next-tier {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tier-label {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 50px;
+}
+
+.tier-badge {
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 2px solid;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tier-badge.locked {
+  opacity: 0.5;
+  filter: grayscale(50%);
+}
+
+.max-tier {
+  padding: 8px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(252, 211, 77, 0.2));
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 4px;
+  color: #fbbf24;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Tier Progress Bar */
+.tier-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.tier-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 4px;
+  border: 2px solid rgba(148, 163, 184, 0.1);
+  transition: all 0.3s ease;
+}
+
+.tier-step.completed {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.tier-step.locked {
+  opacity: 0.3;
+  filter: grayscale(100%);
+}
+
+.tier-step-icon {
+  font-size: 18px;
+}
+
+/* Production Bonuses */
+.bonus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bonus-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.bonus-item.small {
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.bonus-label {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.bonus-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.bonus-value.green {
+  color: #10b981;
+}
+
+/* Resource Summary */
+.resource-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.resource-icon {
+  font-size: 16px;
+}
+
+.resource-name {
+  flex: 1;
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resource-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}

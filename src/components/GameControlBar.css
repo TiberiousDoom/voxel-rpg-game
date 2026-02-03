@@ -1,0 +1,404 @@
+/**
+ * GameControlBar.css - Game control styles
+ */
+
+.game-control-bar {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  width: 100%;
+  align-items: center;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.group-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Button Row */
+.button-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  flex: 1;
+  min-width: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.control-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.control-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.btn-text {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Specific Button Colors */
+.play-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+.play-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.resume-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+.resume-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.pause-btn {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+.pause-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.stop-btn {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+}
+
+.stop-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+}
+
+.save-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.load-btn {
+  background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+}
+
+.load-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+}
+
+/* Game Status */
+.game-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-indicator.running {
+  color: #4caf50;
+}
+
+.status-indicator.paused {
+  color: #ff9800;
+}
+
+.status-indicator.stopped {
+  color: #f44336;
+}
+
+.pulse-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-indicator.running .pulse-dot {
+  background: #4caf50;
+}
+
+.status-indicator.paused .pulse-dot {
+  background: #ff9800;
+}
+
+.status-indicator.stopped .pulse-dot {
+  background: #f44336;
+}
+
+/* Status Messages */
+.status-message {
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  animation: slideIn 0.3s ease-out;
+}
+
+.save-message {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.load-message {
+  background: #f3e5f5;
+  color: #6a1b9a;
+  border: 1px solid #e1bee7;
+}
+
+/* Speed Control */
+.speed-control {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.speed-note {
+  margin: 0;
+  font-size: 11px;
+  color: #999;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Info Text */
+.control-info {
+  padding: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+.info-text {
+  margin: 0;
+  font-size: 11px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.info-text strong {
+  color: #333;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive - Mobile Optimization */
+@media (max-width: 768px) {
+  .game-control-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .control-group {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px 14px;
+  }
+
+  .group-title {
+    font-size: 12px;
+    padding-bottom: 8px;
+  }
+
+  .control-info {
+    flex: 0 0 100%;
+  }
+
+  .button-row {
+    width: 100%;
+    gap: 10px;
+  }
+
+  /* Ensure 44px minimum touch targets */
+  .control-btn {
+    font-size: 13px;
+    padding: 12px 14px;
+    min-height: 56px;
+    gap: 6px;
+    touch-action: manipulation;
+  }
+
+  .btn-icon {
+    font-size: 20px;
+  }
+
+  .btn-text {
+    font-size: 13px;
+  }
+
+  /* Slot selector touch-friendly */
+  .slot-selector {
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .slot-selector label {
+    font-size: 14px;
+  }
+
+  .slot-dropdown {
+    padding: 10px 14px;
+    font-size: 15px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Status messages larger and more visible */
+  .status-message {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Slot Selector */
+.slot-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.slot-selector label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+}
+
+.slot-dropdown {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.slot-dropdown:hover {
+  border-color: #3b82f6;
+}
+
+.slot-dropdown:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.slot-dropdown option {
+  padding: 8px;
+}
+
+@media (max-width: 480px) {
+  .control-group {
+    min-width: 100%;
+  }
+
+  .button-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .control-btn {
+    min-width: auto;
+    width: 100%;
+    min-height: 56px;
+  }
+
+  .slot-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .slot-selector label {
+    font-size: 13px;
+  }
+
+  .slot-dropdown {
+    width: 100%;
+    min-height: 48px;
+  }
+}

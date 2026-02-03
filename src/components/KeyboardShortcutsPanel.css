@@ -1,0 +1,244 @@
+/**
+ * KeyboardShortcutsPanel.css - Keyboard shortcuts panel styling
+ */
+
+.keyboard-shortcuts-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.keyboard-shortcuts-panel {
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  background: rgba(15, 23, 42, 0.98);
+  border-radius: 16px;
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.shortcuts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid rgba(148, 163, 184, 0.1);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.shortcuts-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shortcuts-close {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: rgba(148, 163, 184, 0.1);
+  border: 2px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shortcuts-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Content */
+.shortcuts-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.shortcuts-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.shortcuts-content::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.shortcuts-content::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+
+.shortcuts-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Section */
+.shortcuts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shortcuts-category {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(96, 165, 250, 0.2);
+}
+
+/* Shortcuts List */
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  transition: all 0.2s ease;
+}
+
+.shortcut-item:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(148, 163, 184, 0.2);
+  transform: translateX(4px);
+}
+
+.shortcut-key {
+  min-width: 70px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.2));
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #60a5fa;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.shortcut-desc {
+  flex: 1;
+  font-size: 14px;
+  color: rgba(226, 232, 240, 0.9);
+  line-height: 1.4;
+}
+
+/* Footer */
+.shortcuts-footer {
+  padding: 16px 24px;
+  border-top: 2px solid rgba(148, 163, 184, 0.1);
+  background: rgba(30, 41, 59, 0.5);
+  text-align: center;
+}
+
+.shortcuts-footer p {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.shortcuts-footer kbd {
+  padding: 3px 8px;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .keyboard-shortcuts-panel {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .shortcuts-content {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .shortcuts-header {
+    padding: 16px;
+  }
+
+  .shortcuts-title {
+    font-size: 20px;
+  }
+
+  .shortcut-key {
+    min-width: 60px;
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .shortcut-desc {
+    font-size: 12px;
+  }
+}

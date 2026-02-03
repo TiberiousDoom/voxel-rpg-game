@@ -1,0 +1,254 @@
+/**
+ * Monster.js - Monster entity class
+ *
+ * Represents a hostile monster in the game world with:
+ * - Health and combat stats
+ * - AI state management
+ * - Position and movement
+ * - Loot drops and rewards
+ */
+
+import MONSTER_STATS from '../config/monsters/monster-types.json';
+import MONSTER_MODIFIERS from '../config/monsters/monster-modifiers.json';
+
+/**
+ * Monster entity class
+ */
+export class Monster {
+  /**
+   * Create a new monster
+   * @param {string} type - Monster type (e.g., 'SLIME', 'GOBLIN')
+   * @param {Object} position - Initial position {x, z}
+   * @param {Object} options - Additional options (level, modifier, etc.)
+   */
+  constructor(type, position, options = {}) {
+    const stats = MONSTER_STATS[type];
+    if (!stats) {
+      throw new Error(`Unknown monster type: ${type}`);
+    }
+
+    // Core identity
+    this.id = options.id || `monster_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    this.type = type;
+    this.name = stats.name;
+
+    // Position and movement
+    this.position = { ...position, y: 0 };
+    this.velocity = { x: 0, z: 0 };
+    this.facingAngle = 0;
+    this.homePosition = { ...position }; // For respawn
+
+    // Combat stats
+    this.health = stats.health;
+    this.maxHealth = stats.maxHealth;
+    this.damage = stats.damage;
+    this.defense = stats.defense;
+    this.moveSpeed = stats.moveSpeed;
+    this.attackSpeed = stats.attackSpeed;
+    this.attackRange = stats.attackRange;
+    this.aggroRange = stats.aggroRange;
+
+    // Rewards (must be set before level scaling)
+    this.xpReward = stats.xpReward;
+    this.goldReward = stats.goldReward; // [min, max]
+    this.lootTable = stats.lootTable;
+
+    // Level scaling (if specified)
+    this.level = options.level || 1;
+    if (this.level > 1) {
+      this.scaleToLevel(this.level);
+    }
+
+    // Apply modifier (if specified)
+    this.modifier = options.modifier || null;
+    if (this.modifier) {
+      this.applyModifier(this.modifier);
+    }
+
+    // AI state
+    this.aiState = 'IDLE'; // IDLE, PATROL, CHASE, ATTACK, FLEE, DEATH
+    this.targetId = null; // Player or NPC being targeted
+    this.lastAttackTime = 0;
+    this.patrolPath = options.patrolPath || null;
+    this.currentWaypointIndex = 0;
+
+    // Behavior flags
+    this.canFlee = stats.canFlee || false;
+    this.fleeHealthPercent = stats.fleeHealthPercent || 0.3;
+
+    // Visual
+    this.color = stats.color;
+    this.size = stats.size;
+    this.tint = options.tint || null; // For variants/modifiers
+    this.animationState = 'idle';
+
+    // State
+    this.alive = true;
+    this.spawnTime = Date.now();
+    this.deathTime = null; // Set when monster dies for fade animation
+  }
+
+  /**
+   * Scale monster stats to level
+   * @param {number} level - Target level
+   */
+  scaleToLevel(level) {
+    const multiplier = 1 + ((level - 1) * 0.15); // +15% per level
+    this.maxHealth = Math.floor(this.maxHealth * multiplier);
+    this.health = this.maxHealth;
+    this.damage = Math.floor(this.damage * multiplier);
+    this.xpReward = Math.floor(this.xpReward * multiplier);
+    this.goldReward = this.goldReward.map(val => Math.floor(val * multiplier));
+  }
+
+  /**
+   * Apply modifier to monster
+   * @param {string} modifierKey - Modifier type (e.g., 'ELITE', 'FAST')
+   */
+  applyModifier(modifierKey) {
+    const modConfig = MONSTER_MODIFIERS[modifierKey];
+    if (!modConfig) {
+      console.warn(`Unknown modifier: ${modifierKey}`);
+      return;
+    }
+
+    // Update name with suffix
+    this.name = `${modConfig.nameSuffix} ${this.name}`;
+
+    // Apply stat multipliers
+    if (modConfig.healthMultiplier) {
+      this.maxHealth = Math.floor(this.maxHealth * modConfig.healthMultiplier);
+      this.health = this.maxHealth;
+    }
+
+    if (modConfig.damageMultiplier) {
+      this.damage = Math.floor(this.damage * modConfig.damageMultiplier);
+    }
+
+    if (modConfig.speedMultiplier) {
+      this.moveSpeed *= modConfig.speedMultiplier;
+    }
+
+    if (modConfig.defenseMultiplier) {
+      this.defense = Math.floor(this.defense * modConfig.defenseMultiplier);
+    }
+
+    if (modConfig.attackSpeedMultiplier) {
+      this.attackSpeed *= modConfig.attackSpeedMultiplier;
+    }
+
+    // Apply reward multipliers
+    if (modConfig.xpMultiplier) {
+      this.xpReward = Math.floor(this.xpReward * modConfig.xpMultiplier);
+    }
+
+    if (modConfig.goldMultiplier) {
+      this.goldReward = this.goldReward.map(val => Math.floor(val * modConfig.goldMultiplier));
+    }
+
+    // Apply visual tint
+    if (modConfig.tint) {
+      this.tint = modConfig.tint;
+    }
+
+    // Store loot quality boost
+    if (modConfig.lootQuality) {
+      this.lootQualityBoost = modConfig.lootQuality;
+    }
+  }
+
+  /**
+   * Take damage
+   * @param {number} amount - Damage amount
+   * @returns {boolean} true if killed
+   */
+  takeDamage(amount) {
+    if (!this.alive) return false;
+
+    const actualDamage = Math.max(1, amount - this.defense);
+    this.health -= actualDamage;
+
+    // eslint-disable-next-line no-console
+    console.log(`🩸 ${this.name} took ${actualDamage} damage (${this.health}/${this.maxHealth} HP)`);
+
+    if (this.health <= 0) {
+      this.health = 0;
+      this.alive = false;
+      this.aiState = 'DEATH';
+      // eslint-disable-next-line no-console
+      console.log(`💀 ${this.name} died!`);
+      this.die();
+      return true;
+    }
+
+    // Check if should flee
+    if (this.canFlee && this.aiState !== 'FLEE') {
+      const healthPercent = this.health / this.maxHealth;
+      if (healthPercent <= this.fleeHealthPercent) {
+        this.aiState = 'FLEE';
+        // eslint-disable-next-line no-console
+        console.log(`🏃 ${this.name} is fleeing!`);
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Handle death
+   */
+  die() {
+    this.animationState = 'death';
+    this.deathTime = Date.now(); // Set death time for fade animation
+    // Loot drop logic will be handled by the game system
+  }
+
+  /**
+   * Update monster state
+   * @param {number} deltaTime - Time since last update (ms)
+   * @param {Object} gameState - Current game state
+   */
+  update(deltaTime, gameState) {
+    if (!this.alive) return;
+
+    // AI update will be handled by MonsterAI system
+    // This is just a placeholder for entity-level updates
+  }
+
+  /**
+   * Serialize to JSON
+   * @returns {Object} Serialized monster data
+   */
+  toJSON() {
+    return {
+      id: this.id,
+      type: this.type,
+      position: this.position,
+      health: this.health,
+      maxHealth: this.maxHealth,
+      level: this.level,
+      aiState: this.aiState,
+      alive: this.alive,
+      homePosition: this.homePosition
+    };
+  }
+
+  /**
+   * Create monster from JSON
+   * @param {Object} data - Serialized monster data
+   * @returns {Monster} Monster instance
+   */
+  static fromJSON(data) {
+    const monster = new Monster(data.type, data.position, {
+      id: data.id,
+      level: data.level
+    });
+    monster.health = data.health;
+    monster.aiState = data.aiState;
+    monster.alive = data.alive;
+    monster.homePosition = data.homePosition;
+    return monster;
+  }
+}
+
+export default Monster;

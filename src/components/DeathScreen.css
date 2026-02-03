@@ -1,0 +1,131 @@
+/* DeathScreen.css */
+
+.death-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-death-screen); /* 10500 - Above modals, blocks all interaction */
+  animation: fadeIn 1s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.death-screen-content {
+  text-align: center;
+  padding: 40px;
+  max-width: 600px;
+  animation: slideUp 0.5s ease-out 0.5s both;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.death-screen-skull {
+  font-size: 120px;
+  margin-bottom: 20px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.death-screen-title {
+  font-size: 64px;
+  font-weight: bold;
+  color: #ff4444;
+  margin: 0 0 20px 0;
+  text-shadow: 0 0 20px rgba(255, 68, 68, 0.5),
+               0 0 40px rgba(255, 68, 68, 0.3);
+  letter-spacing: 4px;
+}
+
+.death-screen-message {
+  font-size: 20px;
+  color: #ccc;
+  margin-bottom: 40px;
+}
+
+.death-screen-actions {
+  margin-bottom: 30px;
+}
+
+.respawn-button {
+  padding: 16px 48px;
+  font-size: 20px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+}
+
+.respawn-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.respawn-button:active {
+  transform: translateY(0);
+}
+
+.death-screen-hint {
+  font-size: 14px;
+  color: #888;
+  font-style: italic;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .death-screen-content {
+    padding: 20px;
+  }
+
+  .death-screen-skull {
+    font-size: 80px;
+  }
+
+  .death-screen-title {
+    font-size: 48px;
+  }
+
+  .death-screen-message {
+    font-size: 16px;
+  }
+
+  .respawn-button {
+    padding: 12px 32px;
+    font-size: 18px;
+  }
+}

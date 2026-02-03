@@ -1,0 +1,249 @@
+/**
+ * BottomNavigation.css - Bottom navigation styles using design tokens
+ */
+
+/* Navigation Container */
+.bottom-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  background: var(--nav-bg);
+  border-top: var(--border-width-thin) solid var(--nav-border);
+  z-index: var(--z-bottom-navigation);
+  backdrop-filter: blur(10px);
+}
+
+.bottom-navigation-inner {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  height: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 var(--space-2);
+}
+
+/* Navigation Tab */
+.nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: var(--transition-colors);
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-tab:hover {
+  color: var(--color-text-secondary);
+}
+
+.nav-tab:focus-visible {
+  outline: none;
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-md);
+}
+
+.nav-tab-active {
+  color: var(--color-accent);
+}
+
+.nav-tab-active:hover {
+  color: var(--color-accent-hover);
+}
+
+/* Tab Icon */
+.nav-tab-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tab Badge */
+.nav-tab-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--color-danger);
+  color: white;
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  line-height: 16px;
+  text-align: center;
+  border-radius: var(--radius-full);
+}
+
+/* Tab Label */
+.nav-tab-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Active Indicator */
+.nav-tab-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 0 0 var(--radius-full) var(--radius-full);
+}
+
+/* ==================== Overflow Menu ==================== */
+
+.overflow-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: var(--z-modal-backdrop);
+  animation: overflow-fade-in var(--transition-fast) ease-out;
+}
+
+@keyframes overflow-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.overflow-menu {
+  position: fixed;
+  bottom: calc(var(--nav-height) + var(--space-2));
+  right: var(--space-3);
+  width: 200px;
+  background: var(--color-surface-elevated);
+  border: var(--border-width-thin) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  z-index: var(--z-modal-content);
+  overflow: hidden;
+  animation: overflow-slide-up var(--transition-base) ease-out;
+}
+
+@keyframes overflow-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.overflow-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
+}
+
+.overflow-menu-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.overflow-menu-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-colors);
+}
+
+.overflow-menu-close:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.overflow-menu-items {
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.overflow-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: var(--transition-colors);
+}
+
+.overflow-item:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.overflow-item-active {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+
+.overflow-item-active:hover {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent-hover);
+}
+
+/* ==================== Desktop Adjustments ==================== */
+
+@media (min-width: 769px) {
+  .bottom-navigation {
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 600px;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-left: var(--border-width-thin) solid var(--nav-border);
+    border-right: var(--border-width-thin) solid var(--nav-border);
+  }
+
+  .nav-tab-label {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ==================== Safe Area Support ==================== */
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-navigation {
+    height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

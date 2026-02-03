@@ -240,7 +240,7 @@ export class WorkerPool {
     this.terminated = true;
 
     // Reject all pending and queued tasks
-    for (const [requestId, pending] of this.pending) {
+    for (const pending of this.pending.values()) {
       pending.reject(new Error('Worker pool terminated'));
     }
     this.pending.clear();

@@ -8,7 +8,6 @@
 import { Chunk, ChunkState } from './Chunk.js';
 import {
   chunkKey,
-  parseChunkKey,
   worldToChunk,
   chunkDistanceSq,
   getChunksInRadiusSorted,
@@ -170,7 +169,7 @@ export class ChunkManager {
     }
 
     // Queue chunks that should be unloaded
-    for (const [key, chunk] of this.chunks) {
+    for (const [key] of this.chunks) {
       if (!neededKeys.has(key)) {
         this.unloadQueue.add(key);
       }

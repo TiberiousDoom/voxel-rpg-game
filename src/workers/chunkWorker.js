@@ -10,7 +10,7 @@
 /* eslint-disable no-restricted-globals */
 
 import { generateTerrain } from './terrainGenerator.js';
-import { buildChunkMesh, buildLODMesh } from './meshBuilder.js';
+import { buildChunkMesh } from './meshBuilder.js';
 
 // Track active tasks for cancellation
 const activeTasks = new Map();

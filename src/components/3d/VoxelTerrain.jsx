@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 
 /**
@@ -72,9 +72,9 @@ const VoxelTerrain = ({ size = 50, voxelSize = 2 }) => {
     return { positions, colors, count: voxels.length };
   }, [size, voxelSize]);
 
-  // Set up instanced mesh transforms
-  useMemo(() => {
-    if (!meshRef.current) return;
+  // Set up instanced mesh transforms - useEffect runs after ref is assigned
+  useEffect(() => {
+    if (!meshRef.current || count === 0) return;
 
     const tempObject = new THREE.Object3D();
     const tempColor = new THREE.Color();
@@ -98,11 +98,13 @@ const VoxelTerrain = ({ size = 50, voxelSize = 2 }) => {
     }
   }, [positions, colors, count, voxelSize]);
 
+  if (count === 0) return null;
+
   return (
     <instancedMesh
       ref={meshRef}
       args={[null, null, count]}
-      receiveShadow // Receive shadows but don't cast them for performance
+      receiveShadow
     >
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial vertexColors />

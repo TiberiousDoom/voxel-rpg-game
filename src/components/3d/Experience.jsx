@@ -1,7 +1,7 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Physics, RigidBody } from '@react-three/rapier';
 import Player from './Player';
-import VoxelTerrain from './VoxelTerrain';
 import Enemy from './Enemy';
 import Projectile from './Projectile';
 import TouchControls from './TouchControls';
@@ -10,7 +10,9 @@ import TargetMarker from './TargetMarker';
 import DamageNumber from './DamageNumber';
 import XPOrb from './XPOrb';
 import ParticleEffect from './ParticleEffect';
+import ChunkRenderer from './ChunkRenderer';
 import useGameStore from '../../stores/useGameStore';
+import { useChunkSystem } from '../../hooks/useChunkSystem';
 
 /**
  * Experience component - Main 3D scene container
@@ -24,6 +26,33 @@ const Experience = () => {
   const removeDamageNumber = useGameStore((state) => state.removeDamageNumber);
   const removeXPOrb = useGameStore((state) => state.removeXPOrb);
   const removeParticleEffect = useGameStore((state) => state.removeParticleEffect);
+  const playerPosition = useGameStore((state) => state.position);
+
+  // Initialize chunk system
+  const {
+    isReady,
+    chunkManager,
+    workerPool,
+    updatePlayerPosition,
+    update: updateChunks,
+  } = useChunkSystem({
+    seed: 12345,
+    viewDistance: 6,
+  });
+
+  // Update chunk system based on player position
+  useEffect(() => {
+    if (isReady && playerPosition) {
+      updatePlayerPosition(playerPosition[0], playerPosition[2]);
+    }
+  }, [isReady, playerPosition, updatePlayerPosition]);
+
+  // Update chunk system every frame
+  useFrame((state, delta) => {
+    if (isReady) {
+      updateChunks(delta);
+    }
+  });
 
   return (
     <>
@@ -45,19 +74,24 @@ const Experience = () => {
         intensity={0.8}
       />
 
-      {/* Fog for depth */}
-      <fog attach="fog" args={['#87ceeb', 50, 150]} />
+      {/* Fog for depth - extended for larger world */}
+      <fog attach="fog" args={['#87ceeb', 100, 300]} />
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
         <Suspense fallback={null}>
-          {/* Terrain - visual only */}
-          <VoxelTerrain size={40} voxelSize={2} />
+          {/* Chunk-based terrain */}
+          {isReady && chunkManager && workerPool && (
+            <ChunkRenderer
+              chunkManager={chunkManager}
+              workerPool={workerPool}
+            />
+          )}
 
-          {/* Ground plane - provides collision */}
-          <RigidBody type="fixed" colliders="cuboid" position={[0, 0, 0]}>
+          {/* Ground plane - provides collision (temporary until chunk collision) */}
+          <RigidBody type="fixed" colliders="cuboid" position={[0, -1, 0]}>
             <mesh position={[0, 0, 0]}>
-              <boxGeometry args={[200, 1, 200]} />
+              <boxGeometry args={[500, 2, 500]} />
               <meshStandardMaterial color="#228b22" transparent opacity={0} />
             </mesh>
           </RigidBody>

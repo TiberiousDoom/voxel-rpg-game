@@ -1,0 +1,150 @@
+/**
+ * BuildingCategoryFilter.css - Category filter tabs styling
+ */
+
+.building-category-filter {
+  padding: 10px 12px;
+  background: rgba(59, 130, 246, 0.03);
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling for category tabs */
+.category-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.category-tabs::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 2px;
+}
+
+.category-tabs::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.category-tabs::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Individual category tab */
+.category-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  background: white;
+  color: #666;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  touch-action: manipulation;
+}
+
+.category-tab:hover:not(.active) {
+  background: #f8f9fa;
+  border-color: #999;
+}
+
+.category-tab.active {
+  background: var(--category-color);
+  color: white;
+  border-color: var(--category-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.category-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.category-label {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.category-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.category-tab:not(.active) .category-count {
+  background: rgba(0, 0, 0, 0.08);
+  color: #666;
+}
+
+.category-tab.active .category-count {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+/* Responsive - Mobile Optimization */
+@media (max-width: 768px) {
+  .building-category-filter {
+    padding: 12px;
+  }
+
+  .category-tabs {
+    gap: 8px;
+    padding: 6px 0;
+  }
+
+  .category-tab {
+    padding: 8px 14px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  .category-icon {
+    font-size: 16px;
+  }
+
+  .category-label {
+    font-size: 11px;
+  }
+
+  .category-count {
+    min-width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .category-tabs {
+    scroll-behavior: auto;
+  }
+
+  .category-tab {
+    transition: none;
+  }
+
+  .category-tab:hover:not(.active) {
+    transform: none;
+  }
+}

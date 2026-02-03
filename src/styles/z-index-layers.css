@@ -1,0 +1,139 @@
+/**
+ * z-index-layers.css
+ * Centralized z-index management for consistent layering across the application
+ *
+ * Layer Structure:
+ * - Internal (1-99): Component-internal stacking
+ * - UI Controls (100-999): Basic UI elements
+ * - Panels (1000-1999): Sidebars and panels
+ * - High Priority (2000-2999): Important UI
+ * - Notifications (3000-3999): Achievement/migration alerts
+ * - Modals (10000-10999): Modal dialogs and overlays
+ * - Critical (10500-10599): Death screen, raid warnings
+ * - Tooltips (11000-11999): Always visible tooltips
+ * - Navigation (11500-11599): Always accessible navigation
+ * - Debug (12000+): Development tools
+ * - Toast (15000+): Highest priority notifications
+ */
+
+:root {
+  /* ==================== INTERNAL LAYERS (1-99) ==================== */
+  --z-buildingsprite-base: 1;
+  --z-buildingsprite-mid: 2;
+  --z-buildingsprite-high: 3;
+  --z-buildingsprite-roof: 4;
+  --z-buildingsprite-flag: 5;
+  --z-internal-high: 10;
+  --z-thought-bubble: 10;
+
+  /* ==================== UI CONTROLS (100-999) ==================== */
+  --z-ui-controls: 100;
+  --z-camera-controls: 100;
+  --z-skill-bar: 100;
+  --z-compact-header: 100;
+  --z-quest-tracker: 100;
+  --z-horizontal-tab-bar: 100;
+  --z-construction-effect: 100;
+
+  /* ==================== PANELS & SIDEBARS (1000-1999) ==================== */
+  --z-panels: 1000;
+  --z-minimap: 1000;
+  --z-character-sheet: 1000;
+  --z-quest-journal: 1000;
+  --z-collapsible-panel: 1000;
+  --z-bottom-action-bar: 1000;
+  --z-building-card: 1000;
+  --z-mode-selector: 1000;
+  --z-resource-tooltip: 1000;
+  --z-skill-tree-container: 1000;
+
+  /* ==================== HIGH PRIORITY UI (2000-2999) ==================== */
+  --z-settlement-ui: 2000;
+  --z-modal-wrapper: 2000;
+
+  /* ==================== NOTIFICATIONS (3000-3999) ==================== */
+  --z-migration-notification: 3000;
+  --z-achievement: 3500;
+
+  /* ==================== MODALS & OVERLAYS (10000-10999) ==================== */
+  /* Base modal layer */
+  --z-modal-backdrop: 10000;
+  --z-modal-content: 10001;
+
+  /* Modal stacking for multiple simultaneous modals */
+  --z-modal-stack-1: 10100;
+  --z-modal-stack-2: 10200;
+  --z-modal-stack-3: 10300;
+
+  /* Specific modals that need consistent placement */
+  --z-keyboard-shortcuts: 10000;
+  --z-npc-panel: 10000;
+  --z-game-modal: 10000;
+
+  /* ==================== CRITICAL GAME OVERLAYS (10500-10599) ==================== */
+  /* These should be above standard modals to prevent interaction */
+  --z-death-screen: 10500;
+  --z-raid-warning: 10550;
+  --z-keyboard-shortcuts-overlay: 10600;
+
+  /* ==================== TOOLTIPS (11000-11999) ==================== */
+  /* Tooltips must always be visible, even over modals */
+  --z-tooltip: 11000;
+  --z-stat-tooltip: 11000;
+  --z-resource-tooltip-container: 11100;
+  --z-skill-tooltip: 11000;
+
+  /* ==================== NAVIGATION (11500-11599) ==================== */
+  /* Navigation must always be accessible */
+  --z-bottom-navigation: 11500;
+  --z-mobile-menu-backdrop: 11498;
+  --z-mobile-menu-content: 11499;
+  --z-mobile-hamburger: 11550;
+
+  /* ==================== DEBUG TOOLS (12000+) ==================== */
+  /* Debug tools should always be on top for development */
+  --z-performance-monitor: 12000;
+  --z-debug-overlay: 12100;
+
+  /* ==================== TOAST NOTIFICATIONS (15000+) ==================== */
+  /* Highest priority - always visible */
+  --z-toast: 15000;
+  --z-notification-system: 9999;
+  --z-keyboard-hints: 9999;
+}
+
+/**
+ * Usage Examples:
+ *
+ * In your CSS files, use:
+ *   .my-tooltip {
+ *     z-index: var(--z-tooltip);
+ *   }
+ *
+ * Benefits:
+ * - Centralized management
+ * - Easy to adjust entire layers
+ * - Self-documenting
+ * - Prevents conflicts
+ * - Easy to add new layers
+ */
+
+/**
+ * Z-Index Layer Guidelines:
+ *
+ * 1. Always use CSS variables, never hardcode z-index values
+ * 2. If you need a new layer, add it to this file
+ * 3. Leave gaps between layers (e.g., 100, 1000, 10000) for future additions
+ * 4. Document the purpose of each layer
+ * 5. Use descriptive variable names
+ * 6. Group related z-indices together
+ * 7. Keep layer ranges consistent across the application
+ *
+ * Layer Ranges:
+ * - 1-99: Internal component stacking
+ * - 100-999: UI controls that don't overlap
+ * - 1000-9999: Panels, tooltips, and floating UI
+ * - 10000-10999: Modal dialogs
+ * - 11000+: Always-visible elements (tooltips, navigation, debug)
+ * - 15000+: Critical notifications
+ */

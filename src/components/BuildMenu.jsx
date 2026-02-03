@@ -1,0 +1,365 @@
+/**
+ * BuildMenu.jsx - Building selection and control menu
+ *
+ * Allows:
+ * - Select building type to place
+ * - Spawn NPCs
+ * - Advance tier
+ *
+ * Features:
+ * - Dynamic building loading from BuildingConfig
+ * - Tier-based building availability
+ * - Buildings grouped by tier
+ * - Improved UI with collapsible sections and building cards
+ */
+
+import React, { useMemo, useState } from 'react';
+import CollapsibleSection from './CollapsibleSection';
+import BuildingCard from './BuildingCard';
+import QuickActionBar from './QuickActionBar';
+import CurrentSelectionBanner from './CurrentSelectionBanner';
+import BuildingCategoryFilter from './BuildingCategoryFilter';
+import GridDisplayToggle from './GridDisplayToggle';
+import BuildingSearch from './BuildingSearch';
+import TierProgressIndicator from './TierProgressIndicator';
+import { ARIA_LABELS } from '../accessibility/aria-labels';
+import './BuildMenu.css';
+
+// Building icons map (constant)
+const BUILDING_ICONS = {
+  CAMPFIRE: '🔥',
+  FARM: '🌾',
+  HOUSE: '🏠',
+  WAREHOUSE: '🏭',
+  TOWN_CENTER: '🏛️',
+  MARKET: '🏪',
+  WATCHTOWER: '🗼',
+  CASTLE: '🏰'
+};
+
+// Tier hierarchy for availability checking (constant)
+const TIER_HIERARCHY = ['SURVIVAL', 'PERMANENT', 'TOWN', 'CASTLE'];
+
+// Tier icons and metadata
+const TIER_METADATA = {
+  SURVIVAL: { icon: '⚡', description: 'Early settlement' },
+  PERMANENT: { icon: '🏠', description: 'Established settlement' },
+  TOWN: { icon: '🏛️', description: 'Growing town' },
+  CASTLE: { icon: '🏰', description: 'Mighty civilization' }
+};
+
+// Building to category mapping
+const BUILDING_CATEGORY_MAP = {
+  CAMPFIRE: 'UTILITY',
+  FARM: 'PRODUCTION',
+  HOUSE: 'HOUSING',
+  WAREHOUSE: 'STORAGE',
+  TOWN_CENTER: 'ADMINISTRATION',
+  MARKET: 'PRODUCTION',
+  WATCHTOWER: 'MILITARY',
+  CASTLE: 'MILITARY'
+};
+
+/**
+ * Build menu component - Improved layout with collapsible sections
+ */
+function BuildMenu({
+  selectedBuildingType = null,
+  onSelectBuilding = () => {},
+  onSpawnNPC = () => {},
+  onAdvanceTier = () => {},
+  currentTier = 'SURVIVAL',
+  buildingConfig = null,
+  placedBuildingCounts = {} // Count of placed buildings by type
+}) {
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [displayMode, setDisplayMode] = useState('compact');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showTierProgress, setShowTierProgress] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Get available buildings based on current tier
+  const availableBuildings = useMemo(() => {
+    if (!buildingConfig) {
+      // Fallback to hardcoded buildings if no buildingConfig
+      return [
+        { type: 'FARM', name: 'Farm', description: 'Produces food', tier: 'SURVIVAL', icon: '🌾', unlocked: true },
+        { type: 'HOUSE', name: 'House', description: 'Houses NPCs', tier: 'PERMANENT', icon: '🏠', unlocked: false }
+      ];
+    }
+
+    const currentTierIndex = TIER_HIERARCHY.indexOf(currentTier);
+    const buildings = [];
+
+    // Get all building types from config
+    const buildingTypes = [
+      'CAMPFIRE', 'FARM', 'HOUSE', 'WAREHOUSE',
+      'TOWN_CENTER', 'MARKET', 'WATCHTOWER', 'CASTLE'
+    ];
+
+    for (const type of buildingTypes) {
+      try {
+        const config = buildingConfig.getConfig(type);
+        if (config) {
+          const buildingTierIndex = TIER_HIERARCHY.indexOf(config.tier);
+          const unlocked = buildingTierIndex <= currentTierIndex;
+
+          buildings.push({
+            type: config.type,
+            name: config.displayName || type,
+            description: config.description || '',
+            tier: config.tier,
+            icon: BUILDING_ICONS[type] || '🏗️',
+            unlocked,
+            cost: config.cost || {}
+          });
+        }
+      } catch (err) {
+        // Skip buildings that don't exist in config
+        console.warn(`Building ${type} not found in config`);
+      }
+    }
+
+    return buildings;
+  }, [buildingConfig, currentTier]);
+
+  // Group buildings by category
+  const buildingsByCategory = useMemo(() => {
+    const grouped = {
+      ALL: [],
+      PRODUCTION: [],
+      HOUSING: [],
+      MILITARY: [],
+      ADMINISTRATION: [],
+      STORAGE: [],
+      UTILITY: []
+    };
+
+    availableBuildings.forEach(building => {
+      grouped.ALL.push(building);
+      const category = BUILDING_CATEGORY_MAP[building.type] || 'UTILITY';
+      if (grouped[category]) {
+        grouped[category].push(building);
+      }
+    });
+
+    return grouped;
+  }, [availableBuildings]);
+
+  // Group buildings by tier with category and search filtering
+  const buildingsByTier = useMemo(() => {
+    const grouped = {
+      SURVIVAL: [],
+      PERMANENT: [],
+      TOWN: [],
+      CASTLE: []
+    };
+
+    // Get the buildings to display (filtered by category)
+    let buildingsToDisplay = selectedCategory === 'ALL'
+      ? availableBuildings
+      : buildingsByCategory[selectedCategory] || [];
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      buildingsToDisplay = buildingsToDisplay.filter(building =>
+        building.name.toLowerCase().includes(lowerSearchTerm) ||
+        building.description.toLowerCase().includes(lowerSearchTerm) ||
+        building.type.toLowerCase().includes(lowerSearchTerm)
+      );
+    }
+
+    buildingsToDisplay.forEach(building => {
+      if (grouped[building.tier]) {
+        grouped[building.tier].push(building);
+      }
+    });
+
+    return grouped;
+  }, [availableBuildings, selectedCategory, buildingsByCategory, searchTerm]);
+
+  // Count matches for search results
+  const searchMatchCount = useMemo(() => {
+    if (!searchTerm.trim()) return 0;
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return availableBuildings.filter(building =>
+      building.name.toLowerCase().includes(lowerSearchTerm) ||
+      building.description.toLowerCase().includes(lowerSearchTerm) ||
+      building.type.toLowerCase().includes(lowerSearchTerm)
+    ).length;
+  }, [availableBuildings, searchTerm]);
+
+  // Get currently selected building name and icon
+  const getSelectedBuildingInfo = () => {
+    const building = availableBuildings.find(b => b.type === selectedBuildingType);
+    if (building) {
+      return {
+        name: building.name,
+        icon: building.icon
+      };
+    }
+    return { name: selectedBuildingType, icon: '🏗️' };
+  };
+
+  const selectedInfo = getSelectedBuildingInfo();
+
+  return (
+    <div
+      className={`build-menu ${isCollapsed ? 'build-menu-collapsed' : ''}`}
+      role="region"
+      aria-label={ARIA_LABELS.BUILD_MENU.TITLE}
+    >
+      {/* Collapse/Expand Header Button */}
+      <div className="build-menu-collapse-header">
+        <button
+          className="build-menu-collapse-toggle"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-expanded={!isCollapsed}
+          title={isCollapsed ? 'Expand Build Menu' : 'Minimize Build Menu'}
+        >
+          <span className="collapse-icon">
+            {isCollapsed ? '▲' : '▼'}
+          </span>
+          <span className="collapse-text">
+            {isCollapsed ? 'Expand Menu' : 'Minimize Menu'}
+          </span>
+        </button>
+      </div>
+
+      {!isCollapsed && (
+        <>
+          {/* Quick Action Bar */}
+          <QuickActionBar
+            onSpawnNPC={onSpawnNPC}
+            onAdvanceTier={onAdvanceTier}
+            onShowInfo={() => setShowInstructions(!showInstructions)}
+            currentTier={currentTier}
+          />
+
+          {/* Current Selection Banner */}
+          <CurrentSelectionBanner
+            selectedBuildingType={selectedBuildingType}
+            buildingName={selectedInfo.name}
+            buildingIcon={selectedInfo.icon}
+            onCancel={() => onSelectBuilding(null)}
+          />
+
+          {/* Building Search */}
+          <BuildingSearch
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            matchCount={searchMatchCount}
+            totalCount={availableBuildings.length}
+          />
+
+          {/* Building Category Filter */}
+          <BuildingCategoryFilter
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            buildingsByCategory={buildingsByCategory}
+          />
+
+          {/* Grid Display Toggle */}
+          <GridDisplayToggle
+            displayMode={displayMode}
+            onDisplayModeChange={setDisplayMode}
+          />
+
+          {/* Building Selection by Tier */}
+          <div
+            className="buildings-section"
+            role="group"
+            aria-label="Buildings organized by tier"
+          >
+        {TIER_HIERARCHY.map(tier => {
+          const buildings = buildingsByTier[tier];
+          if (!buildings || buildings.length === 0) return null;
+
+          const tierUnlocked = TIER_HIERARCHY.indexOf(tier) <= TIER_HIERARCHY.indexOf(currentTier);
+          const tierMeta = TIER_METADATA[tier];
+          const tierIcon = tierMeta?.icon || '🏗️';
+          const tierLabel = `${tier} tier buildings - ${tierMeta?.description || ''}`;
+
+          return (
+            <CollapsibleSection
+              key={tier}
+              title={tier}
+              icon={tierIcon}
+              badge={buildings.length}
+              defaultExpanded={tierUnlocked && TIER_HIERARCHY.indexOf(tier) === TIER_HIERARCHY.indexOf(currentTier)}
+              className={tierUnlocked ? 'tier-unlocked' : 'tier-locked'}
+              aria-label={tierLabel}
+            >
+              <div
+                className={`buildings-grid ${displayMode}`}
+                role="list"
+                aria-label={`${tier} tier buildings`}
+              >
+                {buildings.map((building) => (
+                  <BuildingCard
+                    key={building.type}
+                    building={building}
+                    isSelected={selectedBuildingType === building.type}
+                    isLocked={!building.unlocked}
+                    placedCount={placedBuildingCounts?.[building.type] || 0}
+                    onSelect={onSelectBuilding}
+                    buildingConfig={buildingConfig}
+                    displayMode={displayMode}
+                  />
+                ))}
+              </div>
+            </CollapsibleSection>
+          );
+        })}
+          </div>
+
+          {/* Tier Progress Section (Collapsible) */}
+          {showTierProgress && (
+            <TierProgressIndicator
+              currentTier={currentTier}
+              currentResources={{}}
+              tierRequirements={{}}
+              gameManager={null}
+            />
+          )}
+
+          {/* Toggle Tier Progress Button */}
+          <button
+            className="tier-progress-toggle"
+            onClick={() => setShowTierProgress(!showTierProgress)}
+            title={showTierProgress ? 'Hide tier progress' : 'Show tier progress'}
+            aria-label={showTierProgress ? 'Hide tier progress details' : 'Show tier progress details'}
+            aria-expanded={showTierProgress}
+          >
+            <span className="toggle-icon" aria-hidden="true">📈</span>
+            <span className="toggle-text">
+              {showTierProgress ? 'Hide' : 'Show'} Tier Progress
+            </span>
+          </button>
+
+          {/* Instructions Section (Collapsible) */}
+          {showInstructions && (
+            <div
+              className="instructions-section"
+              role="region"
+              aria-label="Gameplay instructions"
+            >
+              <h4>How to Play:</h4>
+              <ol>
+                <li>Select a building from the menu above</li>
+                <li>Click on the game world to place it</li>
+                <li>Use the Quick Actions to spawn NPCs and advance tiers</li>
+                <li>Gather resources to progress through civilization tiers</li>
+                <li>Press <kbd>?</kbd> to view keyboard shortcuts</li>
+              </ol>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+export default BuildMenu;

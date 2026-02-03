@@ -1,0 +1,175 @@
+[
+  {
+    "id": "quest_starter_001",
+    "title": "First Steps",
+    "description": "Welcome to your settlement! Get familiar with the basics by exploring your surroundings and defeating a few slimes.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 1,
+    "objectives": [
+      {
+        "id": "obj_001",
+        "description": "Kill 5 Slimes",
+        "type": "KILL",
+        "targetType": "SLIME",
+        "targetCount": 5,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 50,
+      "gold": 25,
+      "items": [],
+      "unlockQuests": ["quest_starter_002"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_starter_002",
+    "title": "Slime Extermination",
+    "description": "The settlement is being overrun by slimes. Clear them out and make the area safer!",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 1,
+    "prerequisiteQuests": ["quest_starter_001"],
+    "objectives": [
+      {
+        "id": "obj_002_1",
+        "description": "Kill 10 Slimes",
+        "type": "KILL",
+        "targetType": "SLIME",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 100,
+      "gold": 50,
+      "items": [],
+      "unlockQuests": ["quest_goblin_001"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_goblin_001",
+    "title": "Goblin Problem",
+    "description": "Goblins have been spotted near the settlement. Deal with them before they become a bigger threat.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 2,
+    "prerequisiteQuests": ["quest_starter_002"],
+    "objectives": [
+      {
+        "id": "obj_003_1",
+        "description": "Kill 8 Goblins",
+        "type": "KILL",
+        "targetType": "GOBLIN",
+        "targetCount": 8,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 200,
+      "gold": 100,
+      "items": [],
+      "unlockQuests": ["quest_wolf_001"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_wolf_001",
+    "title": "Wolf Pack",
+    "description": "A pack of wolves has been attacking travelers. Hunt them down to protect the roads.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 3,
+    "prerequisiteQuests": ["quest_goblin_001"],
+    "objectives": [
+      {
+        "id": "obj_004_1",
+        "description": "Kill 6 Wolves",
+        "type": "KILL",
+        "targetType": "WOLF",
+        "targetCount": 6,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 300,
+      "gold": 150,
+      "items": [],
+      "unlockQuests": ["quest_skeleton_001"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_skeleton_001",
+    "title": "Undead Threat",
+    "description": "Skeletons have risen from the ancient ruins. Put them back to rest.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 4,
+    "prerequisiteQuests": ["quest_wolf_001"],
+    "objectives": [
+      {
+        "id": "obj_005_1",
+        "description": "Kill 10 Skeletons",
+        "type": "KILL",
+        "targetType": "SKELETON",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 500,
+      "gold": 250,
+      "items": [],
+      "unlockQuests": ["quest_orc_001"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_orc_001",
+    "title": "Orc Invasion",
+    "description": "Orcs have set up a warcamp nearby. Defeat their warriors to drive them away.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 6,
+    "prerequisiteQuests": ["quest_skeleton_001"],
+    "objectives": [
+      {
+        "id": "obj_006_1",
+        "description": "Kill 5 Orcs",
+        "type": "KILL",
+        "targetType": "ORC",
+        "targetCount": 5,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 800,
+      "gold": 400,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  }
+]

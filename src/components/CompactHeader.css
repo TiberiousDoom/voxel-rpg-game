@@ -1,0 +1,181 @@
+/* CompactHeader.css - Minimal header styling */
+
+.compact-header {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  height: 50px;
+  z-index: 100;
+}
+
+.compact-header-left,
+.compact-header-center,
+.compact-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.compact-header-left {
+  flex: 0 0 auto;
+}
+
+.compact-header-center {
+  flex: 1;
+  justify-content: center;
+}
+
+.compact-header-right {
+  flex: 0 0 auto;
+}
+
+.game-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.5px;
+}
+
+.tier-indicator {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: rgba(51, 65, 85, 0.6);
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-stats {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.stat {
+  font-size: 12px;
+  color: #cbd5e1;
+  font-weight: 500;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.header-btn {
+  background: rgba(51, 65, 85, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  min-width: 36px;
+  height: 32px;
+}
+
+.header-btn:hover:not(:disabled) {
+  background: rgba(51, 65, 85, 0.8);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #fff;
+}
+
+.header-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.header-btn.pause {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.header-btn.pause:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fecaca;
+}
+
+.header-btn.play {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.header-btn.play:hover {
+  background: rgba(34, 197, 94, 0.3);
+  color: #bbf7d0;
+}
+
+.header-btn.debug-btn.active {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+.slot-select {
+  background: rgba(51, 65, 85, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  height: 32px;
+  min-width: 60px;
+}
+
+.slot-select:hover {
+  background: rgba(51, 65, 85, 0.8);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.slot-select:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .compact-header {
+    padding: 6px 12px;
+    height: 44px;
+    gap: 8px;
+  }
+
+  .game-title {
+    font-size: 14px;
+  }
+
+  .compact-header-center {
+    display: none;
+  }
+
+  .tier-indicator {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .header-btn {
+    padding: 5px 8px;
+    min-width: 32px;
+    height: 28px;
+  }
+
+  .slot-select {
+    min-width: 50px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .compact-header-right {
+    gap: 6px;
+  }
+}

@@ -1,0 +1,644 @@
+/**
+ * usePropRenderer.js - Prop Rendering Hook
+ *
+ * Renders environmental props (trees, rocks, etc.) on canvas with:
+ * - Sprite-based rendering with fallback to colored shapes
+ * - Sprite batching (group by type for performance)
+ * - LOD (Level of Detail) system
+ * - Z-sorting for correct depth
+ * - Viewport culling
+ *
+ * Part of Phase 3: Environmental Props & Resources
+ */
+
+import { useCallback, useMemo, useRef, useEffect } from 'react';
+import SpriteLoader from './SpriteLoader.js';
+import { ENVIRONMENT_SPRITE_MANIFEST } from '../assets/sprite-manifest.js';
+
+/**
+ * LOD (Level of Detail) thresholds
+ */
+const LOD_LEVELS = {
+  FULL: 0,      // Full detail: 0-20 tiles away
+  SIMPLE: 1,    // Simplified: 20-40 tiles away
+  HIDDEN: 2     // Hidden: > 40 tiles away
+};
+
+const LOD_DISTANCES = {
+  FULL_MAX: 20,
+  SIMPLE_MAX: 40
+};
+
+/**
+ * Placeholder colors for props (until sprites are loaded)
+ * These provide visual feedback during development
+ */
+const PROP_COLORS = {
+  // Trees
+  tree: '#228B22',           // Forest green
+  tree_oak: '#8B4513',       // Saddle brown
+  tree_pine: '#2F4F2F',      // Dark slate gray
+  tree_birch: '#F5DEB3',     // Wheat
+  tree_dead: '#696969',      // Dim gray
+  tree_swamp: '#556B2F',     // Dark olive green
+
+  // Rocks
+  rock: '#808080',           // Gray
+  rock_small: '#A9A9A9',     // Dark gray
+  rock_large: '#696969',     // Dim gray
+  rock_moss: '#6B8E23',      // Olive drab
+  rock_ice: '#B0E0E6',       // Powder blue
+  rock_desert: '#D2B48C',    // Tan
+
+  // Ore veins
+  ore_vein: '#C0C0C0',       // Silver
+  ore_iron: '#B87333',       // Copper
+  ore_gold: '#FFD700',       // Gold
+  ore_crystal: '#9370DB',    // Medium purple
+
+  // Vegetation
+  bush: '#90EE90',           // Light green
+  bush_berry: '#DC143C',     // Crimson
+  bush_dead: '#8B7355',      // Burlywood
+  herb: '#32CD32',           // Lime green
+  herb_medicinal: '#00FA9A', // Medium spring green
+  herb_magical: '#9370DB',   // Medium purple
+  mushroom: '#FF6347',       // Tomato
+  mushroom_red: '#FF0000',   // Red
+  mushroom_brown: '#8B4513', // Saddle brown
+  mushroom_poison: '#9400D3',// Dark violet
+  mushroom_glowing: '#00FFFF',// Cyan
+  flower: '#FF69B4',         // Hot pink
+  flower_wildflower: '#FFB6C1',// Light pink
+  flower_daisy: '#FFFFFF',   // White
+
+  // Desert
+  cactus: '#7CFC00',         // Lawn green
+  cactus_saguaro: '#228B22', // Forest green
+  cactus_barrel: '#32CD32',  // Lime green
+
+  // Water plants
+  reed: '#8FBC8F',           // Dark sea green
+  reed_cattail: '#6B8E23',   // Olive drab
+  lily: '#FFB6C1',           // Light pink
+  lily_water: '#FF69B4',     // Hot pink
+
+  // Decorative
+  grass_clump: '#7CFC00',    // Lawn green
+  vine: '#228B22',           // Forest green
+  vine_hanging: '#556B2F',   // Dark olive green
+  bones: '#F5F5DC',          // Beige
+  bones_skeleton: '#FFFAF0', // Floral white
+  log_fallen: '#8B4513',     // Saddle brown
+  ice_crystal: '#87CEEB'     // Sky blue
+};
+
+/**
+ * Get color for a prop variant
+ * @private
+ */
+const getPropColor = (variant) => {
+  return PROP_COLORS[variant] || PROP_COLORS.rock || '#888888';
+};
+
+/**
+ * Calculate LOD level based on distance from camera
+ * @private
+ */
+const calculateLOD = (propX, propZ, cameraX, cameraZ, tileSize) => {
+  const dx = propX * tileSize - cameraX;
+  const dz = propZ * tileSize - cameraZ;
+  const distanceTiles = Math.sqrt(dx * dx + dz * dz) / tileSize;
+
+  if (distanceTiles <= LOD_DISTANCES.FULL_MAX) {
+    return LOD_LEVELS.FULL;
+  } else if (distanceTiles <= LOD_DISTANCES.SIMPLE_MAX) {
+    return LOD_LEVELS.SIMPLE;
+  } else {
+    return LOD_LEVELS.HIDDEN;
+  }
+};
+
+/**
+ * Prop rendering hook
+ *
+ * @param {object} options - Rendering options
+ * @param {number} options.tileSize - Size of each tile in pixels
+ * @param {boolean} options.enableLOD - Enable LOD system (default: true)
+ * @param {boolean} options.enableBatching - Enable sprite batching (default: false, breaks depth order)
+ * @param {boolean} options.showPropHealth - Show health bars (default: false)
+ * @param {boolean} options.useSprites - Use sprite images (default: true)
+ * @returns {object} Rendering functions
+ */
+export const usePropRenderer = (options = {}) => {
+  const {
+    tileSize = 40,
+    enableLOD = true,
+    enableBatching = false, // Disabled by default - batching breaks depth sorting
+    showPropHealth = false,
+    useSprites = true
+  } = options;
+
+  // Sprite loading state
+  const spriteLoaderRef = useRef(null);
+  const spritesRef = useRef({});
+  const spritesLoadedRef = useRef(false);
+
+  // Initialize sprite loader and load sprites
+  useEffect(() => {
+    if (!useSprites) return;
+
+    if (!spriteLoaderRef.current) {
+      spriteLoaderRef.current = new SpriteLoader();
+    }
+
+    const loadSprites = async () => {
+      const loader = spriteLoaderRef.current;
+      const loadPromises = Object.entries(ENVIRONMENT_SPRITE_MANIFEST).map(async ([propType, data]) => {
+        try {
+          const key = `env_${propType}`;
+          const sprite = await loader.loadSprite(key, data.sprite);
+          spritesRef.current[propType] = {
+            image: sprite,
+            size: data.size
+          };
+          return { propType, success: true };
+        } catch (error) {
+          // Log failed sprites for debugging
+          // eslint-disable-next-line no-console
+          console.warn(`[PropRenderer] Failed to load sprite for ${propType}:`, data.sprite, error.message);
+          return { propType, success: false };
+        }
+      });
+
+      const results = await Promise.all(loadPromises);
+      const successCount = results.filter(r => r.success).length;
+      const failedCount = results.filter(r => !r.success).length;
+
+      if (successCount > 0) {
+        spritesLoadedRef.current = true;
+        // eslint-disable-next-line no-console
+        console.log(`[PropRenderer] ${successCount}/${results.length} environment sprites loaded (${failedCount} failed)`);
+      } else {
+        // eslint-disable-next-line no-console
+        console.error('[PropRenderer] No environment sprites loaded - all failed!');
+      }
+    };
+
+    loadSprites();
+  }, [useSprites]);
+
+  /**
+   * Render props within viewport
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Array<Prop>} props - Props to render
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   * @param {object} camera - Camera position {x, z}
+   * @param {object} viewportBounds - Visible area {left, right, top, bottom}
+   * @returns {object} Rendering statistics
+   */
+  const renderProps = useCallback((ctx, props, worldToCanvas, camera, viewportBounds) => {
+    if (!ctx || !props || props.length === 0 || !worldToCanvas) {
+      return { propsRendered: 0, propsCulled: 0 };
+    }
+
+    let propsRendered = 0;
+    let propsCulled = 0;
+
+    ctx.save();
+
+    // Step 1: Filter and sort props
+    const visibleProps = [];
+
+    for (const prop of props) {
+      // Viewport culling
+      if (prop.x < viewportBounds.left || prop.x > viewportBounds.right ||
+          prop.z < viewportBounds.top || prop.z > viewportBounds.bottom) {
+        propsCulled++;
+        continue;
+      }
+
+      // LOD culling (if enabled)
+      if (enableLOD) {
+        const lod = calculateLOD(prop.x, prop.z, camera.x, camera.z, tileSize);
+        if (lod === LOD_LEVELS.HIDDEN) {
+          propsCulled++;
+          continue;
+        }
+        prop._lod = lod; // Cache LOD level
+      } else {
+        prop._lod = LOD_LEVELS.FULL;
+      }
+
+      // Calculate canvas position and depth (for Z-sorting)
+      const canvasPos = worldToCanvas(prop.x, prop.z);
+      prop._canvasX = canvasPos.x;
+      prop._canvasY = canvasPos.y;
+      prop._depth = prop.z; // Z-coordinate for depth sorting
+
+      visibleProps.push(prop);
+    }
+
+    // Step 2: Z-sort props (back to front for correct depth)
+    visibleProps.sort((a, b) => a._depth - b._depth);
+
+    // Step 3: Batch props by variant (if enabled)
+    if (enableBatching) {
+      const batches = new Map();
+
+      for (const prop of visibleProps) {
+        // Use ::: as separator to avoid conflicts with underscores in variant names
+        const batchKey = `${prop.variant}:::${prop._lod}`;
+        if (!batches.has(batchKey)) {
+          batches.set(batchKey, []);
+        }
+        batches.get(batchKey).push(prop);
+      }
+
+      // Render batches (maintains Z-order within each variant)
+      for (const [batchKey, batchProps] of batches.entries()) {
+        // Split on ::: to correctly recover variant names with underscores
+        const [variant, lod] = batchKey.split(':::');
+        const lodLevel = parseInt(lod);
+
+        for (const prop of batchProps) {
+          renderProp(ctx, prop, variant, lodLevel, showPropHealth);
+          propsRendered++;
+        }
+      }
+    } else {
+      // Render props individually (no batching)
+      for (const prop of visibleProps) {
+        renderProp(ctx, prop, prop.variant, prop._lod, showPropHealth);
+        propsRendered++;
+      }
+    }
+
+    ctx.restore();
+
+    return {
+      propsRendered,
+      propsCulled,
+      totalProps: props.length
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tileSize, enableLOD, enableBatching, showPropHealth]);
+
+  // Debug: track unknown variants (only log once per variant)
+  const unknownVariantsRef = useRef(new Set());
+
+  /**
+   * Render a single prop
+   * @private
+   */
+  const renderProp = (ctx, prop, variant, lod, showHealth) => {
+    const x = prop._canvasX;
+    const y = prop._canvasY;
+
+    // Get prop color (fallback)
+    const color = getPropColor(variant);
+
+    // Try to get sprite for this variant
+    const spriteData = spritesRef.current[variant];
+    const canUseSprite = useSprites && spritesLoadedRef.current && spriteData;
+
+    // Debug: Log variants without sprites (only once per variant)
+    if (useSprites && spritesLoadedRef.current && !spriteData && !unknownVariantsRef.current.has(variant)) {
+      unknownVariantsRef.current.add(variant);
+      // eslint-disable-next-line no-console
+      console.warn(`[PropRenderer] No sprite found for variant: "${variant}" (type: ${prop.type})`);
+    }
+
+    // Render based on LOD level
+    if (lod === LOD_LEVELS.FULL) {
+      if (canUseSprite) {
+        // Sprite-based rendering
+        renderSpriteDetailProp(ctx, x, y, tileSize, spriteData, prop, showHealth);
+      } else {
+        // Full detail rendering with colored shapes (fallback)
+        renderFullDetailProp(ctx, x, y, tileSize, color, prop, showHealth);
+      }
+    } else {
+      // Simplified rendering (LOD_LEVELS.SIMPLE)
+      renderSimpleProp(ctx, x, y, tileSize, color);
+    }
+  };
+
+  /**
+   * Render prop with sprite image
+   * @private
+   */
+  const renderSpriteDetailProp = (ctx, x, y, size, spriteData, prop, showHealth) => {
+    // Draw the sprite centered in the tile
+    const spriteWidth = spriteData.size.width;
+    const spriteHeight = spriteData.size.height;
+
+    // Apply prop's scale (from scaleRange in prop definitions)
+    const propScale = prop.scale || 1.0;
+
+    // Scale sprite to fit tile, then apply prop's individual scale
+    const baseScale = Math.min(size / spriteWidth, size / spriteHeight);
+    const finalScale = baseScale * propScale;
+    const drawWidth = spriteWidth * finalScale;
+    const drawHeight = spriteHeight * finalScale;
+
+    // Center the sprite in the tile
+    const offsetX = (size - drawWidth) / 2;
+    const offsetY = size - drawHeight; // Anchor to bottom of tile for trees/tall props
+
+    ctx.drawImage(
+      spriteData.image,
+      x + offsetX,
+      y + offsetY,
+      drawWidth,
+      drawHeight
+    );
+
+    // Show health bar (if enabled)
+    if (showHealth && prop.harvestable) {
+      renderHealthBar(ctx, x, y, size, prop.health, prop.maxHealth);
+    }
+  };
+
+  /**
+   * Render prop in full detail
+   * @private
+   */
+  const renderFullDetailProp = (ctx, x, y, size, color, prop, showHealth) => {
+    ctx.fillStyle = color;
+
+    // Apply prop's scale
+    const propScale = prop.scale || 1.0;
+    const scaledSize = size * propScale;
+    const offsetX = (size - scaledSize) / 2;
+    const offsetY = size - scaledSize; // Anchor to bottom
+
+    // Different shapes based on prop type
+    const type = prop.type;
+    const sx = x + offsetX; // Scaled x
+    const sy = y + offsetY; // Scaled y
+
+    // Use scaled size (ss) for all drawing
+    const ss = scaledSize;
+
+    if (type === 'tree' || type.startsWith('tree_')) {
+      // Tree: trunk + canopy
+      // Trunk
+      ctx.fillStyle = '#8B4513'; // Brown
+      ctx.fillRect(sx + ss * 0.4, sy + ss * 0.5, ss * 0.2, ss * 0.5);
+
+      // Canopy
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx + ss * 0.5, sy + ss * 0.3, ss * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'rock' || type.startsWith('rock_') || type.startsWith('ore_')) {
+      // Rock/Ore: irregular polygon
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(sx + ss * 0.5, sy + ss * 0.2);
+      ctx.lineTo(sx + ss * 0.8, sy + ss * 0.5);
+      ctx.lineTo(sx + ss * 0.7, sy + ss * 0.9);
+      ctx.lineTo(sx + ss * 0.3, sy + ss * 0.9);
+      ctx.lineTo(sx + ss * 0.2, sy + ss * 0.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Add shine for ore veins
+      if (type.startsWith('ore_')) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.beginPath();
+        ctx.arc(sx + ss * 0.6, sy + ss * 0.4, ss * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (type === 'bush' || type.startsWith('bush_')) {
+      // Bush: cluster of circles
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx + ss * 0.3, sy + ss * 0.6, ss * 0.2, 0, Math.PI * 2);
+      ctx.arc(sx + ss * 0.7, sy + ss * 0.6, ss * 0.2, 0, Math.PI * 2);
+      ctx.arc(sx + ss * 0.5, sy + ss * 0.4, ss * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'cactus' || type.startsWith('cactus_')) {
+      // Cactus: vertical bars
+      ctx.fillStyle = color;
+      ctx.fillRect(sx + ss * 0.4, sy + ss * 0.3, ss * 0.2, ss * 0.6);
+      ctx.fillRect(sx + ss * 0.2, sy + ss * 0.5, ss * 0.15, ss * 0.3);
+      ctx.fillRect(sx + ss * 0.65, sy + ss * 0.5, ss * 0.15, ss * 0.3);
+    } else if (type === 'mushroom' || type.startsWith('mushroom_')) {
+      // Mushroom: cap + stem
+      // Stem
+      ctx.fillStyle = '#F5DEB3'; // Wheat
+      ctx.fillRect(sx + ss * 0.45, sy + ss * 0.5, ss * 0.1, ss * 0.4);
+
+      // Cap
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(sx + ss * 0.5, sy + ss * 0.5, ss * 0.3, ss * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Glow effect for glowing mushrooms
+      if (prop.variant === 'mushroom_glowing') {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        ctx.ellipse(sx + ss * 0.5, sy + ss * 0.5, ss * 0.3, ss * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    } else {
+      // Default: simple circle
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx + ss * 0.5, sy + ss * 0.5, ss * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Show health bar (if enabled)
+    if (showHealth && prop.harvestable) {
+      renderHealthBar(ctx, x, y, size, prop.health, prop.maxHealth);
+    }
+
+    // Outline (for visibility)
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, size, size);
+  };
+
+  /**
+   * Render prop in simplified LOD
+   * @private
+   */
+  const renderSimpleProp = (ctx, x, y, size, color) => {
+    // Simple colored square
+    ctx.fillStyle = color;
+    ctx.fillRect(x + size * 0.25, y + size * 0.25, size * 0.5, size * 0.5);
+  };
+
+  /**
+   * Render health bar above prop
+   * @private
+   */
+  const renderHealthBar = (ctx, x, y, size, health, maxHealth) => {
+    const barWidth = size * 0.8;
+    const barHeight = 4;
+    const barX = x + size * 0.1;
+    const barY = y - 8;
+    const healthRatio = health / maxHealth;
+
+    // Background
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+
+    // Health
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+    ctx.fillRect(barX, barY, barWidth * healthRatio, barHeight);
+
+    // Border
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barWidth, barHeight);
+  };
+
+  /**
+   * Render prop highlights (for selection, interaction)
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Prop} prop - Prop to highlight
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   * @param {string} highlightColor - Highlight color (default: yellow)
+   */
+  const renderPropHighlight = useCallback((ctx, prop, worldToCanvas, highlightColor = 'rgba(255, 255, 0, 0.5)') => {
+    if (!ctx || !prop || !worldToCanvas) return;
+
+    const canvasPos = worldToCanvas(prop.x, prop.z);
+
+    ctx.save();
+    ctx.strokeStyle = highlightColor;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(canvasPos.x, canvasPos.y, tileSize, tileSize);
+
+    // Pulsing effect
+    ctx.strokeStyle = 'rgba(255, 255, 0, 0.3)';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(
+      canvasPos.x - 3,
+      canvasPos.y - 3,
+      tileSize + 6,
+      tileSize + 6
+    );
+    ctx.restore();
+  }, [tileSize]);
+
+  /**
+   * Render harvest progress bar
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Prop} prop - Prop being harvested
+   * @param {number} progress - Progress (0-1)
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   */
+  const renderHarvestProgress = useCallback((ctx, prop, progress, worldToCanvas) => {
+    if (!ctx || !prop || !worldToCanvas) return;
+
+    const canvasPos = worldToCanvas(prop.x, prop.z);
+    const barWidth = tileSize;
+    const barHeight = 6;
+    const barY = canvasPos.y - 10; // Above the prop
+
+    ctx.save();
+
+    // Background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(canvasPos.x, barY, barWidth, barHeight);
+
+    // Progress fill
+    const progressWidth = barWidth * Math.max(0, Math.min(1, progress));
+    const gradient = ctx.createLinearGradient(canvasPos.x, barY, canvasPos.x + progressWidth, barY);
+    gradient.addColorStop(0, '#4CAF50');
+    gradient.addColorStop(1, '#8BC34A');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(canvasPos.x, barY, progressWidth, barHeight);
+
+    // Border
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(canvasPos.x, barY, barWidth, barHeight);
+
+    // Percentage text
+    const percentage = Math.floor(progress * 100);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${percentage}%`, canvasPos.x + barWidth / 2, barY - 2);
+
+    ctx.restore();
+  }, [tileSize]);
+
+  /**
+   * Render floating text (for resource drops)
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {number} x - World X coordinate
+   * @param {number} z - World Z coordinate
+   * @param {string} text - Text to display
+   * @param {function} worldToCanvas - World to canvas coordinate converter
+   * @param {number} lifetime - Animation lifetime (0-1, where 1 is new)
+   * @param {string} color - Text color
+   */
+  const renderFloatingText = useCallback((ctx, x, z, text, worldToCanvas, lifetime = 1, color = '#FFD700') => {
+    if (!ctx || !worldToCanvas) return;
+
+    const canvasPos = worldToCanvas(x, z);
+
+    // Animate upward and fade out
+    const offsetY = (1 - lifetime) * 30; // Rise 30 pixels
+    const alpha = lifetime; // Fade out
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+
+    const textY = canvasPos.y - offsetY - 5;
+    ctx.strokeText(text, canvasPos.x + 20, textY);
+    ctx.fillText(text, canvasPos.x + 20, textY);
+
+    ctx.restore();
+  }, []);
+
+  /**
+   * Render LOD debug info
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {object} stats - Rendering statistics
+   * @param {number} x - X position for debug text
+   * @param {number} y - Y position for debug text
+   */
+  const renderDebugInfo = useCallback((ctx, stats, x = 10, y = 10) => {
+    if (!ctx || !stats) return;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(x, y, 200, 80);
+
+    ctx.fillStyle = '#00FF00';
+    ctx.font = '12px monospace';
+    ctx.fillText(`Props Rendered: ${stats.propsRendered}`, x + 10, y + 20);
+    ctx.fillText(`Props Culled: ${stats.propsCulled}`, x + 10, y + 40);
+    ctx.fillText(`Total Props: ${stats.totalProps}`, x + 10, y + 60);
+    ctx.restore();
+  }, []);
+
+  return useMemo(() => ({
+    renderProps,
+    renderPropHighlight,
+    renderHarvestProgress,
+    renderFloatingText,
+    renderDebugInfo
+  }), [renderProps, renderPropHighlight, renderHarvestProgress, renderFloatingText, renderDebugInfo]);
+};

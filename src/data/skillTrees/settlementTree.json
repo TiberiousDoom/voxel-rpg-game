@@ -1,0 +1,466 @@
+{
+  "id": "settlement",
+  "name": "Settlement Tree",
+  "description": "Master of building, NPCs, and resource management",
+  "icon": "🏘️",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Foundation",
+      "levelRequirement": 1,
+      "minPointsInTree": 0,
+      "skills": [
+        {
+          "id": "efficientBuilder",
+          "name": "Efficient Builder",
+          "description": "+10% building placement speed",
+          "icon": "🔨",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "effects": {
+            "buildingSpeed": 0.10
+          }
+        },
+        {
+          "id": "resourceManagement",
+          "name": "Resource Management",
+          "description": "+10% resource gathering speed",
+          "icon": "📦",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "effects": {
+            "gatheringSpeed": 0.10
+          }
+        },
+        {
+          "id": "inspiringLeader",
+          "name": "Inspiring Leader",
+          "description": "+5% NPC work efficiency",
+          "icon": "⚡",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "effects": {
+            "npcEfficiency": 0.05
+          }
+        },
+        {
+          "id": "carefulPlanning",
+          "name": "Careful Planning",
+          "description": "-10% building costs",
+          "icon": "📋",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "effects": {
+            "buildingCostReduction": 0.10
+          }
+        },
+        {
+          "id": "quickLearner",
+          "name": "Quick Learner",
+          "description": "+10% XP gain",
+          "icon": "📚",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "effects": {
+            "xpGain": 0.10
+          }
+        }
+      ]
+    },
+    {
+      "tier": 2,
+      "name": "Specialization",
+      "levelRequirement": 11,
+      "minPointsInTree": 5,
+      "skills": [
+        {
+          "id": "masterBuilder",
+          "name": "Master Builder",
+          "description": "+25% building speed, unlock rapid placement mode",
+          "icon": "🏗️",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["efficientBuilder"],
+          "effects": {
+            "buildingSpeed": 0.25,
+            "rapidPlacement": true
+          }
+        },
+        {
+          "id": "prospector",
+          "name": "Prospector",
+          "description": "+20% rare resource discovery chance",
+          "icon": "⛏️",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["resourceManagement"],
+          "effects": {
+            "rareResourceChance": 0.20
+          }
+        },
+        {
+          "id": "naturalLeader",
+          "name": "Natural Leader",
+          "description": "+10% NPC efficiency, +10% NPC happiness",
+          "icon": "👑",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["inspiringLeader"],
+          "effects": {
+            "npcEfficiency": 0.10,
+            "npcHappiness": 0.10
+          }
+        },
+        {
+          "id": "economicGenius",
+          "name": "Economic Genius",
+          "description": "+15% gold from all sources",
+          "icon": "💰",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["carefulPlanning"],
+          "effects": {
+            "goldGain": 0.15
+          }
+        },
+        {
+          "id": "scholar",
+          "name": "Scholar",
+          "description": "+15% XP, unlock research bonuses",
+          "icon": "🎓",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["quickLearner"],
+          "effects": {
+            "xpGain": 0.15,
+            "researchBonus": true
+          }
+        },
+        {
+          "id": "rallyCry",
+          "name": "Rally Cry",
+          "description": "All NPCs gain +30% productivity for 30 seconds",
+          "icon": "📣",
+          "type": "active",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["naturalLeader"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 50,
+            "cooldown": 60,
+            "duration": 30,
+            "effects": {
+              "npcProductivityBoost": 0.30
+            }
+          }
+        },
+        {
+          "id": "instantRepair",
+          "name": "Instant Repair",
+          "description": "Instantly repair all damaged buildings",
+          "icon": "🔧",
+          "type": "active",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["masterBuilder"],
+          "activation": {
+            "costType": "gold",
+            "cost": 100,
+            "cooldown": 120,
+            "effects": {
+              "repairAllBuildings": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 3,
+      "name": "Mastery",
+      "levelRequirement": 21,
+      "minPointsInTree": 15,
+      "skills": [
+        {
+          "id": "architecturalGenius",
+          "name": "Architectural Genius",
+          "description": "Unlock Tier 3 building upgrades, buildings can have +2 NPC slots",
+          "icon": "🏛️",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["masterBuilder"],
+          "effects": {
+            "unlockTier3Buildings": true,
+            "buildingNPCSlots": 2
+          }
+        },
+        {
+          "id": "resourceEmpire",
+          "name": "Resource Empire",
+          "description": "+50% resource production from all buildings",
+          "icon": "🏭",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["prospector"],
+          "effects": {
+            "resourceProduction": 0.50
+          }
+        },
+        {
+          "id": "charismatic",
+          "name": "Charismatic",
+          "description": "Max NPC capacity +5, NPCs level up 50% faster",
+          "icon": "✨",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["naturalLeader"],
+          "effects": {
+            "maxNPCBonus": 5,
+            "npcLevelSpeed": 0.50
+          }
+        },
+        {
+          "id": "tradeMaster",
+          "name": "Trade Master",
+          "description": "Unlock special merchant trades, sell items for +25% value",
+          "icon": "🤝",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["economicGenius"],
+          "effects": {
+            "unlockMerchantTrades": true,
+            "sellValueBonus": 0.25
+          }
+        },
+        {
+          "id": "loreMaster",
+          "name": "Lore Master",
+          "description": "Unlock all research immediately, +25% XP from exploration",
+          "icon": "📜",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["scholar"],
+          "effects": {
+            "unlockAllResearch": true,
+            "explorationXP": 0.25
+          }
+        },
+        {
+          "id": "massProduction",
+          "name": "Mass Production",
+          "description": "Double all resource gains for 20 seconds",
+          "icon": "⚙️",
+          "type": "active",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["resourceEmpire"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 80,
+            "cooldown": 180,
+            "duration": 20,
+            "effects": {
+              "resourceGainMultiplier": 2.0
+            }
+          }
+        },
+        {
+          "id": "kingdomsBlessing",
+          "name": "Kingdom's Blessing",
+          "description": "All settlement bonuses doubled for 30 seconds",
+          "icon": "🌟",
+          "type": "active",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["charismatic"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 100,
+            "cooldown": 300,
+            "duration": 30,
+            "effects": {
+              "settlementBonusMultiplier": 2.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 4,
+      "name": "Legendary",
+      "levelRequirement": 36,
+      "minPointsInTree": 25,
+      "skills": [
+        {
+          "id": "masterOfAllTrades",
+          "name": "Master of All Trades",
+          "description": "+10% to ALL stats per 5 buildings placed (max +50% at 25 buildings)",
+          "icon": "🎯",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["architecturalGenius"],
+          "effects": {
+            "allStatsPerBuilding": 0.10,
+            "maxBuildingsForBonus": 25
+          }
+        },
+        {
+          "id": "abundantHarvest",
+          "name": "Abundant Harvest",
+          "description": "Resource nodes never deplete, +100% resource gathering speed",
+          "icon": "🌾",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["resourceEmpire"],
+          "effects": {
+            "infiniteResources": true,
+            "gatheringSpeed": 1.00
+          }
+        },
+        {
+          "id": "legendaryLeader",
+          "name": "Legendary Leader",
+          "description": "NPCs gain +50% efficiency, NPCs cannot die from starvation",
+          "icon": "👑",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["charismatic"],
+          "effects": {
+            "npcEfficiency": 0.50,
+            "npcImmortalFromHunger": true
+          }
+        },
+        {
+          "id": "economicPowerhouse",
+          "name": "Economic Powerhouse",
+          "description": "Gain 1% of total gold as passive income every minute",
+          "icon": "💎",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["tradeMaster"],
+          "effects": {
+            "passiveIncomeRate": 0.01
+          }
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "description": "All buildings provide +10% XP when near them, unlock sage-tier research",
+          "icon": "🧙",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["loreMaster"],
+          "effects": {
+            "buildingXPBonus": 0.10,
+            "unlockSageResearch": true
+          }
+        },
+        {
+          "id": "instantFortress",
+          "name": "Instant Fortress",
+          "description": "Place 5 buildings instantly for free (once per 10 minutes)",
+          "icon": "🏰",
+          "type": "active",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["masterOfAllTrades"],
+          "activation": {
+            "costType": "none",
+            "cost": 0,
+            "cooldown": 600,
+            "effects": {
+              "freeBuildingsCount": 5
+            }
+          }
+        },
+        {
+          "id": "goldenAge",
+          "name": "Golden Age",
+          "description": "60 seconds: Free building placement, double resources, max NPC efficiency",
+          "icon": "🌅",
+          "type": "active",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["economicPowerhouse"],
+          "activation": {
+            "costType": "none",
+            "cost": 0,
+            "cooldown": 900,
+            "duration": 60,
+            "effects": {
+              "freeBuildingPlacement": true,
+              "resourceGainMultiplier": 2.0,
+              "npcEfficiencyMax": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 5,
+      "name": "Capstone",
+      "levelRequirement": 50,
+      "minPointsInTree": 40,
+      "skills": [
+        {
+          "id": "civilization",
+          "name": "Civilization",
+          "description": "Unlock city-tier buildings, permanent +100% to all settlement stats, all buildings provide unique bonuses, passive income doubled",
+          "icon": "🌆",
+          "type": "capstone",
+          "pointCost": 5,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "mutuallyExclusiveWith": ["empireBuilder"],
+          "effects": {
+            "unlockCityBuildings": true,
+            "settlementStatsMultiplier": 2.0,
+            "buildingsHaveUniqueBonus": true,
+            "passiveIncomeMultiplier": 2.0
+          }
+        },
+        {
+          "id": "empireBuilder",
+          "name": "Empire Builder",
+          "description": "Can have 2 settlements simultaneously, resources shared across settlements, +200% building efficiency",
+          "icon": "🗺️",
+          "type": "capstone",
+          "pointCost": 5,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "mutuallyExclusiveWith": ["civilization"],
+          "effects": {
+            "maxSettlements": 2,
+            "sharedResources": true,
+            "buildingEfficiency": 2.00
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+/**
+ * ResourceTooltip.css - Styles for resource tooltips
+ */
+
+.resource-tooltip {
+  position: absolute;
+  z-index: 1000;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: #f9fafb;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 220px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  font-size: 13px;
+  animation: tooltip-fade-in 0.2s ease-out;
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.resource-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 8px;
+}
+
+.resource-tooltip-icon {
+  font-size: 20px;
+}
+
+.resource-tooltip-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+}
+
+/* Body */
+.resource-tooltip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resource-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.resource-tooltip-divider {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+  margin-top: 2px;
+}
+
+.resource-tooltip-label {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.resource-tooltip-value {
+  font-weight: 600;
+  color: #e5e7eb;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.resource-tooltip-percent {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Color coding */
+.resource-tooltip-positive {
+  color: #22c55e;
+}
+
+.resource-tooltip-negative {
+  color: #ef4444;
+}
+
+.resource-tooltip-net {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* Time estimate */
+.resource-tooltip-estimate {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .resource-tooltip {
+    font-size: 12px;
+    min-width: 180px;
+    padding: 10px;
+  }
+
+  .resource-tooltip-header {
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+  }
+
+  .resource-tooltip-icon {
+    font-size: 18px;
+  }
+
+  .resource-tooltip-name {
+    font-size: 13px;
+  }
+}

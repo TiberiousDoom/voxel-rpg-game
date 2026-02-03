@@ -1,0 +1,270 @@
+/**
+ * ActiveSkillBar.css
+ * Styles for active skill bar and buff display
+ */
+
+.active-skill-bar {
+  position: fixed;
+  bottom: calc(var(--nav-height, 56px) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-skill-bar);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.active-skill-bar > * {
+  pointer-events: auto;
+}
+
+/* Active Buffs Display */
+.active-buffs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 600px;
+}
+
+.active-buff {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.9) 0%, rgba(99, 102, 241, 0.9) 100%);
+  border: 2px solid #8b5cf6;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+  animation: buffPulse 2s ease-in-out infinite;
+}
+
+@keyframes buffPulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.8);
+  }
+}
+
+.buff-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.buff-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.buff-name {
+  font-size: 13px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.buff-duration {
+  font-size: 11px;
+  color: #e9d5ff;
+  font-weight: 600;
+}
+
+/* Skill Bar Container */
+.skill-bar-container {
+  display: flex;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%);
+  border: 2px solid #4a5568;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+/* Individual Skill Button */
+.skill-button {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+  border: 2px solid #4a5568;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.skill-button:hover {
+  transform: translateY(-2px);
+  border-color: #8b5cf6;
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+}
+
+.skill-button.ready {
+  border-color: #10b981;
+}
+
+.skill-button.ready:hover {
+  border-color: #34d399;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.skill-button.on-cooldown {
+  border-color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.skill-button.on-cooldown:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.skill-button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.skill-button.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #4a5568;
+}
+
+/* Skill Icon */
+.skill-icon {
+  font-size: 32px;
+  line-height: 1;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Cooldown Overlay */
+.cooldown-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1;
+  transition: height 0.1s linear;
+  pointer-events: none;
+}
+
+/* Cooldown Text */
+.cooldown-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Hotkey Badge */
+.hotkey-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fbbf24;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid #4a5568;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Activation Feedback */
+.skill-feedback {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: feedbackSlideIn 0.3s ease-out;
+  pointer-events: none;
+}
+
+@keyframes feedbackSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.skill-feedback.success {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  color: #fff;
+  border: 2px solid #10b981;
+}
+
+.skill-feedback.error {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  color: #fff;
+  border: 2px solid #ef4444;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .active-skill-bar {
+    bottom: calc(var(--nav-height, 56px) + 20px); /* Account for navigation */
+  }
+
+  .skill-button {
+    width: 50px;
+    height: 50px;
+  }
+
+  .skill-icon {
+    font-size: 28px;
+  }
+
+  .skill-bar-container {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .active-buffs {
+    max-width: 90vw;
+  }
+
+  .active-buff {
+    padding: 6px 10px;
+  }
+
+  .buff-icon {
+    font-size: 20px;
+  }
+
+  .buff-name {
+    font-size: 11px;
+  }
+
+  .buff-duration {
+    font-size: 10px;
+  }
+}

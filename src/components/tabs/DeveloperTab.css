@@ -1,0 +1,563 @@
+/**
+ * DeveloperTab.css - Styles for Developer testing tools
+ */
+
+.developer-tab {
+  padding: 1rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
+  background: #1a1a1a;
+}
+
+/* Section Styles */
+.dev-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dev-section.info {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dev-section.debug {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.dev-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dev-icon {
+  font-size: 1.25rem;
+}
+
+.dev-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.25rem;
+}
+
+.info-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.info-value.green {
+  color: #10b981;
+}
+
+.info-value.red {
+  color: #ef4444;
+}
+
+.info-value.yellow {
+  color: #f59e0b;
+}
+
+/* Monster Type Grid */
+.monster-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.monster-type-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.monster-type-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--monster-color);
+  transform: translateY(-2px);
+}
+
+.monster-type-button.selected {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--monster-color);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.monster-icon {
+  font-size: 2rem;
+}
+
+.monster-name {
+  font-weight: 600;
+}
+
+/* Monster Modifier Grid */
+.monster-modifier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.monster-modifier-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.monster-modifier-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--modifier-color);
+  transform: translateY(-2px);
+}
+
+.monster-modifier-button.selected {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--modifier-color);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.modifier-icon {
+  font-size: 1.5rem;
+}
+
+.modifier-name {
+  font-weight: 600;
+}
+
+/* Settings Grid */
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.setting-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.setting-slider {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setting-slider::-webkit-slider-thumb:hover {
+  background: #60a5fa;
+  transform: scale(1.1);
+}
+
+.setting-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.setting-slider::-moz-range-thumb:hover {
+  background: #60a5fa;
+  transform: scale(1.1);
+}
+
+/* Action Grid */
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.action-grid.compact {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.dev-action-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.dev-action-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dev-action-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.dev-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dev-action-button.primary {
+  border-color: #10b981;
+}
+
+.dev-action-button.primary:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+}
+
+.dev-action-button.secondary {
+  border-color: #3b82f6;
+}
+
+.dev-action-button.secondary:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+}
+
+.dev-action-button.tertiary {
+  border-color: #8b5cf6;
+}
+
+.dev-action-button.tertiary:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: #8b5cf6;
+}
+
+.dev-action-button.warning {
+  border-color: #f59e0b;
+}
+
+.dev-action-button.warning:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+}
+
+.dev-action-button.info {
+  border-color: #06b6d4;
+}
+
+.dev-action-button.info:hover:not(:disabled) {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: #06b6d4;
+}
+
+.dev-action-button.danger {
+  border-color: #ef4444;
+}
+
+.dev-action-button.danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.action-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.action-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+}
+
+.action-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.action-description {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Small Action Buttons */
+.dev-action-button-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dev-action-button-small:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.dev-action-button-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dev-action-button-small.danger {
+  border-color: #ef4444;
+}
+
+.dev-action-button-small.danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.action-icon-small {
+  font-size: 1.5rem;
+}
+
+.action-label-small {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Monster List */
+.monster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.monster-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.monster-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.monster-item-type {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #fff;
+}
+
+.monster-item-stats {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.monster-item-state {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.monster-item-state.idle {
+  background: rgba(107, 114, 128, 0.3);
+  color: #9ca3af;
+}
+
+.monster-item-state.chase {
+  background: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.monster-item-state.attack {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.monster-item-state.flee {
+  background: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.monster-item-state.death {
+  background: rgba(75, 85, 99, 0.3);
+  color: #6b7280;
+}
+
+.monster-item-remove {
+  padding: 0.25rem 0.5rem;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.monster-item-remove:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.monster-list-more {
+  text-align: center;
+  padding: 0.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Tips List */
+.tips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+}
+
+.tip-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  font-size: 0.813rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.4;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .developer-tab {
+    padding: 0.75rem;
+  }
+
+  .dev-section {
+    padding: 0.75rem;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.375rem;
+  }
+
+  .info-item {
+    padding: 0.375rem;
+  }
+
+  .info-value {
+    font-size: 1rem;
+  }
+
+  .monster-type-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .monster-icon {
+    font-size: 1.5rem;
+  }
+
+  .dev-action-button {
+    padding: 0.625rem;
+  }
+
+  .action-icon {
+    font-size: 1.25rem;
+  }
+
+  .action-label {
+    font-size: 0.813rem;
+  }
+
+  .action-description {
+    font-size: 0.688rem;
+  }
+}

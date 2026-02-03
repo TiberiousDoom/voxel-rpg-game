@@ -1,0 +1,101 @@
+{
+  "id": "resource_camp",
+  "name": "Resource Camp",
+  "type": "camp",
+  "width": 6,
+  "height": 6,
+  "biomes": ["plains", "forest", "mountains"],
+  "rarity": 0.4,
+  "requiresDryLand": true,
+  "maxHeightVariation": 2,
+  "tiles": [
+    { "type": "dirt", "blocking": false },
+    { "type": "crate", "blocking": true },
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+    { "type": "log_pile", "blocking": true },
+    { "type": "dirt", "blocking": false },
+
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+    { "type": "tent", "blocking": true },
+    { "type": "tent", "blocking": true },
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+
+    { "type": "dirt", "blocking": false },
+    { "type": "tent", "blocking": true },
+    { "type": "tent", "blocking": true },
+    { "type": "tent", "blocking": true },
+    { "type": "tent", "blocking": true },
+    { "type": "dirt", "blocking": false },
+
+    { "type": "dirt", "blocking": false },
+    { "type": "tent", "blocking": true },
+    { "type": "tent", "blocking": true },
+    { "type": "campfire", "blocking": false },
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+
+    { "type": "crate", "blocking": true },
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+    { "type": "crate", "blocking": true },
+
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+    { "type": "workbench", "blocking": true },
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false },
+    { "type": "dirt", "blocking": false }
+  ],
+  "lootSpawns": [
+    {
+      "x": 1,
+      "z": 0,
+      "lootTable": "camp_supplies",
+      "chance": 0.8
+    },
+    {
+      "x": 4,
+      "z": 0,
+      "lootTable": "camp_supplies",
+      "chance": 0.6
+    },
+    {
+      "x": 0,
+      "z": 4,
+      "lootTable": "camp_supplies",
+      "chance": 0.7
+    },
+    {
+      "x": 5,
+      "z": 4,
+      "lootTable": "camp_tools",
+      "chance": 0.5
+    }
+  ],
+  "npcSpawns": [
+    {
+      "x": 3,
+      "z": 3,
+      "npcType": "miner",
+      "behavior": "idle",
+      "faction": "neutral"
+    },
+    {
+      "x": 2,
+      "z": 5,
+      "npcType": "logger",
+      "behavior": "work",
+      "faction": "neutral"
+    }
+  ],
+  "entrance": {
+    "x": 3,
+    "z": 5
+  },
+  "description": "Resource gathering camp with supplies, workers, and tools."
+}

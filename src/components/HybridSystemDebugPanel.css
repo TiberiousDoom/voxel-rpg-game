@@ -1,0 +1,211 @@
+/* HybridSystemDebugPanel.css - Compact debug panel styling */
+
+.debug-panel {
+  position: fixed;
+  top: 60px;
+  right: 10px;
+  width: 280px;
+  max-height: calc(100vh - 80px);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+}
+
+.debug-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(51, 65, 85, 0.6);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 8px 8px 0 0;
+}
+
+.debug-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.debug-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.debug-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.debug-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.debug-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.debug-body::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 3px;
+}
+
+.debug-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.debug-section {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.debug-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  color: #cbd5e1;
+  font-weight: 500;
+  font-size: 12px;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.debug-section-header.clickable {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.debug-section-header.clickable:hover {
+  background: rgba(51, 65, 85, 0.4);
+}
+
+.debug-label {
+  flex: 1;
+  font-size: 11px;
+}
+
+.mode-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.debug-content {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.debug-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.debug-row span:first-child {
+  color: #cbd5e1;
+}
+
+.debug-row span:last-child {
+  font-weight: 500;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.debug-row .good {
+  color: #22c55e;
+}
+
+.debug-row .warn {
+  color: #f59e0b;
+}
+
+.debug-row .bad {
+  color: #ef4444;
+}
+
+.debug-row .info {
+  color: #3b82f6;
+}
+
+.debug-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.debug-progress-fill {
+  height: 100%;
+  transition: width 0.3s, background 0.3s;
+  border-radius: 3px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .debug-panel {
+    width: calc(100% - 20px);
+    max-width: 320px;
+    top: auto;
+    bottom: 10px;
+    right: 10px;
+    max-height: 40vh;
+  }
+}
+
+/* Compact mode for smaller screens */
+@media (max-height: 600px) {
+  .debug-panel {
+    max-height: 60vh;
+    font-size: 11px;
+  }
+
+  .debug-section-header {
+    padding: 6px 8px;
+  }
+
+  .debug-content {
+    padding: 6px 8px 8px;
+  }
+
+  .debug-row {
+    font-size: 10px;
+  }
+}

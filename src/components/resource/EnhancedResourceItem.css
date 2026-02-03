@@ -1,0 +1,207 @@
+/**
+ * EnhancedResourceItem.css - Visual resource bars with dynamic colors
+ */
+
+.enhanced-resource-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  transition: all 0.3s ease;
+}
+
+.enhanced-resource-item:hover {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(148, 163, 184, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Glowing effect when resources change rapidly */
+.enhanced-resource-item.glowing {
+  animation: glow-pulse 1s ease-out;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(59, 130, 246, 0);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  }
+}
+
+/* Critical pulse animation */
+.enhanced-resource-item.critical-pulse .resource-bar-fill {
+  animation: critical-pulse 2s infinite;
+}
+
+@keyframes critical-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Resource Header */
+.resource-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.resource-name {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.production-arrow {
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.3s ease;
+}
+
+/* Progress Bar Container */
+.resource-bar-container {
+  width: 100%;
+  height: 28px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Progress Bar Fill */
+.resource-bar-fill {
+  height: 100%;
+  min-width: 2px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer effect */
+.resource-bar-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.bar-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  position: relative;
+}
+
+/* Color-specific glow effects */
+.resource-bar-fill.green {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.resource-bar-fill.teal {
+  box-shadow: 0 0 15px rgba(20, 184, 166, 0.4);
+}
+
+.resource-bar-fill.yellow {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+}
+
+.resource-bar-fill.orange {
+  box-shadow: 0 0 15px rgba(251, 146, 60, 0.4);
+}
+
+.resource-bar-fill.red {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+/* Resource Info */
+.resource-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.resource-amount {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.resource-status {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.resource-status.green {
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.resource-status.teal {
+  color: #14b8a6;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+}
+
+.resource-status.yellow {
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.resource-status.orange {
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.3);
+}
+
+.resource-status.red {
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}

@@ -1,0 +1,163 @@
+/**
+ * Badge.css - Badge component styles using design tokens
+ */
+
+/* Base Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--badge-padding);
+  height: var(--badge-height-md);
+  border-radius: var(--badge-radius);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  transition: var(--transition-colors);
+}
+
+/* Badge Sizes */
+.badge-small {
+  height: var(--badge-height-sm);
+  padding: 0 var(--space-2);
+  font-size: 0.625rem;
+}
+
+.badge-medium {
+  height: var(--badge-height-md);
+}
+
+/* Badge Variants */
+.badge-default {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  border: var(--border-width-thin) solid var(--color-border-subtle);
+}
+
+.badge-success {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+  border: var(--border-width-thin) solid transparent;
+}
+
+.badge-warning {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+  border: var(--border-width-thin) solid transparent;
+}
+
+.badge-danger {
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+  border: var(--border-width-thin) solid transparent;
+}
+
+.badge-info {
+  background: var(--color-info-subtle);
+  color: var(--color-info);
+  border: var(--border-width-thin) solid transparent;
+}
+
+.badge-accent {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border: var(--border-width-thin) solid transparent;
+}
+
+/* Solid Variants */
+.badge-success-solid {
+  background: var(--color-success);
+  color: white;
+}
+
+.badge-warning-solid {
+  background: var(--color-warning);
+  color: var(--color-text-inverse);
+}
+
+.badge-danger-solid {
+  background: var(--color-danger);
+  color: white;
+}
+
+.badge-accent-solid {
+  background: var(--color-accent);
+  color: white;
+}
+
+/* Badge Content */
+.badge-text {
+  display: inline-block;
+}
+
+/* Closable Badge */
+.badge-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: var(--space-1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: var(--transition-opacity);
+  color: inherit;
+}
+
+.badge-close:hover {
+  opacity: 1;
+}
+
+/* Dot Indicator */
+.badge-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.badge-dot-default {
+  background: var(--color-text-muted);
+}
+
+.badge-dot-success {
+  background: var(--color-success);
+}
+
+.badge-dot-warning {
+  background: var(--color-warning);
+}
+
+.badge-dot-danger {
+  background: var(--color-danger);
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+.badge-dot-info {
+  background: var(--color-info);
+}
+
+.badge-dot-accent {
+  background: var(--color-accent);
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Badge Group */
+.badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}

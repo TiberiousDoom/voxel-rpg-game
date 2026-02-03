@@ -1,0 +1,305 @@
+/**
+ * ResourceItem.css - Styles for individual resource items
+ */
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.resource-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+/* Status-based border colors */
+.resource-status-high {
+  border-left: 4px solid #22c55e;
+}
+
+.resource-status-medium {
+  border-left: 4px solid #f59e0b;
+}
+
+.resource-status-low {
+  border-left: 4px solid #ef4444;
+}
+
+/* Icon */
+.resource-item-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+
+.resource-item:hover .resource-item-icon {
+  transform: scale(1.1);
+}
+
+/* Content */
+.resource-item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0; /* Allow text truncation */
+}
+
+/* Header */
+.resource-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.resource-item-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.3px;
+}
+
+/* Value */
+.resource-item-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.resource-item-amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.resource-item-capacity {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* Progress Bar */
+.resource-item-progress {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.resource-item-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease, background-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer effect on progress bar */
+.resource-item-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Percentage Badge */
+.resource-item-percentage {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Tooltip Container */
+.resource-tooltip-container {
+  z-index: var(--z-resource-tooltip-container); /* 11100 - Above modals */
+}
+
+/* Responsive Design */
+
+/* Desktop (default styles above) */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .resource-item {
+    gap: 10px;
+    padding: 8px;
+  }
+
+  .resource-item-icon {
+    font-size: 28px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .resource-item-name {
+    font-size: 13px;
+  }
+
+  .resource-item-amount {
+    font-size: 18px;
+  }
+
+  .resource-item-capacity {
+    font-size: 12px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .resource-item {
+    gap: 8px;
+    padding: 6px;
+  }
+
+  .resource-item-icon {
+    font-size: 24px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .resource-item-name {
+    font-size: 12px;
+  }
+
+  .resource-item-amount {
+    font-size: 16px;
+  }
+
+  .resource-item-capacity {
+    font-size: 11px;
+  }
+
+  .resource-item-progress {
+    height: 4px;
+  }
+
+  .resource-item-percentage {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  /* Condense or hide some elements on very small screens */
+  .resource-item-header {
+    flex-wrap: wrap;
+  }
+}
+
+/* Icon-only view for very small screens */
+@media (max-width: 480px) {
+  .resource-item.collapsed {
+    width: 48px;
+    height: 48px;
+    padding: 4px;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .resource-item.collapsed .resource-item-content {
+    display: none;
+  }
+
+  .resource-item.collapsed .resource-item-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+
+  .resource-item.collapsed .resource-item-percentage {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 9px;
+    padding: 1px 3px;
+  }
+}
+
+/* Accessibility */
+.resource-item:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.resource-item:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .resource-item {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-color: #374151;
+    color: #f9fafb;
+  }
+
+  .resource-item-name {
+    color: #f9fafb;
+  }
+
+  .resource-item-amount {
+    color: #ffffff;
+  }
+
+  .resource-item-capacity {
+    color: #9ca3af;
+  }
+
+  .resource-item-progress {
+    background: #374151;
+  }
+
+  .resource-item-percentage {
+    background: rgba(31, 41, 55, 0.9);
+    border-color: #374151;
+    color: #9ca3af;
+  }
+
+  .resource-item-icon {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}

@@ -1,0 +1,305 @@
+/**
+ * NPCListView.css - Styles for NPC table view
+ */
+
+.npc-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Table Container */
+.npc-table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 400px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+/* Custom scrollbar */
+.npc-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.npc-table-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+.npc-table-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.npc-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Table */
+.npc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* Table Header */
+.npc-table-header {
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.npc-table-header.npc-table-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.npc-table-header.npc-table-sortable:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+}
+
+.npc-table-header.npc-table-checkbox {
+  width: 40px;
+  text-align: center;
+}
+
+.npc-sort-icon {
+  margin-left: 4px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Table Rows */
+.npc-table-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.npc-table-row:hover {
+  background-color: #f5f5f5;
+}
+
+.npc-table-row-selected {
+  background-color: #e7f5ff;
+  border-color: #3b82f6;
+}
+
+.npc-table-row-selected:hover {
+  background-color: #d0e7ff;
+}
+
+/* Table Cells */
+.npc-table-cell {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+.npc-table-cell.npc-table-checkbox {
+  text-align: center;
+  width: 40px;
+}
+
+.npc-table-cell input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.npc-table-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.npc-table-role {
+  min-width: 100px;
+}
+
+.npc-role-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.npc-table-assignment {
+  color: #666;
+  font-style: italic;
+  min-width: 120px;
+}
+
+.npc-table-happiness {
+  min-width: 100px;
+}
+
+.npc-happiness-emoji {
+  font-size: 18px;
+  margin-right: 6px;
+  cursor: help;
+}
+
+.npc-happiness-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.npc-table-health {
+  min-width: 120px;
+}
+
+.npc-health-bar {
+  display: inline-block;
+  width: 60px;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.npc-health-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.npc-health-value {
+  font-weight: 600;
+  font-size: 12px;
+  color: #333;
+}
+
+.npc-table-empty {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+/* Pagination */
+.npc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.npc-pagination-btn {
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  color: #333;
+}
+
+.npc-pagination-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.npc-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.npc-pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  justify-content: center;
+}
+
+.npc-pagination-page {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.npc-pagination-numbers {
+  display: flex;
+  gap: 4px;
+}
+
+.npc-pagination-number {
+  padding: 4px 8px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  min-width: 32px;
+  text-align: center;
+}
+
+.npc-pagination-number:hover {
+  background: #f5f5f5;
+  border-color: #3b82f6;
+}
+
+.npc-pagination-number.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .npc-table {
+    font-size: 11px;
+  }
+
+  .npc-table-header,
+  .npc-table-cell {
+    padding: 8px 6px;
+  }
+
+  .npc-table-container {
+    max-height: 300px;
+  }
+
+  .npc-pagination {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .npc-pagination-btn {
+    width: 100%;
+  }
+
+  .npc-pagination-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

@@ -1,0 +1,181 @@
+/**
+ * IconButton.css - Icon button styles using design tokens
+ */
+
+/* Base Icon Button */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-all);
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icon-btn:focus {
+  outline: none;
+}
+
+.icon-btn:focus-visible {
+  box-shadow: var(--input-focus-ring);
+}
+
+.icon-btn:active:not(.icon-btn-disabled) {
+  transform: scale(0.95);
+}
+
+/* Icon Button Sizes */
+.icon-btn-small {
+  width: var(--btn-height-sm);
+  height: var(--btn-height-sm);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
+}
+
+.icon-btn-medium {
+  width: var(--btn-height-md);
+  height: var(--btn-height-md);
+  font-size: var(--font-size-lg);
+}
+
+.icon-btn-large {
+  width: var(--btn-height-lg);
+  height: var(--btn-height-lg);
+  font-size: var(--font-size-xl);
+  border-radius: var(--radius-lg);
+}
+
+/* Icon Button Variants */
+.icon-btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+}
+
+.icon-btn-primary:hover:not(.icon-btn-disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  box-shadow: var(--shadow-glow-accent);
+}
+
+.icon-btn-secondary {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.icon-btn-secondary:hover:not(.icon-btn-disabled) {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+}
+
+.icon-btn-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: white;
+}
+
+.icon-btn-danger:hover:not(.icon-btn-disabled) {
+  background: var(--color-danger-hover);
+  box-shadow: 0 0 20px var(--color-danger-subtle);
+}
+
+.icon-btn-success {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.icon-btn-success:hover:not(.icon-btn-disabled) {
+  background: var(--color-success-hover);
+  box-shadow: 0 0 20px var(--color-success-subtle);
+}
+
+.icon-btn-warning {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: var(--color-text-inverse);
+}
+
+.icon-btn-warning:hover:not(.icon-btn-disabled) {
+  background: var(--color-warning-hover);
+  box-shadow: 0 0 20px var(--color-warning-subtle);
+}
+
+.icon-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+
+.icon-btn-ghost:hover:not(.icon-btn-disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.icon-btn-outline {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.icon-btn-outline:hover:not(.icon-btn-disabled) {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-hover);
+}
+
+/* Icon Button States */
+.icon-btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.icon-btn-loading {
+  cursor: wait;
+}
+
+/* Icon Content */
+.icon-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: icon-btn-spin 1s linear infinite;
+}
+
+@keyframes icon-btn-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .icon-btn-small {
+    width: 36px;
+    height: 36px;
+  }
+
+  .icon-btn-medium {
+    width: 44px;
+    height: 44px;
+  }
+
+  .icon-btn-large {
+    width: 52px;
+    height: 52px;
+  }
+}

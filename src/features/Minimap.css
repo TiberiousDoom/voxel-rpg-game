@@ -1,0 +1,204 @@
+/**
+ * Minimap.css - Styling for minimap component
+ */
+
+.minimap {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.minimap.collapsed {
+  padding: 8px;
+}
+
+/* Header */
+.minimap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.minimap-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.minimap-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0;
+  color: #ffd700;
+}
+
+.minimap-toggle {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+}
+
+.minimap-toggle:hover {
+  color: #ffd700;
+}
+
+/* Content */
+.minimap-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Canvas */
+.minimap-canvas {
+  border: 2px solid #4a4a4a;
+  border-radius: 4px;
+  cursor: crosshair;
+  display: block;
+  background: #1a1a1a;
+  transition: border-color 0.2s ease;
+}
+
+.minimap-canvas:hover {
+  border-color: #ffd700;
+}
+
+/* Legend */
+.minimap-legend {
+  display: flex;
+  gap: 12px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.minimap-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.minimap-legend-icon {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.minimap-legend-icon.building {
+  background: #4a90e2;
+  border: 1px solid #ffffff;
+}
+
+.minimap-legend-icon.npc {
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.minimap-legend-icon.viewport {
+  background: transparent;
+  border: 2px dashed #00ff00;
+}
+
+/* Info */
+.minimap-info {
+  text-align: center;
+  font-size: 10px;
+  color: #888888;
+  font-style: italic;
+}
+
+.minimap-info-text {
+  opacity: 0.8;
+}
+
+/* Collapsed State */
+.minimap.collapsed .minimap-content {
+  display: none;
+}
+
+.minimap.collapsed .minimap-title {
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .minimap {
+    bottom: 60px; /* Above other controls */
+    right: 5px;
+    padding: 6px;
+  }
+
+  .minimap-canvas {
+    width: 150px !important;
+    height: 150px !important;
+  }
+
+  .minimap-legend {
+    font-size: 10px;
+    gap: 8px;
+  }
+
+  .minimap-legend-icon {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* Touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .minimap-canvas {
+    cursor: pointer;
+  }
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+  }
+}
+
+.minimap:hover {
+  border-color: #ffd700;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Accessibility */
+.minimap-canvas:focus {
+  outline: 2px solid #ffd700;
+  outline-offset: 2px;
+}
+
+.minimap-canvas:focus:not(:focus-visible) {
+  outline: none;
+}

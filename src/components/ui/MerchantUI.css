@@ -1,0 +1,482 @@
+/**
+ * MerchantUI.css - Merchant trading interface styles
+ */
+
+.merchant-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.merchant-ui {
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  border: 2px solid #4a4a4a;
+  border-radius: 12px;
+  width: 800px;
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Header */
+.merchant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(90deg, #3d3d3d 0%, #2d2d2d 100%);
+  border-bottom: 1px solid #4a4a4a;
+  border-radius: 10px 10px 0 0;
+}
+
+.merchant-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.merchant-avatar {
+  font-size: 48px;
+  background: #1a1a1a;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #5a5a5a;
+}
+
+.merchant-info h1 {
+  margin: 0;
+  color: #f0d060;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.merchant-gold {
+  color: #ffd700;
+  font-size: 0.9rem;
+}
+
+.player-gold {
+  color: #ffd700;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 8px 16px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.btn-close {
+  background: #8b0000;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.btn-close:hover {
+  background: #a00000;
+}
+
+/* Trade Message */
+.trade-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  margin: 0;
+  font-weight: bold;
+}
+
+.trade-message.success {
+  background: rgba(0, 128, 0, 0.3);
+  color: #90ee90;
+  border-bottom: 1px solid rgba(0, 128, 0, 0.5);
+}
+
+.trade-message.error {
+  background: rgba(128, 0, 0, 0.3);
+  color: #ff6b6b;
+  border-bottom: 1px solid rgba(128, 0, 0, 0.5);
+}
+
+.trade-message button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.trade-message button:hover {
+  opacity: 1;
+}
+
+/* Tabs */
+.merchant-tabs {
+  display: flex;
+  padding: 0 20px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #4a4a4a;
+}
+
+.merchant-tabs .tab {
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 1rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.merchant-tabs .tab:hover {
+  color: #ccc;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.merchant-tabs .tab.active {
+  color: #f0d060;
+  border-bottom-color: #f0d060;
+  background: rgba(240, 208, 96, 0.1);
+}
+
+/* Content */
+.merchant-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.merchant-items {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  border-right: 1px solid #4a4a4a;
+}
+
+.merchant-details {
+  width: 280px;
+  padding: 16px;
+  background: #252525;
+  overflow-y: auto;
+}
+
+/* Items Grid */
+.merchant-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.merchant-items-empty {
+  text-align: center;
+  color: #666;
+  padding: 40px;
+  font-style: italic;
+}
+
+.merchant-item {
+  background: #3a3a3a;
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.merchant-item:hover {
+  background: #454545;
+  border-color: #666;
+  transform: translateY(-2px);
+}
+
+.merchant-item.selected {
+  background: rgba(240, 208, 96, 0.2);
+  border-color: #f0d060;
+}
+
+.item-icon {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.item-name {
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.item-price {
+  color: #ffd700;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.item-quantity {
+  color: #888;
+  font-size: 0.75rem;
+}
+
+/* Item Details */
+.merchant-details-empty {
+  text-align: center;
+  color: #666;
+  padding: 40px;
+  font-style: italic;
+}
+
+.merchant-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-icon {
+  font-size: 2.5rem;
+}
+
+.detail-header h3 {
+  margin: 0;
+  color: #f0d060;
+  font-size: 1.2rem;
+}
+
+.detail-description {
+  color: #aaa;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.detail-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+}
+
+.stat-label {
+  color: #888;
+}
+
+.stat-value {
+  color: #90ee90;
+  font-weight: bold;
+}
+
+.detail-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.price-label {
+  color: #aaa;
+}
+
+.price-value {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.detail-quantity {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-quantity label {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quantity-controls button {
+  width: 32px;
+  height: 32px;
+  background: #4a4a4a;
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.quantity-controls button:hover:not(:disabled) {
+  background: #5a5a5a;
+}
+
+.quantity-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity-controls input {
+  width: 60px;
+  height: 32px;
+  text-align: center;
+  background: #1a1a1a;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  color: white;
+  font-size: 1rem;
+}
+
+.quantity-max {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.detail-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  border: 2px solid #4a4a4a;
+}
+
+.total-label {
+  color: #ccc;
+  font-size: 1.1rem;
+}
+
+.total-value {
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+/* Trade Button */
+.btn-trade {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-buy {
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+  color: white;
+}
+
+.btn-buy:hover {
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+  transform: translateY(-1px);
+}
+
+.btn-sell {
+  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+  color: white;
+}
+
+.btn-sell:hover {
+  background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
+  transform: translateY(-1px);
+}
+
+/* Scrollbar */
+.merchant-items::-webkit-scrollbar,
+.merchant-details::-webkit-scrollbar {
+  width: 8px;
+}
+
+.merchant-items::-webkit-scrollbar-track,
+.merchant-details::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.merchant-items::-webkit-scrollbar-thumb,
+.merchant-details::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 4px;
+}
+
+.merchant-items::-webkit-scrollbar-thumb:hover,
+.merchant-details::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .merchant-content {
+    flex-direction: column;
+  }
+
+  .merchant-items {
+    border-right: none;
+    border-bottom: 1px solid #4a4a4a;
+    max-height: 300px;
+  }
+
+  .merchant-details {
+    width: 100%;
+  }
+
+  .merchant-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .player-gold {
+    order: 1;
+    width: 100%;
+    text-align: center;
+  }
+}

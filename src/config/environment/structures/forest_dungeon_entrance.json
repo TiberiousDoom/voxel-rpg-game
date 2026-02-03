@@ -1,0 +1,63 @@
+{
+  "id": "forest_dungeon_entrance",
+  "name": "Ancient Grove Entrance",
+  "type": "dungeon",
+  "dungeonType": "FOREST",
+  "width": 5,
+  "height": 5,
+  "biomes": ["forest"],
+  "rarity": 0.15,
+  "requiresDryLand": true,
+  "maxHeightVariation": 2,
+  "tiles": [
+    { "type": "moss_stone", "blocking": false },
+    { "type": "twisted_root", "blocking": true },
+    { "type": "moss_stone", "blocking": false },
+    { "type": "twisted_root", "blocking": true },
+    { "type": "moss_stone", "blocking": false },
+
+    { "type": "twisted_root", "blocking": true },
+    { "type": "forest_floor", "blocking": false },
+    { "type": "forest_floor", "blocking": false },
+    { "type": "forest_floor", "blocking": false },
+    { "type": "twisted_root", "blocking": true },
+
+    { "type": "moss_stone", "blocking": false },
+    { "type": "forest_floor", "blocking": false },
+    { "type": "grove_stairs", "blocking": false },
+    { "type": "forest_floor", "blocking": false },
+    { "type": "moss_stone", "blocking": false },
+
+    { "type": "twisted_root", "blocking": true },
+    { "type": "forest_floor", "blocking": false },
+    { "type": "forest_floor", "blocking": false },
+    { "type": "forest_floor", "blocking": false },
+    { "type": "twisted_root", "blocking": true },
+
+    { "type": "moss_stone", "blocking": false },
+    { "type": "twisted_root", "blocking": true },
+    { "type": "moss_stone", "blocking": false },
+    { "type": "twisted_root", "blocking": true },
+    { "type": "moss_stone", "blocking": false }
+  ],
+  "lootSpawns": [],
+  "npcSpawns": [
+    {
+      "x": 3,
+      "z": 1,
+      "npcType": "forest_sprite",
+      "behavior": "patrol",
+      "faction": "hostile"
+    }
+  ],
+  "entrance": {
+    "x": 2,
+    "z": 2
+  },
+  "visualStyle": {
+    "primaryColor": "#2d5a27",
+    "secondaryColor": "#1a3d15",
+    "accentColor": "#4a7c43"
+  },
+  "description": "An ancient grove entrance shrouded in mystical vines. Strange whispers emanate from below."
+}

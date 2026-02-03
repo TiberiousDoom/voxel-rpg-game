@@ -1,0 +1,105 @@
+/**
+ * ConfirmDialog.css - Confirmation dialog styles
+ */
+
+.confirm-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 10px;
+  min-width: 300px;
+}
+
+/* Icon */
+.confirm-dialog-icon {
+  font-size: 4rem;
+  animation: iconBounce 0.6s ease-out;
+}
+
+@keyframes iconBounce {
+  0% {
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+/* Content */
+.confirm-dialog-content {
+  text-align: center;
+  flex: 1;
+}
+
+.confirm-dialog-message {
+  margin: 0 0 12px 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.confirm-dialog-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* Actions */
+.confirm-dialog-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.confirm-dialog-actions > button {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Type Variants */
+.confirm-dialog-danger .confirm-dialog-icon {
+  color: #f44336;
+}
+
+.confirm-dialog-warning .confirm-dialog-icon {
+  color: #ff9800;
+}
+
+.confirm-dialog-info .confirm-dialog-icon {
+  color: #2196f3;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .confirm-dialog {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .confirm-dialog-icon {
+    font-size: 3rem;
+  }
+
+  .confirm-dialog-message {
+    font-size: 1.1rem;
+  }
+
+  .confirm-dialog-description {
+    font-size: 0.9rem;
+  }
+
+  .confirm-dialog-actions {
+    flex-direction: column;
+  }
+
+  .confirm-dialog-actions > button {
+    width: 100%;
+  }
+}

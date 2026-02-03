@@ -1,0 +1,66 @@
+/* TutorialOverlay.css - Styles for tutorial overlay component */
+
+.tutorial-overlay-backdrop {
+  backdrop-filter: blur(2px);
+}
+
+.tutorial-panel {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  user-select: none;
+}
+
+.tutorial-panel button {
+  font-family: inherit;
+  touch-action: manipulation;
+}
+
+.tutorial-arrow {
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .tutorial-panel {
+    top: auto !important;
+    bottom: 20px !important;
+    transform: translateX(-50%) !important;
+    max-width: 95% !important;
+    padding: 20px !important;
+  }
+
+  .tutorial-panel h3 {
+    font-size: 1.2rem !important;
+  }
+
+  .tutorial-panel p {
+    font-size: 1rem !important;
+  }
+
+  .tutorial-panel button {
+    min-height: 44px !important;
+    padding: 12px 20px !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .tutorial-panel {
+    border-width: 4px !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-panel {
+    animation: none !important;
+  }
+
+  .tutorial-arrow {
+    animation: none !important;
+  }
+
+  .spinner {
+    animation: none !important;
+  }
+}

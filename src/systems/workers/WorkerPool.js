@@ -47,7 +47,7 @@ export class WorkerPool {
    * Add a worker to the pool
    */
   addWorker() {
-    const worker = new Worker(this.workerScript, { type: 'module' });
+    const worker = new Worker(this.workerScript);
 
     worker.onmessage = (event) => this.handleMessage(worker, event);
     worker.onerror = (error) => this.handleError(worker, error);

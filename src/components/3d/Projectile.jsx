@@ -191,11 +191,7 @@ const Projectile = ({
         <group>
           <mesh castShadow>
             <cylinderGeometry args={[beamWidth, beamWidth, 3, 8]} />
-            <meshStandardMaterial
-              color={color}
-              emissive={color}
-              emissiveIntensity={0.7}
-            />
+            <meshBasicMaterial color={color} />
           </mesh>
           <pointLight color={color} intensity={3} distance={10} />
         </group>
@@ -208,11 +204,7 @@ const Projectile = ({
         {/* Projectile core */}
         <mesh castShadow>
           <sphereGeometry args={[0.3, 16, 16]} />
-          <meshStandardMaterial
-            color={color}
-            emissive={color}
-            emissiveIntensity={0.5}
-          />
+          <meshBasicMaterial color={color} />
         </mesh>
 
         {/* Glow effect */}

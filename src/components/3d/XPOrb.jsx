@@ -67,13 +67,7 @@ const XPOrb = ({ position, xpAmount = 25, id, onCollect }) => {
         {/* Inner core */}
         <mesh>
           <sphereGeometry args={[0.25, 16, 16]} />
-          <meshStandardMaterial
-            color="#ffd700"
-            emissive="#ffd700"
-            emissiveIntensity={1}
-            metalness={0.8}
-            roughness={0.2}
-          />
+          <meshBasicMaterial color="#ffd700" />
         </mesh>
 
         {/* Point light */}

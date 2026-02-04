@@ -14,8 +14,6 @@ import { chunkOriginWorld } from '../../systems/chunks/coordinates.js';
  */
 function ChunkMesh({ chunk, meshData }) {
   const meshRef = useRef();
-  const geometryRef = useRef(null);
-  const [isReady, setIsReady] = useState(false);
 
   // Get chunk world position
   const position = useMemo(() => {
@@ -23,70 +21,58 @@ function ChunkMesh({ chunk, meshData }) {
     return [origin.x, origin.y, origin.z];
   }, [chunk.x, chunk.z]);
 
-  // Create/update geometry when meshData changes
-  useEffect(() => {
+  // Create geometry from mesh data - using useMemo for simpler lifecycle
+  const geometry = useMemo(() => {
     // Validate mesh data
     if (!meshData || !meshData.positions || !meshData.normals || !meshData.colors || !meshData.indices) {
-      setIsReady(false);
-      return;
+      return null;
     }
 
     // Check for valid data lengths
     if (meshData.positions.length === 0 || meshData.vertexCount === 0) {
-      setIsReady(false);
-      return;
+      return null;
     }
 
-    // Dispose old geometry
-    if (geometryRef.current) {
-      geometryRef.current.dispose();
-    }
-
-    // Create new geometry
+    // Create geometry
     const geo = new THREE.BufferGeometry();
 
-    geo.setAttribute('position', new THREE.BufferAttribute(meshData.positions, 3));
-    geo.setAttribute('normal', new THREE.BufferAttribute(meshData.normals, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(meshData.colors, 3));
+    // Make copies of the typed arrays to ensure they're not detached
+    const positions = new Float32Array(meshData.positions);
+    const normals = new Float32Array(meshData.normals);
+    const colors = new Float32Array(meshData.colors);
+    const indices = new Uint32Array(meshData.indices);
 
-    if (meshData.indices.length > 0) {
-      geo.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    if (indices.length > 0) {
+      geo.setIndex(new THREE.BufferAttribute(indices, 1));
     }
 
     geo.computeBoundingSphere();
-    geo.computeBoundingBox();
 
-    geometryRef.current = geo;
-
-    // Apply to mesh if it exists
-    if (meshRef.current) {
-      meshRef.current.geometry = geo;
-    }
-
-    setIsReady(true);
-
-    return () => {
-      if (geometryRef.current) {
-        geometryRef.current.dispose();
-        geometryRef.current = null;
-      }
-    };
+    return geo;
   }, [meshData]);
 
-  if (!isReady || !geometryRef.current) {
+  // Cleanup geometry on unmount
+  useEffect(() => {
+    return () => {
+      if (geometry) {
+        geometry.dispose();
+      }
+    };
+  }, [geometry]);
+
+  // Don't render if no valid geometry
+  if (!geometry) {
     return null;
   }
 
   return (
-    <mesh
-      ref={meshRef}
-      position={position}
-      geometry={geometryRef.current}
-    >
-      <meshBasicMaterial
-        vertexColors
-        side={THREE.FrontSide}
-      />
+    <mesh ref={meshRef} position={position}>
+      <primitive object={geometry} attach="geometry" />
+      <meshBasicMaterial vertexColors side={THREE.FrontSide} />
     </mesh>
   );
 }

@@ -26,7 +26,7 @@ const Experience = () => {
   const removeDamageNumber = useGameStore((state) => state.removeDamageNumber);
   const removeXPOrb = useGameStore((state) => state.removeXPOrb);
   const removeParticleEffect = useGameStore((state) => state.removeParticleEffect);
-  const playerPosition = useGameStore((state) => state.position);
+  const playerPosition = useGameStore((state) => state.player.position);
 
   // Initialize chunk system
   const {

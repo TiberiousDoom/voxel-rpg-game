@@ -77,24 +77,26 @@ const Experience = () => {
       {/* Fog for depth - extended for larger world */}
       <fog attach="fog" args={['#87ceeb', 100, 300]} />
 
-      {/* Debug: Visible ground plane to verify rendering works */}
-      <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[200, 200]} />
-        <meshBasicMaterial color="#3d8b3d" />
-      </mesh>
-
-      {/* Debug: Test cubes at known positions */}
-      <mesh position={[0, 2, 0]}>
-        <boxGeometry args={[2, 2, 2]} />
-        <meshBasicMaterial color="red" />
-      </mesh>
-      <mesh position={[5, 2, 5]}>
-        <boxGeometry args={[2, 2, 2]} />
-        <meshBasicMaterial color="blue" />
-      </mesh>
-
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
+        {/* Ground plane with physics - OUTSIDE Suspense to ensure it loads first */}
+        <RigidBody type="fixed" colliders="cuboid" position={[0, -1, 0]}>
+          <mesh position={[0, 0, 0]}>
+            <boxGeometry args={[500, 2, 500]} />
+            <meshBasicMaterial color="#3d8b3d" />
+          </mesh>
+        </RigidBody>
+
+        {/* Debug: Test cubes at known positions */}
+        <mesh position={[0, 2, 0]}>
+          <boxGeometry args={[2, 2, 2]} />
+          <meshBasicMaterial color="red" />
+        </mesh>
+        <mesh position={[5, 2, 5]}>
+          <boxGeometry args={[2, 2, 2]} />
+          <meshBasicMaterial color="blue" />
+        </mesh>
+
         <Suspense fallback={null}>
           {/* Chunk-based terrain */}
           {isReady && chunkManager && workerPool && (
@@ -103,14 +105,6 @@ const Experience = () => {
               workerPool={workerPool}
             />
           )}
-
-          {/* Ground plane - provides collision (temporary until chunk collision) */}
-          <RigidBody type="fixed" colliders="cuboid" position={[0, -1, 0]}>
-            <mesh position={[0, 0, 0]} visible={false}>
-              <boxGeometry args={[500, 2, 500]} />
-              <meshBasicMaterial />
-            </mesh>
-          </RigidBody>
 
           {/* Player */}
           <Player />

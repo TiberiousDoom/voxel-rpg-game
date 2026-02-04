@@ -14,24 +14,8 @@ import { chunkOriginWorld } from '../../systems/chunks/coordinates.js';
  */
 function ChunkMesh({ chunk, meshData }) {
   const meshRef = useRef();
-
-  // Create geometry from mesh data
-  const geometry = useMemo(() => {
-    if (!meshData || meshData.vertexCount === 0) {
-      return null;
-    }
-
-    const geo = new THREE.BufferGeometry();
-
-    geo.setAttribute('position', new THREE.BufferAttribute(meshData.positions, 3));
-    geo.setAttribute('normal', new THREE.BufferAttribute(meshData.normals, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(meshData.colors, 3));
-    geo.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
-
-    geo.computeBoundingSphere();
-
-    return geo;
-  }, [meshData]);
+  const geometryRef = useRef(null);
+  const [isReady, setIsReady] = useState(false);
 
   // Get chunk world position
   const position = useMemo(() => {
@@ -39,14 +23,57 @@ function ChunkMesh({ chunk, meshData }) {
     return [origin.x, origin.y, origin.z];
   }, [chunk.x, chunk.z]);
 
-  // Cleanup geometry on unmount
+  // Create/update geometry when meshData changes
   useEffect(() => {
-    return () => {
-      geometry?.dispose();
-    };
-  }, [geometry]);
+    // Validate mesh data
+    if (!meshData || !meshData.positions || !meshData.normals || !meshData.colors || !meshData.indices) {
+      setIsReady(false);
+      return;
+    }
 
-  if (!geometry) {
+    // Check for valid data lengths
+    if (meshData.positions.length === 0 || meshData.vertexCount === 0) {
+      setIsReady(false);
+      return;
+    }
+
+    // Dispose old geometry
+    if (geometryRef.current) {
+      geometryRef.current.dispose();
+    }
+
+    // Create new geometry
+    const geo = new THREE.BufferGeometry();
+
+    geo.setAttribute('position', new THREE.BufferAttribute(meshData.positions, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(meshData.normals, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(meshData.colors, 3));
+
+    if (meshData.indices.length > 0) {
+      geo.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
+    }
+
+    geo.computeBoundingSphere();
+    geo.computeBoundingBox();
+
+    geometryRef.current = geo;
+
+    // Apply to mesh if it exists
+    if (meshRef.current) {
+      meshRef.current.geometry = geo;
+    }
+
+    setIsReady(true);
+
+    return () => {
+      if (geometryRef.current) {
+        geometryRef.current.dispose();
+        geometryRef.current = null;
+      }
+    };
+  }, [meshData]);
+
+  if (!isReady || !geometryRef.current) {
     return null;
   }
 
@@ -54,13 +81,11 @@ function ChunkMesh({ chunk, meshData }) {
     <mesh
       ref={meshRef}
       position={position}
-      geometry={geometry}
-      castShadow
-      receiveShadow
+      geometry={geometryRef.current}
     >
-      <meshStandardMaterial
+      <meshBasicMaterial
         vertexColors
-        flatShading
+        side={THREE.FrontSide}
       />
     </mesh>
   );

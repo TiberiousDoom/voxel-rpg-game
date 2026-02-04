@@ -104,9 +104,6 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
 
   // Handle chunk ready event
   const handleChunkReady = useCallback(async (chunk) => {
-    // eslint-disable-next-line no-console
-    console.log('[ChunkRenderer] Chunk ready:', chunk.key, 'blocks:', chunk.blocks?.length);
-
     // Build mesh for the new chunk
     if (workerPool) {
       try {
@@ -118,9 +115,6 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
           neighborEast: chunk.neighbors.east?.blocks || null,
           neighborWest: chunk.neighbors.west?.blocks || null,
         });
-
-        // eslint-disable-next-line no-console
-        console.log('[ChunkRenderer] Mesh built:', chunk.key, 'vertices:', result.vertexCount);
 
         setMeshData(prev => {
           const next = new Map(prev);

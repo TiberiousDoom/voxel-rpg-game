@@ -142,7 +142,7 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
         {/* Death animation - fade out */}
         <mesh>
           <boxGeometry args={[1, 0.5, 1]} />
-          <meshStandardMaterial color="#ff4444" transparent opacity={0.3} />
+          <meshBasicMaterial color="#ff4444" transparent opacity={0.3} />
         </mesh>
       </group>
     );
@@ -169,21 +169,17 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
         {/* Enemy body */}
         <mesh position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
           <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial
-            color={damageFlash > 0 ? "#ffff00" : "#ff4444"}
-            emissive={damageFlash > 0 ? "#ff4400" : "#000000"}
-            emissiveIntensity={damageFlash > 0 ? 2 : 0}
-          />
+          <meshBasicMaterial color={damageFlash > 0 ? "#ffff00" : "#ff4444"} />
         </mesh>
 
         {/* Enemy eyes */}
         <mesh position={[-0.2, 0.7, 0.51]}>
           <sphereGeometry args={[0.1, 8, 8]} />
-          <meshStandardMaterial color="#000000" />
+          <meshBasicMaterial color="#000000" />
         </mesh>
         <mesh position={[0.2, 0.7, 0.51]}>
           <sphereGeometry args={[0.1, 8, 8]} />
-          <meshStandardMaterial color="#000000" />
+          <meshBasicMaterial color="#000000" />
         </mesh>
 
         {/* Name and Health bar */}

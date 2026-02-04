@@ -63,10 +63,10 @@ function ChunkMesh({ chunk, meshData }) {
 
     geo.computeBoundingSphere();
 
-    // Create material
+    // Create material - use DoubleSide to ensure all faces render
     const mat = new THREE.MeshBasicMaterial({
       vertexColors: true,
-      side: THREE.FrontSide,
+      side: THREE.DoubleSide,
     });
 
     // Remove old mesh if exists

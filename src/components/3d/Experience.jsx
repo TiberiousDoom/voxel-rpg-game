@@ -79,10 +79,10 @@ const Experience = () => {
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
-        {/* Invisible physics ground at terrain surface level (y≈8) */}
-        <RigidBody type="fixed" colliders="cuboid" position={[0, 7, 0]}>
+        {/* Invisible physics ground - thick box at terrain level */}
+        <RigidBody type="fixed" colliders="cuboid" position={[0, 3, 0]}>
           <mesh position={[0, 0, 0]} visible={false}>
-            <boxGeometry args={[500, 2, 500]} />
+            <boxGeometry args={[1000, 10, 1000]} />
             <meshBasicMaterial />
           </mesh>
         </RigidBody>

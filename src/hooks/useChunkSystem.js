@@ -77,6 +77,8 @@ export function useChunkSystem(options = {}) {
   // Update player position
   const updatePlayerPosition = useCallback((x, z) => {
     if (chunkManagerRef.current) {
+      // eslint-disable-next-line no-console
+      console.log('[useChunkSystem] updatePlayerPosition:', x, z);
       chunkManagerRef.current.updatePlayerPosition(x, z);
     }
   }, []);

@@ -77,6 +77,22 @@ const Experience = () => {
       {/* Fog for depth - extended for larger world */}
       <fog attach="fog" args={['#87ceeb', 100, 300]} />
 
+      {/* Debug: Visible ground plane to verify rendering works */}
+      <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[200, 200]} />
+        <meshBasicMaterial color="#3d8b3d" />
+      </mesh>
+
+      {/* Debug: Test cubes at known positions */}
+      <mesh position={[0, 2, 0]}>
+        <boxGeometry args={[2, 2, 2]} />
+        <meshBasicMaterial color="red" />
+      </mesh>
+      <mesh position={[5, 2, 5]}>
+        <boxGeometry args={[2, 2, 2]} />
+        <meshBasicMaterial color="blue" />
+      </mesh>
+
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
         <Suspense fallback={null}>

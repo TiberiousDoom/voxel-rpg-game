@@ -104,6 +104,9 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
 
   // Handle chunk ready event
   const handleChunkReady = useCallback(async (chunk) => {
+    // eslint-disable-next-line no-console
+    console.log('[ChunkRenderer] Chunk ready:', chunk.key, 'blocks:', chunk.blocks?.length);
+
     // Build mesh for the new chunk
     if (workerPool) {
       try {
@@ -116,13 +119,16 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
           neighborWest: chunk.neighbors.west?.blocks || null,
         });
 
+        // eslint-disable-next-line no-console
+        console.log('[ChunkRenderer] Mesh built:', chunk.key, 'vertices:', result.vertexCount);
+
         setMeshData(prev => {
           const next = new Map(prev);
           next.set(chunk.key, result);
           return next;
         });
       } catch (error) {
-        console.error('Failed to build mesh for chunk', chunk.key, error);
+        console.error('[ChunkRenderer] Failed to build mesh:', chunk.key, error);
       }
     }
 

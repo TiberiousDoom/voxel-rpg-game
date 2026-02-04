@@ -189,7 +189,9 @@ export class WorkerPool {
     this.pending.set(requestId, { resolve, reject, worker });
 
     try {
-      worker.postMessage({ ...task, requestId });
+      // Create message manually to avoid Babel spread operator transpilation
+      const message = Object.assign({}, task, { requestId: requestId });
+      worker.postMessage(message);
     } catch (error) {
       this.pending.delete(requestId);
       this.releaseWorker(worker);

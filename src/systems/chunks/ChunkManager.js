@@ -139,8 +139,6 @@ export class ChunkManager {
 
     // Check if player moved to a new chunk
     if (chunkX !== this.playerChunkX || chunkZ !== this.playerChunkZ) {
-      // eslint-disable-next-line no-console
-      console.log('[ChunkManager] Player moved to chunk:', chunkX, chunkZ);
       this.playerChunkX = chunkX;
       this.playerChunkZ = chunkZ;
       this.updateChunkQueues();
@@ -159,23 +157,17 @@ export class ChunkManager {
       playerChunkZ,
       viewDistance
     );
-    // eslint-disable-next-line no-console
-    console.log('[ChunkManager] Chunks needed:', chunksNeeded.length);
 
     const neededKeys = new Set(chunksNeeded.map(c => chunkKey(c.chunkX, c.chunkZ)));
 
     // Queue chunks that need loading
-    let queued = 0;
     for (const { chunkX, chunkZ, distanceSq } of chunksNeeded) {
       const key = chunkKey(chunkX, chunkZ);
 
       if (!this.chunks.has(key) && !this.loading.has(key) && !this.loadQueue.has(key)) {
         this.loadQueue.enqueue(chunkX, chunkZ, distanceSq);
-        queued++;
       }
     }
-    // eslint-disable-next-line no-console
-    console.log('[ChunkManager] Queued for loading:', queued, 'Total in queue:', this.loadQueue.length);
 
     // Queue chunks that should be unloaded
     for (const [key] of this.chunks) {
@@ -292,8 +284,6 @@ export class ChunkManager {
    */
   async startLoadingChunk(chunkX, chunkZ) {
     const key = chunkKey(chunkX, chunkZ);
-    // eslint-disable-next-line no-console
-    console.log('[ChunkManager] Starting to load chunk:', key);
 
     // Already loading or loaded
     if (this.loading.has(key) || this.chunks.has(key)) {
@@ -306,8 +296,6 @@ export class ChunkManager {
       let chunk;
 
       if (this.workerPool) {
-        // eslint-disable-next-line no-console
-        console.log('[ChunkManager] Requesting terrain from worker for:', key);
         // Use worker for terrain generation
         const result = await this.workerPool.execute({
           type: 'generateTerrain',
@@ -315,8 +303,6 @@ export class ChunkManager {
           chunkZ,
           seed: this.seed,
         });
-        // eslint-disable-next-line no-console
-        console.log('[ChunkManager] Terrain received for:', key, 'blocks:', result.blocks?.length);
 
         // Create chunk from worker result
         chunk = new Chunk(chunkX, chunkZ);

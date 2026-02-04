@@ -30,17 +30,12 @@ export function useChunkSystem(options = {}) {
 
   // Initialize chunk system
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[useChunkSystem] Initializing with seed:', seed, 'viewDistance:', viewDistance);
-
     // Create worker pool
     const workerPool = new WorkerPool(
       new URL('../workers/chunkWorker.js', import.meta.url),
       Math.min(navigator.hardwareConcurrency || 4, 4)
     );
     workerPoolRef.current = workerPool;
-    // eslint-disable-next-line no-console
-    console.log('[useChunkSystem] WorkerPool created');
 
     // Create chunk manager
     const chunkManager = new ChunkManager({
@@ -49,8 +44,6 @@ export function useChunkSystem(options = {}) {
     });
     chunkManager.setWorkerPool(workerPool);
     chunkManagerRef.current = chunkManager;
-    // eslint-disable-next-line no-console
-    console.log('[useChunkSystem] ChunkManager created');
 
     setIsReady(true);
 
@@ -84,8 +77,6 @@ export function useChunkSystem(options = {}) {
   // Update player position
   const updatePlayerPosition = useCallback((x, z) => {
     if (chunkManagerRef.current) {
-      // eslint-disable-next-line no-console
-      console.log('[useChunkSystem] updatePlayerPosition:', x, z);
       chunkManagerRef.current.updatePlayerPosition(x, z);
     }
   }, []);

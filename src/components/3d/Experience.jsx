@@ -90,9 +90,9 @@ const Experience = () => {
 
           {/* Ground plane - provides collision (temporary until chunk collision) */}
           <RigidBody type="fixed" colliders="cuboid" position={[0, -1, 0]}>
-            <mesh position={[0, 0, 0]}>
+            <mesh position={[0, 0, 0]} visible={false}>
               <boxGeometry args={[500, 2, 500]} />
-              <meshStandardMaterial color="#228b22" transparent opacity={0} />
+              <meshBasicMaterial />
             </mesh>
           </RigidBody>
 

@@ -10,10 +10,11 @@ import { useFrame } from '@react-three/fiber';
 import { chunkOriginWorld } from '../../systems/chunks/coordinates.js';
 
 /**
- * Individual chunk mesh component
+ * Individual chunk mesh component - creates mesh imperatively to avoid empty geometry issues
  */
 function ChunkMesh({ chunk, meshData }) {
-  const meshRef = useRef();
+  const groupRef = useRef();
+  const meshRef = useRef(null);
 
   // Get chunk world position
   const position = useMemo(() => {
@@ -21,16 +22,26 @@ function ChunkMesh({ chunk, meshData }) {
     return [origin.x, origin.y, origin.z];
   }, [chunk.x, chunk.z]);
 
-  // Create geometry from mesh data - using useMemo for simpler lifecycle
-  const geometry = useMemo(() => {
+  // Create/update mesh imperatively when meshData changes
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+
     // Validate mesh data
     if (!meshData || !meshData.positions || !meshData.normals || !meshData.colors || !meshData.indices) {
-      return null;
+      // Remove existing mesh if data becomes invalid
+      if (meshRef.current) {
+        group.remove(meshRef.current);
+        meshRef.current.geometry.dispose();
+        meshRef.current.material.dispose();
+        meshRef.current = null;
+      }
+      return;
     }
 
     // Check for valid data lengths
     if (meshData.positions.length === 0 || meshData.vertexCount === 0) {
-      return null;
+      return;
     }
 
     // Create geometry
@@ -52,29 +63,35 @@ function ChunkMesh({ chunk, meshData }) {
 
     geo.computeBoundingSphere();
 
-    return geo;
-  }, [meshData]);
+    // Create material
+    const mat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      side: THREE.FrontSide,
+    });
 
-  // Cleanup geometry on unmount
-  useEffect(() => {
+    // Remove old mesh if exists
+    if (meshRef.current) {
+      group.remove(meshRef.current);
+      meshRef.current.geometry.dispose();
+      meshRef.current.material.dispose();
+    }
+
+    // Create new mesh and add to group
+    const mesh = new THREE.Mesh(geo, mat);
+    meshRef.current = mesh;
+    group.add(mesh);
+
     return () => {
-      if (geometry) {
-        geometry.dispose();
+      if (meshRef.current) {
+        group.remove(meshRef.current);
+        meshRef.current.geometry.dispose();
+        meshRef.current.material.dispose();
+        meshRef.current = null;
       }
     };
-  }, [geometry]);
+  }, [meshData]);
 
-  // Don't render if no valid geometry
-  if (!geometry) {
-    return null;
-  }
-
-  return (
-    <mesh ref={meshRef} position={position}>
-      <primitive object={geometry} attach="geometry" />
-      <meshBasicMaterial vertexColors side={THREE.FrontSide} />
-    </mesh>
-  );
+  return <group ref={groupRef} position={position} />;
 }
 
 /**

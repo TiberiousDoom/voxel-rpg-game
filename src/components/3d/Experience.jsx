@@ -83,7 +83,7 @@ const Experience = () => {
         <RigidBody type="fixed" colliders="cuboid" position={[0, 3, 0]}>
           <mesh position={[0, 0, 0]}>
             <boxGeometry args={[200, 10, 200]} />
-            <meshBasicMaterial color="#4a7c4a" transparent opacity={0.5} />
+            <meshBasicMaterial color="#4a7c4a" />
           </mesh>
         </RigidBody>
 

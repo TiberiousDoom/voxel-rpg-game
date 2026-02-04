@@ -78,6 +78,7 @@ function ChunkMesh({ chunk, meshData }) {
 
     // Create new mesh and add to group
     const mesh = new THREE.Mesh(geo, mat);
+    mesh.frustumCulled = false; // Disable culling to prevent flicker
     meshRef.current = mesh;
     group.add(mesh);
 

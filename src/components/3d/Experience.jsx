@@ -79,11 +79,11 @@ const Experience = () => {
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
-        {/* Ground plane with physics - OUTSIDE Suspense to ensure it loads first */}
-        <RigidBody type="fixed" colliders="cuboid" position={[0, -1, 0]}>
-          <mesh position={[0, 0, 0]}>
+        {/* Safety ground plane - at terrain level for physics until chunk collision is added */}
+        <RigidBody type="fixed" colliders="cuboid" position={[0, 7, 0]}>
+          <mesh position={[0, 0, 0]} visible={false}>
             <boxGeometry args={[500, 2, 500]} />
-            <meshBasicMaterial color="#3d8b3d" />
+            <meshBasicMaterial />
           </mesh>
         </RigidBody>
 

@@ -31,7 +31,7 @@ const useGameStore = create((set, get) => ({
 
   // Player state
   player: {
-    position: [0, 2, 0], // x, y, z in 3D space
+    position: [0, 12, 0], // x, y, z in 3D space - spawn above terrain
     velocity: [0, 0, 0],
     targetPosition: null, // For tap-to-move
     health: 100,
@@ -951,7 +951,7 @@ const useGameStore = create((set, get) => ({
         health: state.player.maxHealth,
         mana: state.player.maxMana,
         stamina: state.player.maxStamina,
-        position: [0, 2, 0], // Respawn at starting position
+        position: [0, 12, 0], // Respawn at starting position
         velocity: [0, 0, 0],
         targetPosition: null,
         isInvincible: false,
@@ -970,7 +970,7 @@ const useGameStore = create((set, get) => ({
         height: 10,
       },
       player: {
-        position: [0, 2, 0],
+        position: [0, 12, 0],
         velocity: [0, 0, 0],
         targetPosition: null,
         health: 100,

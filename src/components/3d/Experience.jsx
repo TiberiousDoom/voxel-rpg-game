@@ -74,8 +74,8 @@ const Experience = () => {
         intensity={0.8}
       />
 
-      {/* Fog for depth - extended for larger world */}
-      <fog attach="fog" args={['#87ceeb', 100, 300]} />
+      {/* Fog for depth - pushed back to see more terrain */}
+      <fog attach="fog" args={['#87ceeb', 150, 400]} />
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
@@ -86,16 +86,6 @@ const Experience = () => {
             <meshBasicMaterial color="#3d8b3d" />
           </mesh>
         </RigidBody>
-
-        {/* Debug: Test cubes at known positions */}
-        <mesh position={[0, 2, 0]}>
-          <boxGeometry args={[2, 2, 2]} />
-          <meshBasicMaterial color="red" />
-        </mesh>
-        <mesh position={[5, 2, 5]}>
-          <boxGeometry args={[2, 2, 2]} />
-          <meshBasicMaterial color="blue" />
-        </mesh>
 
         <Suspense fallback={null}>
           {/* Chunk-based terrain */}

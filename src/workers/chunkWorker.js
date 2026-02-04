@@ -189,11 +189,10 @@ function generateTerrain(params) {
   const random = new SeededRandom(seed + chunkX * 31337 + chunkZ * 7919);
   const blocks = new Uint8Array(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE_Y);
 
-  // Terrain parameters - keep surface low enough to be visible from player position (y=2)
-  // Surface will be at block y = baseHeight ± heightVariation = 1-3 blocks = 2-6 world units
-  const seaLevel = 0;
-  const baseHeight = 1;
-  const heightVariation = 2;
+  // Terrain parameters - increased for more visible terrain
+  const seaLevel = 2;
+  const baseHeight = 4;
+  const heightVariation = 4;
 
   for (let x = 0; x < CHUNK_SIZE; x++) {
     for (let z = 0; z < CHUNK_SIZE; z++) {

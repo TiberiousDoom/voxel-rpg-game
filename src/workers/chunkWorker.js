@@ -399,97 +399,123 @@ function buildChunkMesh(params) {
 
 const activeTasks = new Map();
 
-self.onmessage = (event) => {
-  const { type, requestId, ...params } = event.data;
+self.onmessage = function(event) {
+  var data = event.data;
+  var type = data.type;
+  var requestId = data.requestId;
 
   switch (type) {
     case 'generateTerrain':
-      handleGenerateTerrain(requestId, params);
+      handleGenerateTerrain(requestId, data);
       break;
     case 'buildMesh':
-      handleBuildMesh(requestId, params);
+      handleBuildMesh(requestId, data);
       break;
     case 'generateAndBuildMesh':
-      handleGenerateAndBuildMesh(requestId, params);
+      handleGenerateAndBuildMesh(requestId, data);
       break;
     case 'cancel':
       handleCancel(requestId);
       break;
     default:
-      self.postMessage({ type: 'error', requestId, error: `Unknown type: ${type}` });
+      self.postMessage({ type: 'error', requestId: requestId, error: 'Unknown type: ' + type });
   }
 };
 
-function handleGenerateTerrain(requestId, params) {
+function handleGenerateTerrain(requestId, data) {
   activeTasks.set(requestId, { cancelled: false });
   try {
-    const result = generateTerrain(params);
-    if (activeTasks.get(requestId)?.cancelled) {
+    var result = generateTerrain(data);
+    var task = activeTasks.get(requestId);
+    if (task && task.cancelled) {
       activeTasks.delete(requestId);
       return;
     }
     self.postMessage(
-      { type: 'terrainComplete', requestId, ...result },
+      {
+        type: 'terrainComplete',
+        requestId: requestId,
+        blocks: result.blocks,
+        chunkX: result.chunkX,
+        chunkZ: result.chunkZ
+      },
       [result.blocks.buffer]
     );
   } catch (error) {
-    self.postMessage({ type: 'error', requestId, error: error.message });
+    self.postMessage({ type: 'error', requestId: requestId, error: error.message });
   } finally {
     activeTasks.delete(requestId);
   }
 }
 
-function handleBuildMesh(requestId, params) {
+function handleBuildMesh(requestId, data) {
   activeTasks.set(requestId, { cancelled: false });
   try {
-    const result = buildChunkMesh(params);
-    if (activeTasks.get(requestId)?.cancelled) {
+    var result = buildChunkMesh(data);
+    var task = activeTasks.get(requestId);
+    if (task && task.cancelled) {
       activeTasks.delete(requestId);
       return;
     }
     self.postMessage(
-      { type: 'meshComplete', requestId, ...result },
+      {
+        type: 'meshComplete',
+        requestId: requestId,
+        positions: result.positions,
+        normals: result.normals,
+        colors: result.colors,
+        indices: result.indices,
+        vertexCount: result.vertexCount,
+        faceCount: result.faceCount
+      },
       [result.positions.buffer, result.normals.buffer, result.colors.buffer, result.indices.buffer]
     );
   } catch (error) {
-    self.postMessage({ type: 'error', requestId, error: error.message });
+    self.postMessage({ type: 'error', requestId: requestId, error: error.message });
   } finally {
     activeTasks.delete(requestId);
   }
 }
 
-function handleGenerateAndBuildMesh(requestId, params) {
+function handleGenerateAndBuildMesh(requestId, data) {
   activeTasks.set(requestId, { cancelled: false });
   try {
-    const terrain = generateTerrain(params);
-    if (activeTasks.get(requestId)?.cancelled) {
+    var terrain = generateTerrain(data);
+    var task = activeTasks.get(requestId);
+    if (task && task.cancelled) {
       activeTasks.delete(requestId);
       return;
     }
-    const mesh = buildChunkMesh({
+    var mesh = buildChunkMesh({
       blocks: terrain.blocks,
-      neighborNorth: params.neighborNorth || null,
-      neighborSouth: params.neighborSouth || null,
-      neighborEast: params.neighborEast || null,
-      neighborWest: params.neighborWest || null,
+      neighborNorth: data.neighborNorth || null,
+      neighborSouth: data.neighborSouth || null,
+      neighborEast: data.neighborEast || null,
+      neighborWest: data.neighborWest || null
     });
-    if (activeTasks.get(requestId)?.cancelled) {
+    task = activeTasks.get(requestId);
+    if (task && task.cancelled) {
       activeTasks.delete(requestId);
       return;
     }
     self.postMessage(
       {
         type: 'generateAndMeshComplete',
-        requestId,
+        requestId: requestId,
         chunkX: terrain.chunkX,
         chunkZ: terrain.chunkZ,
         blocks: terrain.blocks,
-        ...mesh,
+        positions: mesh.positions,
+        normals: mesh.normals,
+        colors: mesh.colors,
+        indices: mesh.indices,
+        vertexCount: mesh.vertexCount,
+        faceCount: mesh.faceCount
       },
       [terrain.blocks.buffer, mesh.positions.buffer, mesh.normals.buffer, mesh.colors.buffer, mesh.indices.buffer]
     );
   } catch (error) {
-    self.postMessage({ type: 'error', requestId, error: error.message });
+    self.postMessage({ type: 'error', requestId: requestId, error: error.message });
   } finally {
     activeTasks.delete(requestId);
   }

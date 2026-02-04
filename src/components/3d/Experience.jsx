@@ -79,11 +79,11 @@ const Experience = () => {
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
-        {/* Safety ground plane - at terrain level for physics until chunk collision is added */}
-        <RigidBody type="fixed" colliders="cuboid" position={[0, 7, 0]}>
-          <mesh position={[0, 0, 0]} visible={false}>
-            <boxGeometry args={[500, 2, 500]} />
-            <meshBasicMaterial />
+        {/* Ground plane - thick and visible for debugging */}
+        <RigidBody type="fixed" colliders="cuboid" position={[0, -5, 0]}>
+          <mesh position={[0, 0, 0]}>
+            <boxGeometry args={[500, 10, 500]} />
+            <meshBasicMaterial color="#553322" />
           </mesh>
         </RigidBody>
 
@@ -99,11 +99,11 @@ const Experience = () => {
           {/* Player */}
           <Player />
 
-          {/* Enemies - spawn a few for testing */}
-          <Enemy position={[10, 5, 10]} name="Slime" />
-          <Enemy position={[-15, 5, 8]} name="Goblin" />
-          <Enemy position={[8, 5, -12]} name="Orc" />
-          <Enemy position={[-10, 5, -15]} name="Skeleton" />
+          {/* Enemies - spawn above ground */}
+          <Enemy position={[10, 10, 10]} name="Slime" />
+          <Enemy position={[-15, 10, 8]} name="Goblin" />
+          <Enemy position={[8, 10, -12]} name="Orc" />
+          <Enemy position={[-10, 10, -15]} name="Skeleton" />
 
           {/* Projectiles - inside physics for collision detection */}
           {projectiles.map((proj) => (

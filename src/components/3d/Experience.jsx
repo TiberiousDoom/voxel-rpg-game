@@ -79,22 +79,22 @@ const Experience = () => {
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
-        {/* Ground plane - positioned so top surface is at y=2 */}
-        <RigidBody type="fixed" colliders="cuboid" position={[0, 1, 0]}>
-          <mesh position={[0, 0, 0]}>
+        {/* Invisible physics ground at terrain surface level (y≈8) */}
+        <RigidBody type="fixed" colliders="cuboid" position={[0, 7, 0]}>
+          <mesh position={[0, 0, 0]} visible={false}>
             <boxGeometry args={[500, 2, 500]} />
-            <meshBasicMaterial color="#553322" />
+            <meshBasicMaterial />
           </mesh>
         </RigidBody>
 
         {/* Player - outside Suspense for reliable physics */}
         <Player />
 
-        {/* Enemies - spawn above ground */}
-        <Enemy position={[10, 5, 10]} name="Slime" />
-        <Enemy position={[-15, 5, 8]} name="Goblin" />
-        <Enemy position={[8, 5, -12]} name="Orc" />
-        <Enemy position={[-10, 5, -15]} name="Skeleton" />
+        {/* Enemies - spawn above invisible ground (y=8) */}
+        <Enemy position={[10, 12, 10]} name="Slime" />
+        <Enemy position={[-15, 12, 8]} name="Goblin" />
+        <Enemy position={[8, 12, -12]} name="Orc" />
+        <Enemy position={[-10, 12, -15]} name="Skeleton" />
 
         <Suspense fallback={null}>
           {/* Chunk-based terrain */}

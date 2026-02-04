@@ -74,28 +74,18 @@ const Experience = () => {
         intensity={0.8}
       />
 
-      {/* Fog for depth - extended for larger world */}
-      <fog attach="fog" args={['#87ceeb', 100, 300]} />
+      {/* Fog for depth - pushed back to see more terrain */}
+      <fog attach="fog" args={['#87ceeb', 150, 400]} />
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
-        {/* Ground plane with physics - OUTSIDE Suspense to ensure it loads first */}
-        <RigidBody type="fixed" colliders="cuboid" position={[0, -1, 0]}>
-          <mesh position={[0, 0, 0]}>
+        {/* Safety ground plane - at terrain level for physics until chunk collision is added */}
+        <RigidBody type="fixed" colliders="cuboid" position={[0, 7, 0]}>
+          <mesh position={[0, 0, 0]} visible={false}>
             <boxGeometry args={[500, 2, 500]} />
-            <meshBasicMaterial color="#3d8b3d" />
+            <meshBasicMaterial />
           </mesh>
         </RigidBody>
-
-        {/* Debug: Test cubes at known positions */}
-        <mesh position={[0, 2, 0]}>
-          <boxGeometry args={[2, 2, 2]} />
-          <meshBasicMaterial color="red" />
-        </mesh>
-        <mesh position={[5, 2, 5]}>
-          <boxGeometry args={[2, 2, 2]} />
-          <meshBasicMaterial color="blue" />
-        </mesh>
 
         <Suspense fallback={null}>
           {/* Chunk-based terrain */}

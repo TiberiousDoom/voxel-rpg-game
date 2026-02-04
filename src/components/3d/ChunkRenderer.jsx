@@ -91,15 +91,7 @@ function ChunkMesh({ chunk, meshData }) {
     };
   }, [meshData]);
 
-  return (
-    <group ref={groupRef} position={position}>
-      {/* Debug: small cube at chunk origin to visualize chunk positions */}
-      <mesh position={[16, 5, 16]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshBasicMaterial color="yellow" />
-      </mesh>
-    </group>
-  );
+  return <group ref={groupRef} position={position} />;
 }
 
 /**
@@ -112,9 +104,6 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
 
   // Handle chunk ready event
   const handleChunkReady = useCallback(async (chunk) => {
-    // eslint-disable-next-line no-console
-    console.log('[ChunkRenderer] handleChunkReady called for:', chunk.key);
-
     // Build mesh for the new chunk
     if (workerPool) {
       try {
@@ -126,9 +115,6 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
           neighborEast: chunk.neighbors.east?.blocks || null,
           neighborWest: chunk.neighbors.west?.blocks || null,
         });
-
-        // eslint-disable-next-line no-console
-        console.log('[ChunkRenderer] Mesh built for:', chunk.key, 'vertices:', result?.vertexCount);
 
         setMeshData(prev => {
           const next = new Map(prev);
@@ -225,9 +211,6 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
   });
 
   // Render all chunks
-  // eslint-disable-next-line no-console
-  console.log('[ChunkRenderer] Rendering - chunks:', chunks.size, 'meshData:', meshData.size);
-
   return (
     <group name="chunks">
       {Array.from(chunks.values()).map(chunk => {

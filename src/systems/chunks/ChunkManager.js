@@ -97,9 +97,10 @@ export class ChunkManager {
     // Currently loading (waiting for worker)
     this.loading = new Set();
 
-    // Player position tracking
-    this.playerChunkX = 0;
-    this.playerChunkZ = 0;
+    // Player position tracking (use invalid values to force initial update)
+    this.playerChunkX = Number.MAX_SAFE_INTEGER;
+    this.playerChunkZ = Number.MAX_SAFE_INTEGER;
+    this.initialized = false;
 
     // Mesh rebuild queue
     this.meshRebuildQueue = new Set();

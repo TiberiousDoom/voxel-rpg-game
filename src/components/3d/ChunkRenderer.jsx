@@ -91,7 +91,15 @@ function ChunkMesh({ chunk, meshData }) {
     };
   }, [meshData]);
 
-  return <group ref={groupRef} position={position} />;
+  return (
+    <group ref={groupRef} position={position}>
+      {/* Debug: small cube at chunk origin to visualize chunk positions */}
+      <mesh position={[16, 5, 16]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial color="yellow" />
+      </mesh>
+    </group>
+  );
 }
 
 /**

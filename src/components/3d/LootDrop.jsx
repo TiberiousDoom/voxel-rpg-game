@@ -73,13 +73,7 @@ const LootDrop = ({ position, lootType = 'gold', amount = 10, id }) => {
         {/* Loot item */}
         <mesh castShadow>
           <octahedronGeometry args={[0.3, 0]} />
-          <meshStandardMaterial
-            color={getLootColor()}
-            emissive={getLootColor()}
-            emissiveIntensity={0.5}
-            metalness={0.8}
-            roughness={0.2}
-          />
+          <meshBasicMaterial color={getLootColor()} />
         </mesh>
 
         {/* Glow effect */}

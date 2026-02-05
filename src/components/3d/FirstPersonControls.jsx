@@ -1,7 +1,7 @@
 /**
  * FirstPersonControls - Handles pointer lock and first-person mouse look
  *
- * Click canvas to enter first-person mode (pointer lock)
+ * Press V to toggle first-person mode (pointer lock)
  * ESC to exit pointer lock
  * Mouse movement controls camera pitch and yaw
  */
@@ -76,17 +76,19 @@ const FirstPersonControls = () => {
     return null;
   }, []);
 
-  // Request pointer lock on click - using Promise API for better error handling
-  const handleClick = useCallback(async () => {
-    // Get the actual canvas element
+  // Toggle pointer lock
+  const togglePointerLock = useCallback(async () => {
     const canvas = getCanvasElement();
     if (!canvas) {
       console.warn('Canvas element not found');
       return;
     }
 
-    // Check if already locked
-    if (isLockedRef.current || document.pointerLockElement === canvas) return;
+    // If already locked, exit
+    if (document.pointerLockElement === canvas) {
+      document.exitPointerLock();
+      return;
+    }
 
     // Ensure document is focused
     if (!document.hasFocus()) {
@@ -94,19 +96,27 @@ const FirstPersonControls = () => {
     }
 
     try {
-      // Use the Promise-based API if available
       if (canvas.requestPointerLock) {
         const result = canvas.requestPointerLock();
-        // Handle both Promise and non-Promise implementations
         if (result && result.catch) {
           await result;
         }
       }
     } catch (error) {
       console.warn('Pointer lock request failed:', error.message || error);
-      // Don't update state on error - let user try again
     }
   }, [getCanvasElement]);
+
+  // Handle V key press to toggle first-person mode
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.code === 'KeyV' && !event.repeat) {
+        event.preventDefault();
+        togglePointerLock();
+      }
+    },
+    [togglePointerLock]
+  );
 
   // Setup event listeners
   useEffect(() => {
@@ -118,20 +128,20 @@ const FirstPersonControls = () => {
     // Add event listeners
     document.addEventListener('pointerlockchange', handlePointerLockChange);
     document.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('click', handleClick);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       // Cleanup
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
       document.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('click', handleClick);
+      document.removeEventListener('keydown', handleKeyDown);
 
       // Exit pointer lock on unmount
       if (document.pointerLockElement === canvas) {
         document.exitPointerLock();
       }
     };
-  }, [gl.domElement, handlePointerLockChange, handleMouseMove, handleClick]);
+  }, [gl.domElement, handlePointerLockChange, handleMouseMove, handleKeyDown]);
 
   return null; // This component doesn't render anything
 };

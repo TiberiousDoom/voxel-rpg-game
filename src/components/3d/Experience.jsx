@@ -79,11 +79,12 @@ const Experience = () => {
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
-        {/* Visible physics ground for debugging - will catch player */}
-        <RigidBody type="fixed" colliders="cuboid" position={[0, 3, 0]}>
-          <mesh position={[0, 0, 0]}>
-            <boxGeometry args={[200, 10, 200]} />
-            <meshBasicMaterial color="#4a7c4a" />
+        {/* Invisible physics ground - safety net aligned with terrain floor */}
+        {/* Top surface at y=8, matching minimum terrain surface (baseHeight=4 * VOXEL_SIZE=2) */}
+        <RigidBody type="fixed" colliders="cuboid" position={[0, 7, 0]}>
+          <mesh visible={false}>
+            <boxGeometry args={[500, 2, 500]} />
+            <meshBasicMaterial />
           </mesh>
         </RigidBody>
 

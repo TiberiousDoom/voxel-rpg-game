@@ -1,7 +1,8 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
-import { Text, Billboard } from '@react-three/drei';
+// NOTE: Billboard and Text from drei removed - they caused WebGL shader errors
+// that corrupted the rendering pipeline, preventing terrain chunks from drawing.
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 
@@ -182,57 +183,30 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
           <meshBasicMaterial color="#000000" />
         </mesh>
 
-        {/* Name and Health bar */}
-        <Billboard position={[0, 1.8, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
-          {/* Name label */}
-          <Text
-            position={[0, 0.35, 0]}
-            fontSize={0.2}
-            color="white"
-            anchorX="center"
-            anchorY="middle"
-          >
-            {name}
-          </Text>
+        {/* Health bar - simple geometry, no drei Text/Billboard */}
+        <group position={[0, 1.8, 0]}>
+          {/* Border/outline */}
+          <mesh position={[0, 0, 0]}>
+            <planeGeometry args={[1.6, 0.25]} />
+            <meshBasicMaterial color="#000000" side={THREE.DoubleSide} depthTest={false} />
+          </mesh>
 
-          {/* Health bar container with border */}
-          <group>
-            {/* Border/outline */}
-            <mesh position={[0, 0, 0]}>
-              <planeGeometry args={[1.6, 0.25]} />
-              <meshBasicMaterial color="#000000" side={THREE.DoubleSide} depthTest={false} />
-            </mesh>
+          {/* Health bar background */}
+          <mesh position={[0, 0, 0.01]}>
+            <planeGeometry args={[1.5, 0.2]} />
+            <meshBasicMaterial color="#333333" side={THREE.DoubleSide} depthTest={false} />
+          </mesh>
 
-            {/* Health bar background */}
-            <mesh position={[0, 0, 0.01]}>
-              <planeGeometry args={[1.5, 0.2]} />
-              <meshBasicMaterial color="#333333" side={THREE.DoubleSide} depthTest={false} />
-            </mesh>
-
-            {/* Health bar fill with gradient effect */}
-            <mesh position={[-(1.5 - (health / maxHealth * 1.5)) / 2, 0, 0.02]}>
-              <planeGeometry args={[health / maxHealth * 1.5, 0.18]} />
-              <meshBasicMaterial
-                color={health / maxHealth > 0.5 ? "#44ff44" : health / maxHealth > 0.25 ? "#ffaa00" : "#ff4444"}
-                side={THREE.DoubleSide}
-                emissive={health / maxHealth > 0.5 ? "#22aa22" : health / maxHealth > 0.25 ? "#aa6600" : "#aa2222"}
-                emissiveIntensity={0.5}
-                depthTest={false}
-              />
-            </mesh>
-
-            {/* Health value text */}
-            <Text
-              position={[0, 0, 0.03]}
-              fontSize={0.12}
-              color="white"
-              anchorX="center"
-              anchorY="middle"
-            >
-              {Math.round(health)}/{maxHealth}
-            </Text>
-          </group>
-        </Billboard>
+          {/* Health bar fill */}
+          <mesh position={[-(1.5 - (health / maxHealth * 1.5)) / 2, 0, 0.02]}>
+            <planeGeometry args={[health / maxHealth * 1.5, 0.18]} />
+            <meshBasicMaterial
+              color={health / maxHealth > 0.5 ? "#44ff44" : health / maxHealth > 0.25 ? "#ffaa00" : "#ff4444"}
+              side={THREE.DoubleSide}
+              depthTest={false}
+            />
+          </mesh>
+        </group>
       </group>
     </RigidBody>
   );

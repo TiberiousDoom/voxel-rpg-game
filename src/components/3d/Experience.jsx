@@ -11,6 +11,7 @@ import DamageNumber from './DamageNumber';
 import XPOrb from './XPOrb';
 import ParticleEffect from './ParticleEffect';
 import ChunkRenderer from './ChunkRenderer';
+import BlockInteraction from './BlockInteraction';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 
@@ -91,10 +92,13 @@ const Experience = () => {
         <Suspense fallback={null}>
           {/* Chunk-based terrain */}
           {isReady && chunkManager && workerPool && (
-            <ChunkRenderer
-              chunkManager={chunkManager}
-              workerPool={workerPool}
-            />
+            <>
+              <ChunkRenderer
+                chunkManager={chunkManager}
+                workerPool={workerPool}
+              />
+              <BlockInteraction chunkManager={chunkManager} />
+            </>
           )}
 
           {/* Projectiles - inside physics for collision detection */}

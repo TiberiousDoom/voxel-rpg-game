@@ -1,7 +1,5 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-
 // NOTE: drei Text removed - it caused WebGL shader errors that
 // corrupted the rendering pipeline, preventing terrain chunks from drawing.
 

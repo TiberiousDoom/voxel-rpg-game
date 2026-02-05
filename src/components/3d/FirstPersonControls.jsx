@@ -2,6 +2,7 @@
  * FirstPersonControls - Handles pointer lock and first-person mouse look
  *
  * Press V to toggle first-person mode (pointer lock)
+ * Or click canvas while holding V to enter
  * ESC to exit pointer lock
  * Mouse movement controls camera pitch and yaw
  */
@@ -18,6 +19,7 @@ const FirstPersonControls = () => {
   const { gl } = useThree();
   const isLockedRef = useRef(false);
   const canvasRef = useRef(null);
+  const wantsFPSMode = useRef(false); // Track if user wants to enter FPS mode
 
   const updateCamera = useGameStore((state) => state.updateCamera);
   const cameraState = useGameStore((state) => state.camera);
@@ -57,65 +59,75 @@ const FirstPersonControls = () => {
     const lockedElement = document.pointerLockElement;
     const isLocked = lockedElement && lockedElement.tagName === 'CANVAS';
     isLockedRef.current = isLocked;
+    wantsFPSMode.current = false; // Reset the flag
 
     updateCamera({ firstPerson: isLocked });
   }, [updateCamera]);
 
-  // Get the actual canvas element from the document
-  const getCanvasElement = useCallback(() => {
-    // First try our cached reference
-    if (canvasRef.current && canvasRef.current.ownerDocument === document) {
-      return canvasRef.current;
-    }
-    // Fallback: query the canvas directly from DOM
-    const canvas = document.querySelector('canvas');
-    if (canvas) {
-      canvasRef.current = canvas;
-      return canvas;
-    }
-    return null;
-  }, []);
+  // Request pointer lock - called from click handler
+  const requestPointerLockOnCanvas = useCallback(async (canvas) => {
+    if (!canvas) return false;
 
-  // Toggle pointer lock
-  const togglePointerLock = useCallback(async () => {
-    const canvas = getCanvasElement();
-    if (!canvas) {
-      console.warn('Canvas element not found');
-      return;
-    }
-
-    // If already locked, exit
-    if (document.pointerLockElement === canvas) {
-      document.exitPointerLock();
-      return;
-    }
-
-    // Ensure document is focused
-    if (!document.hasFocus()) {
-      window.focus();
-    }
+    // Debug: Log canvas info
+    console.log('Requesting pointer lock on:', canvas.tagName, canvas.ownerDocument === document);
 
     try {
+      // Try the standard API
       if (canvas.requestPointerLock) {
-        const result = canvas.requestPointerLock();
-        if (result && result.catch) {
-          await result;
-        }
+        await canvas.requestPointerLock();
+        return true;
       }
     } catch (error) {
-      console.warn('Pointer lock request failed:', error.message || error);
-    }
-  }, [getCanvasElement]);
+      console.warn('Pointer lock failed:', error.message);
 
-  // Handle V key press to toggle first-person mode
+      // If it fails, try updating state manually for a "soft" FPS mode
+      // This won't lock the pointer but will switch the camera
+      updateCamera({ firstPerson: true });
+      return false;
+    }
+    return false;
+  }, [updateCamera]);
+
+  // Handle V key press - toggle or prepare for FPS mode
   const handleKeyDown = useCallback(
     (event) => {
       if (event.code === 'KeyV' && !event.repeat) {
         event.preventDefault();
-        togglePointerLock();
+
+        // If already in FPS mode, exit
+        if (isLockedRef.current || document.pointerLockElement) {
+          document.exitPointerLock();
+          return;
+        }
+
+        // Set flag - next click will enter FPS mode
+        // Also try direct request (works in some browsers)
+        wantsFPSMode.current = true;
+
+        // Try direct pointer lock (may fail in some browsers)
+        const canvas = canvasRef.current || document.querySelector('canvas');
+        if (canvas) {
+          requestPointerLockOnCanvas(canvas);
+        }
       }
     },
-    [togglePointerLock]
+    [requestPointerLockOnCanvas]
+  );
+
+  // Handle click on canvas - enter FPS mode if V was pressed or directly
+  const handleCanvasClick = useCallback(
+    async (event) => {
+      // If already locked, don't do anything
+      if (isLockedRef.current || document.pointerLockElement) return;
+
+      // Get the canvas from the event target
+      const canvas = event.target;
+      if (canvas && canvas.tagName === 'CANVAS') {
+        // Click always enters FPS mode (simpler UX)
+        await requestPointerLockOnCanvas(canvas);
+      }
+    },
+    [requestPointerLockOnCanvas]
   );
 
   // Setup event listeners
@@ -129,19 +141,21 @@ const FirstPersonControls = () => {
     document.addEventListener('pointerlockchange', handlePointerLockChange);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('keydown', handleKeyDown);
+    canvas.addEventListener('click', handleCanvasClick);
 
     return () => {
       // Cleanup
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('keydown', handleKeyDown);
+      canvas.removeEventListener('click', handleCanvasClick);
 
       // Exit pointer lock on unmount
       if (document.pointerLockElement === canvas) {
         document.exitPointerLock();
       }
     };
-  }, [gl.domElement, handlePointerLockChange, handleMouseMove, handleKeyDown]);
+  }, [gl.domElement, handlePointerLockChange, handleMouseMove, handleKeyDown, handleCanvasClick]);
 
   return null; // This component doesn't render anything
 };

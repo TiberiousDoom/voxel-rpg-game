@@ -72,8 +72,8 @@ const Crosshair = () => {
   if (!firstPerson) {
     return (
       <div style={hintStyle}>
-        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Press V for First-Person Mode</div>
-        <div style={{ fontSize: '12px', opacity: 0.8 }}>V to toggle | WASD to move | Mouse to look</div>
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Press V or Click for First-Person Mode</div>
+        <div style={{ fontSize: '12px', opacity: 0.8 }}>V or Click to enter | ESC to exit | WASD + Mouse</div>
       </div>
     );
   }

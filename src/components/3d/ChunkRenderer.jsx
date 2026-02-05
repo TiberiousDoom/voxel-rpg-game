@@ -2,97 +2,59 @@
  * ChunkRenderer - React component that renders all active chunks
  *
  * Subscribes to ChunkManager and renders chunk meshes as they load/unload.
+ * Each chunk gets a trimesh physics collider so the player walks on terrain.
  */
 
 import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { RigidBody } from '@react-three/rapier';
 import { chunkOriginWorld } from '../../systems/chunks/coordinates.js';
 
 /**
- * Individual chunk mesh component - creates mesh imperatively to avoid empty geometry issues
+ * Individual chunk mesh component - declarative mesh with physics collider
  */
 function ChunkMesh({ chunk, meshData }) {
-  const groupRef = useRef();
-  const meshRef = useRef(null);
-
   // Get chunk world position
   const position = useMemo(() => {
     const origin = chunkOriginWorld(chunk.x, chunk.z);
     return [origin.x, origin.y, origin.z];
   }, [chunk.x, chunk.z]);
 
-  // Create/update mesh imperatively when meshData changes
-  useEffect(() => {
-    const group = groupRef.current;
-    if (!group) return;
-
-    // Validate mesh data
-    if (!meshData || !meshData.positions || !meshData.normals || !meshData.colors || !meshData.indices) {
-      // Remove existing mesh if data becomes invalid
-      if (meshRef.current) {
-        group.remove(meshRef.current);
-        meshRef.current.geometry.dispose();
-        meshRef.current.material.dispose();
-        meshRef.current = null;
-      }
-      return;
+  // Build geometry from mesh data
+  const geometry = useMemo(() => {
+    if (!meshData?.positions?.length || !meshData?.indices?.length || meshData.vertexCount === 0) {
+      return null;
     }
 
-    // Check for valid data lengths
-    if (meshData.positions.length === 0 || meshData.vertexCount === 0) {
-      return;
-    }
-
-    // Create geometry
     const geo = new THREE.BufferGeometry();
 
-    // Make copies of the typed arrays to ensure they're not detached
-    const positions = new Float32Array(meshData.positions);
-    const normals = new Float32Array(meshData.normals);
-    const colors = new Float32Array(meshData.colors);
-    const indices = new Uint32Array(meshData.indices);
-
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    if (indices.length > 0) {
-      geo.setIndex(new THREE.BufferAttribute(indices, 1));
-    }
-
+    // Copy typed arrays to ensure they're not detached (from worker transfer)
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(meshData.positions), 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(meshData.normals), 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(meshData.colors), 3));
+    geo.setIndex(new THREE.BufferAttribute(new Uint32Array(meshData.indices), 1));
     geo.computeBoundingSphere();
 
-    // Create material - use DoubleSide to ensure all faces render
-    const mat = new THREE.MeshBasicMaterial({
-      vertexColors: true,
-      side: THREE.DoubleSide,
-    });
-
-    // Remove old mesh if exists
-    if (meshRef.current) {
-      group.remove(meshRef.current);
-      meshRef.current.geometry.dispose();
-      meshRef.current.material.dispose();
-    }
-
-    // Create new mesh and add to group
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.frustumCulled = false; // Disable culling to prevent flicker
-    meshRef.current = mesh;
-    group.add(mesh);
-
-    return () => {
-      if (meshRef.current) {
-        group.remove(meshRef.current);
-        meshRef.current.geometry.dispose();
-        meshRef.current.material.dispose();
-        meshRef.current = null;
-      }
-    };
+    return geo;
   }, [meshData]);
 
-  return <group ref={groupRef} position={position} />;
+  // Dispose old geometry when it changes or unmounts
+  useEffect(() => {
+    return () => {
+      if (geometry) geometry.dispose();
+    };
+  }, [geometry]);
+
+  if (!geometry) return null;
+
+  return (
+    <RigidBody type="fixed" colliders="trimesh" position={position}>
+      <mesh geometry={geometry} frustumCulled={false}>
+        <meshBasicMaterial vertexColors side={THREE.DoubleSide} />
+      </mesh>
+    </RigidBody>
+  );
 }
 
 /**

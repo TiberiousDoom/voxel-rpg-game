@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Physics, RigidBody } from '@react-three/rapier';
+import { Physics } from '@react-three/rapier';
 import Player from './Player';
 import Enemy from './Enemy';
 import Projectile from './Projectile';
@@ -79,19 +79,10 @@ const Experience = () => {
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
-        {/* Invisible physics ground - safety net aligned with terrain floor */}
-        {/* Top surface at y=8, matching minimum terrain surface (baseHeight=4 * VOXEL_SIZE=2) */}
-        <RigidBody type="fixed" colliders="cuboid" position={[0, 7, 0]}>
-          <mesh visible={false}>
-            <boxGeometry args={[500, 2, 500]} />
-            <meshBasicMaterial />
-          </mesh>
-        </RigidBody>
-
         {/* Player - outside Suspense for reliable physics */}
         <Player />
 
-        {/* Enemies - spawn above invisible ground (y=8) */}
+        {/* Enemies - spawn above terrain, will land on chunk trimesh colliders */}
         <Enemy position={[10, 12, 10]} name="Slime" />
         <Enemy position={[-15, 12, 8]} name="Goblin" />
         <Enemy position={[8, 12, -12]} name="Orc" />

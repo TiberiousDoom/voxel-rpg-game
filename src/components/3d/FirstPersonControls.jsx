@@ -1,7 +1,7 @@
 /**
  * FirstPersonControls - Handles pointer lock and first-person mouse look
  *
- * Click canvas to enter first-person mode (pointer lock)
+ * Press V to toggle first-person mode (pointer lock)
  * ESC to exit pointer lock
  * Mouse movement controls camera pitch and yaw
  */
@@ -17,9 +17,17 @@ const PITCH_LIMIT = Math.PI / 2 - 0.1; // Slightly less than 90 degrees
 const FirstPersonControls = () => {
   const { gl } = useThree();
   const isLockedRef = useRef(false);
+  const canvasRef = useRef(null);
 
   const updateCamera = useGameStore((state) => state.updateCamera);
   const cameraState = useGameStore((state) => state.camera);
+
+  // Store canvas reference once gl is ready
+  useEffect(() => {
+    if (gl && gl.domElement) {
+      canvasRef.current = gl.domElement;
+    }
+  }, [gl]);
 
   // Handle mouse movement when pointer is locked
   const handleMouseMove = useCallback(
@@ -45,49 +53,95 @@ const FirstPersonControls = () => {
 
   // Handle pointer lock change events
   const handlePointerLockChange = useCallback(() => {
-    const isLocked = document.pointerLockElement === gl.domElement;
+    // Check if pointer is locked to any canvas
+    const lockedElement = document.pointerLockElement;
+    const isLocked = lockedElement && lockedElement.tagName === 'CANVAS';
     isLockedRef.current = isLocked;
 
     updateCamera({ firstPerson: isLocked });
-  }, [gl.domElement, updateCamera]);
-
-  // Handle pointer lock error
-  const handlePointerLockError = useCallback(() => {
-    console.warn('Pointer lock failed');
-    isLockedRef.current = false;
-    updateCamera({ firstPerson: false });
   }, [updateCamera]);
 
-  // Request pointer lock on click
-  const handleClick = useCallback(() => {
-    if (!isLockedRef.current && gl.domElement) {
-      gl.domElement.requestPointerLock();
+  // Get the actual canvas element from the document
+  const getCanvasElement = useCallback(() => {
+    // First try our cached reference
+    if (canvasRef.current && canvasRef.current.ownerDocument === document) {
+      return canvasRef.current;
     }
-  }, [gl.domElement]);
+    // Fallback: query the canvas directly from DOM
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      canvasRef.current = canvas;
+      return canvas;
+    }
+    return null;
+  }, []);
+
+  // Toggle pointer lock
+  const togglePointerLock = useCallback(async () => {
+    const canvas = getCanvasElement();
+    if (!canvas) {
+      console.warn('Canvas element not found');
+      return;
+    }
+
+    // If already locked, exit
+    if (document.pointerLockElement === canvas) {
+      document.exitPointerLock();
+      return;
+    }
+
+    // Ensure document is focused
+    if (!document.hasFocus()) {
+      window.focus();
+    }
+
+    try {
+      if (canvas.requestPointerLock) {
+        const result = canvas.requestPointerLock();
+        if (result && result.catch) {
+          await result;
+        }
+      }
+    } catch (error) {
+      console.warn('Pointer lock request failed:', error.message || error);
+    }
+  }, [getCanvasElement]);
+
+  // Handle V key press to toggle first-person mode
+  const handleKeyDown = useCallback(
+    (event) => {
+      if (event.code === 'KeyV' && !event.repeat) {
+        event.preventDefault();
+        togglePointerLock();
+      }
+    },
+    [togglePointerLock]
+  );
 
   // Setup event listeners
   useEffect(() => {
     const canvas = gl.domElement;
+    if (!canvas) return;
+
+    canvasRef.current = canvas;
 
     // Add event listeners
     document.addEventListener('pointerlockchange', handlePointerLockChange);
-    document.addEventListener('pointerlockerror', handlePointerLockError);
     document.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('click', handleClick);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       // Cleanup
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
-      document.removeEventListener('pointerlockerror', handlePointerLockError);
       document.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('click', handleClick);
+      document.removeEventListener('keydown', handleKeyDown);
 
       // Exit pointer lock on unmount
       if (document.pointerLockElement === canvas) {
         document.exitPointerLock();
       }
     };
-  }, [gl.domElement, handlePointerLockChange, handlePointerLockError, handleMouseMove, handleClick]);
+  }, [gl.domElement, handlePointerLockChange, handleMouseMove, handleKeyDown]);
 
   return null; // This component doesn't render anything
 };

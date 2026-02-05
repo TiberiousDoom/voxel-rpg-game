@@ -73,7 +73,7 @@ const Crosshair = () => {
     return (
       <div style={hintStyle}>
         <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Press V for First-Person Mode</div>
-        <div style={{ fontSize: '12px', opacity: 0.8 }}>V to toggle | WASD to move | Mouse to look</div>
+        <div style={{ fontSize: '12px', opacity: 0.8 }}>V to toggle | WASD to move | Drag to look</div>
       </div>
     );
   }

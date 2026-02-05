@@ -1,9 +1,10 @@
 /**
  * FirstPersonControls - Handles pointer lock and first-person mouse look
  *
- * Press V to toggle first-person mode (pointer lock)
- * ESC to exit pointer lock
- * Mouse movement controls camera pitch and yaw
+ * Press V to toggle first-person mode
+ * In first-person: mouse controls camera (with pointer lock if available)
+ * In first-person without pointer lock: right-drag to look around
+ * ESC or V to exit first-person mode
  */
 
 import { useEffect, useRef, useCallback } from 'react';
@@ -12,12 +13,15 @@ import useGameStore from '../../stores/useGameStore';
 
 // Sensitivity settings
 const MOUSE_SENSITIVITY = 0.002;
+const DRAG_SENSITIVITY = 0.005;
 const PITCH_LIMIT = Math.PI / 2 - 0.1; // Slightly less than 90 degrees
 
 const FirstPersonControls = () => {
   const { gl } = useThree();
   const isLockedRef = useRef(false);
   const canvasRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const softFPSMode = useRef(false); // FPS mode without pointer lock
 
   const updateCamera = useGameStore((state) => state.updateCamera);
   const cameraState = useGameStore((state) => state.camera);
@@ -29,94 +33,126 @@ const FirstPersonControls = () => {
     }
   }, [gl]);
 
-  // Handle mouse movement when pointer is locked
+  // Handle mouse movement - works for both pointer lock and drag mode
   const handleMouseMove = useCallback(
     (event) => {
-      if (!isLockedRef.current) return;
+      const firstPerson = useGameStore.getState().camera.firstPerson;
 
-      const { movementX, movementY } = event;
+      // In pointer lock mode
+      if (isLockedRef.current) {
+        const { movementX, movementY } = event;
+        const currentCamera = useGameStore.getState().camera;
 
-      // Update yaw (horizontal) and pitch (vertical)
-      const newYaw = cameraState.yaw - movementX * MOUSE_SENSITIVITY;
-      let newPitch = cameraState.pitch - movementY * MOUSE_SENSITIVITY;
+        const newYaw = currentCamera.yaw - movementX * MOUSE_SENSITIVITY;
+        let newPitch = currentCamera.pitch - movementY * MOUSE_SENSITIVITY;
+        newPitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, newPitch));
 
-      // Clamp pitch to prevent flipping
-      newPitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, newPitch));
+        updateCamera({ yaw: newYaw, pitch: newPitch });
+        return;
+      }
 
-      updateCamera({
-        yaw: newYaw,
-        pitch: newPitch,
-      });
+      // In soft FPS mode with dragging
+      if (firstPerson && isDraggingRef.current) {
+        const { movementX, movementY } = event;
+        const currentCamera = useGameStore.getState().camera;
+
+        const newYaw = currentCamera.yaw - movementX * DRAG_SENSITIVITY;
+        let newPitch = currentCamera.pitch - movementY * DRAG_SENSITIVITY;
+        newPitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, newPitch));
+
+        updateCamera({ yaw: newYaw, pitch: newPitch });
+      }
     },
-    [cameraState.yaw, cameraState.pitch, updateCamera]
+    [updateCamera]
   );
 
   // Handle pointer lock change events
   const handlePointerLockChange = useCallback(() => {
-    // Check if pointer is locked to any canvas
     const lockedElement = document.pointerLockElement;
     const isLocked = lockedElement && lockedElement.tagName === 'CANVAS';
     isLockedRef.current = isLocked;
 
-    updateCamera({ firstPerson: isLocked });
+    // If we lost pointer lock but were in soft FPS mode, stay in FPS mode
+    if (!isLocked && !softFPSMode.current) {
+      updateCamera({ firstPerson: false });
+    }
   }, [updateCamera]);
 
-  // Get the actual canvas element from the document
-  const getCanvasElement = useCallback(() => {
-    // First try our cached reference
-    if (canvasRef.current && canvasRef.current.ownerDocument === document) {
-      return canvasRef.current;
-    }
-    // Fallback: query the canvas directly from DOM
-    const canvas = document.querySelector('canvas');
-    if (canvas) {
-      canvasRef.current = canvas;
-      return canvas;
-    }
-    return null;
-  }, []);
-
-  // Toggle pointer lock
-  const togglePointerLock = useCallback(async () => {
-    const canvas = getCanvasElement();
-    if (!canvas) {
-      console.warn('Canvas element not found');
-      return;
-    }
-
-    // If already locked, exit
-    if (document.pointerLockElement === canvas) {
-      document.exitPointerLock();
-      return;
-    }
-
-    // Ensure document is focused
-    if (!document.hasFocus()) {
-      window.focus();
-    }
-
-    try {
-      if (canvas.requestPointerLock) {
-        const result = canvas.requestPointerLock();
-        if (result && result.catch) {
-          await result;
-        }
-      }
-    } catch (error) {
-      console.warn('Pointer lock request failed:', error.message || error);
-    }
-  }, [getCanvasElement]);
-
-  // Handle V key press to toggle first-person mode
+  // Handle V key press - toggle first-person mode
   const handleKeyDown = useCallback(
     (event) => {
       if (event.code === 'KeyV' && !event.repeat) {
         event.preventDefault();
-        togglePointerLock();
+
+        const currentFirstPerson = useGameStore.getState().camera.firstPerson;
+
+        // If already in FPS mode, exit
+        if (currentFirstPerson) {
+          softFPSMode.current = false;
+          isLockedRef.current = false;
+          if (document.pointerLockElement) {
+            document.exitPointerLock();
+          }
+          updateCamera({ firstPerson: false });
+          return;
+        }
+
+        // Enter FPS mode
+        const canvas = canvasRef.current || document.querySelector('canvas');
+
+        // Try pointer lock first
+        if (canvas && canvas.requestPointerLock) {
+          try {
+            const result = canvas.requestPointerLock();
+            if (result && typeof result.then === 'function') {
+              result.then(() => {
+                softFPSMode.current = false;
+                updateCamera({ firstPerson: true });
+              }).catch(() => {
+                // Pointer lock failed, use soft mode
+                console.log('Pointer lock unavailable, using soft FPS mode');
+                softFPSMode.current = true;
+                updateCamera({ firstPerson: true });
+              });
+            } else {
+              // Old API - check if lock succeeded after a tick
+              setTimeout(() => {
+                if (document.pointerLockElement === canvas) {
+                  softFPSMode.current = false;
+                } else {
+                  softFPSMode.current = true;
+                }
+                updateCamera({ firstPerson: true });
+              }, 100);
+            }
+          } catch {
+            // Pointer lock failed, use soft mode
+            softFPSMode.current = true;
+            updateCamera({ firstPerson: true });
+          }
+        } else {
+          // No pointer lock support, use soft mode
+          softFPSMode.current = true;
+          updateCamera({ firstPerson: true });
+        }
       }
     },
-    [togglePointerLock]
+    [updateCamera]
   );
+
+  // Handle mouse down for drag-to-look in soft FPS mode
+  const handleMouseDown = useCallback((event) => {
+    const firstPerson = useGameStore.getState().camera.firstPerson;
+    // Right mouse button or left button in soft FPS mode
+    if (firstPerson && softFPSMode.current && event.button === 0) {
+      isDraggingRef.current = true;
+    }
+  }, []);
+
+  // Handle mouse up
+  const handleMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
+  }, []);
 
   // Setup event listeners
   useEffect(() => {
@@ -125,25 +161,26 @@ const FirstPersonControls = () => {
 
     canvasRef.current = canvas;
 
-    // Add event listeners
     document.addEventListener('pointerlockchange', handlePointerLockChange);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      // Cleanup
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mouseup', handleMouseUp);
 
-      // Exit pointer lock on unmount
       if (document.pointerLockElement === canvas) {
         document.exitPointerLock();
       }
     };
-  }, [gl.domElement, handlePointerLockChange, handleMouseMove, handleKeyDown]);
+  }, [gl.domElement, handlePointerLockChange, handleMouseMove, handleKeyDown, handleMouseDown, handleMouseUp]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 export default FirstPersonControls;

@@ -18,6 +18,14 @@ const REACH_DISTANCE = 12;
 // Raycast step size (smaller = more precise, but slower)
 const RAY_STEP = 0.5;
 
+// Pre-create geometry for highlight (reused across all renders)
+const highlightBoxGeometry = new THREE.BoxGeometry(
+  VOXEL_SIZE + 0.02,
+  VOXEL_SIZE + 0.02,
+  VOXEL_SIZE + 0.02
+);
+const highlightEdgesGeometry = new THREE.EdgesGeometry(highlightBoxGeometry);
+
 /**
  * BlockHighlight - Wireframe cube showing selected block
  */
@@ -26,8 +34,7 @@ function BlockHighlight({ position, visible }) {
 
   return (
     <group position={position}>
-      <lineSegments>
-        <edgesGeometry args={[new THREE.BoxGeometry(VOXEL_SIZE + 0.02, VOXEL_SIZE + 0.02, VOXEL_SIZE + 0.02)]} />
+      <lineSegments geometry={highlightEdgesGeometry}>
         <lineBasicMaterial color="#ffffff" linewidth={2} />
       </lineSegments>
     </group>
@@ -58,32 +65,44 @@ export function BlockInteraction({ chunkManager }) {
     return [x, y, z];
   }, [targetBlock]);
 
+  // Reusable vectors for raycast (avoid allocations)
+  const rayDirection = useRef(new THREE.Vector3());
+  const rayOrigin = useRef(new THREE.Vector3());
+
   // Raycast to find targeted block using DDA-like stepping
   const raycastForBlock = useCallback(() => {
     if (!chunkManager) return { block: null, face: null };
 
     // Get ray from camera center (crosshair aiming)
-    const direction = new THREE.Vector3();
-    camera.getWorldDirection(direction);
-    const origin = camera.position.clone();
+    camera.getWorldDirection(rayDirection.current);
+    rayOrigin.current.copy(camera.position);
 
-    let currentPos = origin.clone();
-    let lastAirPos = null;
+    const dir = rayDirection.current;
+    const ox = rayOrigin.current.x;
+    const oy = rayOrigin.current.y;
+    const oz = rayOrigin.current.z;
+
+    let lastAirX = 0,
+      lastAirY = 0,
+      lastAirZ = 0;
+    let hasLastAir = false;
 
     // Step along ray
     for (let dist = 0; dist < REACH_DISTANCE; dist += RAY_STEP) {
-      currentPos = origin.clone().add(direction.clone().multiplyScalar(dist));
+      const cx = ox + dir.x * dist;
+      const cy = oy + dir.y * dist;
+      const cz = oz + dir.z * dist;
 
-      const blockType = chunkManager.getBlock(currentPos.x, currentPos.y, currentPos.z);
+      const blockType = chunkManager.getBlock(cx, cy, cz);
 
       if (isSolid(blockType)) {
         // Found a solid block
         // Calculate which face was hit based on entry direction
         let face = null;
-        if (lastAirPos) {
-          const dx = currentPos.x - lastAirPos.x;
-          const dy = currentPos.y - lastAirPos.y;
-          const dz = currentPos.z - lastAirPos.z;
+        if (hasLastAir) {
+          const dx = cx - lastAirX;
+          const dy = cy - lastAirY;
+          const dz = cz - lastAirZ;
 
           const absDx = Math.abs(dx);
           const absDy = Math.abs(dy);
@@ -99,17 +118,23 @@ export function BlockInteraction({ chunkManager }) {
         }
 
         return {
-          block: { x: currentPos.x, y: currentPos.y, z: currentPos.z },
+          block: { x: cx, y: cy, z: cz },
           face,
-          adjacentPos: lastAirPos,
+          adjacentPos: hasLastAir ? { x: lastAirX, y: lastAirY, z: lastAirZ } : null,
         };
       }
 
-      lastAirPos = currentPos.clone();
+      lastAirX = cx;
+      lastAirY = cy;
+      lastAirZ = cz;
+      hasLastAir = true;
     }
 
     return { block: null, face: null, adjacentPos: null };
   }, [camera, chunkManager]);
+
+  // Track previous target to avoid unnecessary state updates
+  const prevTargetRef = useRef({ block: null, face: null });
 
   // Update raycast every few frames (not every frame for performance)
   useFrame(() => {
@@ -118,8 +143,22 @@ export function BlockInteraction({ chunkManager }) {
     lastRaycast.current = now;
 
     const result = raycastForBlock();
-    setTargetBlock(result.block);
-    setTargetFace(result.face);
+    const prev = prevTargetRef.current;
+
+    // Only update state if target actually changed (avoid re-renders)
+    const blockChanged =
+      (result.block === null) !== (prev.block === null) ||
+      (result.block &&
+        prev.block &&
+        (Math.floor(result.block.x / VOXEL_SIZE) !== Math.floor(prev.block.x / VOXEL_SIZE) ||
+          Math.floor(result.block.y / VOXEL_SIZE) !== Math.floor(prev.block.y / VOXEL_SIZE) ||
+          Math.floor(result.block.z / VOXEL_SIZE) !== Math.floor(prev.block.z / VOXEL_SIZE)));
+
+    if (blockChanged || result.face !== prev.face) {
+      setTargetBlock(result.block);
+      setTargetFace(result.face);
+      prevTargetRef.current = { block: result.block, face: result.face };
+    }
   });
 
   // Handle block mining (destroy block)

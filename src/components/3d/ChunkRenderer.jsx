@@ -96,13 +96,10 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
   const frameCountRef = useRef(0);
   const playerPosition = useGameStore((state) => state.player.position);
 
-  // Compute player chunk coordinates (only changes when player crosses chunk boundary)
+  // Compute player chunk coordinates (only recalculates when playerPosition changes)
   const playerChunk = useMemo(() => {
     return worldToChunk(playerPosition[0], playerPosition[2]);
-  }, [
-    Math.floor(playerPosition[0] / 32),
-    Math.floor(playerPosition[2] / 32),
-  ]);
+  }, [playerPosition]);
 
   // Handle chunk ready event
   const handleChunkReady = useCallback(async (chunk) => {

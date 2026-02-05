@@ -27,6 +27,10 @@ const useGameStore = create((set, get) => ({
     rotationAngle: 0, // Horizontal rotation around player
     distance: 12, // Zoomed in closer to player (was 20)
     height: 10,  // Lower camera height (was 15)
+    // First-person mode settings
+    firstPerson: false, // Toggle first-person (pointer lock) mode
+    pitch: 0, // Vertical look angle (radians, clamped)
+    yaw: 0, // Horizontal look angle (radians)
   },
 
   // Player state
@@ -125,6 +129,11 @@ const useGameStore = create((set, get) => ({
   updateCamera: (updates) =>
     set((state) => ({
       camera: { ...state.camera, ...updates },
+    })),
+
+  toggleFirstPerson: () =>
+    set((state) => ({
+      camera: { ...state.camera, firstPerson: !state.camera.firstPerson },
     })),
 
   setPlayerTarget: (targetPosition) =>
@@ -977,6 +986,9 @@ const useGameStore = create((set, get) => ({
         rotationAngle: 0,
         distance: 12,
         height: 10,
+        firstPerson: false,
+        pitch: 0,
+        yaw: 0,
       },
       player: {
         position: [0, 12, 0],

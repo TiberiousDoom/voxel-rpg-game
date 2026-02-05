@@ -194,30 +194,58 @@ const Player = () => {
     const newPos = [currentPos.x, currentPos.y, currentPos.z];
     setPlayerPosition(newPos);
 
-    // Update camera to follow player with rotation
-    const angle = cameraState.rotationAngle;
-    const distance = cameraState.distance;
-    const height = cameraState.height;
+    // Update camera based on mode (first-person or third-person)
+    if (cameraState.firstPerson) {
+      // First-person camera: position at player head, use yaw/pitch for rotation
+      const headHeight = 1.6; // Eye level
+      const targetCameraPos = new THREE.Vector3(
+        currentPos.x,
+        currentPos.y + headHeight,
+        currentPos.z
+      );
 
-    // Calculate camera position based on rotation angle
-    const offsetX = Math.sin(angle) * distance;
-    const offsetZ = Math.cos(angle) * distance;
+      // Apply yaw and pitch rotation
+      const yaw = cameraState.yaw;
+      const pitch = cameraState.pitch;
 
-    const targetCameraPos = new THREE.Vector3(
-      currentPos.x + offsetX,
-      currentPos.y + height,
-      currentPos.z + offsetZ
-    );
+      // Calculate look direction from yaw and pitch
+      const lookDir = new THREE.Vector3(
+        Math.sin(yaw) * Math.cos(pitch),
+        Math.sin(pitch),
+        Math.cos(yaw) * Math.cos(pitch)
+      );
 
-    const targetLookAt = new THREE.Vector3(
-      currentPos.x,
-      currentPos.y + 2,
-      currentPos.z
-    );
+      const targetLookAt = targetCameraPos.clone().add(lookDir);
 
-    // Smooth camera movement
-    camera.position.lerp(targetCameraPos, 0.1);
-    camera.lookAt(targetLookAt);
+      // Snap to position in first-person (no lerp for responsiveness)
+      camera.position.copy(targetCameraPos);
+      camera.lookAt(targetLookAt);
+    } else {
+      // Third-person camera: orbit around player
+      const angle = cameraState.rotationAngle;
+      const distance = cameraState.distance;
+      const height = cameraState.height;
+
+      // Calculate camera position based on rotation angle
+      const offsetX = Math.sin(angle) * distance;
+      const offsetZ = Math.cos(angle) * distance;
+
+      const targetCameraPos = new THREE.Vector3(
+        currentPos.x + offsetX,
+        currentPos.y + height,
+        currentPos.z + offsetZ
+      );
+
+      const targetLookAt = new THREE.Vector3(
+        currentPos.x,
+        currentPos.y + 2,
+        currentPos.z
+      );
+
+      // Smooth camera movement
+      camera.position.lerp(targetCameraPos, 0.1);
+      camera.lookAt(targetLookAt);
+    }
 
     // Calculate facing angle for player
     if (movement.length() > 0) {

@@ -6,6 +6,7 @@ import Enemy from './Enemy';
 import Projectile from './Projectile';
 import TouchControls from './TouchControls';
 import CameraRotateControls from './CameraRotateControls';
+import FirstPersonControls from './FirstPersonControls';
 import TargetMarker from './TargetMarker';
 import DamageNumber from './DamageNumber';
 import XPOrb from './XPOrb';
@@ -62,6 +63,9 @@ const Experience = () => {
 
       {/* Camera rotation controls */}
       <CameraRotateControls />
+
+      {/* First-person controls (pointer lock) */}
+      <FirstPersonControls />
 
       {/* Basic sky color */}
       <color attach="background" args={['#87ceeb']} />

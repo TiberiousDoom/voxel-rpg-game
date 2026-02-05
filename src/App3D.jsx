@@ -7,6 +7,7 @@ import SpellWheel from './components/SpellWheel';
 import CraftingUI from './components/CraftingUI';
 import InventoryUI from './components/InventoryUI';
 import BlockHotbar from './components/ui/BlockHotbar';
+import Crosshair from './components/ui/Crosshair';
 
 /**
  * Main 3D App component
@@ -45,6 +46,9 @@ function App3D() {
 
       {/* Block selection hotbar */}
       <BlockHotbar />
+
+      {/* Crosshair for first-person mode */}
+      <Crosshair />
     </div>
   );
 }

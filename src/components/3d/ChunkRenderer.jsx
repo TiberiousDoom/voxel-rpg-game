@@ -2,34 +2,30 @@
  * ChunkRenderer - React component that renders all active chunks
  *
  * Subscribes to ChunkManager and renders chunk meshes as they load/unload.
- * Each chunk gets a trimesh physics collider so the player walks on terrain.
+ * Only nearby chunks (within PHYSICS_DISTANCE) get trimesh physics colliders.
+ * Distant chunks render as visual-only meshes for performance.
  */
 
 import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
-import { chunkOriginWorld } from '../../systems/chunks/coordinates.js';
+import { chunkOriginWorld, worldToChunk } from '../../systems/chunks/coordinates.js';
+import useGameStore from '../../stores/useGameStore';
+
+// Only chunks within this Chebyshev distance get physics colliders
+const PHYSICS_DISTANCE = 2;
 
 /**
- * Individual chunk mesh component - declarative mesh with physics collider
+ * Shared hook to build geometry from mesh data
  */
-function ChunkMesh({ chunk, meshData }) {
-  // Get chunk world position
-  const position = useMemo(() => {
-    const origin = chunkOriginWorld(chunk.x, chunk.z);
-    return [origin.x, origin.y, origin.z];
-  }, [chunk.x, chunk.z]);
-
-  // Build geometry from mesh data
+function useChunkGeometry(meshData) {
   const geometry = useMemo(() => {
     if (!meshData?.positions?.length || !meshData?.indices?.length || meshData.vertexCount === 0) {
       return null;
     }
 
     const geo = new THREE.BufferGeometry();
-
-    // Copy typed arrays to ensure they're not detached (from worker transfer)
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(meshData.positions), 3));
     geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(meshData.normals), 3));
     geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(meshData.colors), 3));
@@ -39,13 +35,26 @@ function ChunkMesh({ chunk, meshData }) {
     return geo;
   }, [meshData]);
 
-  // Dispose old geometry when it changes or unmounts
+  // Dispose old geometry on cleanup
   useEffect(() => {
     return () => {
       if (geometry) geometry.dispose();
     };
   }, [geometry]);
 
+  return geometry;
+}
+
+/**
+ * Chunk with physics collider (for nearby chunks)
+ */
+function PhysicsChunkMesh({ chunk, meshData }) {
+  const position = useMemo(() => {
+    const origin = chunkOriginWorld(chunk.x, chunk.z);
+    return [origin.x, origin.y, origin.z];
+  }, [chunk.x, chunk.z]);
+
+  const geometry = useChunkGeometry(meshData);
   if (!geometry) return null;
 
   return (
@@ -58,16 +67,45 @@ function ChunkMesh({ chunk, meshData }) {
 }
 
 /**
+ * Visual-only chunk (no physics, for distant chunks)
+ */
+function VisualChunkMesh({ chunk, meshData }) {
+  const position = useMemo(() => {
+    const origin = chunkOriginWorld(chunk.x, chunk.z);
+    return [origin.x, origin.y, origin.z];
+  }, [chunk.x, chunk.z]);
+
+  const geometry = useChunkGeometry(meshData);
+  if (!geometry) return null;
+
+  return (
+    <group position={position}>
+      <mesh geometry={geometry} frustumCulled={false}>
+        <meshBasicMaterial vertexColors side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
+/**
  * Main chunk renderer component
  */
 export function ChunkRenderer({ chunkManager, workerPool }) {
   const [chunks, setChunks] = useState(new Map());
   const [meshData, setMeshData] = useState(new Map());
   const frameCountRef = useRef(0);
+  const playerPosition = useGameStore((state) => state.player.position);
+
+  // Compute player chunk coordinates (only changes when player crosses chunk boundary)
+  const playerChunk = useMemo(() => {
+    return worldToChunk(playerPosition[0], playerPosition[2]);
+  }, [
+    Math.floor(playerPosition[0] / 32),
+    Math.floor(playerPosition[2] / 32),
+  ]);
 
   // Handle chunk ready event
   const handleChunkReady = useCallback(async (chunk) => {
-    // Build mesh for the new chunk
     if (workerPool) {
       try {
         const result = await workerPool.execute({
@@ -89,7 +127,6 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
       }
     }
 
-    // Update chunks state
     setChunks(prev => {
       const next = new Map(prev);
       next.set(chunk.key, chunk);
@@ -116,16 +153,13 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
   useEffect(() => {
     if (!chunkManager) return;
 
-    // Store original callbacks
     const originalOnReady = chunkManager.onChunkReady;
     const originalOnUnload = chunkManager.onChunkUnload;
 
-    // Set our callbacks
     chunkManager.onChunkReady = handleChunkReady;
     chunkManager.onChunkUnload = handleChunkUnload;
 
     return () => {
-      // Restore original callbacks
       chunkManager.onChunkReady = originalOnReady;
       chunkManager.onChunkUnload = originalOnUnload;
     };
@@ -136,8 +170,6 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
     if (!chunkManager || !workerPool) return;
 
     frameCountRef.current++;
-
-    // Only rebuild meshes every few frames to avoid overwhelming the worker
     if (frameCountRef.current % 3 !== 0) return;
 
     const dirtyChunks = chunkManager.getDirtyChunks();
@@ -148,11 +180,9 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
       if (rebuilt >= rebuildsPerFrame) break;
       if (!chunks.has(chunk.key)) continue;
 
-      // Mark as not dirty before async operation
       chunk.meshDirty = false;
       rebuilt++;
 
-      // Rebuild mesh async
       workerPool.execute({
         type: 'buildMesh',
         blocks: chunk.blocks,
@@ -168,21 +198,36 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
         });
       }).catch(error => {
         console.error('Failed to rebuild mesh for chunk', chunk.key, error);
-        chunk.meshDirty = true; // Mark dirty again to retry
+        chunk.meshDirty = true;
       });
     }
   });
 
-  // Render all chunks
+  // Render all chunks - nearby get physics, distant are visual-only
   return (
     <group name="chunks">
       {Array.from(chunks.values()).map(chunk => {
         const data = meshData.get(chunk.key);
         if (!data || data.vertexCount === 0) return null;
 
+        // Chebyshev distance: max of |dx| and |dz|
+        const dx = Math.abs(chunk.x - playerChunk.chunkX);
+        const dz = Math.abs(chunk.z - playerChunk.chunkZ);
+        const needsPhysics = dx <= PHYSICS_DISTANCE && dz <= PHYSICS_DISTANCE;
+
+        if (needsPhysics) {
+          return (
+            <PhysicsChunkMesh
+              key={`${chunk.key}-p`}
+              chunk={chunk}
+              meshData={data}
+            />
+          );
+        }
+
         return (
-          <ChunkMesh
-            key={chunk.key}
+          <VisualChunkMesh
+            key={`${chunk.key}-v`}
             chunk={chunk}
             meshData={data}
           />

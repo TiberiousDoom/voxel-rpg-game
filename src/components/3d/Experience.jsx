@@ -37,7 +37,7 @@ const Experience = () => {
     update: updateChunks,
   } = useChunkSystem({
     seed: 12345,
-    viewDistance: 6,
+    viewDistance: 4,
   });
 
   // Update chunk system based on player position

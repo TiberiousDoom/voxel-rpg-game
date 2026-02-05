@@ -6,6 +6,7 @@ import GameUI from './components/GameUI';
 import SpellWheel from './components/SpellWheel';
 import CraftingUI from './components/CraftingUI';
 import InventoryUI from './components/InventoryUI';
+import BlockHotbar from './components/ui/BlockHotbar';
 
 /**
  * Main 3D App component
@@ -41,6 +42,9 @@ function App3D() {
 
       {/* Inventory UI */}
       <InventoryUI />
+
+      {/* Block selection hotbar */}
+      <BlockHotbar />
     </div>
   );
 }

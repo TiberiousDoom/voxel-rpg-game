@@ -115,6 +115,10 @@ const useGameStore = create((set, get) => ({
   // Particle effects
   particleEffects: [],
 
+  // Block interaction state (Phase 0.3)
+  selectedBlockType: 3, // GRASS by default
+  blockPlacementMode: false, // false = mining, true = placing
+
   // Actions
   setGameState: (state) => set({ gameState: state }),
 
@@ -137,6 +141,11 @@ const useGameStore = create((set, get) => ({
     set((state) => ({
       targetMarkers: state.targetMarkers.filter((m) => m.id !== id),
     })),
+
+  // Block interaction actions
+  setSelectedBlockType: (blockType) => set({ selectedBlockType: blockType }),
+  setBlockPlacementMode: (mode) => set({ blockPlacementMode: mode }),
+  toggleBlockPlacementMode: () => set((state) => ({ blockPlacementMode: !state.blockPlacementMode })),
 
   addDamageNumber: (damageNum) =>
     set((state) => ({

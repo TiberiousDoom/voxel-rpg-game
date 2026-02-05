@@ -17,9 +17,17 @@ const PITCH_LIMIT = Math.PI / 2 - 0.1; // Slightly less than 90 degrees
 const FirstPersonControls = () => {
   const { gl } = useThree();
   const isLockedRef = useRef(false);
+  const canvasRef = useRef(null);
 
   const updateCamera = useGameStore((state) => state.updateCamera);
   const cameraState = useGameStore((state) => state.camera);
+
+  // Store canvas reference once gl is ready
+  useEffect(() => {
+    if (gl && gl.domElement) {
+      canvasRef.current = gl.domElement;
+    }
+  }, [gl]);
 
   // Handle mouse movement when pointer is locked
   const handleMouseMove = useCallback(
@@ -45,40 +53,76 @@ const FirstPersonControls = () => {
 
   // Handle pointer lock change events
   const handlePointerLockChange = useCallback(() => {
-    const isLocked = document.pointerLockElement === gl.domElement;
+    // Check if pointer is locked to any canvas
+    const lockedElement = document.pointerLockElement;
+    const isLocked = lockedElement && lockedElement.tagName === 'CANVAS';
     isLockedRef.current = isLocked;
 
     updateCamera({ firstPerson: isLocked });
-  }, [gl.domElement, updateCamera]);
-
-  // Handle pointer lock error
-  const handlePointerLockError = useCallback(() => {
-    console.warn('Pointer lock failed');
-    isLockedRef.current = false;
-    updateCamera({ firstPerson: false });
   }, [updateCamera]);
 
-  // Request pointer lock on click
-  const handleClick = useCallback(() => {
-    if (!isLockedRef.current && gl.domElement) {
-      gl.domElement.requestPointerLock();
+  // Get the actual canvas element from the document
+  const getCanvasElement = useCallback(() => {
+    // First try our cached reference
+    if (canvasRef.current && canvasRef.current.ownerDocument === document) {
+      return canvasRef.current;
     }
-  }, [gl.domElement]);
+    // Fallback: query the canvas directly from DOM
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      canvasRef.current = canvas;
+      return canvas;
+    }
+    return null;
+  }, []);
+
+  // Request pointer lock on click - using Promise API for better error handling
+  const handleClick = useCallback(async () => {
+    // Get the actual canvas element
+    const canvas = getCanvasElement();
+    if (!canvas) {
+      console.warn('Canvas element not found');
+      return;
+    }
+
+    // Check if already locked
+    if (isLockedRef.current || document.pointerLockElement === canvas) return;
+
+    // Ensure document is focused
+    if (!document.hasFocus()) {
+      window.focus();
+    }
+
+    try {
+      // Use the Promise-based API if available
+      if (canvas.requestPointerLock) {
+        const result = canvas.requestPointerLock();
+        // Handle both Promise and non-Promise implementations
+        if (result && result.catch) {
+          await result;
+        }
+      }
+    } catch (error) {
+      console.warn('Pointer lock request failed:', error.message || error);
+      // Don't update state on error - let user try again
+    }
+  }, [getCanvasElement]);
 
   // Setup event listeners
   useEffect(() => {
     const canvas = gl.domElement;
+    if (!canvas) return;
+
+    canvasRef.current = canvas;
 
     // Add event listeners
     document.addEventListener('pointerlockchange', handlePointerLockChange);
-    document.addEventListener('pointerlockerror', handlePointerLockError);
     document.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('click', handleClick);
 
     return () => {
       // Cleanup
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
-      document.removeEventListener('pointerlockerror', handlePointerLockError);
       document.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('click', handleClick);
 
@@ -87,7 +131,7 @@ const FirstPersonControls = () => {
         document.exitPointerLock();
       }
     };
-  }, [gl.domElement, handlePointerLockChange, handlePointerLockError, handleMouseMove, handleClick]);
+  }, [gl.domElement, handlePointerLockChange, handleMouseMove, handleClick]);
 
   return null; // This component doesn't render anything
 };

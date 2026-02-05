@@ -24,7 +24,6 @@ const FirstPersonControls = () => {
   const softFPSMode = useRef(false); // FPS mode without pointer lock
 
   const updateCamera = useGameStore((state) => state.updateCamera);
-  const cameraState = useGameStore((state) => state.camera);
 
   // Store canvas reference once gl is ready
   useEffect(() => {
@@ -110,7 +109,6 @@ const FirstPersonControls = () => {
                 updateCamera({ firstPerson: true });
               }).catch(() => {
                 // Pointer lock failed, use soft mode
-                console.log('Pointer lock unavailable, using soft FPS mode');
                 softFPSMode.current = true;
                 updateCamera({ firstPerson: true });
               });

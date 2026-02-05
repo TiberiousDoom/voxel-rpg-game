@@ -3,7 +3,7 @@
  *
  * Press V to toggle first-person mode
  * In first-person: mouse controls camera (with pointer lock if available)
- * In first-person without pointer lock: right-drag to look around
+ * In first-person without pointer lock: drag to look around
  * ESC or V to exit first-person mode
  */
 
@@ -24,7 +24,6 @@ const FirstPersonControls = () => {
   const softFPSMode = useRef(false); // FPS mode without pointer lock
 
   const updateCamera = useGameStore((state) => state.updateCamera);
-  const cameraState = useGameStore((state) => state.camera);
 
   // Store canvas reference once gl is ready
   useEffect(() => {
@@ -110,7 +109,6 @@ const FirstPersonControls = () => {
                 updateCamera({ firstPerson: true });
               }).catch(() => {
                 // Pointer lock failed, use soft mode
-                console.log('Pointer lock unavailable, using soft FPS mode');
                 softFPSMode.current = true;
                 updateCamera({ firstPerson: true });
               });

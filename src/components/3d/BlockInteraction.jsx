@@ -1,16 +1,17 @@
 /**
  * BlockInteraction - Handles block selection, mining, and placement
  *
- * Raycasts from camera to find targeted block, shows highlight,
- * and handles click/tap to mine or place blocks.
+ * Desktop (first-person): Raycasts from camera center, click to mine/place
+ * Mobile (tap-to-target): Tap to select block, tap again to mine/place
  */
 
-import React, { useRef, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { VOXEL_SIZE } from '../../systems/chunks/coordinates';
 import { BlockTypes, isSolid } from '../../systems/chunks/blockTypes';
 import useGameStore from '../../stores/useGameStore';
+import { isTouchDevice } from '../../utils/deviceDetection';
 
 // Maximum reach distance for block interaction
 const REACH_DISTANCE = 12;
@@ -45,13 +46,23 @@ function BlockHighlight({ position, visible }) {
  * Main BlockInteraction component
  */
 export function BlockInteraction({ chunkManager }) {
-  const { camera, gl } = useThree();
+  const { camera, gl, size } = useThree();
   const [targetBlock, setTargetBlock] = useState(null);
   const [targetFace, setTargetFace] = useState(null);
   const lastRaycast = useRef(0);
 
-  // Get selected block type from store
+  // Track if we're on mobile
+  const isMobile = useRef(isTouchDevice());
+
+  // For mobile: track the selected block for tap-to-target
+  const [mobileSelectedBlock, setMobileSelectedBlock] = useState(null);
+
+  // Get selected block type and first-person mode from store
   const selectedBlockType = useGameStore((state) => state.selectedBlockType ?? BlockTypes.DIRT);
+  const firstPerson = useGameStore((state) => state.camera.firstPerson);
+
+  // Raycaster for screen-space raycasting (mobile)
+  const raycasterRef = useRef(new THREE.Raycaster());
 
   // Convert world position to block center position for highlight
   const highlightPosition = useMemo(() => {
@@ -69,18 +80,14 @@ export function BlockInteraction({ chunkManager }) {
   const rayDirection = useRef(new THREE.Vector3());
   const rayOrigin = useRef(new THREE.Vector3());
 
-  // Raycast to find targeted block using DDA-like stepping
-  const raycastForBlock = useCallback(() => {
+  // Core raycast function - steps along a ray to find blocks
+  const raycastAlongRay = useCallback((origin, direction) => {
     if (!chunkManager) return { block: null, face: null };
 
-    // Get ray from camera center (crosshair aiming)
-    camera.getWorldDirection(rayDirection.current);
-    rayOrigin.current.copy(camera.position);
-
-    const dir = rayDirection.current;
-    const ox = rayOrigin.current.x;
-    const oy = rayOrigin.current.y;
-    const oz = rayOrigin.current.z;
+    const ox = origin.x;
+    const oy = origin.y;
+    const oz = origin.z;
+    const dir = direction;
 
     let lastAirX = 0,
       lastAirY = 0,
@@ -97,7 +104,6 @@ export function BlockInteraction({ chunkManager }) {
 
       if (isSolid(blockType)) {
         // Found a solid block
-        // Calculate which face was hit based on entry direction
         let face = null;
         if (hasLastAir) {
           const dx = cx - lastAirX;
@@ -131,13 +137,45 @@ export function BlockInteraction({ chunkManager }) {
     }
 
     return { block: null, face: null, adjacentPos: null };
-  }, [camera, chunkManager]);
+  }, [chunkManager]);
+
+  // Raycast from camera center (desktop first-person mode)
+  const raycastForBlock = useCallback(() => {
+    camera.getWorldDirection(rayDirection.current);
+    rayOrigin.current.copy(camera.position);
+    return raycastAlongRay(rayOrigin.current, rayDirection.current);
+  }, [camera, raycastAlongRay]);
+
+  // Raycast from screen position (mobile tap-to-target)
+  const raycastFromScreen = useCallback((screenX, screenY) => {
+    // Convert screen coordinates to normalized device coordinates (-1 to +1)
+    const ndcX = (screenX / size.width) * 2 - 1;
+    const ndcY = -(screenY / size.height) * 2 + 1;
+
+    // Set up raycaster from camera through screen point
+    raycasterRef.current.setFromCamera({ x: ndcX, y: ndcY }, camera);
+
+    const ray = raycasterRef.current.ray;
+    return raycastAlongRay(ray.origin, ray.direction);
+  }, [camera, size, raycastAlongRay]);
 
   // Track previous target to avoid unnecessary state updates
   const prevTargetRef = useRef({ block: null, face: null });
 
-  // Update raycast every few frames (not every frame for performance)
+  // Update raycast every few frames (desktop first-person mode only)
   useFrame(() => {
+    // On mobile or in third-person, don't do continuous raycasting
+    // Mobile uses tap-to-target instead
+    if (isMobile.current || !firstPerson) {
+      // Clear target when not in first-person (unless mobile has selected a block)
+      if (!isMobile.current && targetBlock !== null) {
+        setTargetBlock(null);
+        setTargetFace(null);
+        prevTargetRef.current = { block: null, face: null };
+      }
+      return;
+    }
+
     const now = Date.now();
     if (now - lastRaycast.current < 50) return; // 20 raycasts per second max
     lastRaycast.current = now;
@@ -237,31 +275,77 @@ export function BlockInteraction({ chunkManager }) {
     };
   }, [mineBlock, placeBlock, selectedBlockType, targetBlock]);
 
-  // Handle pointer events
-  React.useEffect(() => {
+  // Helper to check if two blocks are the same grid position
+  const isSameBlock = useCallback((a, b) => {
+    if (!a || !b) return false;
+    return (
+      Math.floor(a.x / VOXEL_SIZE) === Math.floor(b.x / VOXEL_SIZE) &&
+      Math.floor(a.y / VOXEL_SIZE) === Math.floor(b.y / VOXEL_SIZE) &&
+      Math.floor(a.z / VOXEL_SIZE) === Math.floor(b.z / VOXEL_SIZE)
+    );
+  }, []);
+
+  // Handle pointer/touch events
+  useEffect(() => {
     const handlePointerDown = (event) => {
-      // Only handle left click for now
+      // Only handle primary button (left click / touch)
       if (event.button !== 0) return;
 
-      // Check if click is on canvas (not UI)
+      // Check if click/tap is on canvas (not UI)
       if (event.target !== gl.domElement) return;
 
       const store = useGameStore.getState();
 
-      if (store.blockPlacementMode) {
-        placeBlock(selectedBlockType);
-      } else {
-        mineBlock();
+      if (isMobile.current) {
+        // Mobile: tap-to-target mode
+        const rect = gl.domElement.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const result = raycastFromScreen(x, y);
+
+        if (result.block) {
+          // Check if tapping the same block as currently selected
+          if (isSameBlock(result.block, mobileSelectedBlock)) {
+            // Second tap on same block - perform action
+            if (store.blockPlacementMode) {
+              placeBlock(selectedBlockType);
+            } else {
+              mineBlock();
+            }
+            // Clear selection after action
+            setMobileSelectedBlock(null);
+            setTargetBlock(null);
+            setTargetFace(null);
+          } else {
+            // First tap or different block - select it
+            setMobileSelectedBlock(result.block);
+            setTargetBlock(result.block);
+            setTargetFace(result.face);
+          }
+        } else {
+          // Tapped on empty space - clear selection
+          setMobileSelectedBlock(null);
+          setTargetBlock(null);
+          setTargetFace(null);
+        }
+      } else if (firstPerson) {
+        // Desktop first-person mode: click performs action on crosshair target
+        if (store.blockPlacementMode) {
+          placeBlock(selectedBlockType);
+        } else {
+          mineBlock();
+        }
       }
+      // In third-person desktop mode without first-person, don't do block interaction
     };
 
-    // Use pointerdown for better mobile support
     gl.domElement.addEventListener('pointerdown', handlePointerDown);
 
     return () => {
       gl.domElement.removeEventListener('pointerdown', handlePointerDown);
     };
-  }, [gl, mineBlock, placeBlock, selectedBlockType]);
+  }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, raycastFromScreen, isSameBlock, mobileSelectedBlock]);
 
   return (
     <BlockHighlight

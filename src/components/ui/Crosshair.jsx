@@ -1,12 +1,13 @@
 /**
  * Crosshair - Simple crosshair for first-person mode
  *
- * Shows crosshair when in first-person (pointer lock) mode
- * Shows hint when not in first-person mode
+ * Desktop: Shows crosshair in first-person mode, hint when not
+ * Mobile: Shows tap-to-target hint (no crosshair needed)
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import useGameStore from '../../stores/useGameStore';
+import { isTouchDevice } from '../../utils/deviceDetection';
 
 const crosshairStyle = {
   position: 'fixed',
@@ -41,8 +42,33 @@ const hintStyle = {
 
 const Crosshair = () => {
   const firstPerson = useGameStore((state) => state.camera.firstPerson);
+  const [isMobile, setIsMobile] = useState(false);
+  const [hintDismissed, setHintDismissed] = useState(false);
 
-  // Show hint when not in first-person mode
+  // Check for mobile on mount
+  useEffect(() => {
+    setIsMobile(isTouchDevice());
+
+    // Auto-dismiss hint after 8 seconds on mobile
+    if (isTouchDevice()) {
+      const timer = setTimeout(() => setHintDismissed(true), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Mobile: show tap-to-target hint (dismisses after 8 seconds)
+  if (isMobile) {
+    if (hintDismissed) return null;
+    return (
+      <div style={hintStyle}>
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Tap-to-Target Mode</div>
+        <div style={{ fontSize: '12px', opacity: 0.8 }}>Tap block to select | Tap again to mine/place</div>
+        <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '4px' }}>Use Tab to switch Mine/Place</div>
+      </div>
+    );
+  }
+
+  // Desktop: show hint when not in first-person mode
   if (!firstPerson) {
     return (
       <div style={hintStyle}>

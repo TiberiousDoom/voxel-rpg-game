@@ -541,19 +541,25 @@ export class ChunkManager {
     const result = chunk.setBlock(localX, localY, localZ, blockType);
 
     if (result) {
+      // Mark chunk as dirty so ChunkRenderer will rebuild its mesh
+      chunk.meshDirty = true;
       this.meshRebuildQueue.add(chunk.key);
 
       // Check if we need to rebuild neighbor meshes (edge block)
       if (localX === 0 && chunk.neighbors.west) {
+        chunk.neighbors.west.meshDirty = true;
         this.meshRebuildQueue.add(chunk.neighbors.west.key);
       }
       if (localX === CHUNK_SIZE - 1 && chunk.neighbors.east) {
+        chunk.neighbors.east.meshDirty = true;
         this.meshRebuildQueue.add(chunk.neighbors.east.key);
       }
       if (localZ === 0 && chunk.neighbors.south) {
+        chunk.neighbors.south.meshDirty = true;
         this.meshRebuildQueue.add(chunk.neighbors.south.key);
       }
       if (localZ === CHUNK_SIZE - 1 && chunk.neighbors.north) {
+        chunk.neighbors.north.meshDirty = true;
         this.meshRebuildQueue.add(chunk.neighbors.north.key);
       }
     }

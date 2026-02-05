@@ -196,19 +196,29 @@ const Player = () => {
 
     // Update camera based on mode (first-person or third-person)
     if (cameraState.firstPerson) {
-      // First-person camera: position at player head, use yaw/pitch for rotation
+      // First-person camera: position at player head, offset forward to avoid body clipping
       const headHeight = 1.6; // Eye level
-      const targetCameraPos = new THREE.Vector3(
-        currentPos.x,
-        currentPos.y + headHeight,
-        currentPos.z
-      );
+      const forwardOffset = 0.5; // Move camera forward to clear player body
 
       // Apply yaw and pitch rotation
       const yaw = cameraState.yaw;
       const pitch = cameraState.pitch;
 
-      // Calculate look direction from yaw and pitch
+      // Calculate look direction from yaw and pitch (horizontal only for offset)
+      const lookDirHorizontal = new THREE.Vector3(
+        Math.sin(yaw),
+        0,
+        Math.cos(yaw)
+      );
+
+      // Position camera at head, offset forward in look direction
+      const targetCameraPos = new THREE.Vector3(
+        currentPos.x + lookDirHorizontal.x * forwardOffset,
+        currentPos.y + headHeight,
+        currentPos.z + lookDirHorizontal.z * forwardOffset
+      );
+
+      // Calculate full look direction with pitch for lookAt target
       const lookDir = new THREE.Vector3(
         Math.sin(yaw) * Math.cos(pitch),
         Math.sin(pitch),

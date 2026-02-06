@@ -138,23 +138,13 @@ const TouchControls = () => {
       }
     };
 
-    const handleTouchStart = (e) => {
-      if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        handlePointerDown({
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-        });
-      }
-    };
-
-    // Add event listeners for both mouse and touch
+    // Use click only (not touchstart) so that BlockInteraction's long-press
+    // touchend handler can preventDefault() to block the click on long press.
+    // Short taps still generate a click event for movement.
     gl.domElement.addEventListener('click', handlePointerDown);
-    gl.domElement.addEventListener('touchstart', handleTouchStart);
 
     return () => {
       gl.domElement.removeEventListener('click', handlePointerDown);
-      gl.domElement.removeEventListener('touchstart', handleTouchStart);
     };
   }, [gl, scene, camera, gameState]);
 

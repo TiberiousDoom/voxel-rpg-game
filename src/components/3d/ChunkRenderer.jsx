@@ -93,6 +93,7 @@ function VisualChunkMesh({ chunk, meshData }) {
 export function ChunkRenderer({ chunkManager, workerPool }) {
   const [chunks, setChunks] = useState(new Map());
   const [meshData, setMeshData] = useState(new Map());
+  const [meshVersion, setMeshVersion] = useState(new Map()); // Track mesh versions for key changes
   const frameCountRef = useRef(0);
   const playerPosition = useGameStore((state) => state.player.position);
 
@@ -119,6 +120,12 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
           next.set(chunk.key, result);
           return next;
         });
+
+        setMeshVersion(prev => {
+          const next = new Map(prev);
+          next.set(chunk.key, (prev.get(chunk.key) || 0) + 1);
+          return next;
+        });
       } catch (error) {
         console.error('[ChunkRenderer] Failed to build mesh:', chunk.key, error);
       }
@@ -140,6 +147,12 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
     });
 
     setMeshData(prev => {
+      const next = new Map(prev);
+      next.delete(chunk.key);
+      return next;
+    });
+
+    setMeshVersion(prev => {
       const next = new Map(prev);
       next.delete(chunk.key);
       return next;
@@ -175,11 +188,13 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
 
     for (const chunk of dirtyChunks) {
       if (rebuilt >= rebuildsPerFrame) break;
+      // Skip if we don't have this chunk in our state (shouldn't happen normally)
       if (!chunks.has(chunk.key)) continue;
 
       chunk.meshDirty = false;
       rebuilt++;
 
+      const chunkKey = chunk.key; // Capture for closure
       workerPool.execute({
         type: 'buildMesh',
         blocks: chunk.blocks,
@@ -190,11 +205,17 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
       }).then(result => {
         setMeshData(prev => {
           const next = new Map(prev);
-          next.set(chunk.key, result);
+          next.set(chunkKey, result);
+          return next;
+        });
+        // Increment version to force React to remount the mesh component
+        setMeshVersion(prev => {
+          const next = new Map(prev);
+          next.set(chunkKey, (prev.get(chunkKey) || 0) + 1);
           return next;
         });
       }).catch(error => {
-        console.error('Failed to rebuild mesh for chunk', chunk.key, error);
+        console.error('Failed to rebuild mesh for chunk', chunkKey, error);
         chunk.meshDirty = true;
       });
     }
@@ -211,11 +232,12 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
         const dx = Math.abs(chunk.x - playerChunk.chunkX);
         const dz = Math.abs(chunk.z - playerChunk.chunkZ);
         const needsPhysics = dx <= PHYSICS_DISTANCE && dz <= PHYSICS_DISTANCE;
+        const version = meshVersion.get(chunk.key) || 0;
 
         if (needsPhysics) {
           return (
             <PhysicsChunkMesh
-              key={`${chunk.key}-p`}
+              key={`${chunk.key}-p-${version}`}
               chunk={chunk}
               meshData={data}
             />
@@ -224,7 +246,7 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
 
         return (
           <VisualChunkMesh
-            key={`${chunk.key}-v`}
+            key={`${chunk.key}-v-${version}`}
             chunk={chunk}
             meshData={data}
           />

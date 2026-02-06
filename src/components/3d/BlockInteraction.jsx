@@ -2,7 +2,7 @@
  * BlockInteraction - Handles block selection, mining, and placement
  *
  * Desktop (first-person): Raycasts from camera center, click to mine/place
- * Mobile (tap-to-target): Tap to select block, tap again to mine/place
+ * Mobile: Long press (~500ms) on a block to mine/place; short tap moves (via TouchControls)
  */
 
 import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
@@ -18,6 +18,10 @@ const REACH_DISTANCE = 12;
 
 // Raycast step size (smaller = more precise, but slower)
 const RAY_STEP = 0.5;
+
+// Long press settings for mobile block interaction
+const LONG_PRESS_DURATION = 500; // ms to hold before mining/placing
+const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels of movement that cancels long press
 
 // Pre-create geometry for highlight (reused across all renders)
 const highlightBoxGeometry = new THREE.BoxGeometry(
@@ -54,15 +58,17 @@ export function BlockInteraction({ chunkManager }) {
   // Track if we're on mobile
   const isMobile = useRef(isTouchDevice());
 
-  // For mobile: track the selected block for tap-to-target
-  const [mobileSelectedBlock, setMobileSelectedBlock] = useState(null);
-
   // Get selected block type and first-person mode from store
   const selectedBlockType = useGameStore((state) => state.selectedBlockType ?? BlockTypes.DIRT);
   const firstPerson = useGameStore((state) => state.camera.firstPerson);
 
   // Raycaster for screen-space raycasting (mobile)
   const raycasterRef = useRef(new THREE.Raycaster());
+
+  // Long press state for mobile
+  const longPressTimer = useRef(null);
+  const longPressActive = useRef(false);
+  const longPressTouchStart = useRef({ x: 0, y: 0 });
 
   // Convert world position to block center position for highlight
   const highlightPosition = useMemo(() => {
@@ -275,61 +281,19 @@ export function BlockInteraction({ chunkManager }) {
     };
   }, [mineBlock, placeBlock, selectedBlockType, targetBlock]);
 
-  // Helper to check if two blocks are the same grid position
-  const isSameBlock = useCallback((a, b) => {
-    if (!a || !b) return false;
-    return (
-      Math.floor(a.x / VOXEL_SIZE) === Math.floor(b.x / VOXEL_SIZE) &&
-      Math.floor(a.y / VOXEL_SIZE) === Math.floor(b.y / VOXEL_SIZE) &&
-      Math.floor(a.z / VOXEL_SIZE) === Math.floor(b.z / VOXEL_SIZE)
-    );
-  }, []);
-
-  // Handle pointer/touch events
+  // Desktop: pointer down handler for first-person mining/placement
   useEffect(() => {
     const handlePointerDown = (event) => {
-      // Only handle primary button (left click / touch)
+      // Only handle primary button (left click)
       if (event.button !== 0) return;
+
+      // Mobile uses long-press touch handlers instead
+      if (isMobile.current) return;
 
       const store = useGameStore.getState();
       const isPointerLocked = document.pointerLockElement != null;
 
-      if (isMobile.current) {
-        // Mobile: tap-to-target mode - must be on canvas
-        if (event.target !== gl.domElement) return;
-
-        const rect = gl.domElement.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-
-        const result = raycastFromScreen(x, y);
-
-        if (result.block) {
-          // Check if tapping the same block as currently selected
-          if (isSameBlock(result.block, mobileSelectedBlock)) {
-            // Second tap on same block - perform action
-            if (store.blockPlacementMode) {
-              placeBlock(selectedBlockType);
-            } else {
-              mineBlock();
-            }
-            // Clear selection after action
-            setMobileSelectedBlock(null);
-            setTargetBlock(null);
-            setTargetFace(null);
-          } else {
-            // First tap or different block - select it
-            setMobileSelectedBlock(result.block);
-            setTargetBlock(result.block);
-            setTargetFace(result.face);
-          }
-        } else {
-          // Tapped on empty space - clear selection
-          setMobileSelectedBlock(null);
-          setTargetBlock(null);
-          setTargetFace(null);
-        }
-      } else if (firstPerson && isPointerLocked) {
+      if (firstPerson && isPointerLocked) {
         // Desktop first-person mode with pointer lock: click performs action on crosshair target
         if (store.blockPlacementMode) {
           placeBlock(selectedBlockType);
@@ -345,7 +309,104 @@ export function BlockInteraction({ chunkManager }) {
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
     };
-  }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, raycastFromScreen, isSameBlock, mobileSelectedBlock]);
+  }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson]);
+
+  // Mobile: long-press touch handlers for mining/placement
+  useEffect(() => {
+    if (!isMobile.current) return;
+
+    const canvas = gl.domElement;
+
+    // Prevent text selection and context menu on long press
+    canvas.style.webkitUserSelect = 'none';
+    canvas.style.userSelect = 'none';
+    canvas.style.webkitTouchCallout = 'none';
+
+    const handleContextMenu = (e) => e.preventDefault();
+
+    const handleTouchStart = (e) => {
+      if (e.touches.length !== 1) return;
+
+      const touch = e.touches[0];
+      longPressTouchStart.current = { x: touch.clientX, y: touch.clientY };
+      longPressActive.current = false;
+
+      // Raycast from touch position to find block
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      const result = raycastFromScreen(x, y);
+
+      if (result.block) {
+        // Show highlight immediately
+        setTargetBlock(result.block);
+        setTargetFace(result.face);
+
+        // Start long press timer - action fires after holding
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = setTimeout(() => {
+          longPressActive.current = true;
+
+          // Read latest action functions from store (updated by React lifecycle)
+          const store = useGameStore.getState();
+          if (store.blockPlacementMode) {
+            if (store.placeBlock) store.placeBlock();
+          } else {
+            if (store.mineBlock) store.mineBlock();
+          }
+        }, LONG_PRESS_DURATION);
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (!longPressTimer.current) return;
+
+      const touch = e.touches[0];
+      const dx = touch.clientX - longPressTouchStart.current.x;
+      const dy = touch.clientY - longPressTouchStart.current.y;
+
+      // Cancel long press if finger moved too far
+      if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        setTargetBlock(null);
+        setTargetFace(null);
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+
+      if (longPressActive.current) {
+        // Long press action already fired - prevent click event from
+        // reaching TouchControls (which would trigger movement)
+        e.preventDefault();
+        longPressActive.current = false;
+      }
+
+      // Clear highlight
+      setTargetBlock(null);
+      setTargetFace(null);
+    };
+
+    canvas.addEventListener('contextmenu', handleContextMenu);
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: true });
+    canvas.addEventListener('touchend', handleTouchEnd);
+    canvas.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      clearTimeout(longPressTimer.current);
+      canvas.removeEventListener('contextmenu', handleContextMenu);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+      canvas.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [gl, raycastFromScreen]);
 
   return (
     <BlockHighlight

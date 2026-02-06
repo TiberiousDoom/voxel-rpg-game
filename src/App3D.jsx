@@ -14,7 +14,7 @@ import Crosshair from './components/ui/Crosshair';
  */
 function App3D() {
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#87ceeb' }}>
+    <div style={{ width: '100vw', height: '100vh', background: '#87ceeb', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}>
       {/* Three.js Canvas */}
       <Canvas
         shadows

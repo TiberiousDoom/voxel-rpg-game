@@ -24,6 +24,12 @@ const TouchControls = () => {
       // BlockInteraction handles mining/placement in that mode
       if (document.pointerLockElement) return;
 
+      // Skip if a long press just fired - BlockInteraction stamps the canvas
+      // dataset when a long-press mine/place happens, and the synthetic click
+      // from touchend should not trigger movement
+      const longPressAt = Number(gl.domElement.dataset.longPressAt || '0');
+      if (Date.now() - longPressAt < 500) return;
+
       // Prevent duplicate events (mobile fires both touchstart and click)
       const now = Date.now();
       if (now - lastTapTime < 300) return; // Ignore if within 300ms of last tap

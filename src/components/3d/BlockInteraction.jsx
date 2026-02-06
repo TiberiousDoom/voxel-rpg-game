@@ -356,6 +356,10 @@ export function BlockInteraction({ chunkManager }) {
         longPressTimer.current = setTimeout(() => {
           longPressActive.current = true;
 
+          // Stamp canvas so TouchControls knows a long press just fired
+          // and can skip the synthetic click event that follows touchend
+          canvas.dataset.longPressAt = String(Date.now());
+
           // Use refs + chunkManager directly (no React state dependency)
           const block = longPressBlock.current;
           const face = longPressFace.current;

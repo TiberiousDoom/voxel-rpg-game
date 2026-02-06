@@ -291,13 +291,13 @@ export function BlockInteraction({ chunkManager }) {
       // Only handle primary button (left click / touch)
       if (event.button !== 0) return;
 
-      // Check if click/tap is on canvas (not UI)
-      if (event.target !== gl.domElement) return;
-
       const store = useGameStore.getState();
+      const isPointerLocked = document.pointerLockElement != null;
 
       if (isMobile.current) {
-        // Mobile: tap-to-target mode
+        // Mobile: tap-to-target mode - must be on canvas
+        if (event.target !== gl.domElement) return;
+
         const rect = gl.domElement.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
@@ -329,21 +329,21 @@ export function BlockInteraction({ chunkManager }) {
           setTargetBlock(null);
           setTargetFace(null);
         }
-      } else if (firstPerson) {
-        // Desktop first-person mode: click performs action on crosshair target
+      } else if (firstPerson && isPointerLocked) {
+        // Desktop first-person mode with pointer lock: click performs action on crosshair target
         if (store.blockPlacementMode) {
           placeBlock(selectedBlockType);
         } else {
           mineBlock();
         }
       }
-      // In third-person desktop mode without first-person, don't do block interaction
     };
 
-    gl.domElement.addEventListener('pointerdown', handlePointerDown);
+    // Listen on document to catch events when pointer lock is active
+    document.addEventListener('pointerdown', handlePointerDown);
 
     return () => {
-      gl.domElement.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
     };
   }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, raycastFromScreen, isSameBlock, mobileSelectedBlock]);
 

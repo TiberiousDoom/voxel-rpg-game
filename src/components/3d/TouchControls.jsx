@@ -20,6 +20,10 @@ const TouchControls = () => {
       // Ignore if not in playing state
       if (useGameStore.getState().gameState !== 'playing') return;
 
+      // Don't handle clicks when pointer lock is active (first-person mode) -
+      // BlockInteraction handles mining/placement in that mode
+      if (document.pointerLockElement) return;
+
       // Prevent duplicate events (mobile fires both touchstart and click)
       const now = Date.now();
       if (now - lastTapTime < 300) return; // Ignore if within 300ms of last tap

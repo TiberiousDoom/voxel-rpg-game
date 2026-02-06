@@ -205,8 +205,8 @@ export class ChunkManager {
     // Process loads
     this.processLoadQueue();
 
-    // Process mesh rebuilds
-    this.processMeshRebuildQueue();
+    // Note: Mesh rebuilds are handled by ChunkRenderer, which detects
+    // dirty chunks via getDirtyChunks() and rebuilds them via the worker pool.
 
     this.stats.lastUpdateTime = performance.now() - startTime;
   }

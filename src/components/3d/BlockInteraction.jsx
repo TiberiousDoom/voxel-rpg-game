@@ -69,6 +69,8 @@ export function BlockInteraction({ chunkManager }) {
   const longPressTimer = useRef(null);
   const longPressActive = useRef(false);
   const longPressTouchStart = useRef({ x: 0, y: 0 });
+  const longPressBlock = useRef(null);
+  const longPressFace = useRef(null);
 
   // Convert world position to block center position for highlight
   const highlightPosition = useMemo(() => {
@@ -312,6 +314,7 @@ export function BlockInteraction({ chunkManager }) {
   }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson]);
 
   // Mobile: long-press touch handlers for mining/placement
+  // Calls chunkManager.setBlock() directly to avoid React lifecycle timing issues
   useEffect(() => {
     if (!isMobile.current) return;
 
@@ -330,6 +333,8 @@ export function BlockInteraction({ chunkManager }) {
       const touch = e.touches[0];
       longPressTouchStart.current = { x: touch.clientX, y: touch.clientY };
       longPressActive.current = false;
+      longPressBlock.current = null;
+      longPressFace.current = null;
 
       // Raycast from touch position to find block
       const rect = canvas.getBoundingClientRect();
@@ -338,6 +343,10 @@ export function BlockInteraction({ chunkManager }) {
       const result = raycastFromScreen(x, y);
 
       if (result.block) {
+        // Store raycast result in refs for the timer callback
+        longPressBlock.current = result.block;
+        longPressFace.current = result.face;
+
         // Show highlight immediately
         setTargetBlock(result.block);
         setTargetFace(result.face);
@@ -347,12 +356,38 @@ export function BlockInteraction({ chunkManager }) {
         longPressTimer.current = setTimeout(() => {
           longPressActive.current = true;
 
-          // Read latest action functions from store (updated by React lifecycle)
+          // Use refs + chunkManager directly (no React state dependency)
+          const block = longPressBlock.current;
+          const face = longPressFace.current;
+          if (!block || !chunkManager) return;
+
+          const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+
           const store = useGameStore.getState();
           if (store.blockPlacementMode) {
-            if (store.placeBlock) store.placeBlock();
+            // Place block on adjacent face
+            let placeX = blockX, placeY = blockY, placeZ = blockZ;
+            switch (face) {
+              case 'top': placeY += VOXEL_SIZE; break;
+              case 'bottom': placeY -= VOXEL_SIZE; break;
+              case 'north': placeZ += VOXEL_SIZE; break;
+              case 'south': placeZ -= VOXEL_SIZE; break;
+              case 'east': placeX += VOXEL_SIZE; break;
+              case 'west': placeX -= VOXEL_SIZE; break;
+              default: return;
+            }
+            const existing = chunkManager.getBlock(placeX, placeY, placeZ);
+            if (!isSolid(existing)) {
+              chunkManager.setBlock(placeX, placeY, placeZ, store.selectedBlockType ?? BlockTypes.DIRT);
+            }
           } else {
-            if (store.mineBlock) store.mineBlock();
+            // Mine block
+            const currentBlock = chunkManager.getBlock(blockX, blockY, blockZ);
+            if (currentBlock !== BlockTypes.BEDROCK) {
+              chunkManager.setBlock(blockX, blockY, blockZ, BlockTypes.AIR);
+            }
           }
         }, LONG_PRESS_DURATION);
       }
@@ -369,6 +404,8 @@ export function BlockInteraction({ chunkManager }) {
       if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
+        longPressBlock.current = null;
+        longPressFace.current = null;
         setTargetBlock(null);
         setTargetFace(null);
       }
@@ -387,7 +424,9 @@ export function BlockInteraction({ chunkManager }) {
         longPressActive.current = false;
       }
 
-      // Clear highlight
+      // Clear refs and highlight
+      longPressBlock.current = null;
+      longPressFace.current = null;
       setTargetBlock(null);
       setTargetFace(null);
     };
@@ -406,7 +445,7 @@ export function BlockInteraction({ chunkManager }) {
       canvas.removeEventListener('touchend', handleTouchEnd);
       canvas.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [gl, raycastFromScreen]);
+  }, [gl, chunkManager, raycastFromScreen]);
 
   return (
     <BlockHighlight

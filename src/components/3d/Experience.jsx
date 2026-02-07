@@ -13,6 +13,7 @@ import XPOrb from './XPOrb';
 import ParticleEffect from './ParticleEffect';
 import ChunkRenderer from './ChunkRenderer';
 import BlockInteraction from './BlockInteraction';
+import ScreenShakeController from './ScreenShakeController';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 
@@ -58,6 +59,9 @@ const Experience = () => {
 
   return (
     <>
+      {/* Screen shake controller */}
+      <ScreenShakeController />
+
       {/* Touch/Click controls */}
       <TouchControls />
 

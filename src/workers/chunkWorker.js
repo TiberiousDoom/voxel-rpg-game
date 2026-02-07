@@ -395,6 +395,144 @@ function buildChunkMesh(params) {
 }
 
 // ============================================================================
+// LOD MESH BUILDING
+// ============================================================================
+
+const LOD_MERGE_FACTORS = [1, 2, 4];
+
+function getDominantBlock(blocks, startX, startY, startZ, size, chunkSize, chunkSizeY) {
+  const counts = new Map();
+  let maxCount = 0;
+  let dominant = BlockTypes.AIR;
+  let hasNonAir = false;
+
+  for (let dx = 0; dx < size && startX + dx < chunkSize; dx++) {
+    for (let dy = 0; dy < size && startY + dy < chunkSizeY; dy++) {
+      for (let dz = 0; dz < size && startZ + dz < chunkSize; dz++) {
+        const x = startX + dx;
+        const y = startY + dy;
+        const z = startZ + dz;
+        const index = x + (z << 4) + (y << 8);
+        const blockType = blocks[index];
+
+        if (blockType !== BlockTypes.AIR) {
+          hasNonAir = true;
+          const count = (counts.get(blockType) || 0) + 1;
+          counts.set(blockType, count);
+          if (count > maxCount) {
+            maxCount = count;
+            dominant = blockType;
+          }
+        }
+      }
+    }
+  }
+  return hasNonAir ? dominant : BlockTypes.AIR;
+}
+
+function generateLODBlocks(sourceBlocks, lodLevel) {
+  const mergeFactor = LOD_MERGE_FACTORS[lodLevel];
+  const lodSize = Math.ceil(CHUNK_SIZE / mergeFactor);
+  const lodSizeY = Math.ceil(CHUNK_SIZE_Y / mergeFactor);
+  const lodBlocks = new Uint8Array(lodSize * lodSize * lodSizeY);
+
+  for (let y = 0; y < lodSizeY; y++) {
+    for (let z = 0; z < lodSize; z++) {
+      for (let x = 0; x < lodSize; x++) {
+        const sourceX = x * mergeFactor;
+        const sourceY = y * mergeFactor;
+        const sourceZ = z * mergeFactor;
+        const dominant = getDominantBlock(sourceBlocks, sourceX, sourceY, sourceZ, mergeFactor, CHUNK_SIZE, CHUNK_SIZE_Y);
+        const lodIndex = x + (z * lodSize) + (y * lodSize * lodSize);
+        lodBlocks[lodIndex] = dominant;
+      }
+    }
+  }
+  return { lodBlocks, lodSize, lodSizeY };
+}
+
+function buildLODMesh(params) {
+  const { blocks, lodLevel } = params;
+  const { lodBlocks, lodSize, lodSizeY } = generateLODBlocks(blocks, lodLevel);
+  const voxelScale = LOD_MERGE_FACTORS[lodLevel] * VOXEL_SIZE;
+
+  const maxVertices = 8000;
+  const positions = new Float32Array(maxVertices * 3);
+  const normals = new Float32Array(maxVertices * 3);
+  const colors = new Float32Array(maxVertices * 3);
+  const indices = [];
+  let vertexCount = 0;
+
+  function getBlock(x, y, z) {
+    if (x < 0 || x >= lodSize || y < 0 || y >= lodSizeY || z < 0 || z >= lodSize) {
+      return BlockTypes.AIR;
+    }
+    return lodBlocks[x + (z * lodSize) + (y * lodSize * lodSize)];
+  }
+
+  function shouldRenderFace(blockType, adjacentType) {
+    if (blockType === BlockTypes.AIR) return false;
+    if (TransparentBlocks.has(adjacentType)) {
+      if (blockType === adjacentType) return false;
+      return true;
+    }
+    return false;
+  }
+
+  function addFace(x, y, z, face, blockType) {
+    if (vertexCount + 4 > maxVertices) return;
+    const faceData = FACES[face];
+    const color = BlockColors[blockType] || [1, 0, 1];
+    let lightMod = 1.0;
+    if (face === 'bottom') lightMod = 0.5;
+    else if (face === 'north' || face === 'south') lightMod = 0.8;
+    else if (face === 'east' || face === 'west') lightMod = 0.7;
+
+    const startVertex = vertexCount;
+    for (let i = 0; i < 4; i++) {
+      const v = faceData.vertices[i];
+      const idx = vertexCount * 3;
+      positions[idx] = (x + v[0]) * voxelScale;
+      positions[idx + 1] = (y + v[1]) * voxelScale;
+      positions[idx + 2] = (z + v[2]) * voxelScale;
+      normals[idx] = faceData.normal[0];
+      normals[idx + 1] = faceData.normal[1];
+      normals[idx + 2] = faceData.normal[2];
+      colors[idx] = color[0] * lightMod;
+      colors[idx + 1] = color[1] * lightMod;
+      colors[idx + 2] = color[2] * lightMod;
+      vertexCount++;
+    }
+    indices.push(startVertex, startVertex + 1, startVertex + 2, startVertex, startVertex + 2, startVertex + 3);
+  }
+
+  for (let y = 0; y < lodSizeY; y++) {
+    for (let z = 0; z < lodSize; z++) {
+      for (let x = 0; x < lodSize; x++) {
+        const blockType = lodBlocks[x + (z * lodSize) + (y * lodSize * lodSize)];
+        if (blockType === BlockTypes.AIR) continue;
+        if (shouldRenderFace(blockType, getBlock(x, y + 1, z))) addFace(x, y, z, 'top', blockType);
+        if (shouldRenderFace(blockType, getBlock(x, y - 1, z))) addFace(x, y, z, 'bottom', blockType);
+        if (shouldRenderFace(blockType, getBlock(x, y, z + 1))) addFace(x, y, z, 'north', blockType);
+        if (shouldRenderFace(blockType, getBlock(x, y, z - 1))) addFace(x, y, z, 'south', blockType);
+        if (shouldRenderFace(blockType, getBlock(x + 1, y, z))) addFace(x, y, z, 'east', blockType);
+        if (shouldRenderFace(blockType, getBlock(x - 1, y, z))) addFace(x, y, z, 'west', blockType);
+      }
+    }
+  }
+
+  return {
+    positions: positions.slice(0, vertexCount * 3),
+    normals: normals.slice(0, vertexCount * 3),
+    colors: colors.slice(0, vertexCount * 3),
+    indices: new Uint32Array(indices),
+    vertexCount,
+    faceCount: indices.length / 6,
+    lodLevel,
+  };
+}
+
+// ============================================================================
 // WORKER MESSAGE HANDLING
 // ============================================================================
 
@@ -411,6 +549,9 @@ self.onmessage = function(event) {
       break;
     case 'buildMesh':
       handleBuildMesh(requestId, data);
+      break;
+    case 'buildLODMesh':
+      handleBuildLODMesh(requestId, data);
       break;
     case 'generateAndBuildMesh':
       handleGenerateAndBuildMesh(requestId, data);
@@ -468,6 +609,36 @@ function handleBuildMesh(requestId, data) {
         indices: result.indices,
         vertexCount: result.vertexCount,
         faceCount: result.faceCount
+      },
+      [result.positions.buffer, result.normals.buffer, result.colors.buffer, result.indices.buffer]
+    );
+  } catch (error) {
+    self.postMessage({ type: 'error', requestId: requestId, error: error.message });
+  } finally {
+    activeTasks.delete(requestId);
+  }
+}
+
+function handleBuildLODMesh(requestId, data) {
+  activeTasks.set(requestId, { cancelled: false });
+  try {
+    var result = buildLODMesh(data);
+    var task = activeTasks.get(requestId);
+    if (task && task.cancelled) {
+      activeTasks.delete(requestId);
+      return;
+    }
+    self.postMessage(
+      {
+        type: 'lodMeshComplete',
+        requestId: requestId,
+        positions: result.positions,
+        normals: result.normals,
+        colors: result.colors,
+        indices: result.indices,
+        vertexCount: result.vertexCount,
+        faceCount: result.faceCount,
+        lodLevel: result.lodLevel
       },
       [result.positions.buffer, result.normals.buffer, result.colors.buffer, result.indices.buffer]
     );

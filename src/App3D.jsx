@@ -8,6 +8,7 @@ import CraftingUI from './components/CraftingUI';
 import InventoryUI from './components/InventoryUI';
 import BlockHotbar from './components/ui/BlockHotbar';
 import Crosshair from './components/ui/Crosshair';
+import ContextualHints from './components/ContextualHints';
 
 /**
  * Main 3D App component
@@ -49,6 +50,9 @@ function App3D() {
 
       {/* Crosshair for first-person mode */}
       <Crosshair />
+
+      {/* Contextual hints for new players */}
+      <ContextualHints />
     </div>
   );
 }

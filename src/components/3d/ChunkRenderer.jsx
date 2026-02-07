@@ -16,6 +16,13 @@ import useGameStore from '../../stores/useGameStore';
 // Only chunks within this Chebyshev distance get physics colliders
 const PHYSICS_DISTANCE = 2;
 
+// LOD distance thresholds (Chebyshev distance in chunks)
+const LOD_THRESHOLDS = {
+  LOD0: 4,  // Full detail: 0-4 chunks
+  LOD1: 8,  // Medium detail: 5-8 chunks
+  // LOD2: 9+ chunks (currently disabled for simplicity)
+};
+
 /**
  * Shared hook to build geometry from mesh data
  */

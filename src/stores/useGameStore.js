@@ -119,6 +119,9 @@ const useGameStore = create((set, get) => ({
   // Particle effects
   particleEffects: [],
 
+  // Screen shake state
+  screenShake: null, // { intensity, duration } or null when inactive
+
   // Block interaction state (Phase 0.3)
   selectedBlockType: 3, // GRASS by default
   blockPlacementMode: false, // false = mining, true = placing
@@ -195,6 +198,12 @@ const useGameStore = create((set, get) => ({
     set((state) => ({
       particleEffects: state.particleEffects.filter((p) => p.id !== id),
     })),
+
+  // Screen shake trigger
+  triggerScreenShake: (intensity = 0.5, duration = 0.3) =>
+    set({ screenShake: { intensity, duration, timestamp: Date.now() } }),
+
+  clearScreenShake: () => set({ screenShake: null }),
 
   // Monster management
   spawnMonster: (monster) => {
@@ -595,36 +604,42 @@ const useGameStore = create((set, get) => ({
       player: { ...state.player, position },
     })),
 
-  dealDamageToPlayer: (damage) =>
-    set((state) => {
-      // Check invincibility
-      if (state.player.isInvincible) {
-        return state;
-      }
+  dealDamageToPlayer: (damage) => {
+    const state = get();
 
-      // Apply blocking damage reduction (75% reduction)
-      let finalDamage = damage;
-      if (state.player.isBlocking) {
-        finalDamage = damage * 0.25;
-      }
+    // Check invincibility
+    if (state.player.isInvincible) {
+      return;
+    }
 
-      // Apply defense reduction
-      const defenseReduction = state.player.defense * 0.5;
-      finalDamage = Math.max(1, finalDamage - defenseReduction);
+    // Apply blocking damage reduction (75% reduction)
+    let finalDamage = damage;
+    if (state.player.isBlocking) {
+      finalDamage = damage * 0.25;
+    }
 
-      const newHealth = Math.max(0, state.player.health - finalDamage);
+    // Apply defense reduction
+    const defenseReduction = state.player.defense * 0.5;
+    finalDamage = Math.max(1, finalDamage - defenseReduction);
 
-      // Gain rage when hit (10 rage per hit)
-      const newRage = Math.min(state.player.maxRage, state.player.rage + 10);
+    const newHealth = Math.max(0, state.player.health - finalDamage);
 
-      return {
-        player: {
-          ...state.player,
-          health: newHealth,
-          rage: newRage,
-        },
-      };
-    }),
+    // Gain rage when hit (10 rage per hit)
+    const newRage = Math.min(state.player.maxRage, state.player.rage + 10);
+
+    // Update player state
+    set({
+      player: {
+        ...state.player,
+        health: newHealth,
+        rage: newRage,
+      },
+    });
+
+    // Trigger screen shake when taking damage (intensity based on damage)
+    const shakeIntensity = Math.min(0.2 + (finalDamage / 50) * 0.3, 0.6);
+    get().triggerScreenShake(shakeIntensity, 0.15);
+  },
 
   addStatusEffect: (effect) =>
     set((state) => ({

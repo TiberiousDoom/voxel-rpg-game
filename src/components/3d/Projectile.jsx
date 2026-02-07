@@ -97,6 +97,10 @@ const Projectile = ({
       // Deal damage to enemy
       userData.takeDamage(Math.round(finalDamage));
 
+      // Trigger screen shake on hit (intensity scales with damage)
+      const shakeIntensity = Math.min(0.3 + (finalDamage / 100) * 0.4, 0.8);
+      store.triggerScreenShake(isCrit ? shakeIntensity * 1.5 : shakeIntensity, 0.2);
+
       // Apply status effect if present
       if (effectType && userData.id) {
         applyStatusEffect(userData.id);

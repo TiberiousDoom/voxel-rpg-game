@@ -31,6 +31,20 @@ const highlightBoxGeometry = new THREE.BoxGeometry(
 );
 const highlightEdgesGeometry = new THREE.EdgesGeometry(highlightBoxGeometry);
 
+// Pre-create geometry for placement preview
+const previewBoxGeometry = new THREE.BoxGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+
+// Block type to color mapping for preview
+const BLOCK_COLORS = {
+  [BlockTypes.DIRT]: '#8B4513',
+  [BlockTypes.GRASS]: '#228B22',
+  [BlockTypes.STONE]: '#808080',
+  [BlockTypes.WOOD]: '#DEB887',
+  [BlockTypes.SAND]: '#F4A460',
+  [BlockTypes.WATER]: '#4169E1',
+  [BlockTypes.LEAVES]: '#32CD32',
+};
+
 /**
  * BlockHighlight - Wireframe cube showing selected block
  */
@@ -47,20 +61,50 @@ function BlockHighlight({ position, visible }) {
 }
 
 /**
+ * PlacementPreview - Ghost block showing where block will be placed
+ */
+function PlacementPreview({ position, blockType, isValid }) {
+  if (!position) return null;
+
+  const color = BLOCK_COLORS[blockType] || '#888888';
+
+  return (
+    <group position={position}>
+      {/* Semi-transparent preview block */}
+      <mesh geometry={previewBoxGeometry}>
+        <meshBasicMaterial
+          color={isValid ? color : '#ff0000'}
+          transparent
+          opacity={isValid ? 0.5 : 0.3}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* Wireframe outline */}
+      <lineSegments geometry={highlightEdgesGeometry}>
+        <lineBasicMaterial color={isValid ? '#00ff00' : '#ff0000'} linewidth={2} />
+      </lineSegments>
+    </group>
+  );
+}
+
+/**
  * Main BlockInteraction component
  */
 export function BlockInteraction({ chunkManager }) {
   const { camera, gl, size } = useThree();
   const [targetBlock, setTargetBlock] = useState(null);
   const [targetFace, setTargetFace] = useState(null);
+  const [previewPosition, setPreviewPosition] = useState(null);
+  const [previewValid, setPreviewValid] = useState(true);
   const lastRaycast = useRef(0);
 
   // Track if we're on mobile
   const isMobile = useRef(isTouchDevice());
 
-  // Get selected block type and first-person mode from store
+  // Get selected block type, placement mode, and first-person mode from store
   const selectedBlockType = useGameStore((state) => state.selectedBlockType ?? BlockTypes.DIRT);
   const firstPerson = useGameStore((state) => state.camera.firstPerson);
+  const blockPlacementMode = useGameStore((state) => state.blockPlacementMode);
 
   // Raycaster for screen-space raycasting (mobile)
   const raycasterRef = useRef(new THREE.Raycaster());
@@ -83,6 +127,42 @@ export function BlockInteraction({ chunkManager }) {
 
     return [x, y, z];
   }, [targetBlock]);
+
+  // Calculate placement preview position (where block will be placed)
+  useEffect(() => {
+    if (!blockPlacementMode || !targetBlock || !targetFace || !chunkManager) {
+      setPreviewPosition(null);
+      return;
+    }
+
+    const blockX = Math.floor(targetBlock.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+    const blockY = Math.floor(targetBlock.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+    const blockZ = Math.floor(targetBlock.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+
+    let placeX = blockX;
+    let placeY = blockY;
+    let placeZ = blockZ;
+
+    // Offset based on face
+    switch (targetFace) {
+      case 'top': placeY += VOXEL_SIZE; break;
+      case 'bottom': placeY -= VOXEL_SIZE; break;
+      case 'north': placeZ += VOXEL_SIZE; break;
+      case 'south': placeZ -= VOXEL_SIZE; break;
+      case 'east': placeX += VOXEL_SIZE; break;
+      case 'west': placeX -= VOXEL_SIZE; break;
+      default:
+        setPreviewPosition(null);
+        return;
+    }
+
+    // Check if placement is valid (position is empty)
+    const existingBlock = chunkManager.getBlock(placeX, placeY, placeZ);
+    const isValid = !isSolid(existingBlock);
+
+    setPreviewPosition([placeX, placeY, placeZ]);
+    setPreviewValid(isValid);
+  }, [blockPlacementMode, targetBlock, targetFace, chunkManager]);
 
   // Reusable vectors for raycast (avoid allocations)
   const rayDirection = useRef(new THREE.Vector3());
@@ -452,10 +532,24 @@ export function BlockInteraction({ chunkManager }) {
   }, [gl, chunkManager, raycastFromScreen]);
 
   return (
-    <BlockHighlight
-      position={highlightPosition}
-      visible={targetBlock !== null}
-    />
+    <>
+      {/* Mining target highlight */}
+      {!blockPlacementMode && (
+        <BlockHighlight
+          position={highlightPosition}
+          visible={targetBlock !== null}
+        />
+      )}
+
+      {/* Placement preview ghost block */}
+      {blockPlacementMode && previewPosition && (
+        <PlacementPreview
+          position={previewPosition}
+          blockType={selectedBlockType}
+          isValid={previewValid}
+        />
+      )}
+    </>
   );
 }
 

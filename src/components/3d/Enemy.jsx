@@ -24,7 +24,6 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
   const takeDamage = useCallback((damage) => {
     setHealth((prev) => {
       const newHealth = Math.max(0, prev - damage);
-      // console.log(`💥 Enemy took ${damage} damage, health: ${newHealth}/${maxHealth}`);
       return newHealth;
     });
 
@@ -32,13 +31,39 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
     setDamageFlash(1);
     setTimeout(() => setDamageFlash(0), 300);
 
-    // Spawn floating damage number
+    // Spawn floating damage number and apply knockback
     if (enemyRef.current) {
       const enemyPos = enemyRef.current.translation();
-      useGameStore.getState().addDamageNumber({
+      const store = useGameStore.getState();
+      const playerPos = store.player.position;
+
+      // Add damage number
+      store.addDamageNumber({
         position: [enemyPos.x, enemyPos.y + 1.5, enemyPos.z],
         damage: damage,
       });
+
+      // Add hit particle burst
+      store.addParticleEffect({
+        position: [enemyPos.x, enemyPos.y + 0.5, enemyPos.z],
+        color: '#ffaa00',
+        type: 'burst',
+        count: 8,
+      });
+
+      // Apply knockback impulse (push away from player)
+      const knockbackDir = new THREE.Vector3(
+        enemyPos.x - playerPos[0],
+        0.3, // Slight upward boost
+        enemyPos.z - playerPos[2]
+      ).normalize();
+
+      const knockbackForce = Math.min(5 + damage * 0.1, 12); // Scale with damage, cap at 12
+      enemyRef.current.applyImpulse({
+        x: knockbackDir.x * knockbackForce,
+        y: knockbackDir.y * knockbackForce,
+        z: knockbackDir.z * knockbackForce,
+      }, true);
     }
   }, []); // maxHealth is constant, no need to track it
 

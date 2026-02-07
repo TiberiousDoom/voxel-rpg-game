@@ -297,7 +297,7 @@ export function applyAction(action, state) {
   }
 }
 
-export default {
+const ActionSystem = {
   ActionTypes,
   createAction,
   validateAction,
@@ -306,3 +306,5 @@ export default {
   StateSnapshot,
   createActionMiddleware,
 };
+
+export default ActionSystem;

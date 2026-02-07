@@ -16,6 +16,9 @@ import { isTouchDevice } from '../../utils/deviceDetection';
 // Maximum reach distance for block interaction
 const REACH_DISTANCE = 12;
 
+// Longer reach for third-person/mobile (camera is ~16+ world units from terrain)
+const REACH_DISTANCE_THIRD_PERSON = 50;
+
 // Raycast step size (smaller = more precise, but slower)
 const RAY_STEP = 0.5;
 
@@ -169,7 +172,7 @@ export function BlockInteraction({ chunkManager }) {
   const rayOrigin = useRef(new THREE.Vector3());
 
   // Core raycast function - steps along a ray to find blocks
-  const raycastAlongRay = useCallback((origin, direction) => {
+  const raycastAlongRay = useCallback((origin, direction, maxDistance = REACH_DISTANCE) => {
     if (!chunkManager) return { block: null, face: null };
 
     const ox = origin.x;
@@ -183,7 +186,7 @@ export function BlockInteraction({ chunkManager }) {
     let hasLastAir = false;
 
     // Step along ray
-    for (let dist = 0; dist < REACH_DISTANCE; dist += RAY_STEP) {
+    for (let dist = 0; dist < maxDistance; dist += RAY_STEP) {
       const cx = ox + dir.x * dist;
       const cy = oy + dir.y * dist;
       const cz = oz + dir.z * dist;
@@ -235,6 +238,7 @@ export function BlockInteraction({ chunkManager }) {
   }, [camera, raycastAlongRay]);
 
   // Raycast from screen position (mobile tap-to-target)
+  // Uses longer reach because third-person camera is far from terrain
   const raycastFromScreen = useCallback((screenX, screenY) => {
     // Convert screen coordinates to normalized device coordinates (-1 to +1)
     const ndcX = (screenX / size.width) * 2 - 1;
@@ -244,7 +248,7 @@ export function BlockInteraction({ chunkManager }) {
     raycasterRef.current.setFromCamera({ x: ndcX, y: ndcY }, camera);
 
     const ray = raycasterRef.current.ray;
-    return raycastAlongRay(ray.origin, ray.direction);
+    return raycastAlongRay(ray.origin, ray.direction, REACH_DISTANCE_THIRD_PERSON);
   }, [camera, size, raycastAlongRay]);
 
   // Track previous target to avoid unnecessary state updates

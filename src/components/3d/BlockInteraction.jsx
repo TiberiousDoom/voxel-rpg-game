@@ -194,12 +194,23 @@ export function BlockInteraction({ chunkManager }) {
       const blockType = chunkManager.getBlock(cx, cy, cz);
 
       if (isSolid(blockType)) {
-        // Found a solid block
+        // Found a solid block - determine which face was hit
         let face = null;
         if (hasLastAir) {
-          const dx = cx - lastAirX;
-          const dy = cy - lastAirY;
-          const dz = cz - lastAirZ;
+          // Compare voxel grid positions (not float positions) to find
+          // which face boundary was actually crossed.  Float differences
+          // are always proportional to the ray direction and misidentify
+          // the face when the ray enters at an oblique angle.
+          const solidVX = Math.floor(cx / VOXEL_SIZE);
+          const solidVY = Math.floor(cy / VOXEL_SIZE);
+          const solidVZ = Math.floor(cz / VOXEL_SIZE);
+          const airVX = Math.floor(lastAirX / VOXEL_SIZE);
+          const airVY = Math.floor(lastAirY / VOXEL_SIZE);
+          const airVZ = Math.floor(lastAirZ / VOXEL_SIZE);
+
+          const dx = solidVX - airVX;
+          const dy = solidVY - airVY;
+          const dz = solidVZ - airVZ;
 
           const absDx = Math.abs(dx);
           const absDy = Math.abs(dy);
@@ -209,8 +220,33 @@ export function BlockInteraction({ chunkManager }) {
             face = dx > 0 ? 'west' : 'east';
           } else if (absDy > absDx && absDy > absDz) {
             face = dy > 0 ? 'bottom' : 'top';
-          } else {
+          } else if (absDz > absDx && absDz > absDy) {
             face = dz > 0 ? 'south' : 'north';
+          } else {
+            // Diagonal voxel crossing (rare, near corners) —
+            // fall back to ray direction as tiebreaker
+            const rAbsDx = Math.abs(dir.x);
+            const rAbsDy = Math.abs(dir.y);
+            const rAbsDz = Math.abs(dir.z);
+            if (rAbsDy >= rAbsDx && rAbsDy >= rAbsDz) {
+              face = dir.y > 0 ? 'bottom' : 'top';
+            } else if (rAbsDx >= rAbsDz) {
+              face = dir.x > 0 ? 'west' : 'east';
+            } else {
+              face = dir.z > 0 ? 'south' : 'north';
+            }
+          }
+        } else {
+          // Ray origin is inside a solid block — infer face from ray direction
+          const rAbsDx = Math.abs(dir.x);
+          const rAbsDy = Math.abs(dir.y);
+          const rAbsDz = Math.abs(dir.z);
+          if (rAbsDy >= rAbsDx && rAbsDy >= rAbsDz) {
+            face = dir.y > 0 ? 'bottom' : 'top';
+          } else if (rAbsDx >= rAbsDz) {
+            face = dir.x > 0 ? 'west' : 'east';
+          } else {
+            face = dir.z > 0 ? 'south' : 'north';
           }
         }
 

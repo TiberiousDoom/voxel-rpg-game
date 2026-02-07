@@ -26,12 +26,13 @@ Phase 1 transforms the technical foundation from Phase 0 into the core survival 
 2. Hunger system that drives resource gathering
 3. Block mining drops items into inventory (not just destroys blocks)
 4. Tool crafting that makes gathering faster
-5. Night monsters that create real danger
-6. Shelter detection so building matters
-7. Cohesive survival HUD
+5. Rifts as physical monster spawn points — danger you can see and plan around
+6. Night intensifies rifts, making darkness genuinely threatening
+7. Shelter detection so building matters
+8. Cohesive survival HUD
 
 ### What Success Looks Like
-By the end of Phase 1, a player spawns in a generated world, gathers resources by mining blocks, crafts basic tools, builds a shelter, eats food to stave off hunger, and survives the first night when monsters become aggressive. Dying feels consequential, surviving feels earned.
+By the end of Phase 1, a player spawns in a generated world, gathers resources by mining blocks, crafts basic tools, builds a shelter, eats food to stave off hunger, and survives the first night when rifts intensify and monsters pour through tears in reality. The player can see where the danger comes from — glowing purple rifts that scar the landscape — and plan accordingly. Dying feels consequential, surviving feels earned.
 
 ---
 
@@ -51,6 +52,7 @@ Before building, here's what already works and what's missing:
 | Crafting | **Functional** | MaterialCraftingSystem, recipes, quality tiers, CraftingUI |
 | Monster Spawning | **Functional** | SpawnManager, zones, AI states (idle/patrol/chase/attack/flee) |
 | Night Spawning | **Missing** | No time-based spawn rules |
+| Rift/Portal System | **Missing** | No physical spawn origins; SpawnManager uses zone-based configs |
 | Death/Respawn | **Functional** | DeathScreen, `respawnPlayer()` resets stats |
 | Inventory | **Functional** | Materials, items, equipment slots, InventoryUI |
 | Block Types | **Functional** | 16 types with hardness values in blockTypes.js |
@@ -465,34 +467,34 @@ Bedrock:           Infinity (unbreakable)
 
 ### 1.6 Night Threats (Week 5-6)
 
-#### 1.6.1 Night Monster Spawning
-**Goal:** Monsters spawn more aggressively at night, creating danger
+> **Key design decision:** Monsters spawn FROM rifts (see 1.13), not randomly in the world. Section 1.6 focuses on the time-of-day behavior layer that sits on top of rift spawning. The rift system (1.13) handles WHERE monsters come from; this section handles HOW they behave once spawned.
+
+#### 1.6.1 Night Monster Behavior & Rift Intensification
+**Goal:** Night makes rift-spawned monsters more aggressive and dangerous
 
 **Implementation tasks:**
-- [ ] Add `getTimeOfDay()` check to SpawnManager
-- [ ] Define night spawn multipliers:
-  - Day: normal spawn rate (current behavior)
-  - Dusk: 1.5× spawn rate
-  - Night: 3× spawn rate, stronger monster variants
-  - Dawn: spawn rate decreases, existing night monsters flee/despawn at sunrise
-- [ ] Add new night-specific monster types:
-  - Shadow Creeper: spawns only at night, fast, low HP, high damage
-  - Night Skeleton: upgraded skeleton, appears at night
-- [ ] Monsters spawned at night get "Nocturnal" modifier: +50% damage, +25% speed
+- [ ] Add `getTimeOfDay()` integration to SpawnManager (consumed by rift spawn logic in 1.13.3)
+- [ ] Rift spawn rates increase at night (defined in 1.13.3; this section wires time data)
+- [ ] Add new night-specific monster types to monster registry:
+  - Shadow Creeper: spawns only at night, fast, low HP, high damage, dark particle trail
+  - Night Skeleton: upgraded skeleton with glowing eyes, appears at night from rifts
+- [ ] Monsters spawned at night get "Nocturnal" modifier: +50% damage, +25% speed (applied by rift spawner)
 - [ ] Night monsters despawn (fade out) after sunrise — within 60s if in sunlight, up to 5 min if in shade/cave
+- [ ] Sunlight-aware despawn: check if monster position has open sky above (raycast up for solid block)
 
 **Acceptance criteria:**
-- [ ] Noticeably more monsters at night
-- [ ] Night monsters are visibly stronger
-- [ ] Dawn triggers monster retreat/despawn
-- [ ] Day is relatively safe for exploration
+- [ ] Noticeably more monsters at night (coming from rifts)
+- [ ] Night monsters are visibly stronger (particle effects, glow)
+- [ ] Dawn triggers monster retreat/despawn (sunlight-aware)
+- [ ] Day is relatively safe for exploration (rifts trickle only)
 - [ ] Night feels dangerous and urgent
+- [ ] Players can observe "the rift got brighter, more monsters are coming"
 
 **Tests:** `NightSpawning.test.js`
-- Spawn multiplier correct per time period
+- Spawn rate varies by time period (via rift system)
 - Night-only types don't spawn during day
 - Nocturnal modifier applies correctly
-- Sunrise despawn triggers at correct time
+- Sunrise despawn triggers — faster in sunlight, slower in shade
 
 ---
 
@@ -839,6 +841,7 @@ Night survival:
   - On first tool craft: "Equip your tool (1-9) to mine faster"
   - At dusk (first night): "Night is coming — find or build shelter!"
   - On first hunger below 50: "You're getting hungry — find food"
+  - On first rift proximity (<32 blocks): "A dark rift tears the land — monsters spawn from these tears. Stay clear at night!"
 - [ ] Track shown hints in player state (don't repeat after dismissal)
 - [ ] Hints auto-dismiss after 8 seconds if not clicked
 - [ ] Persist hint state in save/load
@@ -903,9 +906,217 @@ Night survival:
 - [ ] Day/night lighting updates: <0.5ms per frame
 - [ ] Hunger/shelter systems: <0.1ms per tick
 - [ ] Mining progress tracking: <0.1ms per frame
-- [ ] Monster spawn calculations: <1ms per tick
+- [ ] Rift spawn calculations: <1ms per tick (all active rifts combined)
+- [ ] Rift visual rendering: <1ms for 3 active rift renderers (particles + glow)
 - [ ] Floating text rendering: <0.5ms for 10 active texts
 - [ ] Total frame budget: still <16ms average
+
+---
+
+### 1.13 Rift/Portal Spawn System (Week 5-6)
+
+Monsters don't spawn from thin air — they pour through rifts, tears in reality left by the cataclysm. This is a core differentiator from Minecraft-style spawning and ties directly into the game's vision: "Portals/tears scar the landscape, spewing monsters." In Phase 1 we introduce rifts as the **physical source** of all hostile spawning. Players can observe them, avoid them, and build strategically around them. Phase 3 adds the ability to close them, territory control, and corruption mechanics.
+
+> **Design philosophy:** Rifts give monsters a *reason* to exist. The player can see where danger comes from, plan around it, and eventually (Phase 3) do something about it. This transforms "random mobs spawn at night" into a spatial puzzle with strategic depth.
+
+#### 1.13.1 Rift World Generation
+**Goal:** Place small reality tears during terrain generation that serve as monster spawn points
+
+**Implementation tasks:**
+- [ ] Create `src/systems/rift/RiftManager.js` to track all active rifts
+- [ ] Generate rift locations during world creation (seeded by world seed)
+- [ ] Placement rules:
+  - 1 rift per ~4 chunks (average; controlled by `RIFT_DENSITY` in tuning.js)
+  - Minimum 6 chunks from world spawn point (player starts safe)
+  - Must be on solid surface (not in air, not underwater)
+  - Prefer flat terrain (max 2-block height variance in 5×5 area)
+  - Minimum 8 chunks between rifts (no clustering)
+- [ ] Store rift data: `{ id, position: {x,y,z}, tier: 1, active: true, spawnRadius: 10, lastSpawnTime }`
+- [ ] Persist rift state in save/load (position, tier, active flag)
+- [ ] Expose rift list to game store for rendering and spawn logic
+
+**Rift density (tuning.js):**
+```
+RIFT_DENSITY = 0.25           (rifts per chunk, ~1 per 4 chunks)
+RIFT_MIN_SPAWN_DISTANCE = 96  (world units from spawn, ~6 chunks)
+RIFT_MIN_SEPARATION = 128     (world units between rifts, ~8 chunks)
+RIFT_SPAWN_RADIUS = 10        (world units — monsters appear within this radius)
+```
+
+**Acceptance criteria:**
+- [ ] Rifts generate at predictable density controlled by tuning constant
+- [ ] No rift spawns within safe zone around world spawn
+- [ ] Rifts don't cluster — minimum separation enforced
+- [ ] Rift positions persist across save/load
+- [ ] World seed produces same rift layout
+
+**Tests:** `RiftManager.test.js`
+- Rift count scales with explored area
+- Minimum distance from spawn enforced
+- Minimum separation between rifts enforced
+- Same seed produces same rift positions
+- Save/load roundtrip preserves rift state
+
+---
+
+#### 1.13.2 Rift Visual Appearance
+**Goal:** Rifts are visually distinctive — players can spot them from a distance and know "that's where the danger comes from"
+
+**Implementation tasks:**
+- [ ] Create `src/components/3d/Rift.jsx` React Three Fiber component
+- [ ] Add CORRUPTED_STONE block type to blockTypes.js (dark purple-black, `color: [0.15, 0.05, 0.2]`)
+- [ ] Rift ground structure: 5×5 patch of CORRUPTED_STONE blocks replacing surface terrain
+- [ ] Vertical tear effect: particle system at rift center
+  - Purple/red particles spiraling upward (2-4 block height)
+  - Dark ambient glow (point light, color `#6611aa`, intensity varies with time of day)
+  - Subtle pulsing (intensity oscillates over 3-second cycle)
+- [ ] Night intensification: glow brightens 2×, particles increase 2×, spiral tightens
+- [ ] Add distant visibility cue: faint purple column of light visible from ~64 blocks away
+- [ ] Corrupted ground blocks have a slight emissive tint (visible at night)
+- [ ] Performance: use instanced particles, max 3 active rift renderers (nearest to player)
+
+**Visual design:**
+```
+Day appearance:
+  - Dark corrupted ground patch (5×5)
+  - Faint purple particle wisp rising from center
+  - Subtle purple glow (barely visible in daylight)
+
+Night appearance:
+  - Same corrupted ground
+  - Intense purple/red particle spiral (2× density)
+  - Bright pulsing purple glow (visible from far away)
+  - Faint column of light reaching skyward
+
+Audio (stretch, Phase 5):
+  - Low hum near rift
+  - Intensifies at night
+  - Monster spawn: tearing/ripping sound
+```
+
+**Acceptance criteria:**
+- [ ] Rift is visible from 30+ blocks away during day
+- [ ] Rift is visible from 60+ blocks away at night (glow)
+- [ ] Corrupted ground blocks look distinct from normal terrain
+- [ ] Night visual intensification is obvious
+- [ ] Max 3 rendered rifts at once (performance)
+- [ ] Particles don't tank FPS (<1ms for all active rift rendering)
+
+---
+
+#### 1.13.3 Rift Monster Spawning
+**Goal:** Monsters spawn FROM rifts — not randomly in the world
+
+**Implementation tasks:**
+- [ ] Refactor SpawnManager to use rifts as spawn origins instead of static zones
+- [ ] Each rift spawns monsters within its `spawnRadius` (default 10 world units)
+- [ ] Spawn rate varies by time of day:
+  - Day: 1 monster per 120 seconds per rift (trickle)
+  - Dusk: 1 monster per 60 seconds (ramping up)
+  - Night: 1 monster per 20 seconds (dangerous)
+  - Dawn: spawning stops, existing night monsters despawn in sunlight
+- [ ] Population cap per rift: 3 during day, 8 during night (tunable)
+- [ ] Monsters spawn at ground level within `spawnRadius` of rift center
+  - Random position within radius, must be on solid block with air above
+  - Spawn with a brief "emerging" animation (rise from ground, or materialize with particles)
+- [ ] Spawn type table per rift tier (Phase 1 has only tier 1):
+  - Tier 1 rift (all Phase 1 rifts):
+    - 40% Slime
+    - 25% Goblin
+    - 20% Skeleton (night only)
+    - 15% Shadow Creeper (night only)
+- [ ] Nocturnal modifier: night-only spawns get +50% damage, +25% speed
+- [ ] Monsters spawned from a rift track their origin rift ID
+- [ ] Monsters wander away from rift over time (patrol radius expands to 2× spawn radius)
+- [ ] If player destroys all corrupted ground blocks: rift goes dormant for 5 in-game minutes (temporary suppression, not permanent closure — that's Phase 3)
+
+**Spawning algorithm:**
+```
+Every 1 second, for each active rift within 128 world units of player:
+  1. Count living monsters belonging to this rift
+  2. If at population cap → skip
+  3. Check time-based spawn interval:
+     - If time since last spawn < interval → skip
+  4. Pick random monster type from rift's spawn table
+     - If type is night-only and isNight == false → reroll (max 3 rerolls)
+  5. Pick random position within spawnRadius on solid ground
+  6. Create monster at position, tag with rift ID
+  7. If isNight → apply Nocturnal modifier
+  8. Update rift's lastSpawnTime
+```
+
+**Tuning constants (in tuning.js):**
+```
+RIFT_SPAWN_INTERVAL_DAY = 120       (seconds between spawns, daytime)
+RIFT_SPAWN_INTERVAL_DUSK = 60
+RIFT_SPAWN_INTERVAL_NIGHT = 20
+RIFT_POP_CAP_DAY = 3
+RIFT_POP_CAP_NIGHT = 8
+RIFT_ACTIVE_RANGE = 128             (world units — only tick rifts near player)
+RIFT_DORMANT_DURATION = 300         (seconds — 5 in-game minutes)
+RIFT_NOCTURNAL_DAMAGE_MULT = 1.5
+RIFT_NOCTURNAL_SPEED_MULT = 1.25
+```
+
+**Acceptance criteria:**
+- [ ] Monsters visibly emerge near rifts (not random world locations)
+- [ ] Day is relatively calm (few monsters, slow trickle)
+- [ ] Night is dangerous (frequent spawns, tougher monsters)
+- [ ] Dawn causes night monsters to despawn in sunlight
+- [ ] Population cap prevents infinite monster hoarding
+- [ ] Destroying rift blocks temporarily suppresses spawning
+- [ ] Rift-based spawning replaces zone-based spawning for hostile mobs
+
+**Tests:** `RiftSpawning.test.js`
+- Spawn interval varies correctly by time of day
+- Population cap enforced per rift
+- Night-only types don't spawn during day
+- Nocturnal modifier applies correctly
+- Dormant rifts don't spawn
+- Monsters tagged with origin rift ID
+- Only rifts within RIFT_ACTIVE_RANGE are ticked
+
+---
+
+#### 1.13.4 Corruption Visual Radius (Cosmetic Only)
+**Goal:** Terrain near rifts looks corrupted — darker, subtly wrong
+
+**Implementation tasks:**
+- [ ] Each rift has a corruption visual radius (default 16 world units)
+- [ ] During world generation, blocks within corruption radius have a chance to be CORRUPTED_STONE:
+  - 100% within 3 blocks of rift center
+  - 50% within 3-8 blocks
+  - 10% within 8-16 blocks
+- [ ] Grass near rifts uses a darker, desaturated color variant
+- [ ] Trees within corruption radius: dead trees (WOOD trunk, no LEAVES)
+- [ ] No gameplay effects from corruption in Phase 1 (purely visual storytelling)
+- [ ] Corruption does NOT spread in Phase 1 (Phase 3 adds dynamic spread)
+
+**Design note:** This is cosmetic groundwork. In Phase 3, corruption becomes a gameplay mechanic — it spreads from unclosed rifts, debuffs players, and must be actively fought. In Phase 1, it's just a visual warning that says "danger here."
+
+**Acceptance criteria:**
+- [ ] Area around rifts looks visually corrupted
+- [ ] Corruption gradient: dense near center, sparse at edges
+- [ ] Dead trees mark corrupted zones from a distance
+- [ ] No gameplay effects (no debuffs, no spread)
+
+---
+
+#### 1.13.5 Player Rift Awareness
+**Goal:** Player gets contextual information about nearby rifts
+
+**Implementation tasks:**
+- [ ] When within 32 blocks of a rift: show "Rift Nearby" warning on HUD with directional indicator
+- [ ] When within 16 blocks: show "Rift — Danger!" with pulsing border effect
+- [ ] Tutorial hint (one-time, added to 1.11.3 hints): "A dark rift tears the land ahead — monsters spawn from these tears. Stay clear at night!"
+- [ ] Rift glow visible through fog (doesn't get culled by fog distance)
+- [ ] Optional: compass/minimap shows rift direction (stretch, Phase 2)
+
+**Acceptance criteria:**
+- [ ] Player knows when they're approaching a rift before seeing it
+- [ ] Warning escalates with proximity
+- [ ] One-time tutorial hint explains what rifts are
+- [ ] Night approach is especially dramatic (bright glow through darkness)
 
 ---
 
@@ -1055,7 +1266,9 @@ Phase 1 is **complete** when ALL of the following are true:
 - [ ] **Mining yields items:** Breaking blocks adds resources to inventory
 - [ ] **Tool progression:** Wooden → stone → iron tools with increasing speed
 - [ ] **Tool durability:** Tools break after extended use
-- [ ] **Night monsters:** Significantly more dangerous at night
+- [ ] **Rift spawning:** Monsters spawn from visible rifts in the world, not arbitrarily
+- [ ] **Rift visuals:** Rifts have corrupted ground, particle effects, and night glow
+- [ ] **Night monsters:** Rifts intensify at night — significantly more dangerous
 - [ ] **Shelter detection:** Being enclosed provides tangible benefits
 - [ ] **Survival HUD:** Health, stamina, hunger, time, tool status visible
 - [ ] **Death consequences:** Lose some resources, respawn with reduced stats
@@ -1079,7 +1292,8 @@ Phase 1 is **complete** when ALL of the following are true:
 
 ### Player Experience
 - [ ] **First day is engaging:** Player has clear goals (gather, build, survive)
-- [ ] **Night creates urgency:** Player feels motivated to prepare
+- [ ] **Rifts feel meaningful:** Player can see where danger originates and plan around it
+- [ ] **Night creates urgency:** Player feels motivated to prepare (rifts glow brighter, spawn faster)
 - [ ] **Shelter feels rewarding:** Building a structure provides real benefit
 - [ ] **Progression is satisfying:** Better tools = noticeably faster gathering
 - [ ] **Death is a setback, not a punishment:** Losing materials stings but isn't devastating
@@ -1096,7 +1310,9 @@ Phase 1 is **complete** when ALL of the following are true:
     ↓
 1.2 Dynamic Lighting
     ↓
-1.6 Night Threats (depends on 1.1 + existing SpawnManager)
+1.13 Rift Spawning (depends on 1.1 for time-of-day + world generation)
+    ↓
+1.6 Night Threats (depends on 1.1 + 1.13 for rift-based spawning)
 
 1.3 Hunger System (parallel with 1.1/1.2)
     ↓
@@ -1127,8 +1343,8 @@ Phase 1 is **complete** when ALL of the following are true:
 | 2 | Lighting + Hunger | Dynamic lights polished, hunger draining |
 | 3 | Food + Mining drops | Food items, mining yields materials |
 | 4 | Tool mining | Progressive mining, tool speed modifiers — **PLAYTEST CHECKPOINT: test mining loop end-to-end** |
-| 5 | Night threats | Night spawning, monster aggression |
-| 6 | Night + Shelter | Monster drops, shelter detection |
+| 5 | Rifts + Night threats | Rift generation, rift visuals, rift-based spawning, night intensification |
+| 6 | Night behavior + Shelter | Monster aggression, monster drops, corruption visuals, shelter detection |
 | 7 | HUD + Crafting | Survival HUD, new recipes, tutorial hints — **PLAYTEST CHECKPOINT: full survival loop** |
 | 8 | Death + Hotbar + Mobile | Death consequences, hotbar system, 1-finger camera rotation |
 | 9 | Mobile controls | Auto-jump, pinch-to-zoom, mobile gesture testing |
@@ -1157,6 +1373,10 @@ src/components/ui/SurvivalHUD.jsx
 src/components/ui/TimeDisplay.jsx
 src/components/ui/FloatingText.jsx
 src/components/ui/TutorialHints.jsx                — one-time contextual hints
+src/systems/rift/RiftManager.js                    — rift tracking, placement, state
+src/systems/rift/__tests__/RiftManager.test.js
+src/systems/rift/__tests__/RiftSpawning.test.js
+src/components/3d/Rift.jsx                         — rift visual component (particles, glow, corrupted ground)
 ```
 
 ## Modified Files
@@ -1167,9 +1387,9 @@ src/components/3d/Experience.jsx   — replace fixed lights with DayNightCycle
 src/components/3d/BlockInteraction.jsx — mining progress, tool modifiers, item drops
 src/components/3d/Player.jsx          — auto-jump detection for mobile
 src/components/3d/CameraRotateControls.jsx — 1-finger rotation, pinch-to-zoom, remove 2-finger rotation
-src/systems/chunks/blockTypes.js   — new block types (TORCH, BERRY_BUSH)
+src/systems/chunks/blockTypes.js   — new block types (TORCH, BERRY_BUSH, CORRUPTED_STONE)
 src/data/craftingRecipes.js        — survival recipes, tool durability
-src/systems/SpawnManager.js        — night spawn multipliers
+src/systems/SpawnManager.js        — refactored: rift-based spawning replaces zone-based
 src/modules/ai/EnemyAISystem.js    — time-based aggression
 src/persistence/Game3DSaveManager.js — persist new state
 src/components/DeathScreen.jsx     — death cause, loot drop info
@@ -1184,6 +1404,9 @@ src/components/DeathScreen.jsx     — death cause, loot drop info
 | Dynamic lighting tanks FPS | High | Medium | Pre-compute lighting curves, limit point lights, profile early |
 | Hunger feels tedious, not fun | Medium | Medium | Tune drain rate generously, make food easy to find early |
 | Night is too hard / too easy | Medium | High | Playtest extensively, expose tuning constants |
+| Rift particle effects tank FPS | Medium | Medium | Limit to 3 nearest rendered rifts, use instanced particles, profile early |
+| Rift density feels wrong (too many/few) | Medium | Medium | Expose RIFT_DENSITY in tuning.js, playtest with different values |
+| Rift placement conflicts with player builds | Low | Medium | Rifts placed at worldgen only, not near spawn; Phase 3 adds closing mechanic |
 | Mining progress feels slow | Medium | Medium | Keep base times short (1-6 sec), ensure tools feel impactful |
 | Shelter detection has false positives/negatives | Low | Medium | Use simple raycast approach, err toward "sheltered" |
 | 1-finger gesture ambiguity (tap vs drag) | Medium | Medium | Use time+distance threshold (200ms / 10px); playtest on real devices |
@@ -1204,6 +1427,8 @@ Phase 1 systems must stay compatible with the multiplayer-ready state architectu
 | Mining progress | Per-player per-block | Client predicts, server authorizes block break |
 | Loot bags | World-level entities | Store as world entities with ownership/timeout |
 | Tool durability | Per-player | Store under player inventory state |
+| Rift state | World-level, shared | Server-authoritative rift list, clients render nearest |
+| Rift spawning | Server-authoritative | Server runs spawn logic, clients see monsters appear |
 
 No networking code needed yet — just ensure these systems don't assume single-player.
 
@@ -1217,6 +1442,9 @@ No networking code needed yet — just ensure these systems don't assume single-
 4. **Weapon durability** — Should weapons also break? Probably yes for consistency, but could feel punishing in Phase 1. Defer to Phase 3.
 5. **Difficulty settings** — Should hunger/night difficulty be configurable? Good idea but defer to Phase 5 polish.
 6. **Weather → survival effects?** — Should rain accelerate hunger drain or reduce visibility? Good atmosphere but adds complexity. Note for Phase 2.
+7. **Rift dormancy from block destruction** — Is 5 in-game minutes the right dormancy duration when corrupted blocks are mined? Too short feels pointless, too long trivializes the threat. Needs playtesting.
+8. **Rift proximity to biome boundaries** — Should rifts avoid spawning at biome edges? Could look odd if corruption patches cross biome visuals. Low priority but worth noting.
+9. **Can rifts spawn in caves/underground?** — Phase 1 places them on surface only. Underground rifts would add variety but complicate detection and navigation. Consider for Phase 3.
 
 ---
 

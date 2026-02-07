@@ -21,7 +21,7 @@ const RAY_STEP = 0.5;
 
 // Long press settings for mobile block interaction
 const LONG_PRESS_DURATION = 500; // ms to hold before mining/placing
-const LONG_PRESS_MOVE_THRESHOLD = 10; // pixels of movement that cancels long press
+const LONG_PRESS_MOVE_THRESHOLD = 20; // pixels of movement that cancels long press
 
 // Pre-create geometry for highlight (reused across all renders)
 const highlightBoxGeometry = new THREE.BoxGeometry(
@@ -407,6 +407,16 @@ export function BlockInteraction({ chunkManager }) {
 
     const handleContextMenu = (e) => e.preventDefault();
 
+    // Capture-phase click handler: intercepts clicks BEFORE TouchControls
+    // can process them, blocking movement after a long press fires.
+    const handleClickCapture = (e) => {
+      const longPressAt = Number(canvas.dataset.longPressAt || '0');
+      if (Date.now() - longPressAt < 1000) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      }
+    };
+
     const handleTouchStart = (e) => {
       if (e.touches.length !== 1) return;
 
@@ -431,13 +441,17 @@ export function BlockInteraction({ chunkManager }) {
         setTargetBlock(result.block);
         setTargetFace(result.face);
 
+        // Prevent the synthetic click event chain entirely when targeting a
+        // block. This is the spec-compliant way to suppress clicks from
+        // touch — preventDefault must be called on touchstart, not touchend.
+        e.preventDefault();
+
         // Start long press timer - action fires after holding
         clearTimeout(longPressTimer.current);
         longPressTimer.current = setTimeout(() => {
           longPressActive.current = true;
 
-          // Stamp canvas so TouchControls knows a long press just fired
-          // and can skip the synthetic click event that follows touchend
+          // Stamp canvas so the capture-phase click handler knows to block
           canvas.dataset.longPressAt = String(Date.now());
 
           // Use refs + chunkManager directly (no React state dependency)
@@ -496,16 +510,26 @@ export function BlockInteraction({ chunkManager }) {
     };
 
     const handleTouchEnd = (e) => {
+      const wasTimerActive = longPressTimer.current !== null;
+
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
       }
 
       if (longPressActive.current) {
-        // Long press action already fired - prevent click event from
-        // reaching TouchControls (which would trigger movement)
-        e.preventDefault();
+        // Long press action already fired - block is already mined/placed
         longPressActive.current = false;
+      } else if (wasTimerActive && longPressBlock.current) {
+        // Short tap on a block (lifted before 500ms) — we called
+        // preventDefault on touchstart so the browser won't generate a
+        // click. Dispatch one manually so TouchControls can handle movement.
+        const syntheticClick = new MouseEvent('click', {
+          clientX: longPressTouchStart.current.x,
+          clientY: longPressTouchStart.current.y,
+          bubbles: true,
+        });
+        canvas.dispatchEvent(syntheticClick);
       }
 
       // Clear refs and highlight
@@ -515,14 +539,16 @@ export function BlockInteraction({ chunkManager }) {
       setTargetFace(null);
     };
 
+    canvas.addEventListener('click', handleClickCapture, true); // capture phase
     canvas.addEventListener('contextmenu', handleContextMenu);
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', handleTouchMove, { passive: true });
     canvas.addEventListener('touchend', handleTouchEnd);
     canvas.addEventListener('touchcancel', handleTouchEnd);
 
     return () => {
       clearTimeout(longPressTimer.current);
+      canvas.removeEventListener('click', handleClickCapture, true);
       canvas.removeEventListener('contextmenu', handleContextMenu);
       canvas.removeEventListener('touchstart', handleTouchStart);
       canvas.removeEventListener('touchmove', handleTouchMove);

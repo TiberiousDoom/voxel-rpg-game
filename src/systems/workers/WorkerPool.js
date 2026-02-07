@@ -30,6 +30,10 @@ export class WorkerPool {
     this.queue = []; // Tasks waiting for available worker
     this.terminated = false;
 
+    // Track consecutive errors to prevent infinite respawn loops
+    this.consecutiveErrors = 0;
+    this.maxConsecutiveErrors = 3;
+
     // Initialize workers
     this.initializeWorkers();
   }
@@ -62,10 +66,14 @@ export class WorkerPool {
   handleMessage(worker, event) {
     const { type, requestId, ...data } = event.data;
 
-    // Worker ready message (ignore)
+    // Worker ready message - reset error counter since a worker initialized successfully
     if (type === 'ready') {
+      this.consecutiveErrors = 0;
       return;
     }
+
+    // Successful message means workers are healthy
+    this.consecutiveErrors = 0;
 
     // Find pending request
     const pending = this.pending.get(requestId);
@@ -90,17 +98,21 @@ export class WorkerPool {
    * Handle worker error
    */
   handleError(worker, error) {
-    console.error('Worker error:', error);
+    // Extract useful info from ErrorEvent
+    const message = error.message || 'Unknown error';
+    const filename = error.filename || '';
+    const lineno = error.lineno || 0;
+    console.error(`Worker error: ${message}` + (filename ? ` (${filename}:${lineno})` : ''));
 
     // Reject all pending tasks for this worker
     for (const [requestId, pending] of this.pending) {
       if (pending.worker === worker) {
-        pending.reject(new Error(`Worker crashed: ${error.message}`));
+        pending.reject(new Error(`Worker crashed: ${message}`));
         this.pending.delete(requestId);
       }
     }
 
-    // Replace crashed worker
+    // Replace crashed worker (with respawn limit to prevent infinite loops)
     const index = this.workers.indexOf(worker);
     if (index !== -1) {
       this.workers.splice(index, 1);
@@ -109,9 +121,11 @@ export class WorkerPool {
         this.available.splice(availIndex, 1);
       }
 
-      // Add replacement
-      if (!this.terminated) {
+      this.consecutiveErrors++;
+      if (!this.terminated && this.consecutiveErrors < this.maxConsecutiveErrors) {
         this.addWorker();
+      } else if (this.consecutiveErrors >= this.maxConsecutiveErrors) {
+        console.error(`Worker pool: ${this.consecutiveErrors} consecutive errors, stopping respawn. ${this.workers.length} workers remaining.`);
       }
     }
   }

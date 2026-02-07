@@ -77,14 +77,20 @@ The day/night cycle is the backbone of Phase 1 — hunger, lighting, and night t
 - [ ] Integrate with useGameStore (store worldTime, timeOfDay, dayNumber, isNight)
 - [ ] Persist worldTime in save/load
 
-**Time constants:**
+**Time constants (in `src/data/tuning.js`):**
 ```
-DAY_LENGTH_SECONDS = 1200   (20 real minutes)
+DAY_LENGTH_SECONDS = 1200   (20 real minutes — configurable for playtesting)
 SUNRISE_START = 0.20        (4:48 AM equivalent)
 SUNRISE_END = 0.30          (7:12 AM)
 SUNSET_START = 0.70         (4:48 PM)
 SUNSET_END = 0.80           (7:12 PM)
 ```
+
+**Debug tools:**
+- [ ] Add debug command to set time of day (`setTime(0.5)` for noon)
+- [ ] Add debug time multiplier (`timeScale`: 1×, 2×, 5×, 10×, pause)
+- [ ] Add debug key combo (Ctrl+Shift+T) to skip to next dawn/dusk
+- [ ] All tuning constants in a single `src/data/tuning.js` file with comments
 
 **Acceptance criteria:**
 - [ ] `timeOfDay` cycles 0→1→0 continuously
@@ -92,12 +98,14 @@ SUNSET_END = 0.80           (7:12 PM)
 - [ ] Day number increments at midnight
 - [ ] Time persists across save/load
 - [ ] Time pauses when game is paused
+- [ ] `DAY_LENGTH_SECONDS` is easily adjustable for balancing
 
 **Tests:** `TimeManager.test.js`
 - Time advances by delta correctly
 - Day/night boundaries are accurate
 - Save/load roundtrip preserves time
 - Pause halts progression
+- Time scale multiplier works correctly
 
 ---
 
@@ -131,7 +139,8 @@ SUNSET_END = 0.80           (7:12 PM)
 - [ ] Calculate ambient color: warm at sunrise/sunset, cool blue at night, white at noon
 - [ ] Calculate fog color to match sky
 - [ ] Calculate sky background color (blue→orange→dark blue→black)
-- [ ] Multiply with WeatherSystem `lightingModifier` for weather effects
+- [ ] Compose lighting multiplicatively: `finalIntensity = baseLighting(timeOfDay) × weatherModifier × shelterModifier`
+- [ ] WeatherSystem `getLightingModifier()` applied as multiplier (storm = 0.5× base)
 - [ ] Create `src/components/3d/DayNightCycle.jsx` React component
 - [ ] Replace fixed lights in Experience.jsx with DayNightCycle component
 - [ ] Smoothly animate sun position using `useFrame`
@@ -195,7 +204,7 @@ Night:     #0a0a2e
 
 **Implementation tasks:**
 - [ ] Add `hunger` (0–100), `maxHunger` (100) to player state in useGameStore
-- [ ] Add `hungerDrainRate` constant: 1 hunger per 60 real seconds (= ~20 per in-game day)
+- [ ] Add `hungerDrainRate` constant in tuning.js: 0.5 hunger per 60 real seconds (= ~10 per in-game day)
 - [ ] Sprinting doubles hunger drain rate
 - [ ] At hunger < 20: health regeneration stops
 - [ ] At hunger = 0: take 1 damage per 10 seconds (starvation)
@@ -203,9 +212,11 @@ Night:     #0a0a2e
 - [ ] Wire into game tick loop (GameManager or useFrame)
 - [ ] Persist hunger in save/load
 
+**Design note:** Start with a generous drain rate (0.5/60s = ~10/day = full depletion in ~10 in-game days). This gives new players ample time to learn the food system before feeling pressure. Tighten during balance pass (1.11) based on playtest data. Track `avgHungerAtDeath` metric.
+
 **Hunger thresholds:**
 ```
-100-60: Well Fed    — normal health regen
+100-60: Well Fed    — normal health regen, "Well Fed" buff icon
  60-20: Hungry      — health regen halved
  20-1:  Starving    — no health regen, movement speed -20%
     0:  Famished    — 1 damage per 10 seconds
@@ -217,12 +228,14 @@ Night:     #0a0a2e
 - [ ] Starvation damage kicks in at 0
 - [ ] Eating food restores hunger
 - [ ] Hunger persists across save/load
+- [ ] Hunger drain rate is easily tunable via tuning.js
 
 **Tests:** `HungerSystem.test.js`
 - Hunger drains at correct rate
 - Sprint modifier applies
 - Threshold effects trigger correctly
 - Starvation damage rate is accurate
+- Drain rate constant can be adjusted without code changes
 
 ---
 
@@ -258,11 +271,20 @@ Night:     #0a0a2e
 - [ ] Animals (existing wildlife system) drop raw meat on death
 - [ ] Add wheat/crop block type for future farming (placeholder, not growable yet)
 
+**Food density targets (tunable in tuning.js):**
+```
+Berry bushes: 1-2 per plains/forest chunk
+Animals:      0-1 per chunk (biome dependent)
+Trees:        natural density, 10% apple drop from leaves
+```
+Target: player finds 3-5 food sources within 5 minutes of exploring. Food should require effort but never be impossible.
+
 **Acceptance criteria:**
 - [ ] Berry bushes generate in the world (terrain gen)
 - [ ] Mining berry bush yields berries in inventory
 - [ ] Mining leaves has a chance to drop apples
 - [ ] Killing wildlife yields raw meat
+- [ ] Player finds food within 5 minutes of looking
 
 ---
 
@@ -371,6 +393,8 @@ Currently, mining destroys blocks but yields nothing. This section wires mining 
 - [ ] Add crack animation stages (25%, 50%, 75% — texture overlay or scale change)
 - [ ] Cancel mining if player looks away or releases button
 - [ ] On mobile, long-press continues to mine while held
+- [ ] Mobile: show mining progress as circular fill around touch point
+- [ ] Mobile: vibrate briefly on block break (navigator.vibrate, if available)
 
 **Block break times (bare hands):**
 ```
@@ -406,12 +430,15 @@ Bedrock:           Infinity (unbreakable)
   - GOLD_ORE: requires pickaxe (iron+)
 - [ ] Add `minToolTier` field (0=any, 1=stone, 2=iron, 3=diamond)
 - [ ] If player mines ore without proper tool: block breaks but drops nothing
-- [ ] Show "Requires Iron Pickaxe" tooltip when targeting ore without correct tool
+- [ ] Show "Requires Iron Pickaxe" warning within 0.5 sec of starting to mine
+- [ ] Grey out or red-tint the mining progress bar when using wrong tool
+- [ ] Show crosshair change (red X) when targeting ore without correct tool
 
 **Acceptance criteria:**
 - [ ] Ore blocks break without right tool but yield nothing
 - [ ] Correct tool yields normal drops
-- [ ] Tooltip warns about wrong tool
+- [ ] Warning appears immediately (not after full mine time)
+- [ ] Visual distinction between "can mine" and "wrong tool" is obvious
 
 ---
 
@@ -452,7 +479,7 @@ Bedrock:           Infinity (unbreakable)
   - Shadow Creeper: spawns only at night, fast, low HP, high damage
   - Night Skeleton: upgraded skeleton, appears at night
 - [ ] Monsters spawned at night get "Nocturnal" modifier: +50% damage, +25% speed
-- [ ] Night monsters despawn (fade out) if still alive 5 minutes after sunrise
+- [ ] Night monsters despawn (fade out) after sunrise — within 60s if in sunlight, up to 5 min if in shade/cave
 
 **Acceptance criteria:**
 - [ ] Noticeably more monsters at night
@@ -524,22 +551,32 @@ The vision says "Night is dangerous, shelter matters." Shelter should provide ta
 ```
 1. Cast ray up from player: if solid block within 8 units → has roof
 2. Cast rays in 4 horizontal directions: count how many hit solid within 4 units
-3. If has roof AND 3+ walls → isInShelter = true
+3. If has roof AND 4 walls → isFullShelter = true  (full benefits)
+4. If has roof AND 3 walls → isPartialShelter = true  (reduced benefits)
+5. If underground (solid above AND below) → isFullShelter = true  (cave)
 ```
 
+**Shelter tiers:**
+- **Full shelter** (4 walls + roof, or underground): 100% shelter benefits
+- **Partial shelter** (3 walls + roof): 50% shelter benefits
+- **Exposed** (open sky or <3 walls): no benefits, "Exposed" warning at night
+
 **Acceptance criteria:**
-- [ ] Standing inside a roofed box registers as sheltered
-- [ ] Standing outside in the open registers as unsheltered
-- [ ] Partially enclosed spaces (3 walls + roof) count
-- [ ] Caves count as shelter
+- [ ] Standing inside a roofed box registers as fully sheltered
+- [ ] Standing outside in the open registers as exposed
+- [ ] 3 walls + roof gives partial shelter
+- [ ] Caves count as full shelter
+- [ ] Tree canopies alone do NOT count (no walls)
 - [ ] Performance: <1ms per check
 
 **Tests:** `ShelterDetector.test.js`
-- Fully enclosed → sheltered
-- Open sky → not sheltered
-- Cave → sheltered
-- Missing wall → still sheltered (3/4 walls)
-- Missing roof → not sheltered
+- Fully enclosed → full shelter
+- Open sky → exposed
+- Cave/underground → full shelter
+- 3 walls + roof → partial shelter
+- 2 walls + roof → exposed
+- Dense leaves above, no walls → exposed
+- Missing roof → exposed
 
 ---
 
@@ -611,13 +648,16 @@ The vision says "Night is dangerous, shelter matters." Shelter should provide ta
 - [ ] Create `src/components/ui/FloatingText.jsx`
 - [ ] Text appears at world position of mined block (projected to screen space)
 - [ ] Floats upward and fades out over 1.5 seconds
-- [ ] Stacks nearby pickups ("+2 Wood, +1 Coal" on same line)
+- [ ] Batch identical item pickups within 0.5s window ("+6 Wood" instead of 3× "+2 Wood")
+- [ ] Limit max concurrent floating texts to 8 (oldest removed first)
 - [ ] Color matches item rarity
+- [ ] Use CSS/HTML overlay (not WebGL text) for performance
 
 **Acceptance criteria:**
 - [ ] Text appears on mining
 - [ ] Text floats up and fades
-- [ ] Multiple pickups don't spam screen (stacked)
+- [ ] Rapid mining batches into single text ("+6 Wood")
+- [ ] Max 8 concurrent — no screen spam from fast mining
 
 ---
 
@@ -672,13 +712,17 @@ Building:
 
 **Implementation tasks:**
 - [ ] Add hotbar slots (1-9) to player state
-- [ ] Number keys 1-9 select hotbar slot
+- [ ] Desktop: number keys 1-9 select hotbar slot
+- [ ] Desktop: scroll wheel cycles hotbar selection
+- [ ] Mobile: tap hotbar slot directly to select
+- [ ] Mobile: swipe left/right on hotbar to cycle
 - [ ] Currently selected tool affects mining speed
-- [ ] Right-click food in hotbar to eat
+- [ ] Right-click food in hotbar to eat (desktop), long-press slot to eat (mobile)
 - [ ] Show selected slot highlight in HUD
 
 **Acceptance criteria:**
-- [ ] Number keys switch active hotbar slot
+- [ ] Number keys switch active hotbar slot (desktop)
+- [ ] Tap/swipe works for slot selection (mobile)
 - [ ] Selected tool modifies mining speed
 - [ ] Food usable from hotbar
 - [ ] Visual selection indicator in HUD
@@ -695,7 +739,7 @@ Building:
 - [ ] Loot bag persists for 5 in-game minutes, then despawns
 - [ ] Player respawns at original spawn point (or bed if placed — future)
 - [ ] Health/hunger/stamina reset to 50% (not full)
-- [ ] Tools and equipment kept (not dropped)
+- [ ] Tools and equipment kept but lose 25% durability on death
 - [ ] Show death cause on death screen ("Killed by Skeleton", "Starvation")
 - [ ] Death location marked on future minimap (stretch)
 
@@ -719,6 +763,21 @@ Spawn → Gather wood → Craft tools → Mine stone/ore → Craft better tools 
 Build shelter → Gather food → Survive night → Repeat with progression
 ```
 
+**Playtest scenarios (run each manually):**
+1. **"Naked & Afraid"** — Can player survive first 3 in-game days from scratch?
+2. **"Tool Chain"** — Can player progress from bare hands → iron tools in one session?
+3. **"Night Terror"** — Is night actually dangerous or just an annoyance?
+4. **"Starvation Recovery"** — Can player recover from 0 hunger without dying?
+5. **"Death Spiral"** — After dying, can player recover without a compounding disadvantage?
+6. **"Speed Run"** — Can an experienced player build shelter before first nightfall?
+
+**Metrics to track (log to console in debug mode):**
+- Average survival time per session
+- Cause of death breakdown (monster/starvation/fall)
+- Hunger at time of death
+- Time to first shelter
+- Time to first tool craft
+
 **Tasks:**
 - [ ] Verify the complete loop can be played through
 - [ ] Tune hunger drain rate (not too fast, not ignorable)
@@ -728,6 +787,7 @@ Build shelter → Gather food → Survive night → Repeat with progression
 - [ ] Tune food availability (requires effort to stay fed, not impossible)
 - [ ] Ensure first night is survivable with basic shelter
 - [ ] Ensure no crafting dead-ends (can always gather base materials)
+- [ ] Run all 6 playtest scenarios and document results
 
 **Balance targets:**
 ```
@@ -769,7 +829,74 @@ Night survival:
 
 ---
 
-#### 1.11.3 Performance Validation
+#### 1.11.3 Minimal Tutorial Hints
+**Goal:** New players can discover the survival loop without a wiki
+
+**Implementation tasks:**
+- [ ] Show one-time contextual hints as overlay text (dismiss on click/tap):
+  - On spawn: "Gather wood from trees to get started"
+  - On first wood pickup: "Open crafting (C) to make tools"
+  - On first tool craft: "Equip your tool (1-9) to mine faster"
+  - At dusk (first night): "Night is coming — find or build shelter!"
+  - On first hunger below 50: "You're getting hungry — find food"
+- [ ] Track shown hints in player state (don't repeat after dismissal)
+- [ ] Hints auto-dismiss after 8 seconds if not clicked
+- [ ] Persist hint state in save/load
+
+**Design note:** These are NOT a tutorial system — just 5 one-time breadcrumbs. Full tutorial is Phase 5.
+
+**Acceptance criteria:**
+- [ ] First-time player receives guidance at key moments
+- [ ] Hints don't repeat once dismissed
+- [ ] Hints don't obstruct gameplay (small, positioned at top-center)
+- [ ] Experienced players see each hint at most once per save
+
+---
+
+#### 1.11.4 Tuning Constants File
+**Goal:** All gameplay balance numbers in one place for easy iteration
+
+**Implementation tasks:**
+- [ ] Create `src/data/tuning.js` exporting all balance constants
+- [ ] Move constants from scattered files into tuning.js:
+  - `DAY_LENGTH_SECONDS`, `SUNRISE_START/END`, `SUNSET_START/END`
+  - `HUNGER_DRAIN_RATE`, `SPRINT_HUNGER_MULTIPLIER`, hunger thresholds
+  - `STARVATION_DAMAGE_RATE`, `SHELTER_HUNGER_REDUCTION`
+  - Block break times, tool harvest speeds, tool durabilities
+  - Night spawn multiplier, aggro ranges (day/night)
+  - Death material drop percentage, respawn stat percentages
+  - Food density targets (berry bushes per chunk, apple drop chance)
+- [ ] Comment each constant with rationale and acceptable range
+- [ ] Import tuning.js wherever constants are used
+
+**Acceptance criteria:**
+- [ ] Changing one number in tuning.js adjusts gameplay immediately
+- [ ] No magic numbers scattered across source files
+- [ ] Each constant has a comment explaining what it controls
+
+---
+
+#### 1.11.5 Sound Placeholders (Stretch Goal)
+**Goal:** Audio feedback for key survival actions
+
+**Implementation tasks:**
+- [ ] Mining: rhythmic tap sound during progress, crunch on block break
+- [ ] Tool break: snap/shatter sound
+- [ ] Eating: crunch/gulp sound
+- [ ] Night transition: ambient cricket → owl hoot → wolf howl
+- [ ] Monster aggro: growl/screech when monster starts chasing
+- [ ] Low hunger warning: stomach rumble
+
+**Design note:** Even free/placeholder sounds from a sound library improve game feel dramatically. Use Web Audio API or Howler.js. Defer polish-quality audio to Phase 5.
+
+**Acceptance criteria:**
+- [ ] At least mining, eating, and night transition have placeholder sounds
+- [ ] Sounds can be muted globally
+- [ ] Sound system doesn't impact performance (<0.5ms per frame)
+
+---
+
+#### 1.11.6 Performance Validation
 **Goal:** Phase 1 additions don't degrade performance
 
 **Performance checks:**
@@ -797,15 +924,20 @@ Phase 1 is **complete** when ALL of the following are true:
 - [ ] **Shelter detection:** Being enclosed provides tangible benefits
 - [ ] **Survival HUD:** Health, stamina, hunger, time, tool status visible
 - [ ] **Death consequences:** Lose some resources, respawn with reduced stats
-- [ ] **Core loop works:** Can survive multiple in-game days with growing capability
+- [ ] **Core loop works:** Can survive 7+ in-game days with growing capability
+- [ ] **All block types yield appropriate drops**
+- [ ] **No crafting dead-ends** — can always progress from any state
 - [ ] **Save/load preserves all new state**
 
 ### Quality Requirements
-- [ ] **60 FPS maintained** with all new systems active
+- [ ] **60 FPS maintained** with all new systems active (120 chunks, 50+ monsters)
 - [ ] **No starvation softlock:** Player can always recover from low hunger
 - [ ] **Night is survivable:** With basic preparation, player won't inevitably die
 - [ ] **Crafting pipeline clear:** Obvious path from raw materials to useful items
 - [ ] **All new systems have tests** (>70% coverage for logic modules)
+- [ ] **All UI text readable** on smallest target screen (375px width)
+- [ ] **Color-blind safe** — don't rely solely on red/green for status indicators
+- [ ] **All interactions have visual feedback** (and audio if stretch goal met)
 
 ### Player Experience
 - [ ] **First day is engaging:** Player has clear goals (gather, build, survive)
@@ -813,6 +945,9 @@ Phase 1 is **complete** when ALL of the following are true:
 - [ ] **Shelter feels rewarding:** Building a structure provides real benefit
 - [ ] **Progression is satisfying:** Better tools = noticeably faster gathering
 - [ ] **Death is a setback, not a punishment:** Losing materials stings but isn't devastating
+- [ ] **First-time player survives night 1** within 3 attempts
+- [ ] **Tool crafting feels rewarding** — noticeable speed difference
+- [ ] **Hunger doesn't dominate** — max 30% of playtime spent on food
 
 ---
 
@@ -851,18 +986,21 @@ Phase 1 is **complete** when ALL of the following are true:
 | 1 | Time + Lighting | Day/night cycle visible, sky changes |
 | 2 | Lighting + Hunger | Dynamic lights polished, hunger draining |
 | 3 | Food + Mining drops | Food items, mining yields materials |
-| 4 | Tool mining | Progressive mining, tool speed modifiers |
+| 4 | Tool mining | Progressive mining, tool speed modifiers — **PLAYTEST CHECKPOINT: test mining loop end-to-end** |
 | 5 | Night threats | Night spawning, monster aggression |
 | 6 | Night + Shelter | Monster drops, shelter detection |
-| 7 | HUD + Crafting | Survival HUD, new recipes |
+| 7 | HUD + Crafting | Survival HUD, new recipes, tutorial hints — **PLAYTEST CHECKPOINT: full survival loop** |
 | 8 | Death + Hotbar | Death consequences, hotbar system |
-| 9-10 | Integration | Balance, save/load, performance, bug fixing |
+| 9-10 | Integration | Balance tuning, all 6 playtest scenarios, save/load, performance, bug fixing |
+
+**Early playtesting is critical.** Don't wait until Week 9 to discover that mining feels slow or hunger is too aggressive. Test the mining loop at Week 4 and the full survival loop at Week 7.
 
 ---
 
 ## New Files Created
 
 ```
+src/data/tuning.js                                 — all balance constants
 src/systems/time/TimeManager.js
 src/systems/time/__tests__/TimeManager.test.js
 src/systems/lighting/DayNightLighting.js
@@ -877,6 +1015,7 @@ src/components/3d/DayNightCycle.jsx
 src/components/ui/SurvivalHUD.jsx
 src/components/ui/TimeDisplay.jsx
 src/components/ui/FloatingText.jsx
+src/components/ui/TutorialHints.jsx                — one-time contextual hints
 ```
 
 ## Modified Files
@@ -908,6 +1047,23 @@ src/components/DeathScreen.jsx     — death cause, loot drop info
 
 ---
 
+## Multiplayer Compatibility Notes
+
+Phase 1 systems must stay compatible with the multiplayer-ready state architecture from Phase 0. Key considerations:
+
+| System | Multiplayer Implication | Design Choice |
+|--------|------------------------|---------------|
+| World time | Must be server-authoritative, synced to all clients | Store in authoritative state, clients read only |
+| Hunger | Per-player state | Store under player state, not world state |
+| Shelter | Per-player check | Computed client-side, validated server-side |
+| Mining progress | Per-player per-block | Client predicts, server authorizes block break |
+| Loot bags | World-level entities | Store as world entities with ownership/timeout |
+| Tool durability | Per-player | Store under player inventory state |
+
+No networking code needed yet — just ensure these systems don't assume single-player.
+
+---
+
 ## Open Questions
 
 1. **Campfire cooking vs crafting menu?** — Should food be cooked at a campfire block (immersive) or through the crafting menu (simpler)? Start with crafting menu, add campfire as stretch goal.
@@ -915,6 +1071,7 @@ src/components/DeathScreen.jsx     — death cause, loot drop info
 3. **Bed/respawn point** — Should players be able to set spawn with a crafted bed? Useful but adds complexity. Consider for Phase 2.
 4. **Weapon durability** — Should weapons also break? Probably yes for consistency, but could feel punishing in Phase 1. Defer to Phase 3.
 5. **Difficulty settings** — Should hunger/night difficulty be configurable? Good idea but defer to Phase 5 polish.
+6. **Weather → survival effects?** — Should rain accelerate hunger drain or reduce visibility? Good atmosphere but adds complexity. Note for Phase 2.
 
 ---
 

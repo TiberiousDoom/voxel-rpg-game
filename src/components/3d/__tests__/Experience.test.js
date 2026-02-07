@@ -81,13 +81,13 @@ describe('Experience Component', () => {
   });
 
   describe('Scene Elements', () => {
-    test('renders VoxelTerrain', () => {
+    test('renders ChunkRenderer terrain', () => {
       const { container } = render(
         <TestWrapper>
           <Experience />
         </TestWrapper>
       );
-      // VoxelTerrain is a child component
+      // ChunkRenderer handles terrain (replaced VoxelTerrain)
       expect(container).toBeInTheDocument();
     });
 

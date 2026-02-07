@@ -4,6 +4,7 @@
  * Subscribes to ChunkManager and renders chunk meshes as they load/unload.
  * Only nearby chunks (within PHYSICS_DISTANCE) get trimesh physics colliders.
  * Distant chunks render as visual-only meshes for performance.
+ * Uses LOD levels for distant chunks to reduce vertex count.
  */
 
 import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
@@ -11,18 +12,58 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { chunkOriginWorld, worldToChunk } from '../../systems/chunks/coordinates.js';
+import { selectLODLevel, LOD_DISTANCES } from '../../systems/chunks/LODGenerator.js';
 import useGameStore from '../../stores/useGameStore';
 
 // Only chunks within this Chebyshev distance get physics colliders
 const PHYSICS_DISTANCE = 2;
 
-// LOD distance thresholds (Chebyshev distance in chunks)
-// eslint-disable-next-line no-unused-vars
-const LOD_THRESHOLDS = {
-  LOD0: 4,  // Full detail: 0-4 chunks
-  LOD1: 8,  // Medium detail: 5-8 chunks
-  // LOD2: 9+ chunks (currently disabled for simplicity)
-};
+// LOD hysteresis buffer (in chunks) to prevent thrashing at boundaries
+const LOD_HYSTERESIS = 1;
+
+// How often to check for LOD changes (in frames)
+const LOD_CHECK_INTERVAL = 30;
+
+/**
+ * Select LOD level with hysteresis to prevent oscillation at boundaries
+ */
+function selectLODWithHysteresis(dx, dz, currentLOD) {
+  const dist = Math.max(Math.abs(dx), Math.abs(dz));
+  const targetLOD = selectLODLevel(dx, dz);
+
+  if (targetLOD === currentLOD) return currentLOD;
+
+  if (targetLOD > currentLOD) {
+    // Transitioning to less detail (further away)
+    const boundary = LOD_DISTANCES[currentLOD];
+    return dist > boundary + LOD_HYSTERESIS ? targetLOD : currentLOD;
+  }
+
+  // Transitioning to more detail (closer)
+  const boundary = LOD_DISTANCES[targetLOD];
+  return dist < boundary - LOD_HYSTERESIS ? targetLOD : currentLOD;
+}
+
+/**
+ * Build the appropriate worker request based on chunk LOD level
+ */
+function buildMeshRequest(chunk, lodLevel) {
+  if (lodLevel === 0) {
+    return {
+      type: 'buildMesh',
+      blocks: chunk.blocks,
+      neighborNorth: chunk.neighbors.north?.blocks || null,
+      neighborSouth: chunk.neighbors.south?.blocks || null,
+      neighborEast: chunk.neighbors.east?.blocks || null,
+      neighborWest: chunk.neighbors.west?.blocks || null,
+    };
+  }
+  return {
+    type: 'buildLODMesh',
+    blocks: chunk.blocks,
+    lodLevel,
+  };
+}
 
 /**
  * Shared hook to build geometry from mesh data
@@ -103,6 +144,8 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
   const [meshData, setMeshData] = useState(new Map());
   const [meshVersion, setMeshVersion] = useState(new Map()); // Track mesh versions for key changes
   const frameCountRef = useRef(0);
+  const chunkLODRef = useRef(new Map()); // chunk key -> current LOD level
+  const playerChunkRef = useRef({ chunkX: 0, chunkZ: 0 });
   const playerPosition = useGameStore((state) => state.player.position);
 
   // Compute player chunk coordinates (only recalculates when playerPosition changes)
@@ -110,18 +153,21 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
     return worldToChunk(playerPosition[0], playerPosition[2]);
   }, [playerPosition]);
 
+  // Keep ref in sync for use in callbacks
+  playerChunkRef.current = playerChunk;
+
   // Handle chunk ready event
   const handleChunkReady = useCallback(async (chunk) => {
     if (workerPool) {
       try {
-        const result = await workerPool.execute({
-          type: 'buildMesh',
-          blocks: chunk.blocks,
-          neighborNorth: chunk.neighbors.north?.blocks || null,
-          neighborSouth: chunk.neighbors.south?.blocks || null,
-          neighborEast: chunk.neighbors.east?.blocks || null,
-          neighborWest: chunk.neighbors.west?.blocks || null,
-        });
+        // Determine LOD level based on distance from player
+        const pc = playerChunkRef.current;
+        const dx = chunk.x - pc.chunkX;
+        const dz = chunk.z - pc.chunkZ;
+        const lodLevel = selectLODLevel(dx, dz);
+        chunkLODRef.current.set(chunk.key, lodLevel);
+
+        const result = await workerPool.execute(buildMeshRequest(chunk, lodLevel));
 
         setMeshData(prev => {
           const next = new Map(prev);
@@ -148,6 +194,8 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
 
   // Handle chunk unload event
   const handleChunkUnload = useCallback((chunk) => {
+    chunkLODRef.current.delete(chunk.key);
+
     setChunks(prev => {
       const next = new Map(prev);
       next.delete(chunk.key);
@@ -183,11 +231,28 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
     };
   }, [chunkManager, handleChunkReady, handleChunkUnload]);
 
-  // Process mesh rebuilds for dirty chunks
+  // Process mesh rebuilds for dirty chunks and detect LOD changes
   useFrame(() => {
     if (!chunkManager || !workerPool) return;
 
     frameCountRef.current++;
+
+    // Check for LOD changes periodically
+    if (frameCountRef.current % LOD_CHECK_INTERVAL === 0) {
+      const pc = playerChunkRef.current;
+      for (const chunk of chunks.values()) {
+        const dx = chunk.x - pc.chunkX;
+        const dz = chunk.z - pc.chunkZ;
+        const currentLOD = chunkLODRef.current.get(chunk.key) ?? 0;
+        const newLOD = selectLODWithHysteresis(dx, dz, currentLOD);
+        if (newLOD !== currentLOD) {
+          chunkLODRef.current.set(chunk.key, newLOD);
+          chunk.meshDirty = true;
+        }
+      }
+    }
+
+    // Rebuild dirty chunks every 3 frames
     if (frameCountRef.current % 3 !== 0) return;
 
     const dirtyChunks = chunkManager.getDirtyChunks();
@@ -203,14 +268,9 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
       rebuilt++;
 
       const chunkKey = chunk.key; // Capture for closure
-      workerPool.execute({
-        type: 'buildMesh',
-        blocks: chunk.blocks,
-        neighborNorth: chunk.neighbors.north?.blocks || null,
-        neighborSouth: chunk.neighbors.south?.blocks || null,
-        neighborEast: chunk.neighbors.east?.blocks || null,
-        neighborWest: chunk.neighbors.west?.blocks || null,
-      }).then(result => {
+      const lodLevel = chunkLODRef.current.get(chunkKey) ?? 0;
+
+      workerPool.execute(buildMeshRequest(chunk, lodLevel)).then(result => {
         setMeshData(prev => {
           const next = new Map(prev);
           next.set(chunkKey, result);

@@ -55,19 +55,26 @@ const ParticleEffect = ({ position, color = '#ffff00', count = 20, type = 'explo
   }, [count, type]);
 
   const timeRef = useRef(0);
+  // Reusable objects to avoid per-particle per-frame allocations
+  const _matrix = useRef(new THREE.Matrix4());
+  const _scale = useRef(new THREE.Vector3());
+  const _velDelta = useRef(new THREE.Vector3());
 
   useFrame((state, delta) => {
     if (!particlesRef.current) return;
 
     timeRef.current += delta;
 
+    const matrix = _matrix.current;
+    const scale = _scale.current;
+
     let allDead = true;
     particles.forEach((particle, i) => {
       if (particle.life > 0) {
         allDead = false;
 
-        // Update position
-        particle.position.add(particle.velocity.clone().multiplyScalar(delta));
+        // Update position using addScaledVector (no clone needed)
+        particle.position.addScaledVector(particle.velocity, delta);
 
         // Apply gravity
         particle.velocity.y -= 9.8 * delta;
@@ -75,10 +82,11 @@ const ParticleEffect = ({ position, color = '#ffff00', count = 20, type = 'explo
         // Fade out
         particle.life -= delta * 2;
 
-        // Update instance matrix
-        const matrix = new THREE.Matrix4();
+        // Update instance matrix (reuse matrix and scale objects)
+        const s = 0.1 * particle.life;
+        matrix.identity();
         matrix.setPosition(particle.position);
-        matrix.scale(new THREE.Vector3(0.1 * particle.life, 0.1 * particle.life, 0.1 * particle.life));
+        matrix.scale(scale.set(s, s, s));
         particlesRef.current.setMatrixAt(i, matrix);
       }
     });

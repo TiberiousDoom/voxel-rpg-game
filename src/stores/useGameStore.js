@@ -13,8 +13,17 @@ import {
   grantLevelUpPoints,
   calculateDerivedStats,
 } from '../modules/character/CharacterSystem';
+import { ActionHistory, createActionMiddleware } from '../systems/state/ActionSystem';
 
-const useGameStore = create((set, get) => ({
+// Action history for replay/rollback/debugging
+export const actionHistory = new ActionHistory(1000);
+
+const useGameStore = create((rawSet, get, api) => {
+  // Wrap set with action middleware - intercepts action objects for validation/history
+  // Regular set() calls (functions/plain objects without .type) pass through unchanged
+  const set = createActionMiddleware(actionHistory)(rawSet, get, api);
+
+  return ({
   // Game state
   gameState: 'intro', // 'intro', 'playing', 'paused', 'gameOver'
 
@@ -1043,6 +1052,7 @@ const useGameStore = create((set, get) => ({
 
   // Character system actions
   ...createCharacterActions(set, get),
-}));
+});
+});
 
 export default useGameStore;

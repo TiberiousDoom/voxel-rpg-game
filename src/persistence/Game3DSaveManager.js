@@ -5,8 +5,14 @@
  * - Player position, health, inventory
  * - Modified chunks (only dirty chunks, not generated terrain)
  * - Game progress
+ *
+ * Uses binary serialization for chunk data to minimize main-thread overhead.
+ * Chunk blocks + heightmap are stored as compact ArrayBuffers in IndexedDB.
  */
 
+import { Chunk } from '../systems/chunks/Chunk';
+
+// eslint-disable-next-line no-unused-vars
 const SAVE_KEY = 'voxel3d-save';
 const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
@@ -142,7 +148,9 @@ class Game3DSaveManager {
   }
 
   /**
-   * Save modified chunks to IndexedDB
+   * Save modified chunks to IndexedDB using binary serialization.
+   * Stores chunk data as compact ArrayBuffers (~4.3KB each) instead of
+   * JSON arrays (~16KB each), reducing both serialization time and storage.
    */
   async _saveModifiedChunks(chunkManager, slot) {
     if (!chunkManager.chunks) return;
@@ -158,10 +166,7 @@ class Game3DSaveManager {
           key: `${slot}-${key}`,
           slot,
           chunkKey: key,
-          x: chunk.x,
-          z: chunk.z,
-          blocks: Array.from(chunk.blocks),
-          heightMap: Array.from(chunk.heightMap),
+          binaryData: chunk.serializeBinary(), // Compact ArrayBuffer
           lastModified: chunk.lastModified,
         };
 
@@ -244,7 +249,8 @@ class Game3DSaveManager {
   }
 
   /**
-   * Load modified chunks from IndexedDB
+   * Load modified chunks from IndexedDB using binary deserialization.
+   * Supports both binary format (new) and legacy JSON array format.
    */
   async _loadModifiedChunks(chunkManager, slot) {
     const transaction = this.db.transaction(['chunks'], 'readonly');
@@ -259,12 +265,25 @@ class Game3DSaveManager {
 
     // Apply saved chunk data
     for (const chunkData of chunks) {
-      const chunk = chunkManager.getChunk(chunkData.x, chunkData.z);
-      if (chunk) {
-        chunk.blocks = new Uint8Array(chunkData.blocks);
-        chunk.heightMap = new Uint8Array(chunkData.heightMap);
-        chunk.lastModified = chunkData.lastModified;
-        chunk.meshDirty = true;
+      if (chunkData.binaryData) {
+        // New binary format
+        const restored = Chunk.deserializeBinary(chunkData.binaryData);
+        const chunk = chunkManager.getChunk(restored.x, restored.z);
+        if (chunk) {
+          chunk.blocks = restored.blocks;
+          chunk.heightMap = restored.heightMap;
+          chunk.lastModified = chunkData.lastModified;
+          chunk.meshDirty = true;
+        }
+      } else if (chunkData.blocks) {
+        // Legacy JSON array format
+        const chunk = chunkManager.getChunk(chunkData.x, chunkData.z);
+        if (chunk) {
+          chunk.blocks = new Uint8Array(chunkData.blocks);
+          chunk.heightMap = new Uint8Array(chunkData.heightMap);
+          chunk.lastModified = chunkData.lastModified;
+          chunk.meshDirty = true;
+        }
       }
     }
   }

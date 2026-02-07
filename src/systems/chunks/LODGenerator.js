@@ -140,7 +140,7 @@ export function getLODVoxelScale(lodLevel) {
   return LOD_MERGE_FACTORS[lodLevel];
 }
 
-export default {
+const LODGenerator = {
   LOD_MERGE_FACTORS,
   LOD_SIZES,
   LOD_DISTANCES,
@@ -149,3 +149,5 @@ export default {
   selectLODLevel,
   getLODVoxelScale,
 };
+
+export default LODGenerator;

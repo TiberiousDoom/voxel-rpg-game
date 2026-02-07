@@ -58,7 +58,6 @@ const ParticleEffect = ({ position, color = '#ffff00', count = 20, type = 'explo
   // Reusable objects to avoid per-particle per-frame allocations
   const _matrix = useRef(new THREE.Matrix4());
   const _scale = useRef(new THREE.Vector3());
-  const _velDelta = useRef(new THREE.Vector3());
 
   useFrame((state, delta) => {
     if (!particlesRef.current) return;

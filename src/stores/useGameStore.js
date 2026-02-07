@@ -135,6 +135,40 @@ const useGameStore = create((rawSet, get, api) => {
   selectedBlockType: 3, // GRASS by default
   blockPlacementMode: false, // false = mining, true = placing
 
+  // World time state (Phase 1)
+  worldTime: {
+    elapsed: 0,          // Total seconds elapsed
+    timeOfDay: 0,        // 0.0–1.0 (0=midnight, 0.5=noon)
+    dayNumber: 1,
+    isNight: true,
+    period: 'night',     // 'night'|'dawn'|'day'|'dusk'
+    hour: 0,
+    minute: 0,
+    timeScale: 1,        // Debug: 0=paused, 1=normal, 2/5/10=fast
+    paused: false,
+  },
+
+  // Hunger state (Phase 1)
+  hunger: {
+    current: 100,        // 0–100
+    max: 100,
+    isStarving: false,   // hunger === 0
+    status: 'well_fed',  // 'well_fed'|'hungry'|'starving'|'famished'
+  },
+
+  // Shelter state (Phase 1)
+  shelter: {
+    isFullShelter: false,
+    isPartialShelter: false,
+    isExposed: true,
+    tier: 'exposed',     // 'full'|'partial'|'exposed'
+  },
+
+  // Tutorial hints tracking (Phase 1)
+  tutorialHints: {
+    shownHints: [],      // IDs of hints already shown
+  },
+
   // Actions
   setGameState: (state) => set({ gameState: state }),
 
@@ -167,6 +201,58 @@ const useGameStore = create((rawSet, get, api) => {
   setSelectedBlockType: (blockType) => set({ selectedBlockType: blockType }),
   setBlockPlacementMode: (mode) => set({ blockPlacementMode: mode }),
   toggleBlockPlacementMode: () => set((state) => ({ blockPlacementMode: !state.blockPlacementMode })),
+
+  // World time actions (Phase 1) — called by TimeManager integration each frame
+  updateWorldTime: (timeData) =>
+    set((state) => ({
+      worldTime: { ...state.worldTime, ...timeData },
+    })),
+
+  setTimeScale: (scale) =>
+    set((state) => ({
+      worldTime: { ...state.worldTime, timeScale: scale },
+    })),
+
+  setTimePaused: (paused) =>
+    set((state) => ({
+      worldTime: { ...state.worldTime, paused },
+    })),
+
+  // Hunger actions (Phase 1)
+  updateHunger: (hungerData) =>
+    set((state) => ({
+      hunger: { ...state.hunger, ...hungerData },
+    })),
+
+  eatFood: (restoreAmount) =>
+    set((state) => {
+      const newHunger = Math.min(state.hunger.max, state.hunger.current + restoreAmount);
+      return {
+        hunger: {
+          ...state.hunger,
+          current: newHunger,
+          isStarving: false,
+          status: newHunger >= 60 ? 'well_fed' : newHunger >= 20 ? 'hungry' : 'starving',
+        },
+      };
+    }),
+
+  // Shelter actions (Phase 1)
+  updateShelter: (shelterData) =>
+    set((state) => ({
+      shelter: { ...state.shelter, ...shelterData },
+    })),
+
+  // Tutorial hints actions (Phase 1)
+  markHintShown: (hintId) =>
+    set((state) => ({
+      tutorialHints: {
+        ...state.tutorialHints,
+        shownHints: state.tutorialHints.shownHints.includes(hintId)
+          ? state.tutorialHints.shownHints
+          : [...state.tutorialHints.shownHints, hintId],
+      },
+    })),
 
   addDamageNumber: (damageNum) =>
     set((state) => ({
@@ -1048,6 +1134,13 @@ const useGameStore = create((rawSet, get, api) => {
       lootDrops: [],
       xpOrbs: [],
       particleEffects: [],
+      worldTime: {
+        elapsed: 0, timeOfDay: 0, dayNumber: 1, isNight: true,
+        period: 'night', hour: 0, minute: 0, timeScale: 1, paused: false,
+      },
+      hunger: { current: 100, max: 100, isStarving: false, status: 'well_fed' },
+      shelter: { isFullShelter: false, isPartialShelter: false, isExposed: true, tier: 'exposed' },
+      tutorialHints: { shownHints: [] },
     }),
 
   // Character system actions

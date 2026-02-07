@@ -909,6 +909,141 @@ Night survival:
 
 ---
 
+### 1.12 Mobile Controls Overhaul (Week 8-9)
+
+Mobile controls need significant improvement to make the survival loop feel natural on touch devices. Currently camera rotation requires 2 fingers (awkward), there's no jump on mobile, and there's no zoom control.
+
+#### 1.12.1 One-Finger Camera Rotation
+**Goal:** Swipe anywhere on screen with one finger to rotate camera
+
+**Current behavior:** Camera rotation requires a 2-finger touch swipe (CameraRotateControls.jsx). One-finger tap is used for tap-to-move. This makes camera control awkward — players need both hands and two fingers on one hand just to look around.
+
+**New behavior:** Distinguish between tap (short, <200ms, <10px movement) and drag (longer or moved) on a single finger:
+- **Short tap** (<200ms, <10px): tap-to-move / tap-to-attack (existing behavior via TouchControls)
+- **Single-finger drag** (>10px movement or >200ms): rotate camera (replaces 2-finger rotation)
+- **Two-finger gestures**: reserved for pinch-to-zoom (see 1.12.3)
+
+**Implementation tasks:**
+- [ ] Modify `CameraRotateControls.jsx` to handle 1-finger drag for rotation
+- [ ] Add gesture disambiguation: track touch start time + distance moved
+- [ ] If finger moves >10px before 200ms timeout → begin camera rotation, suppress tap-to-move
+- [ ] If finger lifts <200ms and <10px → dispatch click for TouchControls (tap-to-move)
+- [ ] Store `isDragging` flag on canvas dataset so TouchControls knows to ignore
+- [ ] Rotation sensitivity: `0.008` radians per pixel (tunable in tuning.js)
+- [ ] Remove 2-finger rotation code (replaced by 1-finger + pinch-zoom)
+
+**Interaction with BlockInteraction:**
+- Long-press (500ms hold on block) still works — drag threshold cancels it if finger moves >20px
+- Drag-to-rotate cancels block highlight if active
+
+**Acceptance criteria:**
+- [ ] Single finger drag rotates camera smoothly
+- [ ] Short tap still triggers movement/attack
+- [ ] No conflict between drag-to-rotate and tap-to-move
+- [ ] Long-press mining still works (hold still on block)
+- [ ] Rotation feels responsive, not sluggish
+- [ ] 2-finger touch no longer rotates (reserved for zoom)
+
+---
+
+#### 1.12.2 Auto-Jump for Mobile
+**Goal:** Player automatically jumps when walking into a 1-block-high obstacle
+
+**Rationale:** Mobile has no jump button. Desktop players press Space, but mobile tap-to-move has no equivalent. Without auto-jump, mobile players get stuck on single-block height changes constantly.
+
+**Implementation tasks:**
+- [ ] Add auto-jump detection in `Player.jsx` useFrame loop (mobile only)
+- [ ] Detection logic:
+  1. Player is moving (velocity magnitude > 0.5)
+  2. Player is grounded (vertical velocity near zero)
+  3. Horizontal movement is blocked (velocity much lower than intended speed)
+  4. Block ahead at foot level is solid
+  5. Block ahead at head level (foot + 2) is air (room to jump)
+- [ ] When all conditions met: apply jump impulse (`velocity.y = 8`, same as Space key)
+- [ ] Add cooldown (300ms) to prevent rapid-fire jumps
+- [ ] Use a forward raycast from player center at knee height to detect obstacles
+- [ ] Only active on touch devices (`isTouchDevice()`) — desktop keeps manual Space jump
+
+**Detection algorithm:**
+```
+Every frame while mobile + moving + grounded:
+  1. Get movement direction from velocity (normalized XZ)
+  2. Raycast forward from player feet (y + 0.5) in movement direction, range 1.5 units
+  3. If ray hits solid block:
+     a. Raycast forward from player head (y + 2.5) in same direction, range 1.5 units
+     b. If head ray hits nothing (air): trigger jump
+     c. If head ray hits solid: don't jump (wall, not step)
+  4. Set cooldown timer to 300ms
+```
+
+**Tuning constants (in tuning.js):**
+```
+AUTO_JUMP_COOLDOWN_MS = 300
+AUTO_JUMP_DETECT_RANGE = 1.5  (world units ahead of player)
+AUTO_JUMP_IMPULSE = 8         (same as manual jump)
+AUTO_JUMP_MIN_SPEED = 0.5     (minimum XZ velocity to trigger)
+```
+
+**Acceptance criteria:**
+- [ ] Mobile player auto-jumps over 1-block obstacles while moving
+- [ ] No auto-jump when facing a wall (2+ blocks high)
+- [ ] No auto-jump when stationary
+- [ ] Desktop players unaffected (still use Space)
+- [ ] Auto-jump cooldown prevents jittering at block edges
+- [ ] Works with tap-to-move pathfinding (player walks toward target, auto-jumps over terrain bumps)
+- [ ] Does not interfere with falling (only triggers when grounded)
+
+**Tests:** `AutoJump.test.js`
+- Triggers when grounded + moving + blocked + headroom
+- Does not trigger when stationary
+- Does not trigger against 2-block walls
+- Cooldown prevents rapid re-trigger
+- Disabled on desktop
+
+---
+
+#### 1.12.3 Pinch-to-Zoom Camera
+**Goal:** Two-finger pinch gesture zooms camera in/out
+
+**Current behavior:** Camera distance is fixed at 12 units, height at 10 units. No zoom control exists.
+
+**Implementation tasks:**
+- [ ] Add pinch gesture detection to `CameraRotateControls.jsx`
+- [ ] Track initial distance between 2 touch points on `touchstart`
+- [ ] On `touchmove` with 2 fingers: calculate new distance, compute scale ratio
+- [ ] Map pinch ratio to `camera.distance`:
+  - Pinch in (fingers closer): decrease distance (zoom in)
+  - Pinch out (fingers apart): increase distance (zoom out)
+- [ ] Clamp distance range: min 4 (close third-person), max 30 (wide overview)
+- [ ] Smoothly lerp distance changes (not instant)
+- [ ] Scale `camera.height` proportionally: `height = distance × 0.83`
+- [ ] Persist camera distance in game store (survives rotation changes)
+- [ ] Update REACH_DISTANCE_THIRD_PERSON dynamically based on camera distance
+- [ ] Desktop: scroll wheel also adjusts zoom (same range/logic)
+
+**Tuning constants (in tuning.js):**
+```
+CAMERA_MIN_DISTANCE = 4
+CAMERA_MAX_DISTANCE = 30
+CAMERA_DEFAULT_DISTANCE = 12
+CAMERA_ZOOM_SPEED = 0.02       (pinch sensitivity)
+CAMERA_ZOOM_LERP = 0.1         (smoothing factor)
+CAMERA_HEIGHT_RATIO = 0.83     (height = distance × ratio)
+```
+
+**Acceptance criteria:**
+- [ ] Pinch in zooms camera closer to player
+- [ ] Pinch out zooms camera further away
+- [ ] Zoom range clamped (no clipping through player, no losing sight)
+- [ ] Smooth transitions (not jumpy)
+- [ ] Camera height adjusts with distance (overview stays useful)
+- [ ] Block interaction reach adjusts with camera distance
+- [ ] Desktop scroll wheel mirrors pinch behavior
+- [ ] Zoom level persists during gameplay (doesn't reset on rotation)
+- [ ] No conflict with 1-finger drag rotation
+
+---
+
 ## Exit Criteria
 
 Phase 1 is **complete** when ALL of the following are true:
@@ -928,6 +1063,9 @@ Phase 1 is **complete** when ALL of the following are true:
 - [ ] **All block types yield appropriate drops**
 - [ ] **No crafting dead-ends** — can always progress from any state
 - [ ] **Save/load preserves all new state**
+- [ ] **Mobile camera rotation:** 1-finger swipe rotates camera smoothly
+- [ ] **Mobile auto-jump:** Player auto-jumps 1-block obstacles while moving
+- [ ] **Pinch-to-zoom:** 2-finger pinch zooms camera in/out (also scroll wheel on desktop)
 
 ### Quality Requirements
 - [ ] **60 FPS maintained** with all new systems active (120 chunks, 50+ monsters)
@@ -974,6 +1112,8 @@ Phase 1 is **complete** when ALL of the following are true:
 
 1.10 Death Consequences (depends on 1.4 for drop system)
 
+1.12 Mobile Controls (parallel with 1.8-1.10, touches Player.jsx + CameraRotateControls.jsx)
+
 1.11 Integration (after all above)
 ```
 
@@ -990,8 +1130,9 @@ Phase 1 is **complete** when ALL of the following are true:
 | 5 | Night threats | Night spawning, monster aggression |
 | 6 | Night + Shelter | Monster drops, shelter detection |
 | 7 | HUD + Crafting | Survival HUD, new recipes, tutorial hints — **PLAYTEST CHECKPOINT: full survival loop** |
-| 8 | Death + Hotbar | Death consequences, hotbar system |
-| 9-10 | Integration | Balance tuning, all 6 playtest scenarios, save/load, performance, bug fixing |
+| 8 | Death + Hotbar + Mobile | Death consequences, hotbar system, 1-finger camera rotation |
+| 9 | Mobile controls | Auto-jump, pinch-to-zoom, mobile gesture testing |
+| 10-11 | Integration | Balance tuning, all 6 playtest scenarios, save/load, performance, bug fixing |
 
 **Early playtesting is critical.** Don't wait until Week 9 to discover that mining feels slow or hunger is too aggressive. Test the mining loop at Week 4 and the full survival loop at Week 7.
 
@@ -1024,6 +1165,8 @@ src/components/ui/TutorialHints.jsx                — one-time contextual hints
 src/stores/useGameStore.js        — hunger state, food actions, hotbar, worldTime
 src/components/3d/Experience.jsx   — replace fixed lights with DayNightCycle
 src/components/3d/BlockInteraction.jsx — mining progress, tool modifiers, item drops
+src/components/3d/Player.jsx          — auto-jump detection for mobile
+src/components/3d/CameraRotateControls.jsx — 1-finger rotation, pinch-to-zoom, remove 2-finger rotation
 src/systems/chunks/blockTypes.js   — new block types (TORCH, BERRY_BUSH)
 src/data/craftingRecipes.js        — survival recipes, tool durability
 src/systems/SpawnManager.js        — night spawn multipliers
@@ -1043,6 +1186,8 @@ src/components/DeathScreen.jsx     — death cause, loot drop info
 | Night is too hard / too easy | Medium | High | Playtest extensively, expose tuning constants |
 | Mining progress feels slow | Medium | Medium | Keep base times short (1-6 sec), ensure tools feel impactful |
 | Shelter detection has false positives/negatives | Low | Medium | Use simple raycast approach, err toward "sheltered" |
+| 1-finger gesture ambiguity (tap vs drag) | Medium | Medium | Use time+distance threshold (200ms / 10px); playtest on real devices |
+| Auto-jump triggers incorrectly on stairs/slopes | Medium | Medium | Require grounded + blocked + headroom; add cooldown to prevent jitter |
 | Save file size grows with expanded materials | Low | Low | Materials are just numbers, negligible |
 
 ---

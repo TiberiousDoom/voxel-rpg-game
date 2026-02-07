@@ -34,6 +34,16 @@ const Player = () => {
   const dodgeDirection = useRef(new THREE.Vector3());
   const dodgeTimer = useRef(0);
 
+  // Reusable Vector3 refs to avoid per-frame allocations (GC pressure reduction)
+  const _velocity = useRef(new THREE.Vector3());
+  const _cameraForward = useRef(new THREE.Vector3());
+  const _cameraRight = useRef(new THREE.Vector3());
+  const _upVector = useRef(new THREE.Vector3(0, 1, 0));
+  const _movement = useRef(new THREE.Vector3());
+  const _tempDir = useRef(new THREE.Vector3());
+  const _targetCameraPos = useRef(new THREE.Vector3());
+  const _targetLookAt = useRef(new THREE.Vector3());
+
   useFrame((state, delta) => {
     if (!playerRef.current) return;
 
@@ -46,57 +56,58 @@ const Player = () => {
 
     // Get movement direction from keyboard or tap-to-move (use totalStats for equipment bonuses)
     const moveSpeed = isSprintingNow ? totalStats.speed * 1.5 : totalStats.speed;
-    const velocity = new THREE.Vector3(currentVel.x, currentVel.y, currentVel.z);
+    const velocity = _velocity.current.set(currentVel.x, currentVel.y, currentVel.z);
 
     // Use stamina when sprinting and moving
     let isMoving = false;
 
     // Calculate camera forward and right vectors (ignoring Y for horizontal movement)
-    const cameraForward = new THREE.Vector3();
+    const cameraForward = _cameraForward.current;
     camera.getWorldDirection(cameraForward);
     cameraForward.y = 0;
     cameraForward.normalize();
 
-    const cameraRight = new THREE.Vector3();
-    cameraRight.crossVectors(cameraForward, new THREE.Vector3(0, 1, 0));
+    const cameraRight = _cameraRight.current;
+    cameraRight.crossVectors(cameraForward, _upVector.current);
 
     // Apply keyboard input to velocity
-    const movement = new THREE.Vector3();
+    const movement = _movement.current.set(0, 0, 0);
     let hasKeyboardInput = false;
 
     if (keys.forward) {
-      movement.add(cameraForward.clone().multiplyScalar(moveSpeed));
+      movement.addScaledVector(cameraForward, moveSpeed);
       hasKeyboardInput = true;
       isMoving = true;
     }
     if (keys.backward) {
-      movement.add(cameraForward.clone().multiplyScalar(-moveSpeed));
+      movement.addScaledVector(cameraForward, -moveSpeed);
       hasKeyboardInput = true;
       isMoving = true;
     }
     if (keys.left) {
-      movement.add(cameraRight.clone().multiplyScalar(-moveSpeed));
+      movement.addScaledVector(cameraRight, -moveSpeed);
       hasKeyboardInput = true;
       isMoving = true;
     }
     if (keys.right) {
-      movement.add(cameraRight.clone().multiplyScalar(moveSpeed));
+      movement.addScaledVector(cameraRight, moveSpeed);
       hasKeyboardInput = true;
       isMoving = true;
     }
 
     // Tap-to-move: If no keyboard input and we have a target, move towards it
     if (!hasKeyboardInput && player.targetPosition) {
-      const targetPos = new THREE.Vector3(...player.targetPosition);
-      const currentPosition = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
-      const direction = targetPos.clone().sub(currentPosition);
-      direction.y = 0; // Keep movement horizontal
+      const direction = _tempDir.current.set(
+        player.targetPosition[0] - currentPos.x,
+        0,
+        player.targetPosition[2] - currentPos.z
+      );
       const distance = direction.length();
 
       if (distance > 0.5) {
         // Still far from target, keep moving
         direction.normalize();
-        movement.add(direction.multiplyScalar(moveSpeed));
+        movement.addScaledVector(direction, moveSpeed);
         isMoving = true;
       } else {
         // Reached target, clear it
@@ -195,6 +206,9 @@ const Player = () => {
     setPlayerPosition(newPos);
 
     // Update camera based on mode (first-person or third-person)
+    const targetCameraPos = _targetCameraPos.current;
+    const targetLookAt = _targetLookAt.current;
+
     if (cameraState.firstPerson) {
       // First-person camera: position at player head, offset forward to avoid body clipping
       const headHeight = 1.6; // Eye level
@@ -205,27 +219,22 @@ const Player = () => {
       const pitch = cameraState.pitch;
 
       // Calculate look direction from yaw and pitch (horizontal only for offset)
-      const lookDirHorizontal = new THREE.Vector3(
-        Math.sin(yaw),
-        0,
-        Math.cos(yaw)
-      );
+      const sinYaw = Math.sin(yaw);
+      const cosYaw = Math.cos(yaw);
 
       // Position camera at head, offset forward in look direction
-      const targetCameraPos = new THREE.Vector3(
-        currentPos.x + lookDirHorizontal.x * forwardOffset,
+      targetCameraPos.set(
+        currentPos.x + sinYaw * forwardOffset,
         currentPos.y + headHeight,
-        currentPos.z + lookDirHorizontal.z * forwardOffset
+        currentPos.z + cosYaw * forwardOffset
       );
 
       // Calculate full look direction with pitch for lookAt target
-      const lookDir = new THREE.Vector3(
-        Math.sin(yaw) * Math.cos(pitch),
-        Math.sin(pitch),
-        Math.cos(yaw) * Math.cos(pitch)
+      targetLookAt.set(
+        targetCameraPos.x + sinYaw * Math.cos(pitch),
+        targetCameraPos.y + Math.sin(pitch),
+        targetCameraPos.z + cosYaw * Math.cos(pitch)
       );
-
-      const targetLookAt = targetCameraPos.clone().add(lookDir);
 
       // Snap to position in first-person (no lerp for responsiveness)
       camera.position.copy(targetCameraPos);
@@ -237,20 +246,13 @@ const Player = () => {
       const height = cameraState.height;
 
       // Calculate camera position based on rotation angle
-      const offsetX = Math.sin(angle) * distance;
-      const offsetZ = Math.cos(angle) * distance;
-
-      const targetCameraPos = new THREE.Vector3(
-        currentPos.x + offsetX,
+      targetCameraPos.set(
+        currentPos.x + Math.sin(angle) * distance,
         currentPos.y + height,
-        currentPos.z + offsetZ
+        currentPos.z + Math.cos(angle) * distance
       );
 
-      const targetLookAt = new THREE.Vector3(
-        currentPos.x,
-        currentPos.y + 2,
-        currentPos.z
-      );
+      targetLookAt.set(currentPos.x, currentPos.y + 2, currentPos.z);
 
       // Smooth camera movement
       camera.position.lerp(targetCameraPos, 0.1);

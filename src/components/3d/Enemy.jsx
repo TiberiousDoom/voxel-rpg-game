@@ -22,6 +22,7 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
   const [health, setHealth] = useState(monsterData?.health || 50);
   const [maxHealth] = useState(monsterData?.maxHealth || 50);
   const [isAlive, setIsAlive] = useState(true);
+  const isDead = useRef(false); // Immediate flag to prevent multi-frame death
   const [attackCooldown, setAttackCooldown] = useState(0);
   const [damageFlash, setDamageFlash] = useState(0);
 
@@ -94,7 +95,7 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
 
   // Enemy AI behavior
   useFrame((state, delta) => {
-    if (!enemyRef.current || !isAlive) return;
+    if (!enemyRef.current || !isAlive || isDead.current) return;
 
     const body = enemyRef.current;
     const currentPos = body.translation();
@@ -147,8 +148,9 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
       setAttackCooldown(Math.max(0, attackCooldown - delta));
     }
 
-    // Check if dead
-    if (health <= 0 && isAlive) {
+    // Check if dead — use ref for immediate guard (React state is async)
+    if (health <= 0 && !isDead.current) {
+      isDead.current = true;
       setIsAlive(false);
       const store = useGameStore.getState();
       const ePos = body.translation();

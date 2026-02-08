@@ -80,9 +80,6 @@ const XPOrb = ({ position, xpAmount = 25, id, onCollect }) => {
           <meshBasicMaterial color="#ffd700" />
         </mesh>
 
-        {/* Point light */}
-        <pointLight color="#ffd700" intensity={2} distance={5} />
-
         {/* Rotating ring */}
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.3, 0.35, 16]} />

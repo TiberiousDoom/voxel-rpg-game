@@ -14,6 +14,8 @@ const GameUI = () => {
   const equipment = useGameStore((state) => state.equipment);
   const inventory = useGameStore((state) => state.inventory);
   const gameState = useGameStore((state) => state.gameState);
+  const hunger = useGameStore((state) => state.hunger);
+  const worldTime = useGameStore((state) => state.worldTime);
   const [isMobile, setIsMobile] = useState(false);
   const statBreakdowns = useStatBreakdown();
 
@@ -178,6 +180,44 @@ const GameUI = () => {
           />
         )}
 
+        {/* Hunger bar */}
+        <div style={{ marginBottom: '10px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '5px',
+              fontSize: isMobile ? '0.85rem' : '1rem',
+            }}
+          >
+            <span style={{ marginRight: isMobile ? '4px' : '8px', fontSize: isMobile ? 16 : 20, color: '#cc7733' }}>
+              &#9749;
+            </span>
+            <span>
+              {Math.round(hunger.current)} / {hunger.max}
+            </span>
+          </div>
+          <div
+            style={{
+              width: '100%',
+              height: isMobile ? '12px' : '20px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '10px',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${(hunger.current / hunger.max) * 100}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #cc7733, #ee9955)',
+                transition: 'width 0.3s',
+                animation: hunger.current < 20 ? 'pulse 1s infinite' : 'none',
+              }}
+            />
+          </div>
+        </div>
+
         {/* Rage bar */}
         {!isMobile && (
         <div style={{ marginBottom: '10px' }}>
@@ -257,7 +297,7 @@ const GameUI = () => {
         </div>
       </div>
 
-      {/* Top right - Inventory quick info */}
+      {/* Top right - Time + Inventory quick info */}
       {!isMobile && (
       <div
         style={{
@@ -271,6 +311,13 @@ const GameUI = () => {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Time display */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: '16px', color: worldTime.isNight ? '#8888cc' : (worldTime.period === 'dawn' || worldTime.period === 'dusk') ? '#ffaa66' : '#ffd43b' }}>
+              {worldTime.isNight ? '\u263E' : '\u2600'}
+            </span>
+            <span>Day {worldTime.dayNumber} - {String(worldTime.hour).padStart(2, '0')}:{String(worldTime.minute).padStart(2, '0')}</span>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Package size={20} style={{ color: '#ffd43b' }} />
@@ -285,6 +332,33 @@ const GameUI = () => {
       </div>
       )}
 
+      {/* Mobile: Time + gold display (top right) */}
+      {isMobile && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            background: 'rgba(0, 0, 0, 0.6)',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            color: 'white',
+            fontFamily: 'monospace',
+            fontSize: '0.8rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: worldTime.isNight ? '#8888cc' : '#ffd43b' }}>
+              {worldTime.isNight ? '\u263E' : '\u2600'}
+            </span>
+            <span>Day {worldTime.dayNumber} {String(worldTime.hour).padStart(2, '0')}:{String(worldTime.minute).padStart(2, '0')}</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#ffd43b', marginTop: '4px' }}>
+            {inventory.gold}g | {inventory.potions}pot
+          </div>
+        </div>
+      )}
+
       {/* Bottom right - Quick access */}
       <div
         style={{
@@ -297,6 +371,7 @@ const GameUI = () => {
         }}
       >
         <div
+          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'i' }))}
           style={{
             background: 'rgba(0, 0, 0, 0.6)',
             padding: isMobile ? '10px' : '12px',
@@ -317,6 +392,7 @@ const GameUI = () => {
           {!isMobile && <span style={{ fontSize: '0.7rem' }}>Inventory [I]</span>}
         </div>
         <div
+          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c' }))}
           style={{
             background: 'rgba(0, 0, 0, 0.6)',
             padding: isMobile ? '10px' : '12px',

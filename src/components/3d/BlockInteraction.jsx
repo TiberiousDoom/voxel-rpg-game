@@ -94,7 +94,7 @@ function PlacementPreview({ position, blockType, isValid }) {
  * Main BlockInteraction component
  */
 export function BlockInteraction({ chunkManager }) {
-  const { camera, gl, size } = useThree();
+  const { camera, gl, size, scene } = useThree();
   const [targetBlock, setTargetBlock] = useState(null);
   const [targetFace, setTargetFace] = useState(null);
   const [previewPosition, setPreviewPosition] = useState(null);
@@ -109,8 +109,11 @@ export function BlockInteraction({ chunkManager }) {
   const firstPerson = useGameStore((state) => state.camera.firstPerson);
   const blockPlacementMode = useGameStore((state) => state.blockPlacementMode);
 
-  // Raycaster for screen-space raycasting (mobile)
+  // Raycaster for screen-space raycasting (mobile + desktop third-person)
   const raycasterRef = useRef(new THREE.Raycaster());
+
+  // Raycaster for scene intersection (enemy detection in first-person)
+  const sceneRaycasterRef = useRef(new THREE.Raycaster());
 
   // Long press state for mobile
   const longPressTimer = useRef(null);
@@ -405,7 +408,26 @@ export function BlockInteraction({ chunkManager }) {
     };
   }, [mineBlock, placeBlock, selectedBlockType, targetBlock]);
 
-  // Desktop: pointer down handler for first-person mining/placement
+  // Check for enemy along camera center ray (first-person attack)
+  const checkEnemyFromCamera = useCallback(() => {
+    camera.getWorldDirection(rayDirection.current);
+    sceneRaycasterRef.current.set(camera.position, rayDirection.current);
+    sceneRaycasterRef.current.far = REACH_DISTANCE;
+    const intersects = sceneRaycasterRef.current.intersectObjects(scene.children, true);
+
+    for (let i = 0; i < intersects.length; i++) {
+      let obj = intersects[i].object;
+      while (obj) {
+        if (obj.userData?.isEnemy && obj.userData?.takeDamage) {
+          return { hit: intersects[i], enemyData: obj.userData };
+        }
+        obj = obj.parent;
+      }
+    }
+    return null;
+  }, [camera, scene]);
+
+  // Desktop: pointer down handler for first-person mining/placement/attack
   useEffect(() => {
     const handlePointerDown = (event) => {
       // Mobile uses long-press touch handlers instead
@@ -416,11 +438,32 @@ export function BlockInteraction({ chunkManager }) {
 
       if (firstPerson && isPointerLocked) {
         if (event.button === 0) {
-          // Left click: mine or place depending on mode
           if (store.blockPlacementMode) {
             placeBlock(selectedBlockType);
           } else {
-            mineBlock();
+            // Check for enemy FIRST, then mine block
+            const enemy = checkEnemyFromCamera();
+            if (enemy) {
+              // Attack enemy with projectile
+              const playerPos = store.player.position;
+              const hitPt = enemy.hit.point;
+              const dir = [
+                hitPt.x - playerPos[0],
+                (hitPt.y + 0.5) - (playerPos[1] + 0.5),
+                hitPt.z - playerPos[2],
+              ];
+              const len = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2);
+              store.addProjectile({
+                id: `fp-attack-${Date.now()}`,
+                position: [playerPos[0], playerPos[1] + 2.0, playerPos[2]],
+                direction: [dir[0] / len, dir[1] / len, dir[2] / len],
+                speed: 25,
+                damage: store.player.damage,
+                color: '#00ffff',
+              });
+            } else {
+              mineBlock();
+            }
           }
         } else if (event.button === 2) {
           // Right click: always place block (regardless of mode)
@@ -444,7 +487,115 @@ export function BlockInteraction({ chunkManager }) {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson]);
+  }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, checkEnemyFromCamera]);
+
+  // Desktop third-person: long-press mouse handler for mining/placement
+  // (mirrors mobile long-press behavior but with mouse events)
+  useEffect(() => {
+    if (isMobile.current) return;
+
+    const canvas = gl.domElement;
+
+    const handleMouseDown = (event) => {
+      // Only handle in third-person mode (not pointer locked)
+      if (document.pointerLockElement) return;
+      if (event.button !== 0) return;
+
+      // Raycast from mouse position to find block
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const result = raycastFromScreen(x, y);
+
+      if (result.block) {
+        longPressBlock.current = result.block;
+        longPressFace.current = result.face;
+        longPressTouchStart.current = { x: event.clientX, y: event.clientY };
+        longPressActive.current = false;
+
+        // Show highlight immediately
+        setTargetBlock(result.block);
+        setTargetFace(result.face);
+
+        // Start long press timer
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = setTimeout(() => {
+          longPressActive.current = true;
+          canvas.dataset.longPressAt = String(Date.now());
+
+          const block = longPressBlock.current;
+          const face = longPressFace.current;
+          if (!block || !chunkManager) return;
+
+          const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+
+          const store = useGameStore.getState();
+          if (store.blockPlacementMode) {
+            let plX = blockX, plY = blockY, plZ = blockZ;
+            switch (face) {
+              case 'top': plY += VOXEL_SIZE; break;
+              case 'bottom': plY -= VOXEL_SIZE; break;
+              case 'north': plZ += VOXEL_SIZE; break;
+              case 'south': plZ -= VOXEL_SIZE; break;
+              case 'east': plX += VOXEL_SIZE; break;
+              case 'west': plX -= VOXEL_SIZE; break;
+              default: return;
+            }
+            const existing = chunkManager.getBlock(plX, plY, plZ);
+            if (!isSolid(existing)) {
+              chunkManager.setBlock(plX, plY, plZ, store.selectedBlockType ?? BlockTypes.DIRT);
+            }
+          } else {
+            const currentBlock = chunkManager.getBlock(blockX, blockY, blockZ);
+            if (currentBlock !== BlockTypes.BEDROCK) {
+              chunkManager.setBlock(blockX, blockY, blockZ, BlockTypes.AIR);
+            }
+          }
+        }, LONG_PRESS_DURATION);
+      }
+    };
+
+    const handleMouseMove = (event) => {
+      if (!longPressTimer.current) return;
+
+      const dx = event.clientX - longPressTouchStart.current.x;
+      const dy = event.clientY - longPressTouchStart.current.y;
+
+      if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        longPressBlock.current = null;
+        longPressFace.current = null;
+        setTargetBlock(null);
+        setTargetFace(null);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      longPressActive.current = false;
+      longPressBlock.current = null;
+      longPressFace.current = null;
+      setTargetBlock(null);
+      setTargetFace(null);
+    };
+
+    canvas.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      clearTimeout(longPressTimer.current);
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [gl, chunkManager, raycastFromScreen, firstPerson]);
 
   // Mobile: long-press touch handlers for mining/placement
   // Calls chunkManager.setBlock() directly to avoid React lifecycle timing issues

@@ -48,39 +48,40 @@ const Crosshair = () => {
   // Check for mobile on mount
   useEffect(() => {
     setIsMobile(isTouchDevice());
-
-    // Auto-dismiss hint after 8 seconds on mobile
-    if (isTouchDevice()) {
-      const timer = setTimeout(() => setHintDismissed(true), 8000);
-      return () => clearTimeout(timer);
-    }
   }, []);
 
-  // Mobile: show tap-to-target hint (dismisses after 8 seconds)
+  // Auto-dismiss all hints after 6 seconds
+  useEffect(() => {
+    if (isMobile || firstPerson) return;
+    setHintDismissed(false);
+    const timer = setTimeout(() => setHintDismissed(true), 6000);
+    return () => clearTimeout(timer);
+  }, [isMobile, firstPerson]);
+
+  // Mobile: no crosshair or hint needed (controls hint is in GameUI)
   if (isMobile) {
-    if (hintDismissed) return null;
-    return (
-      <div style={hintStyle}>
-        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Tap-to-Target Mode</div>
-        <div style={{ fontSize: '12px', opacity: 0.8 }}>Tap block to select | Tap again to mine/place</div>
-        <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '4px' }}>Use Tab to switch Mine/Place</div>
-      </div>
-    );
+    return null;
   }
 
-  // Desktop: show hint when not in first-person mode
+  // Desktop third-person: show brief toast hint, then auto-dismiss
   if (!firstPerson) {
+    if (hintDismissed) return null;
     return (
-      <div style={hintStyle}>
+      <div style={{
+        ...hintStyle,
+        transition: 'opacity 0.5s',
+        opacity: 1,
+      }}>
         <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Press V for First-Person Mode</div>
         <div style={{ fontSize: '12px', opacity: 0.8 }}>V to toggle | WASD to move | Drag to look</div>
       </div>
     );
   }
 
-  const size = 20; // Total crosshair size
+  // Desktop first-person: show crosshair
+  const size = 20;
   const thickness = 2;
-  const gap = 4; // Gap in the center
+  const gap = 4;
 
   return (
     <div style={crosshairStyle}>

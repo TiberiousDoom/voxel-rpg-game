@@ -4,7 +4,6 @@ import useGameStore from '../../stores/useGameStore';
 import {
   CAMERA_MIN_DISTANCE,
   CAMERA_MAX_DISTANCE,
-  CAMERA_ZOOM_SPEED,
   CAMERA_ROTATION_SENSITIVITY,
   TAP_MAX_DURATION_MS,
   TAP_MAX_DISTANCE_PX,

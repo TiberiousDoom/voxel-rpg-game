@@ -165,8 +165,9 @@ export class RiftManager {
       // Check spawn interval
       if (now - rift.lastSpawnTime < interval) continue;
 
-      // Spawn a monster
-      const rand = mulberry32(this.seed + Math.floor(now * 1000) + rift.id.charCodeAt(5));
+      // Spawn a monster — seed with rift index * large prime for good differentiation
+      const riftIndex = parseInt(rift.id.split('-')[1], 10) || 0;
+      const rand = mulberry32(this.seed * 31 + Math.floor(now * 100) + riftIndex * 7919);
       const table = isNight ? SPAWN_TABLE_NIGHT : SPAWN_TABLE_DAY;
       const monsterTypeKey = pickFromTable(table, rand);
       const template = MONSTER_TYPES[monsterTypeKey];

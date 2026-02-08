@@ -132,8 +132,10 @@ export function BlockInteraction({ chunkManager }) {
   }, [targetBlock]);
 
   // Calculate placement preview position (where block will be placed)
+  // Show in placement mode OR in first-person (where right-click always places)
   useEffect(() => {
-    if (!blockPlacementMode || !targetBlock || !targetFace || !chunkManager) {
+    const showPreview = blockPlacementMode || firstPerson;
+    if (!showPreview || !targetBlock || !targetFace || !chunkManager) {
       setPreviewPosition(null);
       return;
     }
@@ -165,7 +167,7 @@ export function BlockInteraction({ chunkManager }) {
 
     setPreviewPosition([placeX, placeY, placeZ]);
     setPreviewValid(isValid);
-  }, [blockPlacementMode, targetBlock, targetFace, chunkManager]);
+  }, [blockPlacementMode, firstPerson, targetBlock, targetFace, chunkManager]);
 
   // Reusable vectors for raycast (avoid allocations)
   const rayDirection = useRef(new THREE.Vector3());
@@ -406,9 +408,6 @@ export function BlockInteraction({ chunkManager }) {
   // Desktop: pointer down handler for first-person mining/placement
   useEffect(() => {
     const handlePointerDown = (event) => {
-      // Only handle primary button (left click)
-      if (event.button !== 0) return;
-
       // Mobile uses long-press touch handlers instead
       if (isMobile.current) return;
 
@@ -416,20 +415,34 @@ export function BlockInteraction({ chunkManager }) {
       const isPointerLocked = document.pointerLockElement != null;
 
       if (firstPerson && isPointerLocked) {
-        // Desktop first-person mode with pointer lock: click performs action on crosshair target
-        if (store.blockPlacementMode) {
+        if (event.button === 0) {
+          // Left click: mine or place depending on mode
+          if (store.blockPlacementMode) {
+            placeBlock(selectedBlockType);
+          } else {
+            mineBlock();
+          }
+        } else if (event.button === 2) {
+          // Right click: always place block (regardless of mode)
           placeBlock(selectedBlockType);
-        } else {
-          mineBlock();
         }
+      }
+    };
+
+    const handleContextMenu = (event) => {
+      // Prevent context menu in first-person mode so right-click works for placement
+      if (firstPerson && document.pointerLockElement != null) {
+        event.preventDefault();
       }
     };
 
     // Listen on document to catch events when pointer lock is active
     document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('contextmenu', handleContextMenu);
     };
   }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson]);
 
@@ -599,16 +612,16 @@ export function BlockInteraction({ chunkManager }) {
 
   return (
     <>
-      {/* Mining target highlight */}
-      {!blockPlacementMode && (
+      {/* Mining target highlight — show when not in placement-only mode, or in first-person (both actions available) */}
+      {(!blockPlacementMode || firstPerson) && (
         <BlockHighlight
           position={highlightPosition}
           visible={targetBlock !== null}
         />
       )}
 
-      {/* Placement preview ghost block */}
-      {blockPlacementMode && previewPosition && (
+      {/* Placement preview ghost block — show in placement mode or first-person (right-click places) */}
+      {(blockPlacementMode || firstPerson) && previewPosition && (
         <PlacementPreview
           position={previewPosition}
           blockType={selectedBlockType}

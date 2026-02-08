@@ -26,9 +26,21 @@ export function useStatBreakdown() {
       total: player.maxHealth,
     };
 
-    // Add equipment health bonuses
-    if (equipment.armor?.health) {
-      healthBreakdown.equipment.armor = equipment.armor.health;
+    // Add equipment health bonuses (stats are nested in item.stats)
+    if (equipment.armor?.stats?.health) {
+      healthBreakdown.equipment.armor = equipment.armor.stats.health;
+    }
+    if (equipment.helmet?.stats?.health) {
+      healthBreakdown.equipment.helmet = equipment.helmet.stats.health;
+    }
+    if (equipment.ring1?.stats?.health) {
+      healthBreakdown.equipment.ring1 = equipment.ring1.stats.health;
+    }
+    if (equipment.ring2?.stats?.health) {
+      healthBreakdown.equipment.ring2 = equipment.ring2.stats.health;
+    }
+    if (equipment.amulet?.stats?.health) {
+      healthBreakdown.equipment.amulet = equipment.amulet.stats.health;
     }
 
     // Mana breakdown
@@ -42,8 +54,14 @@ export function useStatBreakdown() {
     };
 
     // Add equipment mana bonuses
-    if (equipment.amulet?.mana) {
-      manaBreakdown.equipment.amulet = equipment.amulet.mana;
+    if (equipment.amulet?.stats?.mana) {
+      manaBreakdown.equipment.amulet = equipment.amulet.stats.mana;
+    }
+    if (equipment.ring1?.stats?.mana) {
+      manaBreakdown.equipment.ring1 = equipment.ring1.stats.mana;
+    }
+    if (equipment.ring2?.stats?.mana) {
+      manaBreakdown.equipment.ring2 = equipment.ring2.stats.mana;
     }
 
     // Stamina breakdown
@@ -68,8 +86,17 @@ export function useStatBreakdown() {
     };
 
     // Add weapon damage
-    if (equipment.weapon?.damage) {
-      damageBreakdown.equipment.weapon = equipment.weapon.damage;
+    if (equipment.weapon?.stats?.damage) {
+      damageBreakdown.equipment.weapon = equipment.weapon.stats.damage;
+    }
+    if (equipment.ring1?.stats?.damage) {
+      damageBreakdown.equipment.ring1 = equipment.ring1.stats.damage;
+    }
+    if (equipment.ring2?.stats?.damage) {
+      damageBreakdown.equipment.ring2 = equipment.ring2.stats.damage;
+    }
+    if (equipment.gloves?.stats?.damage) {
+      damageBreakdown.equipment.gloves = equipment.gloves.stats.damage;
     }
 
     // Defense breakdown
@@ -82,9 +109,21 @@ export function useStatBreakdown() {
       total: player.defense,
     };
 
-    // Add armor defense
-    if (equipment.armor?.defense) {
-      defenseBreakdown.equipment.armor = equipment.armor.defense;
+    // Add armor defense (check all armor pieces)
+    if (equipment.armor?.stats?.defense) {
+      defenseBreakdown.equipment.armor = equipment.armor.stats.defense;
+    }
+    if (equipment.helmet?.stats?.defense) {
+      defenseBreakdown.equipment.helmet = equipment.helmet.stats.defense;
+    }
+    if (equipment.boots?.stats?.defense) {
+      defenseBreakdown.equipment.boots = equipment.boots.stats.defense;
+    }
+    if (equipment.gloves?.stats?.defense) {
+      defenseBreakdown.equipment.gloves = equipment.gloves.stats.defense;
+    }
+    if (equipment.offhand?.stats?.defense) {
+      defenseBreakdown.equipment.offhand = equipment.offhand.stats.defense;
     }
 
     // Speed breakdown
@@ -98,8 +137,14 @@ export function useStatBreakdown() {
     };
 
     // Add boots speed
-    if (equipment.boots?.speed) {
-      speedBreakdown.equipment.boots = equipment.boots.speed;
+    if (equipment.boots?.stats?.speed) {
+      speedBreakdown.equipment.boots = equipment.boots.stats.speed;
+    }
+    if (equipment.ring1?.stats?.speed) {
+      speedBreakdown.equipment.ring1 = equipment.ring1.stats.speed;
+    }
+    if (equipment.ring2?.stats?.speed) {
+      speedBreakdown.equipment.ring2 = equipment.ring2.stats.speed;
     }
 
     // Crit chance breakdown
@@ -111,6 +156,20 @@ export function useStatBreakdown() {
       equipment: {},
       total: player.critChance,
     };
+
+    // Add crit chance from equipment
+    if (equipment.weapon?.stats?.critChance) {
+      critChanceBreakdown.equipment.weapon = equipment.weapon.stats.critChance;
+    }
+    if (equipment.ring1?.stats?.critChance) {
+      critChanceBreakdown.equipment.ring1 = equipment.ring1.stats.critChance;
+    }
+    if (equipment.ring2?.stats?.critChance) {
+      critChanceBreakdown.equipment.ring2 = equipment.ring2.stats.critChance;
+    }
+    if (equipment.amulet?.stats?.critChance) {
+      critChanceBreakdown.equipment.amulet = equipment.amulet.stats.critChance;
+    }
 
     // Check for soft caps
     const checkSoftCap = (attrValue) => attrValue > 50;

@@ -8,7 +8,7 @@
 
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Color } from 'three';
+import { Color, Fog } from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { TimeManager } from '../../systems/time/TimeManager';
 import { getLightingState } from '../../systems/lighting/DayNightLighting';
@@ -47,6 +47,23 @@ const DayNightCycle = () => {
   const skyColor = useMemo(() => new Color(), []);
   const fogColor = useMemo(() => new Color(), []);
   const ambientColor = useMemo(() => new Color(), []);
+
+  // Initialize lighting immediately on mount (before first frame)
+  useEffect(() => {
+    const lighting = getLightingState(timeManager.timeOfDay);
+
+    // Set initial background color
+    skyColor.set(lighting.skyColor);
+    scene.background = skyColor;
+
+    // Create fog if it doesn't exist, or update existing fog
+    if (!scene.fog) {
+      scene.fog = new Fog(lighting.fogColor, 150, 400);
+    } else {
+      fogColor.set(lighting.fogColor);
+      scene.fog.color.copy(fogColor);
+    }
+  }, [scene, timeManager, skyColor, fogColor]);
 
   useFrame((_, delta) => {
     // Advance time

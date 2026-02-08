@@ -121,7 +121,7 @@ const ContextualHints = () => {
     <div
       style={{
         position: 'fixed',
-        bottom: '120px',
+        bottom: '220px', // Above BlockHotbar (~140px) and GameUI controls hint (~40px)
         left: '50%',
         transform: 'translateX(-50%)',
         backgroundColor: 'rgba(0, 0, 0, 0.75)',

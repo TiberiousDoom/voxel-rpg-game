@@ -10,6 +10,7 @@ import FirstPersonControls from './FirstPersonControls';
 import TargetMarker from './TargetMarker';
 import DamageNumber from './DamageNumber';
 import XPOrb from './XPOrb';
+import LootDrop from './LootDrop';
 import ParticleEffect from './ParticleEffect';
 import ChunkRenderer from './ChunkRenderer';
 import BlockInteraction from './BlockInteraction';
@@ -27,10 +28,13 @@ const Experience = () => {
   const targetMarkers = useGameStore((state) => state.targetMarkers);
   const damageNumbers = useGameStore((state) => state.damageNumbers);
   const xpOrbs = useGameStore((state) => state.xpOrbs);
+  const lootDrops = useGameStore((state) => state.lootDrops);
   const particleEffects = useGameStore((state) => state.particleEffects);
   const removeDamageNumber = useGameStore((state) => state.removeDamageNumber);
   const removeXPOrb = useGameStore((state) => state.removeXPOrb);
+  const removeLootDrop = useGameStore((state) => state.removeLootDrop);
   const removeParticleEffect = useGameStore((state) => state.removeParticleEffect);
+  const removeTargetMarker = useGameStore((state) => state.removeTargetMarker);
   const playerPosition = useGameStore((state) => state.player.position);
 
   // Initialize chunk system
@@ -73,17 +77,12 @@ const Experience = () => {
       {/* First-person controls (pointer lock) */}
       <FirstPersonControls />
 
-      {/* Sky color — managed dynamically by DayNightCycle */}
-      <color attach="background" args={['#87ceeb']} />
-
       {/* Day/night lighting cycle (ambient + directional + sky/fog colors) */}
+      {/* DayNightCycle manages scene.background and fog dynamically */}
       <DayNightCycle />
 
       {/* Survival systems tick (hunger drain, starvation damage) */}
       <SurvivalTick />
-
-      {/* Fog for depth - color managed by DayNightCycle */}
-      <fog attach="fog" args={['#87ceeb', 150, 400]} />
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
@@ -118,7 +117,10 @@ const Experience = () => {
             <XPOrb key={orb.id} {...orb} onCollect={removeXPOrb} />
           ))}
 
-          {/* TODO: Add interactable objects */}
+          {/* Loot Drops */}
+          {lootDrops.map((loot) => (
+            <LootDrop key={loot.id} {...loot} onCollect={removeLootDrop} />
+          ))}
         </Suspense>
       </Physics>
 
@@ -135,9 +137,11 @@ const Experience = () => {
       {targetMarkers.map((marker) => (
         <TargetMarker
           key={marker.id}
+          id={marker.id}
           position={marker.position}
           color={marker.color || '#00ff00'}
           duration={2}
+          onComplete={removeTargetMarker}
         />
       ))}
 

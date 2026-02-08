@@ -414,11 +414,11 @@ const GameUI = () => {
         </div>
       </div>
 
-      {/* Bottom center - Controls hint */}
+      {/* Bottom center - Controls hint (positioned above BlockHotbar) */}
       <div
         style={{
           position: 'absolute',
-          bottom: isMobile ? '10px' : '20px',
+          bottom: isMobile ? '80px' : '160px', // Above BlockHotbar
           left: '50%',
           transform: 'translateX(-50%)',
           background: 'rgba(0, 0, 0, 0.6)',

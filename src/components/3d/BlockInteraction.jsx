@@ -20,7 +20,8 @@ const REACH_DISTANCE = 12;
 const REACH_DISTANCE_THIRD_PERSON = 50;
 
 // Raycast step size (smaller = more precise, but slower)
-const RAY_STEP = 0.5;
+// Using 0.25 for better accuracy near block edges and corners
+const RAY_STEP = 0.25;
 
 // Long press settings for mobile block interaction
 const LONG_PRESS_DURATION = 500; // ms to hold before mining/placing
@@ -350,6 +351,9 @@ export function BlockInteraction({ chunkManager }) {
     const success = chunkManager.setBlock(blockX, blockY, blockZ, BlockTypes.AIR);
 
     if (success) {
+      // Force immediate raycast update to allow consecutive mining
+      lastRaycast.current = 0;
+      prevTargetRef.current = { block: null, face: null };
       // Could add particle effect, sound, etc. here
       // Could add block to inventory here
     }
@@ -387,6 +391,14 @@ export function BlockInteraction({ chunkManager }) {
 
     // Place the block
     const success = chunkManager.setBlock(placeX, placeY, placeZ, blockType);
+
+    if (success) {
+      // Force immediate raycast update to allow consecutive placement
+      // by invalidating the lastRaycast time
+      lastRaycast.current = 0;
+      // Clear prev target to force state update
+      prevTargetRef.current = { block: null, face: null };
+    }
 
     return success;
   }, [targetBlock, targetFace, chunkManager]);

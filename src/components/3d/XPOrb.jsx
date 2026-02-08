@@ -24,25 +24,35 @@ const XPOrb = ({ position, xpAmount = 25, id, onCollect }) => {
     // Calculate distance to player
     const distance = playerPos.distanceTo(orbVec);
 
-    // Fly toward player when close
-    if (distance < 5) {
-      const direction = playerPos.clone().sub(orbVec).normalize();
-      const speed = 10 + (5 - distance) * 2; // Speed increases as it gets closer
+    // Always track toward player - speed increases as orb gets closer
+    const direction = playerPos.clone().sub(orbVec).normalize();
 
-      velocity.current.copy(direction.multiplyScalar(speed));
+    // Base speed when far, accelerates when close
+    let speed;
+    if (distance > 15) {
+      // Far away - gentle attraction
+      speed = 3;
+    } else if (distance > 5) {
+      // Medium range - moderate speed
+      speed = 5 + (15 - distance) * 0.5;
+    } else {
+      // Close range - fast homing
+      speed = 10 + (5 - distance) * 3;
+    }
 
-      rigidBodyRef.current.setLinvel({
-        x: velocity.current.x,
-        y: velocity.current.y,
-        z: velocity.current.z,
-      }, true);
+    velocity.current.copy(direction.multiplyScalar(speed));
 
-      // Collect when very close
-      if (distance < 1) {
-        setCollected(true);
-        useGameStore.getState().addXP(xpAmount);
-        if (onCollect) onCollect(id);
-      }
+    rigidBodyRef.current.setLinvel({
+      x: velocity.current.x,
+      y: velocity.current.y,
+      z: velocity.current.z,
+    }, true);
+
+    // Collect when very close
+    if (distance < 1.5) {
+      setCollected(true);
+      useGameStore.getState().addXP(xpAmount);
+      if (onCollect) onCollect(id);
     }
   });
 
@@ -55,7 +65,7 @@ const XPOrb = ({ position, xpAmount = 25, id, onCollect }) => {
       type="dynamic"
       sensor={true}
       colliders="ball"
-      gravityScale={-0.5} // Float upward slightly
+      gravityScale={0} // No gravity - orb tracks toward player
     >
       <group>
         {/* Outer glow */}

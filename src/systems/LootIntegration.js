@@ -232,15 +232,19 @@ export const LootStoreHelpers = {
     const equipStats = calculateEquipmentStats(newEquipment);
 
     // Update player stats with equipment bonuses
+    const newMaxHealth = 100 + (equipStats.maxHealth || 0); // 100 = base maxHealth
     const basePlayer = {
       ...player,
       // Add equipment stats to base stats
-      damage: 10 + equipStats.damage, // 10 = base damage
-      armor: equipStats.armor,
-      health: Math.min(player.health, player.maxHealth + equipStats.health),
-      maxHealth: 100 + equipStats.health, // 100 = base maxHealth
-      critChance: 5 + equipStats.critChance, // 5 = base critChance
-      critDamage: 150 + equipStats.critDamage, // 150 = base critDamage
+      damage: 10 + (equipStats.damage || 0), // 10 = base damage
+      defense: equipStats.defense || 0,
+      armor: equipStats.armor || 0,
+      health: Math.min(player.health, newMaxHealth),
+      maxHealth: newMaxHealth,
+      maxMana: 100 + (equipStats.maxMana || 0), // 100 = base maxMana
+      maxStamina: 100 + (equipStats.maxStamina || 0), // 100 = base maxStamina
+      critChance: 5 + (equipStats.critChance || 0), // 5 = base critChance
+      critDamage: 150 + (equipStats.critDamage || 0), // 150 = base critDamage
       speed: 5 + (equipStats.speed || 0), // 5 = base speed
     };
 
@@ -265,14 +269,18 @@ export const LootStoreHelpers = {
     const equipStats = calculateEquipmentStats(newEquipment);
 
     // Update player stats
+    const newMaxHealth = 100 + (equipStats.maxHealth || 0);
     const basePlayer = {
       ...player,
-      damage: 10 + equipStats.damage,
-      armor: equipStats.armor,
-      maxHealth: 100 + equipStats.health,
-      health: Math.min(player.health, 100 + equipStats.health),
-      critChance: 5 + equipStats.critChance,
-      critDamage: 150 + equipStats.critDamage,
+      damage: 10 + (equipStats.damage || 0),
+      defense: equipStats.defense || 0,
+      armor: equipStats.armor || 0,
+      maxHealth: newMaxHealth,
+      health: Math.min(player.health, newMaxHealth),
+      maxMana: 100 + (equipStats.maxMana || 0),
+      maxStamina: 100 + (equipStats.maxStamina || 0),
+      critChance: 5 + (equipStats.critChance || 0),
+      critDamage: 150 + (equipStats.critDamage || 0),
       speed: 5 + (equipStats.speed || 0),
     };
 

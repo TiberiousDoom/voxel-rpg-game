@@ -151,9 +151,10 @@ export function compareStatsWithItem(currentEquipment, slot, newItem, character,
   };
   const newStats = calculateDerivedStats(character, player, newEquipment);
 
-  // Calculate differences
+  // Calculate differences (only compare numeric stats, skip objects like skillEffects)
   const diff = {};
   for (const stat in currentStats) {
+    if (typeof currentStats[stat] !== 'number' || typeof newStats[stat] !== 'number') continue;
     const change = newStats[stat] - currentStats[stat];
     if (change !== 0) {
       diff[stat] = {

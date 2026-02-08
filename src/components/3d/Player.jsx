@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { RigidBody } from '@react-three/rapier';
+import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { useKeyboard } from '../../hooks/useKeyboard';
@@ -192,8 +192,8 @@ const Player = () => {
         dodgeDirection.current = movement.clone().normalize();
         lastSpacePress.current = 0; // Reset to prevent triple tap
       } else {
-        // Single tap - normal jump
-        velocity.y = 8;
+        // Single tap - normal jump (needs to clear 1 block = 2 world units)
+        velocity.y = 10;
         lastSpacePress.current = now;
       }
     }
@@ -211,7 +211,7 @@ const Player = () => {
 
     if (cameraState.firstPerson) {
       // First-person camera: position at player head, offset forward to avoid body clipping
-      const headHeight = 1.6; // Eye level
+      const headHeight = 2.6; // Eye level (head center at 2.4 + slight offset)
       const forwardOffset = 0.5; // Move camera forward to clear player body
 
       // Apply yaw and pitch rotation
@@ -260,7 +260,10 @@ const Player = () => {
     }
 
     // Calculate facing angle for player
-    if (movement.length() > 0) {
+    if (cameraState.firstPerson) {
+      // In first-person, body always faces camera direction
+      updatePlayer({ facingAngle: cameraState.yaw });
+    } else if (movement.length() > 0) {
       const angle = Math.atan2(movement.x, movement.z);
       updatePlayer({ facingAngle: angle });
     }
@@ -345,66 +348,62 @@ const Player = () => {
     }
   }, [keys]);
 
+  // Capsule collider: halfHeight=0.8, radius=0.6 → total height = 2*0.8 + 2*0.6 = 2.8 units (~1.4 blocks)
+  // Smoother than cuboid — prevents getting stuck on block edges
   return (
     <RigidBody
       ref={playerRef}
       position={player.position}
       enabledRotations={[false, false, false]}
       type="dynamic"
-      colliders="cuboid"
+      colliders={false}
       mass={1}
       linearDamping={0.5}
       angularDamping={1}
     >
-      <group>
-        {/* Player body - simple colored cube for now */}
-        <mesh position={[0, 0.5, 0]}>
-          <boxGeometry args={[1, 2, 1]} />
+      <CapsuleCollider args={[0.8, 0.6]} position={[0, 1.4, 0]} />
+      <group rotation={[0, player.facingAngle, 0]}>
+        {/* Player body */}
+        <mesh position={[0, 1.0, 0]}>
+          <boxGeometry args={[1.2, 2.0, 0.8]} />
           <meshBasicMaterial color="#4169e1" />
         </mesh>
 
-        {/* Player head - slightly different color */}
-        <mesh position={[0, 1.5, 0]}>
-          <boxGeometry args={[0.8, 0.8, 0.8]} />
+        {/* Player head */}
+        <mesh position={[0, 2.4, 0]}>
+          <boxGeometry args={[0.9, 0.9, 0.9]} />
           <meshBasicMaterial color="#5a7fd6" />
         </mesh>
 
-        {/* Direction indicator */}
-        <mesh
-          position={[0, 1, 0.6]}
-          rotation={[0, player.facingAngle, 0]}
-        >
-          <coneGeometry args={[0.2, 0.5, 4]} />
+        {/* Direction indicator (nose) */}
+        <mesh position={[0, 2.4, 0.55]} rotation={[Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.15, 0.3, 4]} />
           <meshBasicMaterial color="#ff6b6b" />
         </mesh>
+      </group>
 
-        {/* Health Bar - positioned above player */}
-        <group position={[0, 2.5, 0]}>
-          {/* Health bar background */}
-          <mesh position={[0, 0, 0]}>
-            <planeGeometry args={[1.2, 0.15]} />
-            <meshBasicMaterial color="#333333" />
-          </mesh>
-          {/* Health bar fill - dynamically sized based on current health */}
-          <mesh position={[(player.health / player.maxHealth - 1) * 0.55, 0, 0.01]}>
-            <planeGeometry args={[1.1 * (player.health / player.maxHealth), 0.1]} />
-            <meshBasicMaterial color={player.health / player.maxHealth > 0.5 ? '#44ff44' : player.health / player.maxHealth > 0.25 ? '#ffff00' : '#ff4444'} />
-          </mesh>
-        </group>
+      {/* Health Bar - positioned above player (doesn't rotate) */}
+      <group position={[0, 3.2, 0]}>
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={[1.4, 0.15]} />
+          <meshBasicMaterial color="#333333" />
+        </mesh>
+        <mesh position={[(player.health / player.maxHealth - 1) * 0.65, 0, 0.01]}>
+          <planeGeometry args={[1.3 * (player.health / player.maxHealth), 0.1]} />
+          <meshBasicMaterial color={player.health / player.maxHealth > 0.5 ? '#44ff44' : player.health / player.maxHealth > 0.25 ? '#ffff00' : '#ff4444'} />
+        </mesh>
+      </group>
 
-        {/* Mana Bar - positioned below health bar */}
-        <group position={[0, 2.3, 0]}>
-          {/* Mana bar background */}
-          <mesh position={[0, 0, 0]}>
-            <planeGeometry args={[1.2, 0.12]} />
-            <meshBasicMaterial color="#333333" />
-          </mesh>
-          {/* Mana bar fill */}
-          <mesh position={[(player.mana / player.maxMana - 1) * 0.55, 0, 0.01]}>
-            <planeGeometry args={[1.1 * (player.mana / player.maxMana), 0.08]} />
-            <meshBasicMaterial color="#4488ff" />
-          </mesh>
-        </group>
+      {/* Mana Bar */}
+      <group position={[0, 3.0, 0]}>
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={[1.4, 0.12]} />
+          <meshBasicMaterial color="#333333" />
+        </mesh>
+        <mesh position={[(player.mana / player.maxMana - 1) * 0.65, 0, 0.01]}>
+          <planeGeometry args={[1.3 * (player.mana / player.maxMana), 0.08]} />
+          <meshBasicMaterial color="#4488ff" />
+        </mesh>
       </group>
     </RigidBody>
   );

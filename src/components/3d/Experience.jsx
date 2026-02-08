@@ -15,6 +15,7 @@ import ChunkRenderer from './ChunkRenderer';
 import BlockInteraction from './BlockInteraction';
 import ScreenShakeController from './ScreenShakeController';
 import DayNightCycle from './DayNightCycle';
+import SurvivalTick from './SurvivalTick';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 
@@ -77,6 +78,9 @@ const Experience = () => {
 
       {/* Day/night lighting cycle (ambient + directional + sky/fog colors) */}
       <DayNightCycle />
+
+      {/* Survival systems tick (hunger drain, starvation damage) */}
+      <SurvivalTick />
 
       {/* Fog for depth - color managed by DayNightCycle */}
       <fog attach="fog" args={['#87ceeb', 150, 400]} />

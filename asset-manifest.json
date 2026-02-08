@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/voxel-rpg-game/static/css/main.34dfbfb3.css",
+    "main.js": "/voxel-rpg-game/static/js/main.876b49ce.js",
+    "static/js/729.18236360.chunk.js": "/voxel-rpg-game/static/js/729.18236360.chunk.js",
+    "static/media/chunkWorker.js": "/voxel-rpg-game/static/media/chunkWorker.3f5c551b9057354cca77.js",
+    "index.html": "/voxel-rpg-game/index.html",
+    "main.34dfbfb3.css.map": "/voxel-rpg-game/static/css/main.34dfbfb3.css.map",
+    "main.876b49ce.js.map": "/voxel-rpg-game/static/js/main.876b49ce.js.map",
+    "729.18236360.chunk.js.map": "/voxel-rpg-game/static/js/729.18236360.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.34dfbfb3.css",
+    "static/js/main.876b49ce.js"
+  ]
+}

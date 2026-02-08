@@ -225,6 +225,13 @@ class Game3DSaveManager {
         };
       }
 
+      // Migrate V1 saves → V2 (add hunger + worldTime defaults)
+      if (!saveData.version || saveData.version < 2) {
+        saveData.hunger = saveData.hunger || { current: 100, max: 100, drainRate: 1 };
+        saveData.worldTime = saveData.worldTime || null; // Let store defaults handle it
+        saveData.version = 2;
+      }
+
       // Restore player state
       if (store.updatePlayer) {
         store.updatePlayer(saveData.player);

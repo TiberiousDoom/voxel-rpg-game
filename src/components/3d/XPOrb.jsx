@@ -10,42 +10,43 @@ import useGameStore from '../../stores/useGameStore';
 const XPOrb = ({ position, xpAmount = 25, id, onCollect }) => {
   const rigidBodyRef = useRef();
   const [collected, setCollected] = React.useState(false);
-  const velocity = useRef(new THREE.Vector3());
+
+  // Reusable vectors to avoid per-frame allocations
+  const _playerPos = useRef(new THREE.Vector3());
+  const _orbPos = useRef(new THREE.Vector3());
+  const _direction = useRef(new THREE.Vector3());
 
   const player = useGameStore((state) => state.player);
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!rigidBodyRef.current || collected) return;
 
-    const orbPos = rigidBodyRef.current.translation();
-    const playerPos = new THREE.Vector3(...player.position);
-    const orbVec = new THREE.Vector3(orbPos.x, orbPos.y, orbPos.z);
+    const orbTranslation = rigidBodyRef.current.translation();
+    const playerPos = _playerPos.current.set(player.position[0], player.position[1], player.position[2]);
+    const orbVec = _orbPos.current.set(orbTranslation.x, orbTranslation.y, orbTranslation.z);
 
     // Calculate distance to player
     const distance = playerPos.distanceTo(orbVec);
 
     // Always track toward player - speed increases as orb gets closer
-    const direction = playerPos.clone().sub(orbVec).normalize();
+    const direction = _direction.current.subVectors(playerPos, orbVec).normalize();
 
     // Base speed when far, accelerates when close
     let speed;
     if (distance > 15) {
-      // Far away - gentle attraction
       speed = 3;
     } else if (distance > 5) {
-      // Medium range - moderate speed
       speed = 5 + (15 - distance) * 0.5;
     } else {
-      // Close range - fast homing
       speed = 10 + (5 - distance) * 3;
     }
 
-    velocity.current.copy(direction.multiplyScalar(speed));
+    direction.multiplyScalar(speed);
 
     rigidBodyRef.current.setLinvel({
-      x: velocity.current.x,
-      y: velocity.current.y,
-      z: velocity.current.z,
+      x: direction.x,
+      y: direction.y,
+      z: direction.z,
     }, true);
 
     // Collect when very close
@@ -65,24 +66,24 @@ const XPOrb = ({ position, xpAmount = 25, id, onCollect }) => {
       type="dynamic"
       sensor={true}
       colliders="ball"
-      gravityScale={0} // No gravity - orb tracks toward player
+      gravityScale={0}
     >
       <group>
         {/* Outer glow */}
         <mesh>
-          <sphereGeometry args={[0.4, 16, 16]} />
+          <sphereGeometry args={[0.4, 8, 8]} />
           <meshBasicMaterial color="#ffd700" transparent opacity={0.3} />
         </mesh>
 
         {/* Inner core */}
         <mesh>
-          <sphereGeometry args={[0.25, 16, 16]} />
+          <sphereGeometry args={[0.25, 8, 8]} />
           <meshBasicMaterial color="#ffd700" />
         </mesh>
 
         {/* Rotating ring */}
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.3, 0.35, 16]} />
+          <ringGeometry args={[0.3, 0.35, 12]} />
           <meshBasicMaterial color="#ffd700" transparent opacity={0.6} side={THREE.DoubleSide} />
         </mesh>
       </group>

@@ -23,7 +23,8 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
   const [maxHealth] = useState(monsterData?.maxHealth || 50);
   const [isAlive, setIsAlive] = useState(true);
   const isDead = useRef(false); // Immediate flag to prevent multi-frame death
-  const [attackCooldown, setAttackCooldown] = useState(0);
+  const deathPosition = useRef(null); // Capture actual death position
+  const attackCooldownRef = useRef(0); // Ref to avoid per-frame re-renders
   const [damageFlash, setDamageFlash] = useState(0);
 
   const mDamage = monsterData?.damage || 5;
@@ -32,6 +33,11 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
   const mXp = monsterData?.xp || 25;
   const mName = monsterData?.name || name;
   const mType = monsterData?.type || type;
+
+  // Reusable Vector3 refs to avoid per-frame allocations
+  const _playerPos = useRef(new THREE.Vector3());
+  const _enemyPos = useRef(new THREE.Vector3());
+  const _direction = useRef(new THREE.Vector3());
 
   const player = useGameStore((state) => state.player);
   const dealDamageToPlayer = useGameStore((state) => state.dealDamageToPlayer);
@@ -68,20 +74,20 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
       });
 
       // Apply knockback impulse (push away from player)
-      const knockbackDir = new THREE.Vector3(
+      const knockbackDir = _direction.current.set(
         enemyPos.x - playerPos[0],
-        0.3, // Slight upward boost
+        0.3,
         enemyPos.z - playerPos[2]
       ).normalize();
 
-      const knockbackForce = Math.min(5 + damage * 0.1, 12); // Scale with damage, cap at 12
+      const knockbackForce = Math.min(5 + damage * 0.1, 12);
       enemyRef.current.applyImpulse({
         x: knockbackDir.x * knockbackForce,
         y: knockbackDir.y * knockbackForce,
         z: knockbackDir.z * knockbackForce,
       }, true);
     }
-  }, []); // maxHealth is constant, no need to track it
+  }, []);
 
   // Update RigidBody userData with takeDamage function
   React.useEffect(() => {
@@ -100,9 +106,9 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
     const body = enemyRef.current;
     const currentPos = body.translation();
 
-    // Calculate distance to player
-    const playerPos = new THREE.Vector3(...player.position);
-    const enemyPos = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+    // Calculate distance to player (reuse vectors)
+    const playerPos = _playerPos.current.set(player.position[0], player.position[1], player.position[2]);
+    const enemyPos = _enemyPos.current.set(currentPos.x, currentPos.y, currentPos.z);
     const distance = playerPos.distanceTo(enemyPos);
 
     // AI behaviors
@@ -111,9 +117,7 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
 
     if (distance < detectionRange) {
       // Move towards player
-      const direction = new THREE.Vector3()
-        .subVectors(playerPos, enemyPos)
-        .normalize();
+      const direction = _direction.current.subVectors(playerPos, enemyPos).normalize();
 
       const velocity = {
         x: direction.x * mSpeed,
@@ -125,9 +129,9 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
 
       // Attack player if in range
       if (distance < attackRange) {
-        if (attackCooldown <= 0) {
+        if (attackCooldownRef.current <= 0) {
           dealDamageToPlayer(mDamage, `Killed by ${mName}`);
-          setAttackCooldown(1.0);
+          attackCooldownRef.current = 1.0;
         }
       }
     } else {
@@ -137,20 +141,21 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
         {
           x: currentVel.x * 0.9,
           y: currentVel.y,
-          z: currentVel.z * 0.9,
+          z: currentVel.x * 0.9,
         },
         true
       );
     }
 
-    // Update cooldowns
-    if (attackCooldown > 0) {
-      setAttackCooldown(Math.max(0, attackCooldown - delta));
+    // Update cooldowns (ref — no re-render)
+    if (attackCooldownRef.current > 0) {
+      attackCooldownRef.current = Math.max(0, attackCooldownRef.current - delta);
     }
 
     // Check if dead — use ref for immediate guard (React state is async)
     if (health <= 0 && !isDead.current) {
       isDead.current = true;
+      deathPosition.current = [currentPos.x, currentPos.y, currentPos.z];
       setIsAlive(false);
       const store = useGameStore.getState();
       const ePos = body.translation();
@@ -195,12 +200,14 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
   });
 
   if (!isAlive) {
+    // Render corpse at actual death position, not spawn position
+    const pos = deathPosition.current || position;
     return (
-      <group position={position}>
+      <group position={pos}>
         {/* Death animation - fade out */}
         <mesh>
           <boxGeometry args={[1, 0.5, 1]} />
-          <meshBasicMaterial color="#ff4444" transparent opacity={0.3} />
+          <meshBasicMaterial color={mColor} transparent opacity={0.3} />
         </mesh>
       </group>
     );

@@ -14,6 +14,7 @@ import ParticleEffect from './ParticleEffect';
 import ChunkRenderer from './ChunkRenderer';
 import BlockInteraction from './BlockInteraction';
 import ScreenShakeController from './ScreenShakeController';
+import DayNightCycle from './DayNightCycle';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 
@@ -71,19 +72,13 @@ const Experience = () => {
       {/* First-person controls (pointer lock) */}
       <FirstPersonControls />
 
-      {/* Basic sky color */}
+      {/* Sky color — managed dynamically by DayNightCycle */}
       <color attach="background" args={['#87ceeb']} />
 
-      {/* Ambient light for general illumination */}
-      <ambientLight intensity={0.6} />
+      {/* Day/night lighting cycle (ambient + directional + sky/fog colors) */}
+      <DayNightCycle />
 
-      {/* Directional light (sun) - no shadows for performance */}
-      <directionalLight
-        position={[50, 50, 25]}
-        intensity={0.8}
-      />
-
-      {/* Fog for depth - pushed back to see more terrain */}
+      {/* Fog for depth - color managed by DayNightCycle */}
       <fog attach="fog" args={['#87ceeb', 150, 400]} />
 
       {/* Physics world */}

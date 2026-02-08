@@ -8,6 +8,8 @@ import CraftingUI from './components/CraftingUI';
 import InventoryUI from './components/InventoryUI';
 import BlockHotbar from './components/ui/BlockHotbar';
 import Crosshair from './components/ui/Crosshair';
+import TimeDisplay from './components/ui/TimeDisplay';
+import SurvivalHUD from './components/ui/SurvivalHUD';
 import ContextualHints from './components/ContextualHints';
 
 /**
@@ -50,6 +52,12 @@ function App3D() {
 
       {/* Crosshair for first-person mode */}
       <Crosshair />
+
+      {/* Survival HUD (health, stamina, hunger bars) */}
+      <SurvivalHUD />
+
+      {/* Time of day display */}
+      <TimeDisplay />
 
       {/* Contextual hints for new players */}
       <ContextualHints />

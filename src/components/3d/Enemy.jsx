@@ -9,13 +9,28 @@ import useGameStore from '../../stores/useGameStore';
 /**
  * Enemy component - Basic hostile mob with AI
  */
-const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
+// Material drops by monster type
+const MONSTER_DROPS = {
+  slime: [{ material: 'fiber', amount: 1, chance: 0.5 }],
+  goblin: [{ material: 'leather', amount: 1, chance: 0.6 }, { material: 'bone', amount: 1, chance: 0.3 }],
+  skeleton: [{ material: 'bone', amount: 2, chance: 0.8 }],
+  shadow: [{ material: 'crystal', amount: 1, chance: 0.4 }],
+};
+
+const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterData = null }) => {
   const enemyRef = useRef();
-  const [health, setHealth] = useState(50);
-  const [maxHealth] = useState(50);
+  const [health, setHealth] = useState(monsterData?.health || 50);
+  const [maxHealth] = useState(monsterData?.maxHealth || 50);
   const [isAlive, setIsAlive] = useState(true);
   const [attackCooldown, setAttackCooldown] = useState(0);
   const [damageFlash, setDamageFlash] = useState(0);
+
+  const mDamage = monsterData?.damage || 5;
+  const mSpeed = monsterData?.speed || 2;
+  const mColor = monsterData?.color || '#ff4444';
+  const mXp = monsterData?.xp || 25;
+  const mName = monsterData?.name || name;
+  const mType = monsterData?.type || type;
 
   const player = useGameStore((state) => state.player);
   const dealDamageToPlayer = useGameStore((state) => state.dealDamageToPlayer);
@@ -92,7 +107,6 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
     // AI behaviors
     const detectionRange = 20;
     const attackRange = 2;
-    const moveSpeed = 2;
 
     if (distance < detectionRange) {
       // Move towards player
@@ -101,9 +115,9 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
         .normalize();
 
       const velocity = {
-        x: direction.x * moveSpeed,
+        x: direction.x * mSpeed,
         y: body.linvel().y,
-        z: direction.z * moveSpeed,
+        z: direction.z * mSpeed,
       };
 
       body.setLinvel(velocity, true);
@@ -111,8 +125,8 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
       // Attack player if in range
       if (distance < attackRange) {
         if (attackCooldown <= 0) {
-          dealDamageToPlayer(5);
-          setAttackCooldown(1.0); // 1 second cooldown
+          dealDamageToPlayer(mDamage, `Killed by ${mName}`);
+          setAttackCooldown(1.0);
         }
       }
     } else {
@@ -136,29 +150,45 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
     // Check if dead
     if (health <= 0 && isAlive) {
       setIsAlive(false);
-      const enemyPos = body.translation();
+      const store = useGameStore.getState();
+      const ePos = body.translation();
 
-      // Spawn XP orb instead of directly granting XP
-      useGameStore.getState().addXPOrb({
-        position: [enemyPos.x, enemyPos.y + 1, enemyPos.z],
-        xpAmount: 25,
+      // Spawn XP orb
+      store.addXPOrb({
+        position: [ePos.x, ePos.y + 1, ePos.z],
+        xpAmount: mXp,
       });
 
       // Grant gold
-      useGameStore.getState().addGold(10);
+      store.addGold(10);
+
+      // Material drops
+      const drops = MONSTER_DROPS[mType] || [];
+      for (const drop of drops) {
+        if (Math.random() < drop.chance) {
+          store.addMaterial(drop.material, drop.amount);
+          store.addDamageNumber({
+            position: [ePos.x, ePos.y + 1.5, ePos.z],
+            damage: `+${drop.amount} ${drop.material}`,
+            color: '#ffffff',
+          });
+        }
+      }
 
       // Spawn death particle effect
-      useGameStore.getState().addParticleEffect({
-        position: [enemyPos.x, enemyPos.y + 0.5, enemyPos.z],
-        color: '#ff4444',
+      store.addParticleEffect({
+        position: [ePos.x, ePos.y + 0.5, ePos.z],
+        color: mColor,
         type: 'explosion',
         count: 15,
       });
 
-      // TODO: Remove enemy after death animation
-      setTimeout(() => {
-        // Remove from physics world
-      }, 2000);
+      // Remove from rift enemy list after death animation
+      if (monsterData?.id) {
+        setTimeout(() => {
+          useGameStore.getState().removeRiftEnemy(monsterData.id);
+        }, 2000);
+      }
     }
   });
 
@@ -195,7 +225,7 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime' }) => {
         {/* Enemy body */}
         <mesh position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
           <boxGeometry args={[1, 1, 1]} />
-          <meshBasicMaterial color={damageFlash > 0 ? "#ffff00" : "#ff4444"} />
+          <meshBasicMaterial color={damageFlash > 0 ? "#ffff00" : mColor} />
         </mesh>
 
         {/* Enemy eyes */}

@@ -218,6 +218,7 @@ export const CRAFTING_RECIPES = {
       harvestSpeed: 1.2,
       stoneYield: 1.1,
       oreYield: 1.1,
+      toolTier: 2,
     },
     craftingBonus: 5,
     icon: '⛏️',
@@ -257,6 +258,7 @@ export const CRAFTING_RECIPES = {
       harvestSpeed: 1.5,
       stoneYield: 1.3,
       oreYield: 1.3,
+      toolTier: 3,
     },
     craftingBonus: 10,
     icon: '⛏️',
@@ -296,6 +298,7 @@ export const CRAFTING_RECIPES = {
       harvestSpeed: 2.0,
       stoneYield: 1.5,
       oreYield: 1.5,
+      toolTier: 4,
     },
     craftingBonus: 20,
     icon: '⛏️',
@@ -411,16 +414,32 @@ export const CRAFTING_RECIPES = {
     name: 'Berry Jam',
     type: ITEM_TYPES.CONSUMABLE,
     rarity: RARITY.COMMON,
-    description: 'Sweet jam that restores stamina',
+    description: 'Sweet jam that restores 15 hunger',
     requirements: {
-      berry: 5,
-      wood: 1, // For the jar
+      berry: 3,
     },
     effect: {
-      type: 'stamina',
-      value: 50,
+      type: 'food',
+      value: 15,
     },
     icon: '🫐',
+  },
+
+  cookedMeat: {
+    id: 'cookedMeat',
+    name: 'Cooked Meat',
+    type: ITEM_TYPES.CONSUMABLE,
+    rarity: RARITY.COMMON,
+    description: 'Well-cooked meat that restores 35 hunger',
+    requirements: {
+      meat: 2,
+      wood: 1,
+    },
+    effect: {
+      type: 'food',
+      value: 35,
+    },
+    icon: '🍖',
   },
 
   mushroomStew: {
@@ -428,16 +447,15 @@ export const CRAFTING_RECIPES = {
     name: 'Mushroom Stew',
     type: ITEM_TYPES.CONSUMABLE,
     rarity: RARITY.COMMON,
-    description: 'A nourishing stew that boosts defense',
+    description: 'A nourishing stew that restores 30 hunger',
     requirements: {
       mushroom: 4,
       herb: 1,
-      wood: 1, // For the bowl
+      wood: 1,
     },
     effect: {
-      type: 'defenseBoost',
-      value: 5,
-      duration: 300, // 5 minutes
+      type: 'food',
+      value: 30,
     },
     icon: '🍄',
   },

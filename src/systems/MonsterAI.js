@@ -402,7 +402,7 @@ export class MonsterAI {
     const damage = monster.damage;
 
     // Update player health through store action (proper reactivity)
-    useGameStore.getState().dealDamageToPlayer(damage);
+    useGameStore.getState().dealDamageToPlayer(damage, `Killed by ${monster.type}`);
 
     // Get updated player health for logging
     const newHealth = useGameStore.getState().player.health;

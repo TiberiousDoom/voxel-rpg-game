@@ -11,6 +11,9 @@ const ContextualHints = () => {
   const playerHealth = useGameStore((state) => state.player.health);
   const playerMaxHealth = useGameStore((state) => state.player.maxHealth);
   const potions = useGameStore((state) => state.inventory.potions);
+  const hunger = useGameStore((state) => state.hunger);
+  const worldTime = useGameStore((state) => state.worldTime);
+  const shelter = useGameStore((state) => state.shelter);
 
   // Define hints with conditions
   const hints = [
@@ -76,6 +79,32 @@ const ContextualHints = () => {
       duration: 4000,
       showOnce: true,
     },
+    {
+      id: 'hungerWarning',
+      text: 'You\'re getting hungry! Mine berry bushes or craft food.',
+      condition: () => hunger.current < 40 && hunger.current > 0,
+      priority: 9,
+      duration: 5000,
+      showOnce: false,
+      cooldown: 60000,
+    },
+    {
+      id: 'nightWarning',
+      text: 'Night is falling — monsters become more dangerous!',
+      condition: () => worldTime.period === 'dusk',
+      priority: 8,
+      duration: 5000,
+      showOnce: false,
+      cooldown: 120000,
+    },
+    {
+      id: 'shelterHint',
+      text: 'Build walls and a roof for shelter benefits at night.',
+      condition: () => worldTime.isNight && shelter.isExposed,
+      priority: 7,
+      duration: 5000,
+      showOnce: true,
+    },
   ];
 
   useEffect(() => {
@@ -113,7 +142,7 @@ const ContextualHints = () => {
     checkHints(); // Initial check
 
     return () => clearInterval(interval);
-  }, [gameState, playerHealth, potions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [gameState, playerHealth, potions, hunger.current, worldTime.period, shelter.isExposed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentHint || gameState !== 'playing') return null;
 

@@ -9,8 +9,10 @@ import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react'
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { VOXEL_SIZE } from '../../systems/chunks/coordinates';
-import { BlockTypes, isSolid } from '../../systems/chunks/blockTypes';
+import { BlockTypes, isSolid, getBlockHardness } from '../../systems/chunks/blockTypes';
 import useGameStore from '../../stores/useGameStore';
+import { calculateDrops } from '../../data/blockDrops';
+import { HARVEST_SPEED_BARE_HANDS } from '../../data/tuning';
 import { isTouchDevice } from '../../utils/deviceDetection';
 
 // Maximum reach distance for block interaction
@@ -26,6 +28,10 @@ const RAY_STEP = 0.25;
 // Long press settings for mobile block interaction
 const LONG_PRESS_DURATION = 500; // ms to hold before mining/placing
 const LONG_PRESS_MOVE_THRESHOLD = 20; // pixels of movement that cancels long press
+
+// Mining progress geometry (flat bar above the block)
+const miningBarBgGeometry = new THREE.PlaneGeometry(VOXEL_SIZE * 1.2, 0.15);
+const miningBarFillGeometry = new THREE.PlaneGeometry(1.0, 0.13); // scaled dynamically
 
 // Pre-create geometry for highlight (reused across all renders)
 const highlightBoxGeometry = new THREE.BoxGeometry(
@@ -92,6 +98,36 @@ function PlacementPreview({ position, blockType, isValid }) {
 }
 
 /**
+ * MiningProgressBar - Shows mining progress above the targeted block
+ */
+function MiningProgressBar({ position, progress }) {
+  if (!position || progress <= 0) return null;
+
+  const barWidth = VOXEL_SIZE * 1.2 * Math.min(1, progress);
+
+  return (
+    <group position={[position[0], position[1] + VOXEL_SIZE * 0.8, position[2]]}>
+      {/* Background */}
+      <mesh geometry={miningBarBgGeometry}>
+        <meshBasicMaterial color="#333333" transparent opacity={0.7} side={THREE.DoubleSide} depthTest={false} />
+      </mesh>
+      {/* Fill */}
+      <mesh
+        position={[-(VOXEL_SIZE * 1.2 - barWidth) / 2, 0, 0.01]}
+        scale={[barWidth, 1, 1]}
+      >
+        <planeGeometry args={[1, 0.13]} />
+        <meshBasicMaterial
+          color={progress > 0.75 ? '#ff4444' : progress > 0.5 ? '#ffaa00' : '#44ff44'}
+          side={THREE.DoubleSide}
+          depthTest={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/**
  * Main BlockInteraction component
  */
 export function BlockInteraction({ chunkManager }) {
@@ -100,7 +136,13 @@ export function BlockInteraction({ chunkManager }) {
   const [targetFace, setTargetFace] = useState(null);
   const [previewPosition, setPreviewPosition] = useState(null);
   const [previewValid, setPreviewValid] = useState(true);
+  const [miningProgress, setMiningProgress] = useState(0);
   const lastRaycast = useRef(0);
+
+  // Progressive mining state
+  const isHoldingMine = useRef(false);
+  const miningAccum = useRef(0);
+  const miningBlockKey = useRef(null); // "x,y,z" of block being mined
 
   // Track if we're on mobile
   const isMobile = useRef(isTouchDevice());
@@ -333,6 +375,55 @@ export function BlockInteraction({ chunkManager }) {
     }
   });
 
+  // Progressive mining: accumulate progress while holding on a block
+  useFrame((_, delta) => {
+    if (!isHoldingMine.current || !targetBlock || !chunkManager) {
+      if (miningAccum.current > 0) {
+        miningAccum.current = 0;
+        miningBlockKey.current = null;
+        setMiningProgress(0);
+      }
+      return;
+    }
+
+    const bx = Math.floor(targetBlock.x / VOXEL_SIZE);
+    const by = Math.floor(targetBlock.y / VOXEL_SIZE);
+    const bz = Math.floor(targetBlock.z / VOXEL_SIZE);
+    const blockKey = `${bx},${by},${bz}`;
+
+    // Reset if target block changed
+    if (miningBlockKey.current !== blockKey) {
+      miningAccum.current = 0;
+      miningBlockKey.current = blockKey;
+    }
+
+    // Get block hardness
+    const worldX = bx * VOXEL_SIZE + VOXEL_SIZE / 2;
+    const worldY = by * VOXEL_SIZE + VOXEL_SIZE / 2;
+    const worldZ = bz * VOXEL_SIZE + VOXEL_SIZE / 2;
+    const blockType = chunkManager.getBlock(worldX, worldY, worldZ);
+    if (!blockType || blockType === BlockTypes.AIR || blockType === BlockTypes.BEDROCK) return;
+
+    const hardness = getBlockHardness(blockType);
+    const store = useGameStore.getState();
+    const equippedTool = store.equipment?.weapon;
+    const harvestSpeed = equippedTool?.stats?.harvestSpeed || HARVEST_SPEED_BARE_HANDS;
+    const breakTime = hardness / harvestSpeed;
+
+    // Accumulate mining progress
+    miningAccum.current += delta;
+    const progress = Math.min(1, miningAccum.current / breakTime);
+    setMiningProgress(progress);
+
+    // Block breaks when progress reaches 100%
+    if (miningAccum.current >= breakTime) {
+      mineBlock();
+      miningAccum.current = 0;
+      miningBlockKey.current = null;
+      setMiningProgress(0);
+    }
+  });
+
   // Handle block mining (destroy block)
   const mineBlock = useCallback(() => {
     if (!targetBlock || !chunkManager) return false;
@@ -354,8 +445,22 @@ export function BlockInteraction({ chunkManager }) {
       // Force immediate raycast update to allow consecutive mining
       lastRaycast.current = 0;
       prevTargetRef.current = { block: null, face: null };
-      // Could add particle effect, sound, etc. here
-      // Could add block to inventory here
+
+      // Calculate and grant drops
+      const store = useGameStore.getState();
+      const equippedTool = store.equipment?.weapon;
+      const toolTier = equippedTool?.stats?.toolTier || 0;
+      const drops = calculateDrops(currentBlock, toolTier);
+
+      drops.forEach((drop) => {
+        store.addMaterial(drop.material, drop.amount);
+        // Show floating pickup text via damage number system (white color)
+        store.addDamageNumber({
+          position: [blockX, blockY + 1.5, blockZ],
+          damage: `+${drop.amount} ${drop.material}`,
+          color: '#ffffff',
+        });
+      });
     }
 
     return success;
@@ -439,7 +544,7 @@ export function BlockInteraction({ chunkManager }) {
     return null;
   }, [camera, scene]);
 
-  // Desktop: pointer down handler for first-person mining/placement/attack
+  // Desktop: pointer down/up handlers for first-person mining/placement/attack
   useEffect(() => {
     const handlePointerDown = (event) => {
       // Mobile uses long-press touch handlers instead
@@ -453,7 +558,7 @@ export function BlockInteraction({ chunkManager }) {
           if (store.blockPlacementMode) {
             placeBlock(selectedBlockType);
           } else {
-            // Check for enemy FIRST, then mine block
+            // Check for enemy FIRST, then start mining
             const enemy = checkEnemyFromCamera();
             if (enemy) {
               // Attack enemy with projectile
@@ -474,13 +579,25 @@ export function BlockInteraction({ chunkManager }) {
                 color: '#00ffff',
               });
             } else {
-              mineBlock();
+              // Start progressive mining (hold to break)
+              isHoldingMine.current = true;
+              miningAccum.current = 0;
+              miningBlockKey.current = null;
             }
           }
         } else if (event.button === 2) {
           // Right click: always place block (regardless of mode)
           placeBlock(selectedBlockType);
         }
+      }
+    };
+
+    const handlePointerUp = (event) => {
+      if (event.button === 0) {
+        isHoldingMine.current = false;
+        miningAccum.current = 0;
+        miningBlockKey.current = null;
+        setMiningProgress(0);
       }
     };
 
@@ -493,10 +610,12 @@ export function BlockInteraction({ chunkManager }) {
 
     // Listen on document to catch events when pointer lock is active
     document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('pointerup', handlePointerUp);
     document.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('contextmenu', handleContextMenu);
     };
   }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, checkEnemyFromCamera]);
@@ -529,7 +648,7 @@ export function BlockInteraction({ chunkManager }) {
         setTargetBlock(result.block);
         setTargetFace(result.face);
 
-        // Start long press timer
+        // Start long press timer — after hold threshold, start progressive mining
         clearTimeout(longPressTimer.current);
         longPressTimer.current = setTimeout(() => {
           longPressActive.current = true;
@@ -539,12 +658,12 @@ export function BlockInteraction({ chunkManager }) {
           const face = longPressFace.current;
           if (!block || !chunkManager) return;
 
-          const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-
           const store = useGameStore.getState();
           if (store.blockPlacementMode) {
+            // Placement is still instant
+            const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
             let plX = blockX, plY = blockY, plZ = blockZ;
             switch (face) {
               case 'top': plY += VOXEL_SIZE; break;
@@ -560,17 +679,17 @@ export function BlockInteraction({ chunkManager }) {
               chunkManager.setBlock(plX, plY, plZ, store.selectedBlockType ?? BlockTypes.DIRT);
             }
           } else {
-            const currentBlock = chunkManager.getBlock(blockX, blockY, blockZ);
-            if (currentBlock !== BlockTypes.BEDROCK) {
-              chunkManager.setBlock(blockX, blockY, blockZ, BlockTypes.AIR);
-            }
+            // Start progressive mining (useFrame will accumulate)
+            isHoldingMine.current = true;
+            miningAccum.current = 0;
+            miningBlockKey.current = null;
           }
         }, LONG_PRESS_DURATION);
       }
     };
 
     const handleMouseMove = (event) => {
-      if (!longPressTimer.current) return;
+      if (!longPressTimer.current && !isHoldingMine.current) return;
 
       const dx = event.clientX - longPressTouchStart.current.x;
       const dy = event.clientY - longPressTouchStart.current.y;
@@ -580,6 +699,9 @@ export function BlockInteraction({ chunkManager }) {
         longPressTimer.current = null;
         longPressBlock.current = null;
         longPressFace.current = null;
+        isHoldingMine.current = false;
+        miningAccum.current = 0;
+        setMiningProgress(0);
         setTargetBlock(null);
         setTargetFace(null);
       }
@@ -593,6 +715,9 @@ export function BlockInteraction({ chunkManager }) {
       longPressActive.current = false;
       longPressBlock.current = null;
       longPressFace.current = null;
+      isHoldingMine.current = false;
+      miningAccum.current = 0;
+      setMiningProgress(0);
       setTargetBlock(null);
       setTargetFace(null);
     };
@@ -662,7 +787,7 @@ export function BlockInteraction({ chunkManager }) {
         // touch — preventDefault must be called on touchstart, not touchend.
         e.preventDefault();
 
-        // Start long press timer - action fires after holding
+        // Start long press timer — after hold threshold, start progressive mining
         clearTimeout(longPressTimer.current);
         longPressTimer.current = setTimeout(() => {
           longPressActive.current = true;
@@ -675,13 +800,12 @@ export function BlockInteraction({ chunkManager }) {
           const face = longPressFace.current;
           if (!block || !chunkManager) return;
 
-          const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-
           const store = useGameStore.getState();
           if (store.blockPlacementMode) {
-            // Place block on adjacent face
+            // Placement is still instant
+            const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
             let placeX = blockX, placeY = blockY, placeZ = blockZ;
             switch (face) {
               case 'top': placeY += VOXEL_SIZE; break;
@@ -697,29 +821,31 @@ export function BlockInteraction({ chunkManager }) {
               chunkManager.setBlock(placeX, placeY, placeZ, store.selectedBlockType ?? BlockTypes.DIRT);
             }
           } else {
-            // Mine block
-            const currentBlock = chunkManager.getBlock(blockX, blockY, blockZ);
-            if (currentBlock !== BlockTypes.BEDROCK) {
-              chunkManager.setBlock(blockX, blockY, blockZ, BlockTypes.AIR);
-            }
+            // Start progressive mining (useFrame will accumulate)
+            isHoldingMine.current = true;
+            miningAccum.current = 0;
+            miningBlockKey.current = null;
           }
         }, LONG_PRESS_DURATION);
       }
     };
 
     const handleTouchMove = (e) => {
-      if (!longPressTimer.current) return;
+      if (!longPressTimer.current && !isHoldingMine.current) return;
 
       const touch = e.touches[0];
       const dx = touch.clientX - longPressTouchStart.current.x;
       const dy = touch.clientY - longPressTouchStart.current.y;
 
-      // Cancel long press if finger moved too far
+      // Cancel long press / mining if finger moved too far
       if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
         longPressBlock.current = null;
         longPressFace.current = null;
+        isHoldingMine.current = false;
+        miningAccum.current = 0;
+        setMiningProgress(0);
         setTargetBlock(null);
         setTargetFace(null);
       }
@@ -733,8 +859,13 @@ export function BlockInteraction({ chunkManager }) {
         longPressTimer.current = null;
       }
 
+      // Stop mining
+      isHoldingMine.current = false;
+      miningAccum.current = 0;
+      setMiningProgress(0);
+
       if (longPressActive.current) {
-        // Long press action already fired - block is already mined/placed
+        // Long press action already fired
         longPressActive.current = false;
       } else if (wasTimerActive && longPressBlock.current) {
         // Short tap on a block (lifted before 500ms) — we called
@@ -791,6 +922,9 @@ export function BlockInteraction({ chunkManager }) {
           isValid={previewValid}
         />
       )}
+
+      {/* Mining progress bar */}
+      <MiningProgressBar position={highlightPosition} progress={miningProgress} />
     </>
   );
 }

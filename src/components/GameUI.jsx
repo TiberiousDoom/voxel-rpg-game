@@ -15,6 +15,7 @@ const GameUI = () => {
   const inventory = useGameStore((state) => state.inventory);
   const gameState = useGameStore((state) => state.gameState);
   const hunger = useGameStore((state) => state.hunger);
+  const shelter = useGameStore((state) => state.shelter);
   const worldTime = useGameStore((state) => state.worldTime);
   const [isMobile, setIsMobile] = useState(false);
   const statBreakdowns = useStatBreakdown();
@@ -217,6 +218,27 @@ const GameUI = () => {
             />
           </div>
         </div>
+
+        {/* Shelter status badge */}
+        {!shelter.isExposed && (
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '2px 8px',
+            marginBottom: '8px',
+            borderRadius: '4px',
+            fontSize: '0.75rem',
+            fontWeight: 'bold',
+            background: shelter.isFullShelter
+              ? 'rgba(81, 207, 102, 0.25)'
+              : 'rgba(255, 193, 7, 0.25)',
+            color: shelter.isFullShelter ? '#51cf66' : '#ffc107',
+            border: `1px solid ${shelter.isFullShelter ? '#51cf66' : '#ffc107'}`,
+          }}>
+            {shelter.isFullShelter ? '\u{1F3E0}' : '\u{26D1}'} {shelter.isFullShelter ? 'Sheltered' : 'Partial Shelter'}
+          </div>
+        )}
 
         {/* Rage bar */}
         {!isMobile && (

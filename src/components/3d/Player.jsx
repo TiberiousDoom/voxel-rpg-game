@@ -130,6 +130,9 @@ const Player = () => {
       updatePlayer({ isBlocking: false });
     }
 
+    // Sync sprint state to store for hunger system
+    updatePlayer({ isSprinting: isSprintingNow && isMoving });
+
     // Stamina usage and regeneration
     if (isSprintingNow && isMoving && !isBlocking) {
       // Use stamina while sprinting and moving
@@ -240,19 +243,27 @@ const Player = () => {
       camera.position.copy(targetCameraPos);
       camera.lookAt(targetLookAt);
     } else {
-      // Third-person camera: orbit around player
+      // Third-person camera: orbit around player with pitch
       const angle = cameraState.rotationAngle;
       const distance = cameraState.distance;
-      const height = cameraState.height;
+      const pitch = cameraState.pitch || 0; // radians, 0 = level, positive = look down
 
-      // Calculate camera position based on rotation angle
+      // Spherical coordinates: pitch rotates camera vertically around the player
+      // cosPitch projects distance onto the horizontal plane
+      // sinPitch lifts the camera (positive pitch = camera goes higher, looks down)
+      const cosPitch = Math.cos(pitch);
+      const sinPitch = Math.sin(pitch);
+      const baseHeight = 2; // Look-at height above player feet
+      const horizontalDist = distance * cosPitch;
+      const verticalOffset = distance * sinPitch + baseHeight + distance * 0.5;
+
       targetCameraPos.set(
-        currentPos.x + Math.sin(angle) * distance,
-        currentPos.y + height,
-        currentPos.z + Math.cos(angle) * distance
+        currentPos.x + Math.sin(angle) * horizontalDist,
+        currentPos.y + verticalOffset,
+        currentPos.z + Math.cos(angle) * horizontalDist
       );
 
-      targetLookAt.set(currentPos.x, currentPos.y + 2, currentPos.z);
+      targetLookAt.set(currentPos.x, currentPos.y + baseHeight, currentPos.z);
 
       // Smooth camera movement
       camera.position.lerp(targetCameraPos, 0.1);

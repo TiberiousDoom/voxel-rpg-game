@@ -1,17 +1,20 @@
 /**
  * SurvivalTick.jsx — Runs survival systems each frame
  *
- * Ticks hunger drain, applies starvation damage, and updates the store.
- * Runs inside the R3F Canvas as an invisible component.
+ * Ticks hunger drain, applies starvation damage, checks shelter status,
+ * and updates the store. Runs inside the R3F Canvas as an invisible component.
  */
 
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import useGameStore from '../../stores/useGameStore';
 import { tickHunger } from '../../systems/survival/HungerSystem';
+import { checkShelter } from '../../systems/survival/ShelterDetector';
+import { SHELTER_CHECK_INTERVAL } from '../../data/tuning';
 
-const SurvivalTick = () => {
+const SurvivalTick = ({ chunkManager }) => {
   const starvationAccum = useRef(0);
+  const lastShelterCheck = useRef(0);
 
   useFrame((_, delta) => {
     const state = useGameStore.getState();
@@ -19,8 +22,16 @@ const SurvivalTick = () => {
     // Don't tick survival during intro/pause/death
     if (state.gameState !== 'playing') return;
 
-    // Check if player is sprinting (shift held + moving)
-    const isSprinting = false; // TODO: wire to actual sprint state when available
+    // Check if player is sprinting
+    const isSprinting = state.player.isSprinting || false;
+
+    // Throttled shelter detection
+    const now = Date.now();
+    if (chunkManager && now - lastShelterCheck.current >= SHELTER_CHECK_INTERVAL) {
+      lastShelterCheck.current = now;
+      const shelterResult = checkShelter(state.player.position, chunkManager);
+      state.updateShelter(shelterResult);
+    }
 
     // Check shelter state
     const isInShelter = state.shelter.isFullShelter || state.shelter.isPartialShelter;
@@ -45,7 +56,7 @@ const SurvivalTick = () => {
       if (starvationAccum.current >= 1) {
         const dmg = Math.floor(starvationAccum.current);
         starvationAccum.current -= dmg;
-        state.dealDamageToPlayer(dmg);
+        state.dealDamageToPlayer(dmg, 'Starved to death');
       }
     } else {
       starvationAccum.current = 0;

@@ -1,118 +1,215 @@
 import { useRef, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import useGameStore from '../../stores/useGameStore';
+import {
+  CAMERA_MIN_DISTANCE,
+  CAMERA_MAX_DISTANCE,
+  CAMERA_ZOOM_SPEED,
+  CAMERA_ROTATION_SENSITIVITY,
+  TAP_MAX_DURATION_MS,
+  TAP_MAX_DISTANCE_PX,
+} from '../../data/tuning';
 
 /**
- * CameraRotateControls - Handles camera rotation with right-mouse drag
+ * CameraRotateControls — Handles camera orbit with pitch + yaw
+ *
+ * Desktop: right-click drag rotates horizontally (X) and vertically (Y)
+ * Mobile:  1-finger drag rotates (with gesture disambiguation vs tap-to-move)
+ *          2-finger pinch zooms in/out
  */
 const CameraRotateControls = () => {
   const { gl } = useThree();
+
+  // Desktop right-drag state
   const isDragging = useRef(false);
   const lastMouseX = useRef(0);
+  const lastMouseY = useRef(0);
+
+  // Mobile single-touch state
+  const touchId = useRef(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const touchStartTime = useRef(0);
+  const touchMoved = useRef(false); // true once moved > threshold
   const isTouchRotating = useRef(false);
 
-  const updateCamera = useGameStore((state) => state.updateCamera);
-  const camera = useGameStore((state) => state.camera);
+  // Pinch-to-zoom state
+  const pinchStartDist = useRef(0);
+  const pinchStartCameraDist = useRef(0);
+  const isPinching = useRef(false);
 
   useEffect(() => {
     const canvas = gl.domElement;
 
-    // Mouse down handler
+    // ── helpers ──────────────────────────────────────
+    const getCameraState = () => useGameStore.getState().camera;
+    const update = useGameStore.getState().updateCamera;
+
+    const clampPitch = (p) => Math.max(-1.05, Math.min(1.05, p)); // ±60°
+
+    // ── Desktop: right-click drag ───────────────────
     const handleMouseDown = (e) => {
-      if (e.button === 2) { // Right mouse button
+      if (e.button === 2) {
         isDragging.current = true;
         lastMouseX.current = e.clientX;
+        lastMouseY.current = e.clientY;
         e.preventDefault();
       }
     };
 
-    // Mouse move handler
     const handleMouseMove = (e) => {
-      if (isDragging.current) {
-        const deltaX = e.clientX - lastMouseX.current;
-        lastMouseX.current = e.clientX;
+      if (!isDragging.current) return;
+      const cam = getCameraState();
 
-        // Update camera rotation (negative for natural rotation direction)
-        const rotationSpeed = 0.005;
-        updateCamera({
-          rotationAngle: camera.rotationAngle - deltaX * rotationSpeed,
-        });
+      const deltaX = e.clientX - lastMouseX.current;
+      const deltaY = e.clientY - lastMouseY.current;
+      lastMouseX.current = e.clientX;
+      lastMouseY.current = e.clientY;
 
-        e.preventDefault();
-      }
-    };
+      const sensitivity = CAMERA_ROTATION_SENSITIVITY;
+      update({
+        rotationAngle: cam.rotationAngle - deltaX * sensitivity,
+        pitch: clampPitch(cam.pitch + deltaY * sensitivity),
+      });
 
-    // Mouse up handler
-    const handleMouseUp = (e) => {
-      if (e.button === 2) {
-        isDragging.current = false;
-      }
-    };
-
-    // Touch start handler - for mobile swipe rotation
-    const handleTouchStart = (e) => {
-      // Two-finger touch for rotation
-      if (e.touches.length === 2) {
-        isTouchRotating.current = true;
-        touchStartX.current = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        touchStartY.current = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        e.preventDefault();
-      }
-    };
-
-    // Touch move handler
-    const handleTouchMove = (e) => {
-      if (isTouchRotating.current && e.touches.length === 2) {
-        const currentX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const deltaX = currentX - touchStartX.current;
-        touchStartX.current = currentX;
-
-        // Update camera rotation
-        const rotationSpeed = 0.01;
-        updateCamera({
-          rotationAngle: camera.rotationAngle - deltaX * rotationSpeed,
-        });
-
-        e.preventDefault();
-      }
-    };
-
-    // Touch end handler
-    const handleTouchEnd = (e) => {
-      if (e.touches.length < 2) {
-        isTouchRotating.current = false;
-      }
-    };
-
-    // Context menu handler (disable right-click menu)
-    const handleContextMenu = (e) => {
       e.preventDefault();
     };
 
-    // Add event listeners
+    const handleMouseUp = (e) => {
+      if (e.button === 2) isDragging.current = false;
+    };
+
+    // ── Scroll wheel zoom (desktop) ─────────────────
+    const handleWheel = (e) => {
+      const cam = getCameraState();
+      const newDist = Math.max(
+        CAMERA_MIN_DISTANCE,
+        Math.min(CAMERA_MAX_DISTANCE, cam.distance + e.deltaY * 0.05)
+      );
+      update({ distance: newDist });
+      e.preventDefault();
+    };
+
+    // ── Mobile touch ────────────────────────────────
+    const touchDist = (t) => {
+      const dx = t[0].clientX - t[1].clientX;
+      const dy = t[0].clientY - t[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const handleTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        // Start pinch-to-zoom (cancel any rotation)
+        isPinching.current = true;
+        isTouchRotating.current = false;
+        touchId.current = null;
+        pinchStartDist.current = touchDist(e.touches);
+        pinchStartCameraDist.current = getCameraState().distance;
+        e.preventDefault();
+        return;
+      }
+
+      if (e.touches.length === 1 && !isPinching.current) {
+        // Record start for gesture disambiguation
+        const t = e.touches[0];
+        touchId.current = t.identifier;
+        touchStartX.current = t.clientX;
+        touchStartY.current = t.clientY;
+        touchStartTime.current = Date.now();
+        touchMoved.current = false;
+        isTouchRotating.current = false;
+        // Don't preventDefault — let it fall through as a potential tap
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      // Pinch-to-zoom
+      if (isPinching.current && e.touches.length === 2) {
+        const cam = getCameraState();
+        const currentDist = touchDist(e.touches);
+        const scale = pinchStartDist.current / currentDist;
+        const newDist = Math.max(
+          CAMERA_MIN_DISTANCE,
+          Math.min(CAMERA_MAX_DISTANCE, pinchStartCameraDist.current * scale)
+        );
+        update({ distance: newDist });
+        e.preventDefault();
+        return;
+      }
+
+      // Single-finger rotation
+      if (e.touches.length === 1 && touchId.current !== null) {
+        const t = Array.from(e.touches).find((tt) => tt.identifier === touchId.current);
+        if (!t) return;
+
+        const dx = t.clientX - touchStartX.current;
+        const dy = t.clientY - touchStartY.current;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (!touchMoved.current) {
+          const elapsed = Date.now() - touchStartTime.current;
+          if (dist > TAP_MAX_DISTANCE_PX || elapsed > TAP_MAX_DURATION_MS) {
+            // Commit to rotation
+            touchMoved.current = true;
+            isTouchRotating.current = true;
+          } else {
+            return; // Still ambiguous — wait
+          }
+        }
+
+        if (isTouchRotating.current) {
+          const cam = getCameraState();
+          const deltaX = t.clientX - touchStartX.current;
+          const deltaY = t.clientY - touchStartY.current;
+          touchStartX.current = t.clientX;
+          touchStartY.current = t.clientY;
+
+          const sensitivity = CAMERA_ROTATION_SENSITIVITY * 1.5; // A bit higher for touch
+          update({
+            rotationAngle: cam.rotationAngle - deltaX * sensitivity,
+            pitch: clampPitch(cam.pitch + deltaY * sensitivity),
+          });
+
+          e.preventDefault();
+        }
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      if (e.touches.length < 2) {
+        isPinching.current = false;
+      }
+      if (e.touches.length === 0) {
+        isTouchRotating.current = false;
+        touchId.current = null;
+      }
+    };
+
+    const handleContextMenu = (e) => e.preventDefault();
+
+    // ── Register ─────────────────────────────────────
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd);
     canvas.addEventListener('contextmenu', handleContextMenu);
 
-    // Cleanup
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseup', handleMouseUp);
+      canvas.removeEventListener('wheel', handleWheel);
       canvas.removeEventListener('touchstart', handleTouchStart);
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
       canvas.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [gl, updateCamera, camera.rotationAngle]);
+  }, [gl]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 export default CameraRotateControls;

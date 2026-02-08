@@ -17,6 +17,8 @@ import BlockInteraction from './BlockInteraction';
 import ScreenShakeController from './ScreenShakeController';
 import DayNightCycle from './DayNightCycle';
 import SurvivalTick from './SurvivalTick';
+import RiftController from './RiftController';
+import RiftVisual from './RiftVisual';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 
@@ -36,6 +38,9 @@ const Experience = () => {
   const removeParticleEffect = useGameStore((state) => state.removeParticleEffect);
   const removeTargetMarker = useGameStore((state) => state.removeTargetMarker);
   const playerPosition = useGameStore((state) => state.player.position);
+  const riftEnemies = useGameStore((state) => state.enemies);
+  const rifts = useGameStore((state) => state.rifts);
+  const isNight = useGameStore((state) => state.worldTime.isNight);
 
   // Initialize chunk system
   const {
@@ -81,19 +86,32 @@ const Experience = () => {
       {/* DayNightCycle manages scene.background and fog dynamically */}
       <DayNightCycle />
 
-      {/* Survival systems tick (hunger drain, starvation damage) */}
-      <SurvivalTick />
+      {/* Survival systems tick (hunger drain, starvation damage, shelter detection) */}
+      <SurvivalTick chunkManager={isReady ? chunkManager : null} />
+
+      {/* Rift controller — manages spawning logic */}
+      <RiftController />
+
+      {/* Rift visuals — render nearest rifts */}
+      {rifts.slice(0, 3).map((rift) => (
+        <RiftVisual key={rift.id} x={rift.x} z={rift.z} isNight={isNight} />
+      ))}
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>
         {/* Player - outside Suspense for reliable physics */}
         <Player />
 
-        {/* Enemies - spawn above terrain, will land on chunk trimesh colliders */}
-        <Enemy position={[10, 12, 10]} name="Slime" />
-        <Enemy position={[-15, 12, 8]} name="Goblin" />
-        <Enemy position={[8, 12, -12]} name="Orc" />
-        <Enemy position={[-10, 12, -15]} name="Skeleton" />
+        {/* Dynamic rift-spawned enemies */}
+        {riftEnemies.map((monster) => (
+          <Enemy
+            key={monster.id}
+            position={monster.position}
+            type={monster.type}
+            name={monster.name}
+            monsterData={monster}
+          />
+        ))}
 
         <Suspense fallback={null}>
           {/* Chunk-based terrain */}

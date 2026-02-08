@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Stats } from '@react-three/drei';
 import Experience from './components/3d/Experience';
@@ -9,11 +9,23 @@ import InventoryUI from './components/InventoryUI';
 import BlockHotbar from './components/ui/BlockHotbar';
 import Crosshair from './components/ui/Crosshair';
 import ContextualHints from './components/ContextualHints';
+import DeathScreen from './components/DeathScreen';
+import useGameStore from './stores/useGameStore';
 
 /**
  * Main 3D App component
  */
 function App3D() {
+  const playerHealth = useGameStore((state) => state.player.health);
+  const gameState = useGameStore((state) => state.gameState);
+  const lastDamageSource = useGameStore((state) => state.lastDamageSource);
+
+  const handleRespawn = useCallback(() => {
+    useGameStore.getState().respawnPlayer();
+  }, []);
+
+  const isDead = gameState === 'playing' && playerHealth <= 0;
+
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#87ceeb', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}>
       {/* Three.js Canvas */}
@@ -53,6 +65,11 @@ function App3D() {
 
       {/* Contextual hints for new players */}
       <ContextualHints />
+
+      {/* Death screen overlay */}
+      {isDead && (
+        <DeathScreen onRespawn={handleRespawn} deathCause={lastDamageSource} />
+      )}
     </div>
   );
 }

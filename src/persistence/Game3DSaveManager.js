@@ -103,16 +103,33 @@ class Game3DSaveManager {
         height: state.camera.height,
       };
 
+      // Hunger state
+      const hungerState = state.hunger ? { ...state.hunger } : null;
+
+      // World time state
+      const worldTimeState = state.worldTime ? {
+        elapsed: state.worldTime.elapsed,
+        timeOfDay: state.worldTime.timeOfDay,
+        dayNumber: state.worldTime.dayNumber,
+        isNight: state.worldTime.isNight,
+        period: state.worldTime.period,
+        hour: state.worldTime.hour,
+        minute: state.worldTime.minute,
+        timeScale: state.worldTime.timeScale,
+      } : null;
+
       // Main save data
       const saveData = {
         slot,
-        version: 1,
+        version: 2,
         savedAt: Date.now(),
         player: playerState,
         inventory: inventoryState,
         equipment: equipmentState,
         character: characterState,
         camera: cameraState,
+        hunger: hungerState,
+        worldTime: worldTimeState,
       };
 
       // Save main state
@@ -226,6 +243,16 @@ class Game3DSaveManager {
       // Restore camera
       if (saveData.camera && store.updateCamera) {
         store.updateCamera(saveData.camera);
+      }
+
+      // Restore hunger
+      if (saveData.hunger && store.setState) {
+        store.setState({ hunger: saveData.hunger });
+      }
+
+      // Restore world time
+      if (saveData.worldTime && store.setState) {
+        store.setState({ worldTime: { ...saveData.worldTime, paused: false } });
       }
 
       // Load modified chunks

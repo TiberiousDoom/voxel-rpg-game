@@ -76,6 +76,7 @@ const useGameStore = create((rawSet, get, api) => {
     maxRage: 100,
     statusEffects: [], // Array of {type, duration, value}
     spellCooldowns: {}, // Track cooldowns per spell id
+    isSprinting: false,
   },
 
   // Character system (attributes and skills)
@@ -101,11 +102,14 @@ const useGameStore = create((rawSet, get, api) => {
     crystals: 3,
     potions: 3,
     items: [],
-    materials: { wood: 10, iron: 5, leather: 8, crystal: 2 },
+    materials: { wood: 10, stone: 0, iron: 5, coal: 0, dirt: 0, sand: 0, clay: 0, gold_ore: 0, leather: 8, crystal: 2, berry: 0, meat: 0, bone: 0, fiber: 0 },
   },
 
-  // Enemies/Monsters
-  enemies: [], // Array of Monster instances
+  // Enemies/Monsters (rift-spawned)
+  enemies: [],
+
+  // Rift positions for visual rendering
+  rifts: [],
 
   // Wildlife (wild animals)
   wildlife: [], // Array of Wildlife instances
@@ -163,6 +167,9 @@ const useGameStore = create((rawSet, get, api) => {
     isExposed: true,
     tier: 'exposed',     // 'full'|'partial'|'exposed'
   },
+
+  // Death tracking (Phase 1)
+  lastDamageSource: null, // String describing what killed the player
 
   // Tutorial hints tracking (Phase 1)
   tutorialHints: {
@@ -237,6 +244,29 @@ const useGameStore = create((rawSet, get, api) => {
       };
     }),
 
+  // Eat a raw material (berry, meat, etc.) directly from inventory
+  eatMaterial: (materialType, restoreAmount) =>
+    set((state) => {
+      const current = state.inventory.materials[materialType] || 0;
+      if (current <= 0) return state;
+      const newHunger = Math.min(state.hunger.max, state.hunger.current + restoreAmount);
+      return {
+        inventory: {
+          ...state.inventory,
+          materials: {
+            ...state.inventory.materials,
+            [materialType]: current - 1,
+          },
+        },
+        hunger: {
+          ...state.hunger,
+          current: newHunger,
+          isStarving: false,
+          status: newHunger >= 60 ? 'well_fed' : newHunger >= 20 ? 'hungry' : 'starving',
+        },
+      };
+    }),
+
   // Shelter actions (Phase 1)
   updateShelter: (shelterData) =>
     set((state) => ({
@@ -252,6 +282,19 @@ const useGameStore = create((rawSet, get, api) => {
           ? state.tutorialHints.shownHints
           : [...state.tutorialHints.shownHints, hintId],
       },
+    })),
+
+  // Rift actions (Phase 1)
+  setRifts: (rifts) => set({ rifts }),
+
+  addRiftEnemy: (enemyData) =>
+    set((state) => ({
+      enemies: [...state.enemies, enemyData],
+    })),
+
+  removeRiftEnemy: (id) =>
+    set((state) => ({
+      enemies: state.enemies.filter((e) => e.id !== id),
     })),
 
   addDamageNumber: (damageNum) =>
@@ -699,7 +742,7 @@ const useGameStore = create((rawSet, get, api) => {
       player: { ...state.player, position },
     })),
 
-  dealDamageToPlayer: (damage) => {
+  dealDamageToPlayer: (damage, source) => {
     const state = get();
 
     // Check invincibility
@@ -719,17 +762,19 @@ const useGameStore = create((rawSet, get, api) => {
 
     const newHealth = Math.max(0, state.player.health - finalDamage);
 
-    // Gain rage when hit (10 rage per hit)
-    const newRage = Math.min(state.player.maxRage, state.player.rage + 10);
-
-    // Update player state
-    set({
+    // Track damage source for death screen
+    const updates = {
       player: {
         ...state.player,
         health: newHealth,
-        rage: newRage,
+        rage: Math.min(state.player.maxRage, state.player.rage + 10),
       },
-    });
+    };
+    if (source) {
+      updates.lastDamageSource = source;
+    }
+
+    set(updates);
 
     // Trigger screen shake when taking damage (intensity based on damage)
     const shakeIntensity = Math.min(0.2 + (finalDamage / 50) * 0.3, 0.6);
@@ -1057,6 +1102,22 @@ const useGameStore = create((rawSet, get, api) => {
           case 'rage':
             updates.rage = Math.min(state.player.maxRage, state.player.rage + item.effect.value);
             break;
+          case 'food': {
+            // Food items restore hunger instead of health
+            const newHunger = Math.min(state.hunger.max, state.hunger.current + item.effect.value);
+            return {
+              hunger: {
+                ...state.hunger,
+                current: newHunger,
+                isStarving: false,
+                status: newHunger >= 60 ? 'well_fed' : newHunger >= 20 ? 'hungry' : 'starving',
+              },
+              inventory: {
+                ...state.inventory,
+                items: state.inventory.items.filter((i) => i !== item),
+              },
+            };
+          }
           default:
             break;
         }
@@ -1071,23 +1132,42 @@ const useGameStore = create((rawSet, get, api) => {
       };
     }),
 
-  // Respawn player after death
+  // Respawn player after death — apply tuning penalties
   respawnPlayer: () =>
-    set((state) => ({
-      player: {
-        ...state.player,
-        health: state.player.maxHealth,
-        mana: state.player.maxMana,
-        stamina: state.player.maxStamina,
-        position: [0, 12, 0], // Respawn at starting position
-        velocity: [0, 0, 0],
-        targetPosition: null,
-        isInvincible: false,
-        isDodging: false,
-        isBlocking: false,
-      },
-      gameState: 'playing', // Resume game
-    })),
+    set((state) => {
+      // Reduce each material by death penalty (50%), floored
+      const penalizedMaterials = {};
+      for (const [key, val] of Object.entries(state.inventory.materials)) {
+        penalizedMaterials[key] = Math.floor(val * (1 - 0.5));
+      }
+
+      return {
+        player: {
+          ...state.player,
+          health: Math.ceil(state.player.maxHealth * 0.5),
+          mana: state.player.maxMana,
+          stamina: Math.ceil(state.player.maxStamina * 0.5),
+          position: [0, 12, 0],
+          velocity: [0, 0, 0],
+          targetPosition: null,
+          isInvincible: false,
+          isDodging: false,
+          isBlocking: false,
+        },
+        hunger: {
+          ...state.hunger,
+          current: Math.ceil(state.hunger.max * 0.5),
+          isStarving: false,
+          status: 'hungry',
+        },
+        inventory: {
+          ...state.inventory,
+          materials: penalizedMaterials,
+        },
+        lastDamageSource: null,
+        gameState: 'playing',
+      };
+    }),
 
   reset: () =>
     set({

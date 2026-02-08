@@ -285,7 +285,7 @@ export class BossAI {
 
     // Deal damage through store
     if (useGameStore.getState().dealDamageToPlayer) {
-      useGameStore.getState().dealDamageToPlayer(damage);
+      useGameStore.getState().dealDamageToPlayer(damage, `Killed by ${boss.type || 'Boss'}`);
     }
 
     boss.emit('attack', {
@@ -400,7 +400,7 @@ export class BossAI {
     if (damage > 0) {
       // Deal damage through store
       if (useGameStore.getState().dealDamageToPlayer) {
-        useGameStore.getState().dealDamageToPlayer(damage);
+        useGameStore.getState().dealDamageToPlayer(damage, `Killed by ${boss.type || 'Boss'}`);
       }
     }
 

@@ -9,6 +9,7 @@ import InventoryUI from './components/InventoryUI';
 import BlockHotbar from './components/ui/BlockHotbar';
 import Crosshair from './components/ui/Crosshair';
 import ContextualHints from './components/ContextualHints';
+import TestTracker from './components/TestTracker';
 import DeathScreen from './components/DeathScreen';
 import useGameStore from './stores/useGameStore';
 
@@ -66,6 +67,9 @@ function App3D() {
 
       {/* Contextual hints for new players */}
       <ContextualHints />
+
+      {/* QA Test Tracker (backtick key to toggle) */}
+      <TestTracker />
 
       {/* Death screen overlay */}
       {isDead && (

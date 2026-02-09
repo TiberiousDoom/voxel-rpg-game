@@ -144,16 +144,23 @@ const DayNightCycle = () => {
     });
   });
 
+  // Compute initial lighting from current time so the very first frame is correct
+  const initialLighting = useMemo(() => getLightingState(timeManager.timeOfDay), []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <>
-      <ambientLight ref={ambientRef} intensity={0.6} />
+      <ambientLight ref={ambientRef} intensity={initialLighting.ambientIntensity} />
       <directionalLight
         ref={directionalRef}
-        position={[50, 50, 25]}
-        intensity={0.8}
+        position={[
+          initialLighting.sunPosition.x,
+          initialLighting.sunPosition.y,
+          initialLighting.sunPosition.z,
+        ]}
+        intensity={initialLighting.directionalIntensity}
       />
       {/* Sun/Moon celestial body */}
-      <mesh ref={celestialRef} visible={false}>
+      <mesh ref={celestialRef} visible={true}>
         <sphereGeometry args={[1, 16, 16]} />
         <meshStandardMaterial color="#ffdd44" emissive="#ffdd44" emissiveIntensity={1.0} />
       </mesh>

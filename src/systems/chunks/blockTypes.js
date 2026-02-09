@@ -20,6 +20,7 @@ export const BlockTypes = {
   CLAY: 13,
   SNOW: 14,
   ICE: 15,
+  BERRY_BUSH: 16,
 };
 
 // Block properties
@@ -133,6 +134,13 @@ export const BlockProperties = {
     transparent: true,
     color: [0.7, 0.85, 0.95],
     hardness: 0.5,
+  },
+  [BlockTypes.BERRY_BUSH]: {
+    name: 'Berry Bush',
+    solid: true,
+    transparent: false,
+    color: [0.2, 0.45, 0.15],
+    hardness: 0.3,
   },
 };
 

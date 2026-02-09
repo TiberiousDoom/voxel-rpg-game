@@ -5,6 +5,8 @@ import { RigidBody } from '@react-three/rapier';
 // that corrupted the rendering pipeline, preventing terrain chunks from drawing.
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
+import { VOXEL_SIZE, CHUNK_SIZE_Y } from '../../systems/chunks/coordinates';
+import { isSolid } from '../../systems/chunks/blockTypes';
 
 /**
  * Enemy component - Basic hostile mob with AI
@@ -20,7 +22,6 @@ const MONSTER_DROPS = {
 const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterData = null }) => {
   const enemyRef = useRef();
   const [health, setHealth] = useState(monsterData?.health || 50);
-  const [maxHealth] = useState(monsterData?.maxHealth || 50);
   const [isAlive, setIsAlive] = useState(true);
   const isDead = useRef(false); // Immediate flag to prevent multi-frame death
   const deathPosition = useRef(null); // Capture actual death position
@@ -110,6 +111,27 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
     const playerPos = _playerPos.current.set(player.position[0], player.position[1], player.position[2]);
     const enemyPos = _enemyPos.current.set(currentPos.x, currentPos.y, currentPos.z);
     const distance = playerPos.distanceTo(enemyPos);
+
+    // Terrain clamping — prevent falling through when chunk has no physics collider
+    // Only check when clearly falling (fast downward velocity or far below expected terrain)
+    const vel = body.linvel();
+    if (vel.y < -12 || currentPos.y < -2) {
+      const chunkMgr = useGameStore.getState()._chunkManager;
+      if (chunkMgr) {
+        for (let vy = CHUNK_SIZE_Y - 1; vy >= 0; vy--) {
+          const worldY = vy * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const block = chunkMgr.getBlock(currentPos.x, worldY, currentPos.z);
+          if (isSolid(block)) {
+            const surfaceY = (vy + 1) * VOXEL_SIZE + 1;
+            if (currentPos.y < surfaceY - 1) {
+              body.setTranslation({ x: currentPos.x, y: surfaceY, z: currentPos.z }, true);
+              body.setLinvel({ x: vel.x, y: 0, z: vel.z }, true);
+            }
+            break;
+          }
+        }
+      }
+    }
 
     // AI behaviors
     const detectionRange = 20;
@@ -253,30 +275,6 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
           <meshBasicMaterial color="#000000" />
         </mesh>
 
-        {/* Health bar - simple geometry, no drei Text/Billboard */}
-        <group position={[0, 1.8, 0]}>
-          {/* Border/outline */}
-          <mesh position={[0, 0, 0]}>
-            <planeGeometry args={[1.6, 0.25]} />
-            <meshBasicMaterial color="#000000" side={THREE.DoubleSide} depthTest={false} />
-          </mesh>
-
-          {/* Health bar background */}
-          <mesh position={[0, 0, 0.01]}>
-            <planeGeometry args={[1.5, 0.2]} />
-            <meshBasicMaterial color="#333333" side={THREE.DoubleSide} depthTest={false} />
-          </mesh>
-
-          {/* Health bar fill */}
-          <mesh position={[-(1.5 - (health / maxHealth * 1.5)) / 2, 0, 0.02]}>
-            <planeGeometry args={[health / maxHealth * 1.5, 0.18]} />
-            <meshBasicMaterial
-              color={health / maxHealth > 0.5 ? "#44ff44" : health / maxHealth > 0.25 ? "#ffaa00" : "#ff4444"}
-              side={THREE.DoubleSide}
-              depthTest={false}
-            />
-          </mesh>
-        </group>
       </group>
     </RigidBody>
   );

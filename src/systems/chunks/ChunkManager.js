@@ -116,7 +116,7 @@ export class ChunkManager {
     };
 
     // Configuration
-    this.maxLoadsPerFrame = 2;
+    this.maxLoadsPerFrame = 3;
     this.maxUnloadsPerFrame = 4;
     this.maxMeshRebuildsPerFrame = 2;
   }
@@ -238,7 +238,7 @@ export class ChunkManager {
 
     while (this.loadQueue.length > 0 && loaded < this.maxLoadsPerFrame) {
       // Don't start too many concurrent loads
-      if (this.loading.size >= 4) break;
+      if (this.loading.size >= 6) break;
 
       const item = this.loadQueue.dequeue();
       if (!item) break;

@@ -13,6 +13,7 @@ import { BlockTypes, isSolid, getBlockHardness } from '../../systems/chunks/bloc
 import useGameStore from '../../stores/useGameStore';
 import { calculateDrops } from '../../data/blockDrops';
 import { HARVEST_SPEED_BARE_HANDS } from '../../data/tuning';
+import { getSpellById, executeSpell } from '../../data/spells';
 import { isTouchDevice } from '../../utils/deviceDetection';
 
 // Maximum reach distance for block interaction
@@ -598,41 +599,38 @@ export function BlockInteraction({ chunkManager }) {
       const isPointerLocked = document.pointerLockElement != null;
 
       if (firstPerson && isPointerLocked) {
-        // Build mode required for block interaction in first-person
-        if (!store.buildMode) return;
-
         if (event.button === 0) {
-          // Left click: check for enemy FIRST, then mine block
+          // Left click: check for enemy FIRST (works outside build mode), then mine block
           const enemy = checkEnemyFromCamera();
           if (enemy) {
-            // Attack enemy with projectile (costs mana)
-            const manaCost = 5;
-            if (store.player.mana < manaCost) return; // No mana
-            store.consumeMana(manaCost);
+            // Attack enemy using the active spell (respects spell wheel selection)
+            const spell = getSpellById(store.activeSpellId);
+            if (!spell) return;
+            if (store.player.mana < spell.manaCost) return;
+            const cooldown = store.getSpellCooldown(spell.id);
+            if (cooldown > 0) return;
 
+            // Aim at the enemy hit point
             const playerPos = store.player.position;
             const hitPt = enemy.hit.point;
-            const dir = [
-              hitPt.x - playerPos[0],
-              (hitPt.y + 0.5) - (playerPos[1] + 0.5),
-              hitPt.z - playerPos[2],
-            ];
-            const len = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2);
-            store.addProjectile({
-              id: `fp-attack-${Date.now()}`,
-              position: [playerPos[0], playerPos[1] + 2.0, playerPos[2]],
-              direction: [dir[0] / len, dir[1] / len, dir[2] / len],
-              speed: 25,
-              damage: store.player.damage,
-              color: '#00ffff',
-            });
-          } else {
-            // Start progressive mining (hold to break)
+            const dx = hitPt.x - playerPos[0];
+            const dz = hitPt.z - playerPos[2];
+            const aimAngle = Math.atan2(dx, dz);
+            const playerWithAim = { ...store.player, facingAngle: aimAngle };
+
+            const result = executeSpell(spell, playerWithAim, store);
+            if (result.success) {
+              store.setSpellCooldown(spell.id, spell.cooldown);
+            }
+          } else if (store.buildMode) {
+            // Start progressive mining (hold to break) — requires build mode
             isHoldingMine.current = true;
             miningAccum.current = 0;
             miningBlockKey.current = null;
           }
         } else if (event.button === 2) {
+          // Build mode required for block placement
+          if (!store.buildMode) return;
           // Right click: place block — do a fresh raycast to get current target
           const freshResult = raycastForBlock();
           if (freshResult.block && freshResult.face) {

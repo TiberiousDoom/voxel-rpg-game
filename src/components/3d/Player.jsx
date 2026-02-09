@@ -59,6 +59,16 @@ const Player = () => {
     const currentPos = body.translation();
     const currentVel = body.linvel();
 
+    // Detect teleport (respawn) — store position jumped far from physics body
+    const storePos = useGameStore.getState().player.position;
+    const dx = storePos[0] - currentPos.x;
+    const dz = storePos[2] - currentPos.z;
+    if (dx * dx + dz * dz > 100) { // >10 units away = teleport
+      body.setTranslation({ x: storePos[0], y: storePos[1], z: storePos[2] }, true);
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      return; // Skip this frame to let physics settle
+    }
+
     // Determine if sprinting (keyboard Shift or mobile double-tap)
     const isSprintingNow = (keys.run || isSprinting) && player.stamina > 0;
 
@@ -366,6 +376,15 @@ const Player = () => {
       spell6: SPELLS.find(s => s.key === '6'),
     };
 
+    // In third-person, keyboard-cast spells aim in the camera's forward direction
+    // (camera orbits behind the player, so forward = rotationAngle + PI)
+    const cameraState = store.camera;
+    let spellPlayer = currentPlayer;
+    if (!cameraState.firstPerson) {
+      const aimYaw = (cameraState.rotationAngle || 0) + Math.PI;
+      spellPlayer = { ...currentPlayer, facingAngle: aimYaw };
+    }
+
     // Check each spell key
     const trycastSpell = (keyName, spell) => {
       if (!spell) return;
@@ -379,7 +398,7 @@ const Player = () => {
       if (currentPlayer.mana < spell.manaCost) return;
 
       // Execute spell
-      const result = executeSpell(spell, currentPlayer, store);
+      const result = executeSpell(spell, spellPlayer, store);
       if (result.success) {
         // Set cooldown
         store.setSpellCooldown(spell.id, spell.cooldown);
@@ -434,29 +453,6 @@ const Player = () => {
         </mesh>
       </group>
 
-      {/* Health Bar - positioned above player (doesn't rotate) */}
-      <group position={[0, 3.2, 0]}>
-        <mesh position={[0, 0, 0]}>
-          <planeGeometry args={[1.4, 0.15]} />
-          <meshBasicMaterial color="#333333" />
-        </mesh>
-        <mesh position={[(player.health / player.maxHealth - 1) * 0.65, 0, 0.01]}>
-          <planeGeometry args={[1.3 * (player.health / player.maxHealth), 0.1]} />
-          <meshBasicMaterial color={player.health / player.maxHealth > 0.5 ? '#44ff44' : player.health / player.maxHealth > 0.25 ? '#ffff00' : '#ff4444'} />
-        </mesh>
-      </group>
-
-      {/* Mana Bar */}
-      <group position={[0, 3.0, 0]}>
-        <mesh position={[0, 0, 0]}>
-          <planeGeometry args={[1.4, 0.12]} />
-          <meshBasicMaterial color="#333333" />
-        </mesh>
-        <mesh position={[(player.mana / player.maxMana - 1) * 0.65, 0, 0.01]}>
-          <planeGeometry args={[1.3 * (player.mana / player.maxMana), 0.08]} />
-          <meshBasicMaterial color="#4488ff" />
-        </mesh>
-      </group>
     </RigidBody>
   );
 };

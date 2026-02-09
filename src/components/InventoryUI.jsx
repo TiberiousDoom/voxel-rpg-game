@@ -35,8 +35,8 @@ const InventoryUI = () => {
 
   const inventory = useGameStore((state) => state.inventory);
   const equipment = useGameStore((state) => state.equipment);
-  const equipItem = useGameStore((state) => state.equipItem);
-  const unequipItem = useGameStore((state) => state.unequipItem);
+  const equipItemWithStats = useGameStore((state) => state.equipItemWithStats);
+  const unequipItemWithStats = useGameStore((state) => state.unequipItemWithStats);
   const removeItem = useGameStore((state) => state.removeItem);
   const consumeItem = useGameStore((state) => state.consumeItem);
   const character = useGameStore((state) => state.character);
@@ -130,14 +130,20 @@ const InventoryUI = () => {
 
     const slot = slotMap[item.type];
     if (slot) {
-      equipItem(slot, item);
+      // If there's already an item in this slot, put it back in inventory
+      const currentlyEquipped = equipment[slot];
+      if (currentlyEquipped) {
+        useGameStore.getState().addItem(currentlyEquipped);
+      }
+      // Remove from inventory and equip with stat recalculation
       removeItem(item.craftedAt);
+      equipItemWithStats(slot, item);
     }
   };
 
   const handleUnequipItem = (slot, item) => {
     if (item) {
-      unequipItem(slot);
+      unequipItemWithStats(slot);
       useGameStore.getState().addItem(item);
     }
   };

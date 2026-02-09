@@ -130,9 +130,9 @@ export const APPLE_DROP_CHANCE = 0.10;         // 10% from leaves
 
 // ─── Jump ────────────────────────────────────────────────────
 export const JUMP_IMPULSE = 12;              // Vertical velocity on jump (clears ~1.5 blocks)
-export const JUMP_STAMINA_COST = 15;         // Stamina consumed per jump
-export const JUMP_GROUNDED_THRESHOLD = 0.3;  // Max |velY| to count as grounded
-export const JUMP_COOLDOWN_MS = 400;         // Min ms between jumps (prevents hold-to-spam)
+export const JUMP_STAMINA_COST = 25;         // Stamina consumed per jump
+export const JUMP_GROUNDED_THRESHOLD = 0.1;  // Max |velY| to count as grounded (tight to prevent air-jumps)
+export const JUMP_COOLDOWN_MS = 500;         // Min ms between jumps (prevents hold-to-spam)
 
 // ─── Mobile Controls ─────────────────────────────────────────
 export const AUTO_JUMP_COOLDOWN_MS = 300;

@@ -17,6 +17,7 @@ const LootDrop = ({ position, lootType, type, amount = 10, material, color, id, 
   const _playerPos = useRef(new THREE.Vector3());
   const _lootPos = useRef(new THREE.Vector3());
 
+  const spawnTime = useRef(Date.now());
   const player = useGameStore((state) => state.player);
   const addGold = useGameStore((state) => state.addGold);
   const addMaterial = useGameStore((state) => state.addMaterial);
@@ -51,7 +52,8 @@ const LootDrop = ({ position, lootType, type, amount = 10, material, color, id, 
     const lootVec = _lootPos.current.set(lootTranslation.x, lootTranslation.y, lootTranslation.z);
     const distance = playerPos.distanceTo(lootVec);
 
-    if (distance < 2.5) {
+    // Grace period: don't auto-collect for 1 second after spawning so player sees the drop
+    if (distance < 2.5 && Date.now() - spawnTime.current > 1000) {
       setCollected(true);
       if (resolvedType === 'gold') {
         addGold(amount);

@@ -370,10 +370,13 @@ export const executeSpell = (spell, player, store) => {
 };
 
 const executeProjectileSpell = (spell, player, store) => {
+  const camera = store.camera;
+  const pitch = camera?.firstPerson ? (camera.pitch || 0) : 0;
+  const yaw = player.facingAngle;
   const direction = [
-    Math.sin(player.facingAngle),
-    0,
-    Math.cos(player.facingAngle),
+    Math.sin(yaw) * Math.cos(pitch),
+    Math.sin(pitch),
+    Math.cos(yaw) * Math.cos(pitch),
   ];
 
   // Handle burst spells (Arcane Barrage)
@@ -382,7 +385,7 @@ const executeProjectileSpell = (spell, player, store) => {
       setTimeout(() => {
         store.addProjectile({
           id: `projectile_${Date.now()}_${i}`,
-          position: [player.position[0], player.position[1] + 1, player.position[2]],
+          position: [player.position[0], player.position[1] + 2.5, player.position[2]],
           direction,
           speed: spell.speed,
           damage: spell.damage,
@@ -399,7 +402,7 @@ const executeProjectileSpell = (spell, player, store) => {
   } else {
     store.addProjectile({
       id: `projectile_${Date.now()}`,
-      position: [player.position[0], player.position[1] + 1, player.position[2]],
+      position: [player.position[0], player.position[1] + 2.5, player.position[2]],
       direction,
       speed: spell.speed,
       damage: spell.damage,
@@ -441,7 +444,7 @@ const executeHealSpell = (spell, player, store) => {
   store.healPlayer(spell.healAmount);
   store.addParticleEffect({
     id: `heal_${Date.now()}`,
-    position: [player.position[0], player.position[1] + 1, player.position[2]],
+    position: [player.position[0], player.position[1] + 2.5, player.position[2]],
     color: spell.color,
     type: 'heal',
     count: 20,
@@ -460,7 +463,7 @@ const executeBuffSpell = (spell, player, store) => {
 
   store.addParticleEffect({
     id: `buff_${Date.now()}`,
-    position: [player.position[0], player.position[1] + 1, player.position[2]],
+    position: [player.position[0], player.position[1] + 2.5, player.position[2]],
     color: spell.color,
     type: 'buff',
     count: 15,
@@ -471,15 +474,18 @@ const executeBuffSpell = (spell, player, store) => {
 
 const executeBeamSpell = (spell, player, store) => {
   // Create beam projectile that travels far
+  const camera = store.camera;
+  const pitch = camera?.firstPerson ? (camera.pitch || 0) : 0;
+  const yaw = player.facingAngle;
   const direction = [
-    Math.sin(player.facingAngle),
-    0,
-    Math.cos(player.facingAngle),
+    Math.sin(yaw) * Math.cos(pitch),
+    Math.sin(pitch),
+    Math.cos(yaw) * Math.cos(pitch),
   ];
 
   store.addProjectile({
     id: `beam_${Date.now()}`,
-    position: [player.position[0], player.position[1] + 1, player.position[2]],
+    position: [player.position[0], player.position[1] + 2.5, player.position[2]],
     direction,
     speed: 50,
     damage: spell.damage,

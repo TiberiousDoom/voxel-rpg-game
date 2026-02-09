@@ -16,7 +16,7 @@ import { selectLODLevel, LOD_DISTANCES } from '../../systems/chunks/LODGenerator
 import useGameStore from '../../stores/useGameStore';
 
 // Only chunks within this Chebyshev distance get physics colliders
-const PHYSICS_DISTANCE = 2;
+const PHYSICS_DISTANCE = 3;
 
 // LOD hysteresis buffer (in chunks) to prevent thrashing at boundaries
 const LOD_HYSTERESIS = 1;

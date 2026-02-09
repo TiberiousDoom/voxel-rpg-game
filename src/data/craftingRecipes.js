@@ -502,6 +502,8 @@ export const canCraft = (recipe, inventory) => {
 export const consumeMaterials = (recipe, inventory) => {
   const newMaterials = { ...inventory.materials };
 
+  if (!recipe.requirements) return newMaterials;
+
   for (const [material, required] of Object.entries(recipe.requirements)) {
     newMaterials[material] = (newMaterials[material] || 0) - required;
   }

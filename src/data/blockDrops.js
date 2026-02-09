@@ -46,6 +46,7 @@ export const BLOCK_DROPS = {
   [BlockTypes.CLAY]: { material: 'clay', min: 1, max: 2 },
   [BlockTypes.SNOW]: { material: null, min: 0, max: 0 },
   [BlockTypes.ICE]: { material: null, min: 0, max: 0 },
+  [BlockTypes.BERRY_BUSH]: { material: 'berry', min: 1, max: 3 },
 };
 
 /**

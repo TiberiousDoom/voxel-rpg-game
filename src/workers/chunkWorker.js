@@ -33,6 +33,7 @@ const BlockTypes = {
   CLAY: 13,
   SNOW: 14,
   ICE: 15,
+  BERRY_BUSH: 16,
 };
 
 // Block colors [r, g, b] in 0-1 range
@@ -53,6 +54,7 @@ const BlockColors = {
   [BlockTypes.CLAY]: [0.6, 0.6, 0.65],
   [BlockTypes.SNOW]: [0.95, 0.95, 0.98],
   [BlockTypes.ICE]: [0.7, 0.85, 0.95],
+  [BlockTypes.BERRY_BUSH]: [0.2, 0.45, 0.15],
 };
 
 // Transparent blocks
@@ -251,6 +253,15 @@ function generateTerrain(params) {
           random.next() < 0.02) {
         generateTree(blocks, x, height + 1, z, random);
       }
+
+      // Berry bushes — spawn on grass if no tree above
+      if (surfaceBlock === BlockTypes.GRASS &&
+          height > seaLevel &&
+          height + 1 < CHUNK_SIZE_Y &&
+          blocks[x + (z << 4) + ((height + 1) << 8)] === BlockTypes.AIR &&
+          random.next() < 0.03) {
+        blocks[x + (z << 4) + ((height + 1) << 8)] = BlockTypes.BERRY_BUSH;
+      }
     }
   }
 
@@ -330,6 +341,54 @@ function buildChunkMesh(params) {
     return false;
   }
 
+  function isSolidForAO(x, y, z) {
+    const b = getBlock(x, y, z);
+    return b !== BlockTypes.AIR && b !== BlockTypes.WATER && b !== BlockTypes.LEAVES && b !== BlockTypes.ICE;
+  }
+
+  // AO neighbor offsets per face per vertex: [side1, side2, corner]
+  // Each is [dx, dy, dz] relative to the block position
+  const AO_OFFSETS = {
+    top: [ // +Y face, vertices at y+1
+      [[-1,1,0],[0,1,-1],[-1,1,-1]], // v0 (0,1,0)
+      [[1,1,0],[0,1,-1],[1,1,-1]],   // v1 (1,1,0)
+      [[1,1,0],[0,1,1],[1,1,1]],     // v2 (1,1,1)
+      [[-1,1,0],[0,1,1],[-1,1,1]],   // v3 (0,1,1)
+    ],
+    bottom: [ // -Y face, vertices at y-1
+      [[-1,-1,0],[0,-1,1],[-1,-1,1]],  // v0 (0,0,1)
+      [[1,-1,0],[0,-1,1],[1,-1,1]],    // v1 (1,0,1)
+      [[1,-1,0],[0,-1,-1],[1,-1,-1]],  // v2 (1,0,0)
+      [[-1,-1,0],[0,-1,-1],[-1,-1,-1]],// v3 (0,0,0)
+    ],
+    north: [ // +Z face, vertices at z+1
+      [[-1,0,1],[0,-1,1],[-1,-1,1]],  // v0 (0,0,1)
+      [[-1,0,1],[0,1,1],[-1,1,1]],    // v1 (0,1,1)
+      [[1,0,1],[0,1,1],[1,1,1]],      // v2 (1,1,1)
+      [[1,0,1],[0,-1,1],[1,-1,1]],    // v3 (1,0,1)
+    ],
+    south: [ // -Z face, vertices at z-1
+      [[1,0,-1],[0,-1,-1],[1,-1,-1]],  // v0 (1,0,0)
+      [[1,0,-1],[0,1,-1],[1,1,-1]],    // v1 (1,1,0)
+      [[-1,0,-1],[0,1,-1],[-1,1,-1]],  // v2 (0,1,0)
+      [[-1,0,-1],[0,-1,-1],[-1,-1,-1]],// v3 (0,0,0)
+    ],
+    east: [ // +X face, vertices at x+1
+      [[1,0,1],[1,-1,0],[1,-1,1]],    // v0 (1,0,1)
+      [[1,0,1],[1,1,0],[1,1,1]],      // v1 (1,1,1)
+      [[1,0,-1],[1,1,0],[1,1,-1]],    // v2 (1,1,0)
+      [[1,0,-1],[1,-1,0],[1,-1,-1]],  // v3 (1,0,0)
+    ],
+    west: [ // -X face, vertices at x-1
+      [[-1,0,-1],[-1,-1,0],[-1,-1,-1]], // v0 (0,0,0)
+      [[-1,0,-1],[-1,1,0],[-1,1,-1]],   // v1 (0,1,0)
+      [[-1,0,1],[-1,1,0],[-1,1,1]],     // v2 (0,1,1)
+      [[-1,0,1],[-1,-1,0],[-1,-1,1]],   // v3 (0,0,1)
+    ],
+  };
+
+  const AO_BRIGHTNESS = [0.5, 0.65, 0.8, 1.0];
+
   function addFace(x, y, z, face, blockType) {
     if (vertexCount + 4 > maxVertices) return;
 
@@ -341,6 +400,7 @@ function buildChunkMesh(params) {
     else if (face === 'north' || face === 'south') lightMod = 0.8;
     else if (face === 'east' || face === 'west') lightMod = 0.7;
 
+    const aoOffsets = AO_OFFSETS[face];
     const startVertex = vertexCount;
 
     for (let i = 0; i < 4; i++) {
@@ -355,9 +415,18 @@ function buildChunkMesh(params) {
       normals[idx + 1] = faceData.normal[1];
       normals[idx + 2] = faceData.normal[2];
 
-      colors[idx] = color[0] * lightMod;
-      colors[idx + 1] = color[1] * lightMod;
-      colors[idx + 2] = color[2] * lightMod;
+      // Compute per-vertex AO
+      const offsets = aoOffsets[i];
+      const s1 = isSolidForAO(x + offsets[0][0], y + offsets[0][1], z + offsets[0][2]);
+      const s2 = isSolidForAO(x + offsets[1][0], y + offsets[1][1], z + offsets[1][2]);
+      const cn = isSolidForAO(x + offsets[2][0], y + offsets[2][1], z + offsets[2][2]);
+      const ao = (s1 && s2) ? 0 : 3 - (s1 + s2 + cn);
+      const aoMod = AO_BRIGHTNESS[ao];
+      const finalMod = lightMod * aoMod;
+
+      colors[idx] = color[0] * finalMod;
+      colors[idx + 1] = color[1] * finalMod;
+      colors[idx + 2] = color[2] * finalMod;
 
       vertexCount++;
     }
@@ -479,6 +548,52 @@ function buildLODMesh(params) {
     return false;
   }
 
+  function isSolidForAO(x, y, z) {
+    const b = getBlock(x, y, z);
+    return b !== BlockTypes.AIR && b !== BlockTypes.WATER && b !== BlockTypes.LEAVES && b !== BlockTypes.ICE;
+  }
+
+  const AO_OFFSETS_LOD = {
+    top: [
+      [[-1,1,0],[0,1,-1],[-1,1,-1]],
+      [[1,1,0],[0,1,-1],[1,1,-1]],
+      [[1,1,0],[0,1,1],[1,1,1]],
+      [[-1,1,0],[0,1,1],[-1,1,1]],
+    ],
+    bottom: [
+      [[-1,-1,0],[0,-1,1],[-1,-1,1]],
+      [[1,-1,0],[0,-1,1],[1,-1,1]],
+      [[1,-1,0],[0,-1,-1],[1,-1,-1]],
+      [[-1,-1,0],[0,-1,-1],[-1,-1,-1]],
+    ],
+    north: [
+      [[-1,0,1],[0,-1,1],[-1,-1,1]],
+      [[-1,0,1],[0,1,1],[-1,1,1]],
+      [[1,0,1],[0,1,1],[1,1,1]],
+      [[1,0,1],[0,-1,1],[1,-1,1]],
+    ],
+    south: [
+      [[1,0,-1],[0,-1,-1],[1,-1,-1]],
+      [[1,0,-1],[0,1,-1],[1,1,-1]],
+      [[-1,0,-1],[0,1,-1],[-1,1,-1]],
+      [[-1,0,-1],[0,-1,-1],[-1,-1,-1]],
+    ],
+    east: [
+      [[1,0,1],[1,-1,0],[1,-1,1]],
+      [[1,0,1],[1,1,0],[1,1,1]],
+      [[1,0,-1],[1,1,0],[1,1,-1]],
+      [[1,0,-1],[1,-1,0],[1,-1,-1]],
+    ],
+    west: [
+      [[-1,0,-1],[-1,-1,0],[-1,-1,-1]],
+      [[-1,0,-1],[-1,1,0],[-1,1,-1]],
+      [[-1,0,1],[-1,1,0],[-1,1,1]],
+      [[-1,0,1],[-1,-1,0],[-1,-1,1]],
+    ],
+  };
+
+  const AO_BRIGHTNESS_LOD = [0.5, 0.65, 0.8, 1.0];
+
   function addFace(x, y, z, face, blockType) {
     if (vertexCount + 4 > maxVertices) return;
     const faceData = FACES[face];
@@ -488,6 +603,7 @@ function buildLODMesh(params) {
     else if (face === 'north' || face === 'south') lightMod = 0.8;
     else if (face === 'east' || face === 'west') lightMod = 0.7;
 
+    const aoOffsets = AO_OFFSETS_LOD[face];
     const startVertex = vertexCount;
     for (let i = 0; i < 4; i++) {
       const v = faceData.vertices[i];
@@ -498,9 +614,17 @@ function buildLODMesh(params) {
       normals[idx] = faceData.normal[0];
       normals[idx + 1] = faceData.normal[1];
       normals[idx + 2] = faceData.normal[2];
-      colors[idx] = color[0] * lightMod;
-      colors[idx + 1] = color[1] * lightMod;
-      colors[idx + 2] = color[2] * lightMod;
+
+      const offsets = aoOffsets[i];
+      const s1 = isSolidForAO(x + offsets[0][0], y + offsets[0][1], z + offsets[0][2]);
+      const s2 = isSolidForAO(x + offsets[1][0], y + offsets[1][1], z + offsets[1][2]);
+      const cn = isSolidForAO(x + offsets[2][0], y + offsets[2][1], z + offsets[2][2]);
+      const ao = (s1 && s2) ? 0 : 3 - (s1 + s2 + cn);
+      const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao];
+
+      colors[idx] = color[0] * finalMod;
+      colors[idx + 1] = color[1] * finalMod;
+      colors[idx + 2] = color[2] * finalMod;
       vertexCount++;
     }
     indices.push(startVertex, startVertex + 1, startVertex + 2, startVertex, startVertex + 2, startVertex + 3);

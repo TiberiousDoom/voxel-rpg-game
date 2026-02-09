@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import Player from './Player';
@@ -21,26 +21,34 @@ import RiftController from './RiftController';
 import RiftVisual from './RiftVisual';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
-import { VOXEL_SIZE, CHUNK_SIZE_Y } from '../../systems/chunks/coordinates';
+import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
 import { isSolid } from '../../systems/chunks/blockTypes';
 
 /**
  * Find the terrain surface Y at a given world (x, z).
  * Scans downward from the top of the chunk to find the highest solid block.
- * Returns world Y of the top surface, or null if no solid block / chunk not loaded.
+ * Returns world Y of the top surface, or null if chunk not loaded.
  */
 function getTerrainY(chunkManager, wx, wz) {
   if (!chunkManager) return null;
+
+  // Check if the chunk at this position is actually loaded.
+  // getBlock() returns 0 (AIR) for unloaded chunks, which is indistinguishable
+  // from truly empty columns. We must verify the chunk exists first.
+  const { chunkX, chunkZ } = worldToChunk(wx, wz);
+  const chunk = chunkManager.getChunk(chunkX, chunkZ);
+  if (!chunk) return null; // Chunk not loaded — caller should retry
+
   const maxVoxelY = CHUNK_SIZE_Y - 1;
   for (let vy = maxVoxelY; vy >= 0; vy--) {
     const worldY = vy * VOXEL_SIZE + VOXEL_SIZE / 2;
     const block = chunkManager.getBlock(wx, worldY, wz);
     if (isSolid(block)) {
-      // Return the top surface of this block
       return (vy + 1) * VOXEL_SIZE;
     }
   }
-  return null;
+  // Chunk is loaded but column is empty — use a default surface height
+  return 2;
 }
 
 /**
@@ -107,7 +115,7 @@ const Experience = () => {
     update: updateChunks,
   } = useChunkSystem({
     seed: 12345,
-    viewDistance: 4,
+    viewDistance: 8,
   });
 
   // Update chunk system based on player position
@@ -156,9 +164,18 @@ const Experience = () => {
       <RiftController chunkManager={isReady ? chunkManager : null} />
 
       {/* Rift visuals — render nearest rifts with terrain-aligned Y */}
-      {isReady && chunkManager && rifts.slice(0, 3).map((rift) => (
-        <RiftVisualWithTerrainY key={rift.id} rift={rift} chunkManager={chunkManager} isNight={isNight} />
-      ))}
+      {isReady && chunkManager && rifts
+        .map((rift) => {
+          const dx = rift.x - playerPosition[0];
+          const dz = rift.z - playerPosition[2];
+          return { ...rift, _dist2: dx * dx + dz * dz };
+        })
+        .sort((a, b) => a._dist2 - b._dist2)
+        .slice(0, 3)
+        .map((rift) => (
+          <RiftVisualWithTerrainY key={rift.id} rift={rift} chunkManager={chunkManager} isNight={isNight} />
+        ))
+      }
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>

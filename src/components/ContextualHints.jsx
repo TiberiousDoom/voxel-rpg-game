@@ -84,7 +84,7 @@ const ContextualHints = () => {
     },
     {
       id: 'firstPerson',
-      text: 'Click canvas to enter first-person mode (ESC to exit)',
+      text: 'Press V to toggle first-person mode',
       condition: () => gameState === 'playing',
       priority: 6,
       delay: 60000,

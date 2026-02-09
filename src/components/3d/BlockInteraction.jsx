@@ -633,8 +633,33 @@ export function BlockInteraction({ chunkManager }) {
             miningBlockKey.current = null;
           }
         } else if (event.button === 2) {
-          // Right click: place block
-          placeBlock(selectedBlockType);
+          // Right click: place block — do a fresh raycast to get current target
+          const freshResult = raycastForBlock();
+          if (freshResult.block && freshResult.face) {
+            setTargetBlock(freshResult.block);
+            setTargetFace(freshResult.face);
+            prevTargetRef.current = { block: freshResult.block, face: freshResult.face };
+            // Place adjacent to the freshly raycasted block
+            const bx = Math.floor(freshResult.block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            const by = Math.floor(freshResult.block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            const bz = Math.floor(freshResult.block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            let px = bx, py = by, pz = bz;
+            switch (freshResult.face) {
+              case 'top': py += VOXEL_SIZE; break;
+              case 'bottom': py -= VOXEL_SIZE; break;
+              case 'north': pz += VOXEL_SIZE; break;
+              case 'south': pz -= VOXEL_SIZE; break;
+              case 'east': px += VOXEL_SIZE; break;
+              case 'west': px -= VOXEL_SIZE; break;
+              default: break;
+            }
+            if (chunkManager && !isSolid(chunkManager.getBlock(px, py, pz))) {
+              chunkManager.setBlock(px, py, pz, selectedBlockType);
+              // Refresh target after placement
+              lastRaycast.current = 0;
+              prevTargetRef.current = { block: null, face: null };
+            }
+          }
         }
       }
     };

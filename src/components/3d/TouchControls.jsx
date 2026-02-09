@@ -25,9 +25,6 @@ const TouchControls = () => {
       // BlockInteraction handles mining/placement in that mode
       if (document.pointerLockElement) return;
 
-      // Disable movement/attack clicks when build mode is active
-      if (useGameStore.getState().buildMode) return;
-
       // Skip if a block click just happened (desktop 3P mining/placing)
       const store = useGameStore.getState();
       if (store._blockClickActive) {
@@ -87,7 +84,7 @@ const TouchControls = () => {
         }
 
         if (enemyHit && enemyData?.takeDamage) {
-          // Attack enemy using the active spell
+          // Attack enemy using the active spell — works regardless of build mode
           const attackStore = useGameStore.getState();
           const spell = getSpellById(attackStore.activeSpellId);
           if (!spell) return;
@@ -127,7 +124,12 @@ const TouchControls = () => {
 
           // Don't move to enemy location - attack in place
           return;
-        } else if (groundHit) {
+        }
+
+        // Block movement clicks when build mode is active (but attacks above still work)
+        if (useGameStore.getState().buildMode) return;
+
+        if (groundHit) {
           // Move to location (hit ground or other non-enemy object)
           useGameStore.getState().setPlayerTarget([
             groundHit.point.x,

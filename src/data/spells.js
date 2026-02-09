@@ -379,13 +379,21 @@ const executeProjectileSpell = (spell, player, store) => {
     Math.cos(yaw) * Math.cos(pitch),
   ];
 
+  // Spawn projectile 2 units ahead of the player to clear the collider
+  const spawnOffset = 2;
+  const spawnPos = [
+    player.position[0] + direction[0] * spawnOffset,
+    player.position[1] + 1.5 + direction[1] * spawnOffset,
+    player.position[2] + direction[2] * spawnOffset,
+  ];
+
   // Handle burst spells (Arcane Barrage)
   if (spell.burstCount) {
     for (let i = 0; i < spell.burstCount; i++) {
       setTimeout(() => {
         store.addProjectile({
           id: `projectile_${Date.now()}_${i}`,
-          position: [player.position[0], player.position[1] + 2.5, player.position[2]],
+          position: spawnPos,
           direction,
           speed: spell.speed,
           damage: spell.damage,
@@ -402,7 +410,7 @@ const executeProjectileSpell = (spell, player, store) => {
   } else {
     store.addProjectile({
       id: `projectile_${Date.now()}`,
-      position: [player.position[0], player.position[1] + 2.5, player.position[2]],
+      position: spawnPos,
       direction,
       speed: spell.speed,
       damage: spell.damage,
@@ -483,9 +491,15 @@ const executeBeamSpell = (spell, player, store) => {
     Math.cos(yaw) * Math.cos(pitch),
   ];
 
+  // Spawn beam 2 units ahead to clear player collider
+  const spawnOffset = 2;
   store.addProjectile({
     id: `beam_${Date.now()}`,
-    position: [player.position[0], player.position[1] + 2.5, player.position[2]],
+    position: [
+      player.position[0] + direction[0] * spawnOffset,
+      player.position[1] + 1.5 + direction[1] * spawnOffset,
+      player.position[2] + direction[2] * spawnOffset,
+    ],
     direction,
     speed: 50,
     damage: spell.damage,

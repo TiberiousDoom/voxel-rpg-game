@@ -101,14 +101,24 @@ function PlacementPreview({ position, blockType, isValid }) {
 
 /**
  * MiningProgressBar - Shows mining progress above the targeted block
+ * Always faces the camera (manual billboard since drei Billboard causes WebGL issues)
  */
 function MiningProgressBar({ position, progress }) {
+  const groupRef = useRef();
+  const { camera } = useThree();
+
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.lookAt(camera.position);
+    }
+  });
+
   if (!position || progress <= 0) return null;
 
   const barWidth = VOXEL_SIZE * 1.2 * Math.min(1, progress);
 
   return (
-    <group position={[position[0], position[1] + VOXEL_SIZE * 0.8, position[2]]}>
+    <group ref={groupRef} position={[position[0], position[1] + VOXEL_SIZE * 0.8, position[2]]}>
       {/* Black border frame */}
       <mesh geometry={miningBarBorderGeometry} position={[0, 0, -0.01]}>
         <meshBasicMaterial color="#000000" side={THREE.DoubleSide} depthTest={false} />
@@ -610,15 +620,9 @@ export function BlockInteraction({ chunkManager }) {
             const cooldown = store.getSpellCooldown(spell.id);
             if (cooldown > 0) return;
 
-            // Aim at the enemy hit point
-            const playerPos = store.player.position;
-            const hitPt = enemy.hit.point;
-            const dx = hitPt.x - playerPos[0];
-            const dz = hitPt.z - playerPos[2];
-            const aimAngle = Math.atan2(dx, dz);
-            const playerWithAim = { ...store.player, facingAngle: aimAngle };
-
-            const result = executeSpell(spell, playerWithAim, store);
+            // In first-person, facingAngle is already camera.yaw and pitch
+            // is read from camera — so just use store.player directly
+            const result = executeSpell(spell, store.player, store);
             if (result.success) {
               store.setSpellCooldown(spell.id, spell.cooldown);
             }
@@ -783,18 +787,33 @@ export function BlockInteraction({ chunkManager }) {
 
       if (!isHoldingMine.current) return;
 
-      const dx = event.clientX - longPressTouchStart.current.x;
-      const dy = event.clientY - longPressTouchStart.current.y;
+      // Re-raycast from current mouse position to check if still on the same block
+      const rect = canvas.getBoundingClientRect();
+      const mx = event.clientX - rect.left;
+      const my = event.clientY - rect.top;
+      const moveResult = raycastFromScreen(mx, my);
 
-      if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD) {
-        longPressBlock.current = null;
-        longPressFace.current = null;
-        isHoldingMine.current = false;
-        miningAccum.current = 0;
-        setMiningProgress(0);
-        setTargetBlock(null);
-        setTargetFace(null);
+      if (moveResult.block && miningBlockKey.current) {
+        const mbx = Math.floor(moveResult.block.x / VOXEL_SIZE);
+        const mby = Math.floor(moveResult.block.y / VOXEL_SIZE);
+        const mbz = Math.floor(moveResult.block.z / VOXEL_SIZE);
+        const newKey = `${mbx},${mby},${mbz}`;
+        if (newKey === miningBlockKey.current) {
+          // Still on the same block — continue mining, update face highlight
+          setTargetBlock(moveResult.block);
+          setTargetFace(moveResult.face);
+          return;
+        }
       }
+
+      // Cursor moved off the block — cancel mining
+      longPressBlock.current = null;
+      longPressFace.current = null;
+      isHoldingMine.current = false;
+      miningAccum.current = 0;
+      setMiningProgress(0);
+      setTargetBlock(null);
+      setTargetFace(null);
     };
 
     const handleMouseUp = (event) => {

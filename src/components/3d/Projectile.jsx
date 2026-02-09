@@ -26,6 +26,7 @@ const Projectile = ({
 }) => {
   const rigidBodyRef = useRef();
   const velocity = useRef(new THREE.Vector3(...direction).normalize().multiplyScalar(speed));
+  const spawnPos = useRef(new THREE.Vector3(...position));
   const elapsedTime = useRef(0);
   const hasHit = useRef(false);
 
@@ -177,12 +178,15 @@ const Projectile = ({
     // Increase elapsed time
     elapsedTime.current += delta;
 
-    // Remove after lifetime expires or if too far
+    // Remove after lifetime expires or if traveled too far from spawn
     const pos = rigidBodyRef.current.translation();
-    const distance = Math.sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+    const dx = pos.x - spawnPos.current.x;
+    const dy = pos.y - spawnPos.current.y;
+    const dz = pos.z - spawnPos.current.z;
+    const distanceTraveled = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
     const maxLifetime = lifetime || 5;
-    if (elapsedTime.current > maxLifetime || distance > 200) {
+    if (elapsedTime.current > maxLifetime || distanceTraveled > 200) {
       removeProjectile(id);
       return;
     }

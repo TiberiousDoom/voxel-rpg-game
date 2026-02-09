@@ -47,6 +47,8 @@ import { JobTimeCalculator } from './modules/terrain-jobs/JobTimeCalculator';
 import { TerrainWorkerBehavior } from './modules/terrain-jobs/TerrainWorkerBehavior';
 // Phase 4: AI System Manager
 import { AISystemManager } from './modules/ai';
+// Phase 2: Settlement System
+import SettlementModule from './modules/settlement/SettlementModule';
 // Phase 10: Voxel Building System
 import { VoxelBuildingOrchestrator } from './modules/voxel-building';
 // Store for AI system wiring
@@ -265,6 +267,17 @@ export default class GameManager extends EventEmitter {
       enableQuestAI: true
     });
 
+    // Phase 2: Settlement System
+    const settlementModule = new SettlementModule({
+      npcManager: npcManager,
+      storage: storage,
+      townManager: townManager,
+      grid: grid,
+      buildingConfig: buildingConfig,
+      territoryManager: territoryManager,
+      npcNeedsTracker: npcNeedsTracker,
+    });
+
     // Phase 10: Voxel Building System
     const voxelBuildingOrchestrator = new VoxelBuildingOrchestrator({
       chunkSize: 32,
@@ -322,6 +335,8 @@ export default class GameManager extends EventEmitter {
       terrainWorkerBehavior: terrainWorkerBehavior,
       // Phase 4: AI System Manager
       aiSystemManager: aiSystemManager,
+      // Phase 2: Settlement System
+      settlementModule: settlementModule,
       // Phase 10: Voxel Building System
       voxelBuildingOrchestrator: voxelBuildingOrchestrator
     };

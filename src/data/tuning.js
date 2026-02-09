@@ -1,5 +1,5 @@
 /**
- * tuning.js — Centralized game balance constants for Phase 1
+ * tuning.js — Centralized game balance constants
  *
  * Every gameplay-affecting number lives here. Change one value,
  * see the effect immediately. Each constant includes:
@@ -7,6 +7,7 @@
  *   - Acceptable range for playtesting
  *
  * Architectural constants (chunk size, voxel size, etc.) stay in src/shared/config.js.
+ * Block-level building voxel layouts stay in src/data/buildingBlueprints.js.
  */
 
 // ─── World Time ──────────────────────────────────────────────
@@ -151,6 +152,36 @@ export const CAMERA_ROTATION_SENSITIVITY = 0.008; // Radians per pixel
 // Gesture disambiguation
 export const TAP_MAX_DURATION_MS = 200;
 export const TAP_MAX_DISTANCE_PX = 10;
+
+// ─── Settlement Attractiveness ──────────────────────────────
+// Score components that drive NPC immigration decisions.
+export const ATTRACTIVENESS_CAMPFIRE_BONUS = 20;           // Base attractor for having a campfire/hearth
+export const ATTRACTIVENESS_PER_SURVIVAL_BUILDING = 5;     // Per completed Survival-tier building
+export const ATTRACTIVENESS_PER_PERMANENT_BUILDING = 15;   // Per completed Permanent-tier building
+export const ATTRACTIVENESS_PER_TOWN_BUILDING = 30;        // Per completed Town/Castle-tier building
+export const ATTRACTIVENESS_PER_HOUSING_SLOT = 10;         // Per unoccupied housing slot
+export const ATTRACTIVENESS_PER_FOOD_UNIT = 0.5;           // Per food unit in stockpile
+export const ATTRACTIVENESS_PER_WALL = 10;                 // Per wall segment (defense)
+export const ATTRACTIVENESS_PER_WATCHTOWER = 20;           // Per watchtower (defense)
+export const ATTRACTIVENESS_RIFT_PENALTY = -15;            // Per active rift within 128 blocks
+export const ATTRACTIVENESS_HAPPINESS_MIN_MULT = 0.5;      // Multiplier at 0% average happiness
+export const ATTRACTIVENESS_HAPPINESS_MAX_MULT = 1.5;      // Multiplier at 100% average happiness
+export const ATTRACTIVENESS_RECALC_INTERVAL = 5;           // Seconds between full recalculations. Range: 1–30.
+
+// ─── Immigration ────────────────────────────────────────────
+// Controls how and when NPCs arrive at the settlement.
+export const IMMIGRATION_CHECK_INTERVAL = 120;             // Seconds between immigration rolls. Range: 30–300.
+export const IMMIGRATION_MIN_ATTRACTIVENESS = 25;          // Minimum score before any NPC will consider coming
+export const IMMIGRATION_MAX_CHANCE = 0.6;                 // Max probability per check. Range: 0.1–0.9.
+export const IMMIGRATION_SPAWN_MIN_DISTANCE = 80;          // World units — closest spawn from settlement center
+export const IMMIGRATION_SPAWN_MAX_DISTANCE = 150;         // World units — farthest spawn from settlement center
+export const IMMIGRATION_APPROACH_SPEED_MULT = 1.2;        // NPC walk speed multiplier while approaching
+export const IMMIGRATION_EVALUATION_TIME = 10;             // Seconds NPC spends evaluating before deciding. Range: 5–60.
+export const IMMIGRATION_HOUSING_WAIT_DAYS = 2;            // In-game days NPC waits for housing before leaving
+
+// ─── NPC Population ─────────────────────────────────────────
+export const NPC_FIRST_SETTLER_FREE = true;                // First NPC joins without housing (pioneer mechanic)
+export const NPC_MAX_POPULATION_PHASE_2 = 20;              // Hard population cap for Phase 2. Range: 10–30.
 
 // ─── Debug ───────────────────────────────────────────────────
 export const DEBUG_TIME_SCALES = [1, 2, 5, 10, 0]; // 0 = paused

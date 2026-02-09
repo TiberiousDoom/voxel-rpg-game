@@ -1,7 +1,7 @@
 # Phase 2: Colony Alpha — Detailed Implementation Plan
 
 **Created:** February 9, 2026
-**Estimated Duration:** 10-14 weeks
+**Estimated Duration:** 12-16 weeks
 **Status:** Planning
 **Prerequisite:** Phase 1 (Survival & Gathering) complete
 
@@ -14,6 +14,11 @@
 3. **Mobile and desktop diverge on interaction** — NPC command UI must be designed for both touch and mouse from the start. No afterthought mobile ports.
 4. **IndexedDB persistence works well** — use the same pattern for NPC state, building progress, and stockpile contents.
 5. **React state + game tick interplay needs ref-based patterns** — NPC tick logic should read from refs and write to stores, not depend on React render cycles.
+6. **Configuration has three homes** — keep a clear boundary between them:
+   - `src/shared/config.js` — structural constants (types, enums, dimensions, grid)
+   - `src/data/tuning.js` — balance numbers (rates, thresholds, multipliers, decay values)
+   - `src/data/buildingBlueprints.js` — block-level building definitions (voxel layouts for construction)
+7. **New game systems must register with the ModuleOrchestrator** — Phase 0/1 established the pattern in CLAUDE.md. Any new system that participates in the game tick must be a module, not a standalone system floating in `src/systems/`.
 
 ---
 
@@ -86,6 +91,92 @@ The codebase already has substantial NPC and settlement infrastructure from the 
 
 ## Task Breakdown
 
+### 2.0 Settlement Module Foundation (Week 1)
+
+Before building any settlement subsystem, we need the module shell that integrates with the existing ModuleOrchestrator pattern. All Phase 2 settlement systems live inside this module.
+
+#### 2.0.1 Settlement Module & Orchestrator Registration
+**Goal:** Create the settlement module that hosts all Phase 2 subsystems and participates in the game tick lifecycle
+
+**Implementation tasks:**
+- [ ] Create `src/modules/settlement/SettlementModule.js`
+- [ ] Register module with `ModuleOrchestrator.js` in its constructor
+- [ ] Wire up in `GameManager.js` initialization (following CLAUDE.md "Adding New Modules" pattern)
+- [ ] Define module lifecycle methods:
+  - `initialize()` — create all sub-managers (zone, stockpile, hauling, construction, immigration, housing, task assignment)
+  - `update(deltaTime)` — tick sub-managers in correct order
+  - `serialize()` / `deserialize()` — delegate to sub-managers for save/load
+- [ ] Define inter-module communication points:
+  - Settlement → `ResourceEconomyModule`: stockpile deposits/withdrawals sync with global resource tracking
+  - Settlement → `NPCManager`: immigration spawns NPCs through NPCManager (not directly)
+  - Settlement → `GridManager`: completed constructions registered as buildings
+  - Settlement → `TownManager`: population/housing changes forwarded
+  - `NPCManager` → Settlement: NPC tick delegates to TaskAssignmentEngine for work decisions
+  - `BuildingConfig` → Settlement: building effects and blueprints read from config
+- [ ] Sub-manager tick order: Immigration → Zone → Stockpile → Construction → Hauling → TaskAssignment → Housing
+- [ ] Add `__tests__/` directory
+
+**Acceptance criteria:**
+- [ ] Module registers and receives tick updates from orchestrator
+- [ ] All sub-managers accessible through the module
+- [ ] Inter-module messages flow correctly
+- [ ] Module participates in save/load lifecycle
+
+**Tests:** `SettlementModule.test.js`
+- Module initializes all sub-managers
+- Tick calls sub-managers in correct order
+- Serialize/deserialize round-trips correctly
+
+---
+
+#### 2.0.2 Settlement Store
+**Goal:** Dedicated Zustand store for settlement UI state, keeping `useGameStore` focused on core game state
+
+**Implementation tasks:**
+- [ ] Create `src/stores/useSettlementStore.js`
+- [ ] Store shape:
+  ```js
+  {
+    zones: [],                    // zone list for rendering
+    stockpiles: {},               // stockpile contents for UI
+    constructionSites: [],        // active construction for UI
+    immigrationNextCheck: 0,      // countdown for dashboard
+    attractivenessScore: 0,       // current score for debug/dashboard
+    settlementAlerts: [],         // alerts for dashboard
+    selectedNpcId: null,          // currently selected NPC
+    selectedBuildingId: null,     // currently selected building
+    dashboardOpen: false,
+    zoneDesignatorActive: false,
+    zoneDesignatorType: null,
+  }
+  ```
+- [ ] Settlement module writes to this store via refs (not React render cycle)
+- [ ] UI components read from this store via hooks
+
+**Acceptance criteria:**
+- [ ] Store provides all data needed by settlement UI components
+- [ ] Game logic writes to store without triggering React re-renders in game loop
+- [ ] UI components reactively update when store changes
+
+---
+
+#### 2.0.3 Performance Baseline Measurement
+**Goal:** Measure current frame budget before adding Phase 2 systems, so we know exactly how much headroom exists
+
+**Implementation tasks:**
+- [ ] Create a performance test scenario: player in world with terrain loaded, existing systems active
+- [ ] Measure average frame time and identify top consumers (terrain, React reconciliation, existing modules)
+- [ ] Document available headroom (target: at least 6-8ms free for Phase 2 systems)
+- [ ] If headroom is less than 6ms, move pathfinding to Web Worker before proceeding (see 2.5.4)
+- [ ] Record baseline in `docs/research/PERFORMANCE_BASELINE.md` (update existing file)
+
+**Acceptance criteria:**
+- [ ] Current frame budget documented with breakdown
+- [ ] Phase 2 system budget allocation confirmed as feasible
+- [ ] Go/no-go decision on pathfinding worker made
+
+---
+
 ### 2.1 NPC Arrival & Immigration (Week 1-2)
 
 NPCs don't appear from thin air — they wander in from the wilderness, attracted by the player's settlement. This is the colony equivalent of rift-based spawning: arrivals have a visible, logical origin.
@@ -94,7 +185,7 @@ NPCs don't appear from thin air — they wander in from the wilderness, attracte
 **Goal:** Calculate how attractive the player's settlement is to potential settlers
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/AttractivenessCalculator.js`
+- [ ] Create `src/modules/settlement/AttractivenessCalculator.js`
 - [ ] Calculate score based on:
   - Buildings placed (type and tier weighted): +5 per Survival, +15 per Permanent, +30 per Town
   - Campfire/hearth: +20 (base attractor — "the light that draws them in")
@@ -142,16 +233,20 @@ ATTRACTIVENESS_HAPPINESS_MAX_MULT = 1.5
 **Goal:** NPCs arrive at the settlement based on attractiveness score
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/ImmigrationManager.js`
+- [ ] Create `src/modules/settlement/ImmigrationManager.js`
 - [ ] Immigration check runs every `IMMIGRATION_CHECK_INTERVAL` seconds (default: 300 = 5 real minutes)
 - [ ] Immigration chance per check: `min(attractiveness / 200, 0.8)` (caps at 80%)
 - [ ] On successful check, spawn NPC at world edge (64-96 blocks from settlement center)
 - [ ] NPC walks toward settlement center over 30-60 seconds (visible approach)
 - [ ] On arrival, NPC "evaluates" the settlement for 10 seconds (looks around, thought bubble: "🏠?")
 - [ ] NPC joins if attractiveness ≥ `IMMIGRATION_MIN_ATTRACTIVENESS` (default: 25)
-- [ ] If settlement has no available housing: NPC waits 1 in-game day, then leaves if still no housing
-- [ ] Population cap: `max(3, housingCapacity)` — can't exceed housing
-- [ ] First NPC arrives after placing campfire + any shelter (tutorial trigger)
+- [ ] Housing and population rules:
+  - The very first NPC can join without housing (hardy pioneer — sleeps by campfire, -20 happiness)
+  - All subsequent NPCs require available housing to join
+  - If an NPC arrives and no housing is available: NPC waits 1 in-game day, then leaves if still no housing
+  - Population cap: `max(1, housingCapacity)` — first settler is free, rest need beds
+  - Hard cap: 20 NPCs for Phase 2 (performance guard)
+- [ ] First NPC arrives after placing campfire + any shelter (tutorial trigger) — but the first NPC joins even without shelter
 - [ ] Generate NPC with random personality, name, and appearance using `NPCPersonality.js`
 - [ ] Announce arrival: toast notification "A new settler has arrived: [Name]!"
 
@@ -163,9 +258,14 @@ ATTRACTIVENESS_HAPPINESS_MAX_MULT = 1.5
 4. On arrival, play "looking around" animation (head turns)
 5. Show thought bubble: housing icon with "?"
 6. After 10s evaluation:
-   a. If attractiveness >= threshold → join, show "😊" bubble, notification
-   b. If no housing → show "🏠❌" bubble, wait 1 day
-   c. If attractiveness too low → show "😟" bubble, walk away
+   a. If first NPC ever → always join (pioneer), show "😊" bubble, notification
+   b. If attractiveness >= threshold AND housing available → join, show "😊" bubble, notification
+   c. If no housing → show "🏠❌" bubble, wait 1 day
+   d. If attractiveness too low → show "😟" bubble, walk away
+7. Edge cases:
+   - During rift attack: immigration check skipped (NPCs won't approach danger)
+   - During night: NPC spawns but waits at edge until dawn to approach
+   - Multiple NPCs: max 1 arrival per immigration check (prevent swarm)
 ```
 
 **Tuning constants:**
@@ -178,7 +278,8 @@ IMMIGRATION_SPAWN_MAX_DISTANCE = 96
 IMMIGRATION_APPROACH_SPEED_MULT = 0.6
 IMMIGRATION_EVALUATION_TIME = 10          (seconds)
 IMMIGRATION_HOUSING_WAIT_DAYS = 1         (in-game days before leaving)
-NPC_BASE_POPULATION_CAP = 3              (without housing)
+NPC_FIRST_SETTLER_FREE = true            (first NPC joins without housing)
+NPC_MAX_POPULATION_PHASE_2 = 20          (hard cap for performance)
 ```
 
 **Acceptance criteria:**
@@ -187,8 +288,12 @@ NPC_BASE_POPULATION_CAP = 3              (without housing)
 - [ ] NPC evaluates settlement before joining
 - [ ] Arrival announced via toast notification
 - [ ] No arrivals when attractiveness is too low
-- [ ] Population capped by housing capacity
+- [ ] First NPC joins even without housing (pioneer mechanic)
+- [ ] Subsequent NPCs require available housing
+- [ ] Population hard-capped at 20
 - [ ] NPC leaves if no housing becomes available
+- [ ] Immigration skipped during active rift attacks
+- [ ] NPCs wait at edge until dawn if arriving at night
 
 **Tests:** `ImmigrationManager.test.js`
 - Immigration chance scales with attractiveness
@@ -232,14 +337,14 @@ Players designate areas for specific purposes. Zones tell NPCs *where* to work �
 **Goal:** Players can designate rectangular zones for mining, stockpile, farming, and building
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/ZoneManager.js`
+- [ ] Create `src/modules/settlement/ZoneManager.js`
 - [ ] Zone types: `MINING`, `STOCKPILE`, `FARMING`, `BUILDING`, `RESTRICTED`
 - [ ] Zone data: `{ id, type, bounds: {min, max}, priority: 1-5, active: boolean }`
 - [ ] Zones stored as axis-aligned 3D bounding boxes
 - [ ] Zone overlap rules:
   - STOCKPILE zones cannot overlap other STOCKPILE zones
   - MINING zones can overlap (merged into one work area)
-  - RESTRICTED zones override all others (NPCs avoid)
+  - RESTRICTED zones override all others — NPCs will not pathfind through or work in RESTRICTED zones (use cases: block off dangerous areas near rifts, reserve space for future building, prevent NPCs from entering player's personal area)
 - [ ] Maximum zones: 20 per type (performance guard)
 - [ ] Persist zones in save/load
 - [ ] Expose zone list to game store for rendering and NPC queries
@@ -273,12 +378,13 @@ Players designate areas for specific purposes. Zones tell NPCs *where* to work �
   - Drag shows preview rectangle with colored overlay
   - Release sets corner 2
   - Height auto-detected from terrain (surface to surface + 4 blocks for mining)
-- [ ] Zone rendering: semi-transparent colored overlay on terrain
-  - MINING: orange
-  - STOCKPILE: blue
-  - FARMING: green
-  - BUILDING: yellow
-  - RESTRICTED: red
+- [ ] Zone rendering: `PlaneGeometry` meshes with transparent `MeshBasicMaterial` positioned at zone bounds (not instanced voxels — zones are flat ground overlays)
+  - Render via dedicated `src/rendering/useZoneRenderer.js` hook (follows existing renderer pattern)
+  - MINING: orange (opacity 0.3)
+  - STOCKPILE: blue (opacity 0.3)
+  - FARMING: green (opacity 0.3)
+  - BUILDING: yellow (opacity 0.3)
+  - RESTRICTED: red (opacity 0.4, slightly more visible)
 - [ ] Right-click zone to adjust priority (1-5) or delete
 - [ ] Mobile: tap to start, tap to finish (no drag — two-tap placement)
 - [ ] Zone labels floating above the zone ("Mining Zone", "Stockpile A")
@@ -320,6 +426,51 @@ Players designate areas for specific purposes. Zones tell NPCs *where* to work �
 
 ---
 
+#### 2.2.4 Farming Zone Behavior
+**Goal:** NPCs autonomously plant, tend, and harvest crops in designated farming zones
+
+**Implementation tasks:**
+- [ ] FARMING zone requires a completed Farm Plot building within or adjacent to the zone
+- [ ] Farm lifecycle per plot tile: `EMPTY → PLANTED → GROWING → READY → HARVESTED → EMPTY`
+  - PLANTED: NPC "plants" crop (2 seconds of work)
+  - GROWING: automatic timer, `FARM_GROW_TIME` seconds (default: 300 = 5 real minutes)
+  - READY: NPC "harvests" crop (2 seconds of work), yields food items
+  - HARVESTED: brief cooldown, then returns to EMPTY
+- [ ] Farming tasks generated automatically:
+  - PLANT tasks for empty tiles
+  - HARVEST tasks for ready tiles
+  - Tending is passive (no NPC action during GROWING — just a timer)
+- [ ] Crop yield: `FARM_HARVEST_YIELD` food units per tile (default: 4)
+- [ ] Unattended farms: if no NPC is assigned, crops still grow but harvest sits unharvested. The 25% passive production from open question 10 means: unharvested READY crops auto-collect at 25% rate every `FARM_GROW_TIME` (food appears in nearest stockpile)
+- [ ] Farm zone capacity = number of ground tiles in zone
+- [ ] Maximum 2 farmer NPCs per farm zone
+
+**Tuning constants:**
+```
+FARM_GROW_TIME = 300                     (seconds per growth cycle)
+FARM_HARVEST_YIELD = 4                   (food per tile per harvest)
+FARM_PLANT_TIME = 2                      (seconds to plant)
+FARM_HARVEST_TIME = 2                    (seconds to harvest)
+FARM_UNATTENDED_RATE = 0.25             (passive collection rate when no farmer)
+MAX_FARMERS_PER_ZONE = 2
+```
+
+**Acceptance criteria:**
+- [ ] NPCs plant and harvest crops autonomously
+- [ ] Crops grow over time without NPC intervention
+- [ ] Harvested food generates hauling tasks to stockpile
+- [ ] Unattended farms produce at reduced rate
+- [ ] Farm zone requires adjacent Farm Plot building
+
+**Tests:** `FarmingZone.test.js`
+- Farm lifecycle progresses correctly
+- Harvest generates correct food yield
+- Unattended rate applies correctly
+- Task generation for plant/harvest
+- Zone requires Farm Plot building
+
+---
+
 ### 2.3 Stockpile System (Week 3-4)
 
 Stockpiles are physical locations where resources are stored. They bridge mining/gathering and construction/crafting.
@@ -328,7 +479,7 @@ Stockpiles are physical locations where resources are stored. They bridge mining
 **Goal:** Physical resource storage zones that NPCs deliver to and withdraw from
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/StockpileManager.js`
+- [ ] Create `src/modules/settlement/StockpileManager.js`
 - [ ] Stockpile zone creates a grid of storage slots within its bounds
 - [ ] Each slot holds one resource type and quantity (stack limit: 64)
 - [ ] Stockpile capacity = number of ground-level blocks in zone × stack limit
@@ -339,7 +490,7 @@ Stockpiles are physical locations where resources are stored. They bridge mining
   - `reserve(stockpileId, slotIndex)` — prevent double-booking
   - `release(stockpileId, slotIndex)` — cancel reservation
 - [ ] Integrate with `ResourceEconomyModule.js` for global resource tracking
-- [ ] Visual: resource items rendered on stockpile ground (instanced meshes)
+- [ ] Visual: resource items rendered on stockpile ground via dedicated `src/rendering/useStockpileRenderer.js` hook (follows existing renderer pattern, uses instanced meshes per resource type)
 - [ ] Persist stockpile contents in save/load
 
 **Stockpile slot layout:**
@@ -372,14 +523,18 @@ Stockpile (5×3 ground area = 15 slots):
 **Goal:** NPCs autonomously move resources between locations (mine → stockpile → construction site)
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/HaulingManager.js`
+- [ ] Create `src/modules/settlement/HaulingManager.js`
 - [ ] Haul task: `{ id, source: {position, type}, destination: {stockpileId, constructionSiteId}, resourceType, quantity, status, assignedNpc }`
-- [ ] Task lifecycle: `PENDING → CLAIMED → TRAVELING_TO_PICKUP → PICKING_UP → TRAVELING_TO_DELIVERY → DELIVERING → COMPLETED`
+- [ ] Task lifecycle (simplified — 4 states): `PENDING → PICKING_UP → DELIVERING → COMPLETED`
+  - PENDING: no NPC assigned yet
+  - PICKING_UP: NPC claimed task, pathfinding to source and collecting items
+  - DELIVERING: NPC has items, pathfinding to destination and depositing
+  - COMPLETED: items delivered, task removed from queue
 - [ ] Haul tasks generated automatically by:
   - Mining zone: mined blocks → nearest stockpile
   - Construction site: stockpile → construction site (material delivery)
   - Overflow: full stockpile → stockpile with space
-- [ ] NPC carrying capacity: 1 resource stack at a time (base), improvable with backpack items
+- [ ] NPC carrying capacity: 1 resource stack at a time (fixed for Phase 2 — backpack items deferred to Phase 3)
 - [ ] Hauling priority:
   1. Construction materials (keep builders unblocked)
   2. Food (prevent starvation)
@@ -412,8 +567,12 @@ NPCs build structures from blueprints placed by the player. This is the beating 
 **Goal:** Player places building blueprints that NPCs construct
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/BlueprintManager.js`
-- [ ] Blueprint definition: `{ id, name, blocks: [{offset, blockType}], requirements: {resourceType: quantity}, buildOrder: [{offset, blockType}] }`
+- [ ] Create `src/modules/settlement/BlueprintManager.js`
+- [ ] Blueprint definition: `{ id, name, blocks: [{offset, blockType}], requirements: {resourceType: quantity}, buildOrder: [{offset, blockType}], rotatable: boolean }`
+- [ ] Blueprint rotation: 90° increments (0°, 90°, 180°, 270°) — uses existing rotation rules in `shared/config.js`
+  - Player cycles rotation with R key (or tap rotation button on mobile) during placement
+  - Block offsets transformed by rotation matrix before validation and placement
+  - Ghost preview updates to show rotated orientation
 - [ ] Define blueprints for Phase 2 buildings:
   - **Shelter** (5×4×3): 20 wood — basic housing for 1 NPC
   - **House** (7×5×4): 40 wood, 30 stone — housing for 2 NPCs
@@ -439,6 +598,7 @@ NPCs build structures from blueprints placed by the player. This is the beating 
 3. Within territory bounds (TerritoryManager)
 4. No overlap with active rift corruption zones
 5. Minimum 2 blocks from other buildings (fire code 😄)
+6. Rotation applied to footprint before all above checks
 ```
 
 **Acceptance criteria:**
@@ -447,6 +607,8 @@ NPCs build structures from blueprints placed by the player. This is the beating 
 - [ ] Validation prevents invalid placement (red highlight + reason)
 - [ ] Placed blueprint creates construction site with ghost blocks
 - [ ] All Phase 2 buildings have correct resource requirements
+- [ ] Blueprints can be rotated in 90° increments during placement
+- [ ] Rotated blueprints validate correctly against terrain and buildings
 
 **Tests:** `BlueprintManager.test.js`
 - Blueprint validation on flat ground succeeds
@@ -454,6 +616,8 @@ NPCs build structures from blueprints placed by the player. This is the beating 
 - Overlap detection works
 - Territory bounds enforced
 - Resource requirements match building config
+- Rotation transforms block offsets correctly
+- Rotated blueprint validates against terrain
 
 ---
 
@@ -461,7 +625,7 @@ NPCs build structures from blueprints placed by the player. This is the beating 
 **Goal:** Track building progress from blueprint to completion
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/ConstructionManager.js`
+- [ ] Create `src/modules/settlement/ConstructionManager.js`
 - [ ] Construction site: `{ id, blueprintId, position, status, blocksPlaced, blocksTotal, deliveredMaterials: {}, requiredMaterials: {} }`
 - [ ] Site status flow: `PLACED → AWAITING_MATERIALS → IN_PROGRESS → COMPLETE`
 - [ ] On site creation:
@@ -561,17 +725,43 @@ CONSTRUCTION_MATERIAL_SEARCH_RADIUS = 128 (blocks to search for stockpiles)
 
 This section wires the autonomous decision system to the zone/task infrastructure.
 
+#### AI System Authority Hierarchy
+
+Multiple existing AI systems make NPC decisions. To prevent conflicts, they operate in a strict priority chain:
+
+```
+1. NPCBehaviorSystem.js  — owns the SCHEDULE (when to work, eat, sleep)
+   ↓ during work periods, delegates to:
+2. AutonomousDecision.js  — handles INTERRUPTS (critical needs, emergencies)
+   ↓ if no interrupt, delegates to:
+3. TaskAssignmentEngine.js — resolves WHAT WORK to do (mine, haul, build)
+   ↓ only for player-commanded companions:
+4. CompanionAISystem.js   — overrides work assignment with player commands
+```
+
+- `NPCBehaviorSystem` determines the current schedule phase (work/eat/sleep/social). During work phases, it asks `AutonomousDecision` if any interrupt is needed.
+- `AutonomousDecision` checks critical needs and emergencies. If none, it defers to `TaskAssignmentEngine` for work selection.
+- `TaskAssignmentEngine` only runs during work periods for idle NPCs. It scores and claims tasks.
+- `CompanionAISystem` applies ONLY to NPCs the player has explicitly commanded (follow, stay, etc.) — not to settler NPCs doing autonomous work.
+
 #### 2.5.1 NPC Task Assignment Engine
 **Goal:** NPCs autonomously find and perform work from available tasks
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/TaskAssignmentEngine.js`
+- [ ] Create `src/modules/settlement/TaskAssignmentEngine.js`
 - [ ] Task types: `MINE`, `HAUL`, `BUILD`, `GATHER`, `FARM`, `GUARD`
-- [ ] Each game tick (every 2 seconds), for each idle NPC:
-  1. Check critical needs (hunger < 20, rest < 20) → prioritize need satisfaction
-  2. Check for emergency tasks (rift attack, fire) → prioritize defense
+- [ ] Each game tick (every 2 seconds), for each idle NPC in a work schedule phase:
+  1. `NPCBehaviorSystem` confirms NPC is in WORK period
+  2. `AutonomousDecision` checks for interrupts (critical needs, emergencies) — if triggered, skip work
   3. Query available tasks from all zones and construction sites
-  4. Score each task: `score = (priority × 100) + (skillMatch × 50) - (distance × 1) - (personalityMismatch × 20)`
+  4. Score each task:
+     ```
+     score = (priority × 100)
+           + (skillMatch × 50)
+           - (distance × 1)
+           - (personalityMismatch × 20)
+           + (varietyBonus × 15)
+     ```
   5. Claim highest-scoring task
   6. Pathfind to task location
   7. Execute task (mine, haul, build, etc.)
@@ -580,10 +770,12 @@ This section wires the autonomous decision system to the zone/task infrastructur
   - INDUSTRIOUS NPCs get +50% score for mining/building tasks
   - BRAVE NPCs get +50% score for guard tasks
   - SOCIAL NPCs get +25% score for hauling (they like moving around)
+- [ ] Variety bonus: NPCs get +15 score for task types they haven't done in the last 3 tasks (prevents over-specialization, keeps NPCs feeling dynamic)
 - [ ] Task failure handling:
   - Path blocked → retry with alternate path, then release task
   - Resource unavailable → release task, mark as blocked
   - NPC interrupted (attacked, critical need) → release task gracefully
+- [ ] Update `FORMULAS.md` with the task scoring formula and variety bonus
 
 **NPC work state machine:**
 ```
@@ -658,12 +850,17 @@ IDLE
 - [ ] Simple voxel humanoid: head (2×2×2), body (2×3×2), arms (1×3×1 each), legs (1×3×1 each)
 - [ ] Total: ~40 voxels per NPC (low poly for performance)
 - [ ] Color from NPC appearance parameters (skin, hair, clothing)
-- [ ] Use instanced mesh rendering (all NPCs share geometry, vary color via instance attributes)
-- [ ] Simple animations via vertex offset:
-  - **Walk**: legs alternate forward/back, arms swing
-  - **Mine**: right arm swings down in arc
-  - **Build**: right arm taps forward
-  - **Idle**: slight body sway
+- [ ] Use grouped `Object3D` per NPC with per-limb instanced meshes:
+  - One `InstancedMesh` for all NPC heads (same box geometry, different colors via instance color attribute)
+  - One for all torsos, one for left arms, one for right arms, one for left legs, one for right legs
+  - = 6 draw calls total for ALL NPCs (not per-NPC)
+  - Animate by updating each limb's instance matrix (rotation/translation) per frame
+  - This avoids custom shaders while keeping draw calls constant regardless of NPC count
+- [ ] Simple animations via instance matrix transforms:
+  - **Walk**: legs alternate forward/back (rotate around hip), arms counter-swing
+  - **Mine**: right arm swings down in arc (rotate around shoulder)
+  - **Build**: right arm taps forward (rotate around shoulder)
+  - **Idle**: slight whole-body sway (translate Y on root)
 - [ ] LOD: beyond 32 blocks, render as colored billboard (existing sprite system)
 - [ ] Performance budget: 20 NPCs at <1ms combined render time
 
@@ -674,6 +871,31 @@ IDLE
 - [ ] Work animations play during tasks
 - [ ] Performance stays within budget (20 NPCs < 1ms)
 - [ ] LOD kicks in at distance
+
+---
+
+#### 2.5.4 Pathfinding Web Worker (Conditional)
+**Goal:** Move A* pathfinding off the main thread to maintain frame budget with 8+ NPCs
+
+**Trigger:** Implement this section if the performance baseline (2.0.3) shows less than 6ms of headroom, OR if pathfinding exceeds 2ms during Week 5-6 testing.
+
+**Implementation tasks:**
+- [ ] Create `src/systems/workers/PathfindingWorker.js` (follows existing worker infrastructure in `src/systems/workers/`)
+- [ ] Worker receives: start position, goal position, grid snapshot (relevant chunks only)
+- [ ] Worker returns: path array or failure
+- [ ] Async request/response pattern:
+  - `requestPath(npcId, start, goal)` → returns Promise
+  - NPC continues current activity while path computes
+  - On result: NPC begins following new path
+- [ ] Stale path handling: if world changes during computation (block mined, building placed), mark path as potentially stale. NPC re-requests if it encounters an unexpected obstacle.
+- [ ] Stagger requests: max 2 pathfinding requests in flight per frame (prevent worker saturation)
+- [ ] Fallback: if worker fails or takes >500ms, compute simple straight-line path on main thread
+
+**Acceptance criteria:**
+- [ ] Pathfinding runs off main thread
+- [ ] NPC movement feels responsive (no visible delay for short paths)
+- [ ] Stale paths detected and re-requested
+- [ ] Frame budget improved by at least 1.5ms with 8 NPCs
 
 ---
 
@@ -692,7 +914,7 @@ NPCs aren't just workers — they have needs, schedules, and social lives.
   - SOCIAL: -0.5 (full depletion in ~200 minutes)
   - SHELTER: binary — checked at night, satisfied if NPC has assigned housing
 - [ ] Need satisfaction behaviors:
-  - FOOD < 30: NPC walks to nearest stockpile with food, eats, +50 food need
+  - FOOD < 30: NPC walks to nearest stockpile with food, eats, +50 food need (NPCs eat from stockpiles only — player inventory is separate)
   - REST < 20: NPC walks to assigned housing (or campfire if no housing), sleeps for 2 minutes, +80 rest
   - SOCIAL < 25: NPC walks to nearest other NPC within 20 blocks, "chats" for 30 seconds, both get +20 social
   - SHELTER (night, unsheltered): NPC walks to assigned housing or nearest shelter
@@ -746,32 +968,40 @@ NPC_LEAVE_WARNING_DAYS = 2
 
 ---
 
-#### 2.6.2 NPC Daily Schedule
+#### 2.6.2 NPC Daily Schedule (Extend Existing System)
 **Goal:** NPCs follow a natural daily rhythm, not 24/7 work
 
+`NPCBehaviorSystem.js` already has a daily schedule system with activity types (SLEEP, WAKE_UP, EAT_BREAKFAST, WORK, BREAK, EAT_LUNCH, SOCIALIZE, EAT_DINNER, LEISURE, RETURN_HOME, SHELTER, FESTIVAL) and personality-driven modifications. **Do not create a parallel schedule — extend the existing one.**
+
 **Implementation tasks:**
-- [ ] Integrate with `NPCBehaviorSystem.js` daily schedule system
-- [ ] Default schedule (based on world time):
-  - **Dawn (0.20-0.30)**: Wake up, eat breakfast (seek food)
-  - **Morning (0.30-0.50)**: Work (highest productivity period)
-  - **Midday (0.50-0.55)**: Lunch break (eat, socialize)
-  - **Afternoon (0.55-0.70)**: Work (normal productivity)
-  - **Evening (0.70-0.80)**: Free time (socialize, wander, inspect buildings)
-  - **Night (0.80-0.20)**: Sleep in assigned housing (or find shelter)
-- [ ] Personality modifiers:
-  - INDUSTRIOUS: extends work hours (+0.05 on each side), shorter lunch
-  - SOCIAL: longer social periods, shorter work
-  - BRAVE: patrols during evening instead of socializing
+- [ ] Wire `NPCBehaviorSystem.js` existing schedule activities to settlement systems:
+  - WORK activity → delegates to `TaskAssignmentEngine` (via authority hierarchy above)
+  - EAT_BREAKFAST/EAT_LUNCH/EAT_DINNER → NPC walks to stockpile with food, eats
+  - SLEEP/RETURN_HOME → NPC walks to assigned housing (via `HousingManager`)
+  - SOCIALIZE/LEISURE → uses existing `IdleTaskManager` SOCIALIZE/WANDER tasks
+- [ ] Map world time ranges to existing schedule activities (if not already mapped):
+  - **Dawn (0.20-0.30)**: WAKE_UP → EAT_BREAKFAST
+  - **Morning (0.30-0.50)**: WORK (highest productivity period)
+  - **Midday (0.50-0.55)**: EAT_LUNCH, BREAK
+  - **Afternoon (0.55-0.70)**: WORK (normal productivity)
+  - **Evening (0.70-0.80)**: EAT_DINNER, SOCIALIZE, LEISURE
+  - **Night (0.80-0.20)**: RETURN_HOME, SLEEP
+- [ ] Wire personality traits from `NPCPersonality.js` to schedule modifiers:
+  - INDUSTRIOUS (maps to WORK_ETHIC): extends WORK periods (+0.05 on each side), shorter BREAK
+  - SOCIAL (maps to SOCIABILITY): longer SOCIALIZE periods, shorter WORK
+  - BRAVE (maps to BRAVERY): patrols during LEISURE instead of wandering
 - [ ] Schedule visible in NPC detail card: "Currently: Working (Morning shift)"
-- [ ] NPCs don't work during sleep period unless emergency (rift attack)
+- [ ] NPCs don't work during SLEEP period unless emergency (rift attack)
+- [ ] Add settlement-specific activities to behavior system if needed: HAUL, MINE, BUILD, FARM (as sub-types of WORK)
 
 **Acceptance criteria:**
-- [ ] NPCs follow a daily routine
-- [ ] Work happens during work hours
-- [ ] NPCs eat at meal times
-- [ ] NPCs sleep at night
-- [ ] Personality affects schedule
+- [ ] NPCs follow a daily routine using the existing schedule system
+- [ ] Work happens during WORK activity periods
+- [ ] NPCs eat at meal activity times
+- [ ] NPCs sleep at SLEEP activity time
+- [ ] Personality affects schedule timing
 - [ ] Emergencies override schedule
+- [ ] No duplicate schedule logic — single source of truth in NPCBehaviorSystem
 
 ---
 
@@ -779,7 +1009,7 @@ NPC_LEAVE_WARNING_DAYS = 2
 **Goal:** NPCs have assigned housing that provides shelter and rest benefits
 
 **Implementation tasks:**
-- [ ] Create `src/systems/settlement/HousingManager.js`
+- [ ] Create `src/modules/settlement/HousingManager.js`
 - [ ] Each housing building has bed slots (Shelter: 1, House: 2, Manor: 4)
 - [ ] Auto-assign NPCs to available beds on arrival
 - [ ] NPC housing preferences:
@@ -1019,6 +1249,12 @@ NPC behavior:
   - When housing is full: "Build more shelters to attract new settlers."
 - [ ] Hints auto-dismiss after 10 seconds
 - [ ] Persist shown hints in save/load
+- [ ] Add event hooks for hint triggers (settlement systems must emit these events):
+  - `ConstructionManager` → emits `building:complete` (for "first shelter built" hint)
+  - `ImmigrationManager` → emits `npc:approaching`, `npc:joined` (for approach/join hints)
+  - `TaskAssignmentEngine` → emits `npc:idle-no-zones` (for "designate zone" hint)
+  - `HousingManager` → emits `housing:full` (for "build more shelters" hint)
+  - `NPCNeedsTracker` → emits `npc:unhappy` (for "check needs" hint)
 
 **Acceptance criteria:**
 - [ ] New player understands settlement basics through hints
@@ -1077,11 +1313,15 @@ Phase 2 is **complete** when ALL of the following are true:
 ## Dependencies
 
 ```
-2.1 NPC Immigration
+2.0 Settlement Module Foundation (MUST be first — everything depends on it)
+    ↓
+2.1 NPC Immigration (depends on 2.0)
     ↓
 2.5 NPC Work Loop (depends on 2.1 for NPCs to exist)
 
-2.2 Zone Designation (parallel with 2.1)
+2.0 Settlement Module Foundation
+    ↓
+2.2 Zone Designation (parallel with 2.1, both depend on 2.0)
     ↓
 2.3 Stockpile System (depends on 2.2 for zone infrastructure)
     ↓
@@ -1090,16 +1330,17 @@ Phase 2 is **complete** when ALL of the following are true:
 2.6 NPC Needs & Daily Life (parallel with 2.4/2.5, depends on 2.1 for NPCs)
 
 2.5 NPC Work Loop (depends on 2.2 + 2.3 + 2.4 for tasks to perform)
+    2.5.4 Pathfinding Worker — conditional, based on 2.0.3 baseline results
 
-2.7 Settlement UI (depends on 2.1-2.6 for data to display, but can start with stubs)
+2.7 Settlement UI (depends on 2.0.2 store + 2.1-2.6 for data, can start with stubs)
 
 2.8 Integration (after all above)
 ```
 
 **Parallelization opportunities:**
-- 2.1 (immigration) and 2.2 (zones) can start simultaneously
+- 2.1 (immigration) and 2.2 (zones) can start simultaneously after 2.0
 - 2.6 (needs) can be developed in parallel with 2.4/2.5 (construction/work)
-- 2.7 (UI) can start as soon as data interfaces are defined (week 5-6)
+- 2.7 (UI) can start as soon as 2.0.2 (store) is defined and data interfaces exist (week 6-7)
 
 ---
 
@@ -1107,46 +1348,54 @@ Phase 2 is **complete** when ALL of the following are true:
 
 | Week | Focus | Deliverable |
 |------|-------|-------------|
-| 1 | Immigration + Zones | Attractiveness calc, first NPC arrives, zone manager |
-| 2 | Immigration + Zone UI | NPC approach behavior, zone placement UI |
-| 3 | Stockpile + Hauling | Stockpile slots, hauling tasks, resource delivery |
-| 4 | Blueprint + Construction | Blueprint placement, ghost blocks, material delivery — **PLAYTEST: does first NPC arrive and work?** |
-| 5 | Construction + Work | Block-by-block building, task assignment engine |
-| 6 | Work Loop + NPC Model | Full autonomous work loop, 3D voxel NPC model |
-| 7 | NPC Needs + Schedule | Need simulation, daily schedule, housing — **PLAYTEST: full settlement loop** |
-| 8 | Settlement Dashboard | Dashboard, NPC detail panel, building panel |
-| 9 | UI Polish + Mobile | Mobile zone placement, responsive dashboard, tutorial hints |
-| 10 | Building Effects + Upgrades | Auras, tier upgrades, production buildings |
-| 11-12 | Integration + Balance | All 8 playtest scenarios, performance validation, save/load, tuning |
+| 1 | **Module Foundation** + Immigration | SettlementModule registered with orchestrator, settlement store, performance baseline, attractiveness calculator |
+| 2 | Immigration + Zones | First NPC arrives, zone manager, zone placement UI |
+| 3 | Zone UI + Stockpile | Mining zone behavior, farming zone behavior, stockpile slots |
+| 4 | Hauling + Blueprint | Hauling tasks, blueprint placement with rotation, ghost blocks |
+| 5 | Construction | Material delivery, block-by-block building — **PLAYTEST: does first NPC arrive and work?** |
+| 6 | Work Loop + AI Integration | Task assignment engine, AI authority hierarchy wired, pathfinding worker (if needed) |
+| 7 | NPC Model + Work Feedback | 3D voxel NPC model, work animations, thought bubbles |
+| 8 | NPC Needs + Schedule | Need simulation, daily schedule (extend NPCBehaviorSystem), housing — **PLAYTEST: full settlement loop** |
+| 9 | Settlement Dashboard | Dashboard, NPC detail panel, building panel |
+| 10 | UI Polish + Mobile | Mobile zone placement, responsive dashboard, tutorial hints |
+| 11 | Building Effects + Upgrades | Auras, tier upgrades, production buildings |
+| 12-14 | Integration + Balance | All 8 playtest scenarios, performance validation, save/load, tuning |
 
-**Playtest checkpoints are critical.** Test NPC arrival at Week 4 and the full settlement loop at Week 7. Don't wait until Week 11 to discover that NPCs feel lifeless.
+**Playtest checkpoints are critical.** Test NPC arrival at Week 5 and the full settlement loop at Week 8. Don't wait until Week 12 to discover that NPCs feel lifeless.
 
 ---
 
 ## New Files Created
 
 ```
-src/systems/settlement/AttractivenessCalculator.js
-src/systems/settlement/__tests__/AttractivenessCalculator.test.js
-src/systems/settlement/ImmigrationManager.js
-src/systems/settlement/__tests__/ImmigrationManager.test.js
-src/systems/settlement/ZoneManager.js
-src/systems/settlement/__tests__/ZoneManager.test.js
-src/systems/settlement/StockpileManager.js
-src/systems/settlement/__tests__/StockpileManager.test.js
-src/systems/settlement/HaulingManager.js
-src/systems/settlement/__tests__/HaulingManager.test.js
-src/systems/settlement/BlueprintManager.js
-src/systems/settlement/__tests__/BlueprintManager.test.js
-src/systems/settlement/ConstructionManager.js
-src/systems/settlement/__tests__/ConstructionManager.test.js
-src/systems/settlement/TaskAssignmentEngine.js
-src/systems/settlement/__tests__/TaskAssignmentEngine.test.js
-src/systems/settlement/HousingManager.js
-src/systems/settlement/__tests__/HousingManager.test.js
+src/modules/settlement/SettlementModule.js                — module shell, orchestrator registration
+src/modules/settlement/__tests__/SettlementModule.test.js
+src/modules/settlement/AttractivenessCalculator.js
+src/modules/settlement/__tests__/AttractivenessCalculator.test.js
+src/modules/settlement/ImmigrationManager.js
+src/modules/settlement/__tests__/ImmigrationManager.test.js
+src/modules/settlement/ZoneManager.js
+src/modules/settlement/__tests__/ZoneManager.test.js
+src/modules/settlement/__tests__/FarmingZone.test.js
+src/modules/settlement/StockpileManager.js
+src/modules/settlement/__tests__/StockpileManager.test.js
+src/modules/settlement/HaulingManager.js
+src/modules/settlement/__tests__/HaulingManager.test.js
+src/modules/settlement/BlueprintManager.js
+src/modules/settlement/__tests__/BlueprintManager.test.js
+src/modules/settlement/ConstructionManager.js
+src/modules/settlement/__tests__/ConstructionManager.test.js
+src/modules/settlement/TaskAssignmentEngine.js
+src/modules/settlement/__tests__/TaskAssignmentEngine.test.js
+src/modules/settlement/HousingManager.js
+src/modules/settlement/__tests__/HousingManager.test.js
+src/stores/useSettlementStore.js                          — dedicated settlement UI store
 src/data/npcNames.js
 src/data/buildingBlueprints.js
 src/rendering/NPCVoxelModel.js
+src/rendering/useZoneRenderer.js                          — zone overlay rendering
+src/rendering/useStockpileRenderer.js                     — stockpile item rendering
+src/systems/workers/PathfindingWorker.js                  — (conditional, based on perf baseline)
 src/components/ui/ZoneDesignator.jsx
 src/components/ui/SettlementDashboard.jsx
 src/components/ui/NPCDetailPanel.jsx
@@ -1156,13 +1405,15 @@ src/components/ui/BuildingPanel.jsx
 ## Modified Files
 
 ```
-src/data/tuning.js                           — all Phase 2 balance constants
-src/stores/useGameStore.js                   — settlement state, NPC list, zone list
+src/data/tuning.js                           — all Phase 2 balance constants (rates, thresholds, multipliers)
+src/core/ModuleOrchestrator.js               — register SettlementModule
+src/GameManager.js                           — wire SettlementModule initialization
 src/modules/npc-system/NPCManager.js         — wire immigration, task assignment, needs
 src/modules/npc-system/NPCNeedsTracker.js    — connect to game tick, food from stockpile
 src/modules/npc-system/NPCAssignment.js      — expand for zone-based work assignments
-src/modules/npc-system/AutonomousDecision.js — integrate with TaskAssignmentEngine
+src/modules/npc-system/AutonomousDecision.js — delegate to TaskAssignmentEngine when no interrupt
 src/modules/npc-system/NPCVisualFeedback.js  — new thought bubbles for work/needs
+src/modules/ai/NPCBehaviorSystem.js          — wire settlement WORK activities into existing schedule
 src/modules/building-types/BuildingConfig.js — blueprint block definitions
 src/modules/territory-town/TownManager.js    — population growth, housing tracking
 src/modules/resource-economy/ResourceEconomyModule.js — stockpile integration
@@ -1173,6 +1424,7 @@ src/components/npc/NPCListView.jsx           — update for settlement dashboard
 src/components/npc/NPCDetailCard.jsx         — expand with needs, actions, schedule
 src/persistence/Game3DSaveManager.js         — persist settlement state
 src/components/ContextualHints.jsx           — add settlement tutorial hints
+docs/FORMULAS.md                             — add Phase 2 task scoring and variety bonus formulas
 ```
 
 ---
@@ -1181,16 +1433,17 @@ src/components/ContextualHints.jsx           — add settlement tutorial hints
 
 | Risk | Impact | Likelihood | Mitigation |
 |------|--------|------------|------------|
-| NPC pathfinding congestion with 8+ NPCs | High | Medium | Stagger pathfinding across frames, use spatial partitioning for collision avoidance |
+| NPC pathfinding congestion with 8+ NPCs | High | Medium | Stagger pathfinding across frames, move to Web Worker if baseline shows <6ms headroom (see 2.5.4) |
 | Construction feels too slow / too fast | Medium | High | Expose `BUILD_TIME_PER_BLOCK` in tuning.js, playtest at Week 4 |
 | NPCs feel robotic despite personality system | High | Medium | Vary animation timing, add personality-specific idle behaviors, randomize schedules slightly |
 | Stockpile rendering with 200+ items | Medium | Medium | Instanced meshes, LOD to icons at distance, cap visible items |
-| Task assignment creates unfair specialization | Low | Medium | Add "variety bonus" to score for tasks NPC hasn't done recently |
+| Task assignment creates unfair specialization | Low | Medium | Variety bonus (+15 for tasks not done in last 3) added to scoring formula in 2.5.1 |
 | Zone UI awkward on mobile | Medium | High | Two-tap placement instead of drag, large touch targets, preview before confirm |
 | Immigration too fast → food shortage death spiral | Medium | Medium | Cap immigration rate, NPC carries some food on arrival, warn player when food low |
 | NPCs wander away from settlement | Low | Medium | Settlement boundary: NPCs don't pathfind beyond territory bounds for work |
 | Save file size grows with NPC state | Low | Low | NPC state is lightweight (~1KB per NPC); 20 NPCs = 20KB |
 | Behavior tree + needs + schedule interactions produce unexpected emergent behavior | Medium | High | This is partly a feature; add circuit-breaker: if NPC is stuck >30s, reset to idle |
+| AI system authority conflicts (4 systems making NPC decisions) | High | Medium | Authority hierarchy defined in 2.5: Schedule → Interrupts → Work → Companion. Each system has clear ownership boundary |
 
 ---
 
@@ -1212,17 +1465,22 @@ No networking code needed yet — ensure single-player assumptions (e.g., `playe
 
 ## Open Questions
 
-1. **NPC carrying capacity** — Should NPCs carry 1 stack or scale with strength/backpack? Start with 1, add backpack item in Phase 3.
+### Resolved (integrated into plan)
+
+1. ~~**NPC carrying capacity**~~ — **Resolved:** 1 stack per NPC, fixed for Phase 2. Backpack items deferred to Phase 3. (See 2.3.2)
+4. ~~**Building rotation**~~ — **Resolved:** Yes, 90° increments using existing `shared/config.js` rotation rules. R key to cycle, tap button on mobile. (See 2.4.1)
+6. ~~**NPC-player resource sharing**~~ — **Resolved:** NPCs eat from stockpiles. Player inventory is separate and not shared. (See 2.6.1)
+7. ~~**Maximum settlement size**~~ — **Resolved:** Hard cap of 20 NPCs for Phase 2 (enforced in `NPC_MAX_POPULATION_PHASE_2` tuning constant). Expandable in Phase 5. (See 2.1.2)
+10. ~~**Farm automation**~~ — **Resolved:** Require NPC assignment for full production. Unattended farms auto-collect at 25% rate. (See 2.2.4)
+
+### Still Open (defer to implementation or Phase 3)
+
 2. **Friendly fire** — Can the player accidentally hurt their own NPCs? Probably yes for realism, but add "no friendly fire in settlement" toggle.
 3. **NPC death** — Can NPCs die permanently? Yes from monsters. Funeral mechanic? Defer to Phase 3.
-4. **Building rotation** — Should blueprints be rotatable? Yes, 90° increments. Add to 2.4.1.
 5. **Zone visualization toggle** — Should zone overlays be always visible or only in "management mode"? Default: visible, toggleable.
-6. **NPC-player resource sharing** — Do NPCs eat from the same food supply as the player? Yes, from stockpiles. Player inventory is separate.
-7. **Maximum settlement size** — What's the NPC cap? 20 for Phase 2 (performance), expandable in Phase 5.
 8. **NPC recruitment vs. immigration** — Should the player be able to actively recruit from the overworld? Defer to Phase 3 (trade caravans).
 9. **Building decay** — Do buildings deteriorate without maintenance? Not in Phase 2. Consider for Phase 3 with rift corruption.
-10. **Farm automation** — Do farm plots need NPC assignment or produce passively? Require NPC assignment for full production, produce at 25% rate unattended.
 
 ---
 
-**Ready to start? Create a branch and begin with 2.1.1 AttractivenessCalculator — the foundation that everything else builds on.**
+**Ready to start? Create a branch and begin with 2.0.1 SettlementModule — the orchestrator integration that everything else depends on.**

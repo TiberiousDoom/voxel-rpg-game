@@ -33,8 +33,6 @@ const LONG_PRESS_MOVE_THRESHOLD = 20; // pixels of movement that cancels long pr
 // Mining progress geometry (flat bar above the block)
 const miningBarBgGeometry = new THREE.PlaneGeometry(VOXEL_SIZE * 1.2, 0.3);
 const miningBarBorderGeometry = new THREE.PlaneGeometry(VOXEL_SIZE * 1.2 + 0.08, 0.38);
-const miningBarFillGeometry = new THREE.PlaneGeometry(1.0, 0.25); // scaled dynamically
-
 // Pre-create geometry for highlight (reused across all renders)
 const highlightBoxGeometry = new THREE.BoxGeometry(
   VOXEL_SIZE + 0.02,
@@ -692,7 +690,7 @@ export function BlockInteraction({ chunkManager }) {
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, checkEnemyFromCamera]);
+  }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, checkEnemyFromCamera, chunkManager, raycastForBlock]);
 
   // Desktop third-person: left-click to mine, right-click to place
   // Uses a store flag (_blockClickActive) to coordinate with TouchControls
@@ -877,7 +875,7 @@ export function BlockInteraction({ chunkManager }) {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [gl, chunkManager, raycastFromScreen, firstPerson]);
+  }, [gl, chunkManager, raycastFromScreen, firstPerson, camera, scene.children]);
 
   // Mobile: long-press touch handlers for mining/placement
   // Calls chunkManager.setBlock() directly to avoid React lifecycle timing issues

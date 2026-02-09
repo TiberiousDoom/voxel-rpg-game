@@ -114,7 +114,7 @@ const SpellWheel = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isActive, selectedIndex, page, spellsOnPage.length, totalPages, isMobile]);
+  }, [isActive, selectedIndex, page, spellsOnPage.length, totalPages, isMobile, setActiveSpellId]);
 
   const selectedSpell = SPELLS[selectedIndex];
 

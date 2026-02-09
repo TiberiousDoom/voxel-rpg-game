@@ -1,14 +1,72 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import useGameStore from '../stores/useGameStore';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { TEST_PHASES, TOTAL_CRITERIA_COUNT } from '../data/testCriteria';
+
+const DB_NAME = 'TestTrackerDB';
+const STORE_NAME = 'criteria';
+const DB_VERSION = 1;
+
+/** Open (or create) the IndexedDB database for persisting criterion status. */
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbGet(db, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbPut(db, key, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const req = tx.objectStore(STORE_NAME).put(value, key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
 
 /**
- * QA Test Tracker overlay — toggled with the backtick (`) key.
- * Displays real-time game stats useful for testing and debugging.
+ * QA Test Tracker — toggled with the backtick (`) key.
+ * Displays phase exit criteria as a quest-log-style checklist.
+ * Checked status is persisted in IndexedDB.
  */
 const TestTracker = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const [fps, setFps] = useState(0);
-  const frameTimestamps = useRef([]);
+  const [checkedMap, setCheckedMap] = useState({});
+  const [collapsedPhases, setCollapsedPhases] = useState({});
+  const [collapsedCategories, setCollapsedCategories] = useState({});
+  const dbRef = useRef(null);
+
+  // Open DB and load saved state on mount
+  useEffect(() => {
+    let cancelled = false;
+    openDB()
+      .then(async (db) => {
+        if (cancelled) return;
+        dbRef.current = db;
+        const saved = await idbGet(db, 'checkedMap');
+        if (!cancelled && saved) {
+          setCheckedMap(saved);
+        }
+      })
+      .catch(() => {
+        // IndexedDB unavailable — run without persistence
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // Keyboard toggle
   useEffect(() => {
@@ -29,44 +87,28 @@ const TestTracker = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // FPS tracking
-  useEffect(() => {
-    if (!isVisible) return;
-    const interval = setInterval(() => {
-      const now = performance.now();
-      frameTimestamps.current.push(now);
-      // Keep last 60 samples
-      if (frameTimestamps.current.length > 60) {
-        frameTimestamps.current.shift();
+  const toggleCriterion = useCallback((id) => {
+    setCheckedMap((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      // Persist asynchronously
+      if (dbRef.current) {
+        idbPut(dbRef.current, 'checkedMap', next).catch(() => {});
       }
-      if (frameTimestamps.current.length >= 2) {
-        const oldest = frameTimestamps.current[0];
-        const newest = frameTimestamps.current[frameTimestamps.current.length - 1];
-        const elapsed = (newest - oldest) / 1000;
-        setFps(Math.round(frameTimestamps.current.length / elapsed));
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [isVisible]);
+      return next;
+    });
+  }, []);
 
-  // Game state selectors
-  const player = useGameStore((state) => state.player);
-  const enemies = useGameStore((state) => state.enemies);
-  const wildlife = useGameStore((state) => state.wildlife);
-  const projectiles = useGameStore((state) => state.projectiles);
-  const lootDrops = useGameStore((state) => state.lootDrops);
-  const worldTime = useGameStore((state) => state.worldTime);
-  const gameState = useGameStore((state) => state.gameState);
-  const buildMode = useGameStore((state) => state.buildMode);
-  const inventory = useGameStore((state) => state.inventory);
-  const hunger = useGameStore((state) => state.hunger);
+  const togglePhase = useCallback((phaseId) => {
+    setCollapsedPhases((prev) => ({ ...prev, [phaseId]: !prev[phaseId] }));
+  }, []);
 
-  const formatPos = useCallback((pos) => {
-    if (!pos) return '—';
-    return `${pos[0]?.toFixed(1)}, ${pos[1]?.toFixed(1)}, ${pos[2]?.toFixed(1)}`;
+  const toggleCategory = useCallback((catId) => {
+    setCollapsedCategories((prev) => ({ ...prev, [catId]: !prev[catId] }));
   }, []);
 
   if (!isVisible) return null;
+
+  const totalChecked = Object.values(checkedMap).filter(Boolean).length;
 
   return (
     <div
@@ -74,60 +116,182 @@ const TestTracker = () => {
         position: 'fixed',
         top: '10px',
         left: '10px',
-        background: 'rgba(0, 0, 0, 0.75)',
-        color: '#0f0',
-        padding: '10px 14px',
-        borderRadius: '6px',
-        fontSize: '12px',
-        fontFamily: 'monospace',
+        width: '380px',
+        maxHeight: 'calc(100vh - 20px)',
+        background: 'rgba(26, 26, 46, 0.95)',
+        border: '2px solid #FFD700',
+        borderRadius: '10px',
         zIndex: 9999,
-        pointerEvents: 'none',
-        lineHeight: 1.6,
-        minWidth: '220px',
-        border: '1px solid rgba(0, 255, 0, 0.3)',
+        display: 'flex',
+        flexDirection: 'column',
+        fontFamily: 'sans-serif',
+        fontSize: '13px',
+        color: '#e2e8f0',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
         userSelect: 'none',
       }}
     >
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#0f0', fontSize: '13px' }}>
-        QA Test Tracker
+      {/* Header */}
+      <div
+        style={{
+          padding: '12px 14px',
+          borderBottom: '2px solid #4a5568',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'linear-gradient(90deg, #2d3748, #1a202c)',
+          borderRadius: '8px 8px 0 0',
+        }}
+      >
+        <span style={{ color: '#FFD700', fontWeight: 'bold', fontSize: '14px' }}>
+          QA Test Tracker
+        </span>
+        <span style={{ color: '#a0aec0', fontSize: '12px' }}>
+          {totalChecked}/{TOTAL_CRITERIA_COUNT} passed
+        </span>
       </div>
-      <div style={{ borderBottom: '1px solid rgba(0,255,0,0.2)', marginBottom: '4px' }} />
 
-      {/* Performance */}
-      <div>FPS: {fps}</div>
-      <div>State: {gameState}</div>
-      <div style={{ borderBottom: '1px solid rgba(0,255,0,0.2)', margin: '4px 0' }} />
+      {/* Progress bar */}
+      <div style={{ height: '4px', background: '#2d3748' }}>
+        <div
+          style={{
+            height: '100%',
+            width: `${(totalChecked / TOTAL_CRITERIA_COUNT) * 100}%`,
+            background: totalChecked === TOTAL_CRITERIA_COUNT
+              ? '#48bb78'
+              : 'linear-gradient(90deg, #FFD700, #f6ad55)',
+            transition: 'width 0.3s ease',
+          }}
+        />
+      </div>
 
-      {/* Player */}
-      <div style={{ color: '#6f6', fontWeight: 'bold' }}>Player</div>
-      <div>Pos: {formatPos(player.position)}</div>
-      <div>HP: {player.health}/{player.maxHealth}</div>
-      <div>MP: {Math.round(player.mana)}/{player.maxMana}</div>
-      <div>Stamina: {Math.round(player.stamina)}/{player.maxStamina}</div>
-      <div>Level: {player.level} (XP: {player.xp}/{player.xpToNext})</div>
-      <div>Hunger: {Math.round(hunger.current)}/{hunger.max}</div>
-      <div style={{ borderBottom: '1px solid rgba(0,255,0,0.2)', margin: '4px 0' }} />
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
+        {TEST_PHASES.map((phase) => {
+          const phaseCollapsed = collapsedPhases[phase.id];
+          const phaseCriteria = phase.categories.flatMap((c) => c.criteria);
+          const phaseChecked = phaseCriteria.filter((c) => checkedMap[c.id]).length;
 
-      {/* World */}
-      <div style={{ color: '#6f6', fontWeight: 'bold' }}>World</div>
-      <div>Day: {worldTime.dayNumber} | {worldTime.period} {worldTime.hour}:{String(worldTime.minute).padStart(2, '0')}</div>
-      <div>Build Mode: {buildMode ? 'ON' : 'OFF'}</div>
-      <div style={{ borderBottom: '1px solid rgba(0,255,0,0.2)', margin: '4px 0' }} />
+          return (
+            <div key={phase.id} style={{ marginBottom: '8px' }}>
+              {/* Phase header */}
+              <button
+                onClick={() => togglePhase(phase.id)}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  background: 'rgba(255, 215, 0, 0.1)',
+                  border: '1px solid rgba(255, 215, 0, 0.3)',
+                  borderRadius: '6px',
+                  color: '#FFD700',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>{phaseCollapsed ? '+' : '-'} {phase.name}</span>
+                <span style={{ fontSize: '11px', color: '#a0aec0' }}>
+                  {phaseChecked}/{phaseCriteria.length}
+                </span>
+              </button>
 
-      {/* Entities */}
-      <div style={{ color: '#6f6', fontWeight: 'bold' }}>Entities</div>
-      <div>Enemies: {enemies.length}</div>
-      <div>Wildlife: {wildlife.length}</div>
-      <div>Projectiles: {projectiles.length}</div>
-      <div>Loot Drops: {lootDrops.length}</div>
-      <div style={{ borderBottom: '1px solid rgba(0,255,0,0.2)', margin: '4px 0' }} />
+              {!phaseCollapsed && (
+                <div style={{ marginTop: '4px' }}>
+                  {phase.categories.map((cat) => {
+                    const catCollapsed = collapsedCategories[cat.id];
+                    const catChecked = cat.criteria.filter((c) => checkedMap[c.id]).length;
 
-      {/* Inventory */}
-      <div style={{ color: '#6f6', fontWeight: 'bold' }}>Inventory</div>
-      <div>Gold: {inventory.gold} | Essence: {inventory.essence}</div>
-      <div>Items: {inventory.items?.length ?? 0}</div>
+                    return (
+                      <div key={cat.id} style={{ marginLeft: '8px', marginTop: '4px' }}>
+                        {/* Category header */}
+                        <button
+                          onClick={() => toggleCategory(cat.id)}
+                          style={{
+                            width: '100%',
+                            padding: '5px 8px',
+                            background: 'rgba(77, 171, 247, 0.08)',
+                            border: '1px solid rgba(77, 171, 247, 0.2)',
+                            borderRadius: '4px',
+                            color: '#4dabf7',
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <span>{catCollapsed ? '+' : '-'} {cat.name}</span>
+                          <span style={{ fontSize: '11px', color: '#718096' }}>
+                            {catChecked}/{cat.criteria.length}
+                          </span>
+                        </button>
 
-      <div style={{ marginTop: '6px', color: '#888', fontSize: '10px' }}>Press ` to close</div>
+                        {/* Criteria checklist */}
+                        {!catCollapsed && (
+                          <div style={{ marginLeft: '6px', marginTop: '2px' }}>
+                            {cat.criteria.map((criterion) => {
+                              const checked = !!checkedMap[criterion.id];
+                              return (
+                                <label
+                                  key={criterion.id}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: '6px',
+                                    padding: '3px 4px',
+                                    borderRadius: '3px',
+                                    cursor: 'pointer',
+                                    opacity: checked ? 0.6 : 1,
+                                  }}
+                                  title={criterion.description}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleCriterion(criterion.id)}
+                                    style={{ marginTop: '2px', cursor: 'pointer', accentColor: '#48bb78' }}
+                                  />
+                                  <span
+                                    style={{
+                                      textDecoration: checked ? 'line-through' : 'none',
+                                      color: checked ? '#68d391' : '#e2e8f0',
+                                      fontSize: '12px',
+                                      lineHeight: 1.4,
+                                    }}
+                                  >
+                                    {criterion.label}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div
+        style={{
+          padding: '8px 14px',
+          borderTop: '1px solid #4a5568',
+          fontSize: '10px',
+          color: '#718096',
+          textAlign: 'center',
+        }}
+      >
+        Press ` to close — hover criteria for details
+      </div>
     </div>
   );
 };

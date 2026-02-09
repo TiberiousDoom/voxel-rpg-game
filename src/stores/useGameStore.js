@@ -284,6 +284,10 @@ const useGameStore = create((rawSet, get, api) => {
       },
     })),
 
+  // Chunk manager reference (for auto-jump, etc.)
+  _chunkManager: null,
+  setChunkManager: (cm) => set({ _chunkManager: cm }),
+
   // Rift actions (Phase 1)
   setRifts: (rifts) => set({ rifts }),
 
@@ -1034,12 +1038,21 @@ const useGameStore = create((rawSet, get, api) => {
     })),
 
   removeItem: (itemId) =>
-    set((state) => ({
-      inventory: {
-        ...state.inventory,
-        items: state.inventory.items.filter((item) => item.id !== itemId),
-      },
-    })),
+    set((state) => {
+      // Match by id or craftedAt (crafted items use craftedAt as identifier)
+      let found = false;
+      const items = state.inventory.items.filter((item) => {
+        if (found) return true;
+        if (item.id === itemId || item.craftedAt === itemId) {
+          found = true;
+          return false;
+        }
+        return true;
+      });
+      return {
+        inventory: { ...state.inventory, items },
+      };
+    }),
 
   addMaterial: (materialType, amount) =>
     set((state) => ({
@@ -1150,7 +1163,8 @@ const useGameStore = create((rawSet, get, api) => {
           position: [0, 12, 0],
           velocity: [0, 0, 0],
           targetPosition: null,
-          isInvincible: false,
+          isInvincible: true,
+          invincibilityTimer: 3.0, // 3 seconds of spawn protection
           isDodging: false,
           isBlocking: false,
         },

@@ -109,7 +109,7 @@ function PhysicsChunkMesh({ chunk, meshData }) {
   return (
     <RigidBody type="fixed" colliders="trimesh" position={position}>
       <mesh geometry={geometry} frustumCulled={false}>
-        <meshBasicMaterial vertexColors side={THREE.DoubleSide} />
+        <meshLambertMaterial vertexColors side={THREE.DoubleSide} />
       </mesh>
     </RigidBody>
   );
@@ -130,7 +130,7 @@ function VisualChunkMesh({ chunk, meshData }) {
   return (
     <group position={position}>
       <mesh geometry={geometry} frustumCulled={false}>
-        <meshBasicMaterial vertexColors side={THREE.DoubleSide} />
+        <meshLambertMaterial vertexColors side={THREE.DoubleSide} />
       </mesh>
     </group>
   );

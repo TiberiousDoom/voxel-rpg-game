@@ -21,11 +21,11 @@ export const SUNSET_END = 0.80;    // ~7:12 PM — full darkness
 
 // ─── Day/Night Lighting ──────────────────────────────────────
 // Ambient light intensity. Range: 0.0–1.0.
-export const LIGHT_AMBIENT_NIGHT = 0.15;
+export const LIGHT_AMBIENT_NIGHT = 0.3;
 export const LIGHT_AMBIENT_DAY = 0.7;
 
-// Directional (sun) light intensity. Range: 0.0–1.5.
-export const LIGHT_DIRECTIONAL_NIGHT = 0.0;
+// Directional (sun/moon) light intensity. Range: 0.0–1.5.
+export const LIGHT_DIRECTIONAL_NIGHT = 0.3;
 export const LIGHT_DIRECTIONAL_DAY = 1.0;
 
 // Sky colors by time of day

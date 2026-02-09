@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import Player from './Player';
@@ -21,6 +21,62 @@ import RiftController from './RiftController';
 import RiftVisual from './RiftVisual';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
+import { VOXEL_SIZE, CHUNK_SIZE_Y } from '../../systems/chunks/coordinates';
+import { isSolid } from '../../systems/chunks/blockTypes';
+
+/**
+ * Find the terrain surface Y at a given world (x, z).
+ * Scans downward from the top of the chunk to find the highest solid block.
+ * Returns world Y of the top surface, or null if no solid block / chunk not loaded.
+ */
+function getTerrainY(chunkManager, wx, wz) {
+  if (!chunkManager) return null;
+  const maxVoxelY = CHUNK_SIZE_Y - 1;
+  for (let vy = maxVoxelY; vy >= 0; vy--) {
+    const worldY = vy * VOXEL_SIZE + VOXEL_SIZE / 2;
+    const block = chunkManager.getBlock(wx, worldY, wz);
+    if (isSolid(block)) {
+      // Return the top surface of this block
+      return (vy + 1) * VOXEL_SIZE;
+    }
+  }
+  return null;
+}
+
+/**
+ * Wrapper that computes terrain Y for a rift and passes it to RiftVisual.
+ */
+const RiftVisualWithTerrainY = React.memo(({ rift, chunkManager, isNight }) => {
+  const [y, setY] = useState(null);
+
+  useEffect(() => {
+    if (!chunkManager) return;
+
+    const computeY = () => {
+      const terrainY = getTerrainY(chunkManager, rift.x, rift.z);
+      if (terrainY != null) {
+        setY(terrainY + 0.1);
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (computeY()) return;
+
+    // Retry every 500ms until chunk loads
+    const interval = setInterval(() => {
+      if (computeY()) clearInterval(interval);
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [chunkManager, rift.x, rift.z]);
+
+  // Don't render until we have a valid Y (avoids underground flicker)
+  if (y === null) return null;
+
+  return <RiftVisual x={rift.x} y={y} z={rift.z} isNight={isNight} />;
+});
 
 /**
  * Experience component - Main 3D scene container
@@ -61,6 +117,13 @@ const Experience = () => {
     }
   }, [isReady, playerPosition, updatePlayerPosition]);
 
+  // Store chunkManager reference for other systems (auto-jump, etc.)
+  useEffect(() => {
+    if (isReady && chunkManager) {
+      useGameStore.getState().setChunkManager(chunkManager);
+    }
+  }, [isReady, chunkManager]);
+
   // Update chunk system every frame
   useFrame((state, delta) => {
     if (isReady) {
@@ -90,11 +153,11 @@ const Experience = () => {
       <SurvivalTick chunkManager={isReady ? chunkManager : null} />
 
       {/* Rift controller — manages spawning logic */}
-      <RiftController />
+      <RiftController chunkManager={isReady ? chunkManager : null} />
 
-      {/* Rift visuals — render nearest rifts */}
-      {rifts.slice(0, 3).map((rift) => (
-        <RiftVisual key={rift.id} x={rift.x} z={rift.z} isNight={isNight} />
+      {/* Rift visuals — render nearest rifts with terrain-aligned Y */}
+      {isReady && chunkManager && rifts.slice(0, 3).map((rift) => (
+        <RiftVisualWithTerrainY key={rift.id} rift={rift} chunkManager={chunkManager} isNight={isNight} />
       ))}
 
       {/* Physics world */}

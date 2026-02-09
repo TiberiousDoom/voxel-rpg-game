@@ -9,8 +9,28 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import useGameStore from '../../stores/useGameStore';
 import { RiftManager } from '../../systems/survival/RiftManager';
+import { VOXEL_SIZE, CHUNK_SIZE_Y } from '../../systems/chunks/coordinates';
+import { isSolid } from '../../systems/chunks/blockTypes';
 
-const RiftController = () => {
+/**
+ * Find the terrain surface Y for spawning at a given world (x, z).
+ * Returns world Y (top of highest solid block) + 1 unit clearance, or null if chunk not loaded.
+ */
+function getSpawnY(chunkManager, wx, wz) {
+  if (!chunkManager) return null;
+  const maxVoxelY = CHUNK_SIZE_Y - 1;
+  for (let vy = maxVoxelY; vy >= 0; vy--) {
+    const worldY = vy * VOXEL_SIZE + VOXEL_SIZE / 2;
+    const block = chunkManager.getBlock(wx, worldY, wz);
+    if (isSolid(block)) {
+      // Spawn on top of this block with clearance
+      return (vy + 1) * VOXEL_SIZE + 1;
+    }
+  }
+  return null;
+}
+
+const RiftController = ({ chunkManager }) => {
   const riftManagerRef = useRef(null);
   const lastUpdateRef = useRef(0);
 
@@ -43,11 +63,17 @@ const RiftController = () => {
     // Get spawn requests
     const spawns = rm.update(now, state.player.position, state.worldTime, aliveIds);
 
-    // Add spawned enemies to store
+    // Add spawned enemies to store, adjusting Y to terrain surface
     for (const spawn of spawns) {
+      const [sx, , sz] = spawn.position;
+      const terrainY = chunkManager ? getSpawnY(chunkManager, sx, sz) : null;
+      if (terrainY == null) {
+        // Chunk not loaded at spawn position — skip this spawn
+        continue;
+      }
       state.addRiftEnemy({
         ...spawn.monsterData,
-        position: spawn.position,
+        position: [sx, terrainY, sz],
         riftId: spawn.riftId,
       });
     }

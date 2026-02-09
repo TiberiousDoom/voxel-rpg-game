@@ -8,7 +8,7 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const RiftVisual = ({ x, z, isNight }) => {
+const RiftVisual = ({ x, y = 0.1, z, isNight }) => {
   const glowRef = useRef();
   const ringRef = useRef();
 
@@ -25,7 +25,7 @@ const RiftVisual = ({ x, z, isNight }) => {
   });
 
   return (
-    <group position={[x, 0.1, z]}>
+    <group position={[x, y, z]}>
       {/* Corrupted ground patch */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <circleGeometry args={[3, 16]} />

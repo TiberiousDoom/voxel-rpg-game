@@ -184,7 +184,44 @@ const Projectile = ({
     const maxLifetime = lifetime || 5;
     if (elapsedTime.current > maxLifetime || distance > 200) {
       removeProjectile(id);
+      return;
     }
+
+    // Manual distance-based enemy hit detection (fallback for physics sensor)
+    // Traverse scene to find nearby enemies
+    const hitRadius = 1.5;
+    const hitRadiusSq = hitRadius * hitRadius;
+    state.scene.traverse((child) => {
+      if (hasHit.current) return;
+      if (!child.userData?.isEnemy || !child.userData?.takeDamage) return;
+      // Get child world position
+      const wp = child.getWorldPosition(new THREE.Vector3());
+      const dx = pos.x - wp.x;
+      const dy = pos.y - wp.y;
+      const dz = pos.z - wp.z;
+      if (dx * dx + dy * dy + dz * dz < hitRadiusSq) {
+        // Create synthetic event-like object for handleIntersection
+        hasHit.current = true;
+        const store = useGameStore.getState();
+        const player = store.player;
+        const isCrit = Math.random() * 100 < player.critChance;
+        let finalDamage = damage;
+        if (isCrit) finalDamage = damage * (player.critDamage / 100);
+        finalDamage *= 1 + (player.comboCount * 0.1);
+        store.updatePlayer({ comboCount: player.comboCount + 1, comboTimer: 3 });
+        child.userData.takeDamage(Math.round(finalDamage));
+        store.triggerScreenShake(Math.min(0.3 + (finalDamage / 100) * 0.4, 0.8), 0.2);
+        store.addDamageNumber({
+          position: [wp.x, wp.y + 1.5, wp.z],
+          damage: Math.round(finalDamage),
+        });
+        if (isCrit) {
+          store.addDamageNumber({ position: [wp.x, wp.y + 2, wp.z], damage: 'CRIT!' });
+        }
+        store.addRage(5);
+        removeProjectile(id);
+      }
+    });
   });
 
   // Render different projectile types with unique visuals

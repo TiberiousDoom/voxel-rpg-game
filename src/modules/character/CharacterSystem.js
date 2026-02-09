@@ -190,7 +190,7 @@ export const calculateDerivedStats = (character, player, equipment = {}) => {
   // Calculate all derived stats using integration APIs
   const stats = {
     // Combat & Endurance (from CombatIntegration)
-    maxHealth: CombatIntegration.calculateMaxHealth(fullCharacter),
+    maxHealth: CombatIntegration.calculateMaxHealth(fullCharacter, equipment),
     healthRegen: CombatIntegration.calculateHealthRegen(fullCharacter, false),
     maxStamina: CombatIntegration.calculateMaxStamina(fullCharacter),
     staminaRegen: CombatIntegration.calculateStaminaRegen(fullCharacter),

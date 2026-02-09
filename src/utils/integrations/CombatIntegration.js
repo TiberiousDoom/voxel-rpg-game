@@ -101,7 +101,7 @@ export function calculateAttackSpeed(character, equipment = {}) {
  * @param {object} character - The character data
  * @returns {number} Max health
  */
-export function calculateMaxHealth(character) {
+export function calculateMaxHealth(character, equipment = {}) {
   if (!character) return 100;
 
   const endurance = character.attributes?.endurance || 0;
@@ -112,7 +112,15 @@ export function calculateMaxHealth(character) {
   const baseHealth = 100;
   const enduranceBonus = effectiveEndurance * 15;
 
-  return baseHealth + enduranceBonus;
+  // Equipment bonus: sum maxHealth from all equipped items
+  let equipBonus = 0;
+  for (const item of Object.values(equipment)) {
+    if (item?.stats?.maxHealth) {
+      equipBonus += item.stats.maxHealth;
+    }
+  }
+
+  return baseHealth + enduranceBonus + equipBonus;
 }
 
 /**

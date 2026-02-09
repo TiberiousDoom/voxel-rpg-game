@@ -26,12 +26,13 @@ const REACH_DISTANCE_THIRD_PERSON = 50;
 const RAY_STEP = 0.25;
 
 // Long press settings for mobile block interaction
-const LONG_PRESS_DURATION = 500; // ms to hold before mining/placing
+const LONG_PRESS_DURATION = 250; // ms to hold before mining/placing
 const LONG_PRESS_MOVE_THRESHOLD = 20; // pixels of movement that cancels long press
 
 // Mining progress geometry (flat bar above the block)
-const miningBarBgGeometry = new THREE.PlaneGeometry(VOXEL_SIZE * 1.2, 0.15);
-const miningBarFillGeometry = new THREE.PlaneGeometry(1.0, 0.13); // scaled dynamically
+const miningBarBgGeometry = new THREE.PlaneGeometry(VOXEL_SIZE * 1.2, 0.3);
+const miningBarBorderGeometry = new THREE.PlaneGeometry(VOXEL_SIZE * 1.2 + 0.08, 0.38);
+const miningBarFillGeometry = new THREE.PlaneGeometry(1.0, 0.25); // scaled dynamically
 
 // Pre-create geometry for highlight (reused across all renders)
 const highlightBoxGeometry = new THREE.BoxGeometry(
@@ -107,16 +108,20 @@ function MiningProgressBar({ position, progress }) {
 
   return (
     <group position={[position[0], position[1] + VOXEL_SIZE * 0.8, position[2]]}>
+      {/* Black border frame */}
+      <mesh geometry={miningBarBorderGeometry} position={[0, 0, -0.01]}>
+        <meshBasicMaterial color="#000000" side={THREE.DoubleSide} depthTest={false} />
+      </mesh>
       {/* Background */}
       <mesh geometry={miningBarBgGeometry}>
-        <meshBasicMaterial color="#333333" transparent opacity={0.7} side={THREE.DoubleSide} depthTest={false} />
+        <meshBasicMaterial color="#333333" transparent opacity={0.85} side={THREE.DoubleSide} depthTest={false} />
       </mesh>
       {/* Fill */}
       <mesh
         position={[-(VOXEL_SIZE * 1.2 - barWidth) / 2, 0, 0.01]}
         scale={[barWidth, 1, 1]}
       >
-        <planeGeometry args={[1, 0.13]} />
+        <planeGeometry args={[1, 0.25]} />
         <meshBasicMaterial
           color={progress > 0.75 ? '#ff4444' : progress > 0.5 ? '#ffaa00' : '#44ff44'}
           side={THREE.DoubleSide}
@@ -620,83 +625,134 @@ export function BlockInteraction({ chunkManager }) {
     };
   }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, checkEnemyFromCamera]);
 
-  // Desktop third-person: long-press mouse handler for mining/placement
-  // (mirrors mobile long-press behavior but with mouse events)
+  // Desktop third-person: immediate mining on left-click, right-click to place
+  // Uses capture-phase click handler to prevent TouchControls from moving player
   useEffect(() => {
     if (isMobile.current) return;
 
     const canvas = gl.domElement;
 
+    // Track whether a block click should be intercepted before TouchControls
+    let blockClickPending = false;
+
+    // Track right-click for block placement (without drag)
+    const rightClickStart = { x: 0, y: 0 };
+    let rightClickPending = false;
+    let rightClickResult = null;
+
+    // Capture-phase click handler: intercepts clicks on blocks BEFORE
+    // TouchControls can process them for click-to-move
+    const handleClickCapture = (event) => {
+      if (document.pointerLockElement) return;
+      if (blockClickPending) {
+        event.stopImmediatePropagation();
+        blockClickPending = false;
+      }
+    };
+
     const handleMouseDown = (event) => {
       // Only handle in third-person mode (not pointer locked)
       if (document.pointerLockElement) return;
-      if (event.button !== 0) return;
 
-      // Raycast from mouse position to find block
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
+
+      if (event.button === 2) {
+        // Right-click: record position and raycast for potential block placement
+        rightClickStart.x = event.clientX;
+        rightClickStart.y = event.clientY;
+        rightClickPending = true;
+        rightClickResult = raycastFromScreen(x, y);
+        return;
+      }
+
+      if (event.button !== 0) return;
+
+      // First check if click hits an enemy (scene raycast) — if so, let TouchControls handle it
+      const ndcX = (x / canvas.clientWidth) * 2 - 1;
+      const ndcY = -(y / canvas.clientHeight) * 2 + 1;
+      const sceneRc = raycasterRef.current;
+      sceneRc.setFromCamera({ x: ndcX, y: ndcY }, camera);
+      sceneRc.far = REACH_DISTANCE_THIRD_PERSON;
+      const sceneHits = sceneRc.intersectObjects(scene.children, true);
+      for (let i = 0; i < sceneHits.length; i++) {
+        let obj = sceneHits[i].object;
+        while (obj) {
+          if (obj.userData?.isEnemy) {
+            // Click is on an enemy — don't intercept, let TouchControls attack
+            return;
+          }
+          obj = obj.parent;
+        }
+      }
+
+      // Raycast from mouse position to find block
       const result = raycastFromScreen(x, y);
 
       if (result.block) {
+        // Block found, no enemy in the way — intercept this click
+        blockClickPending = true;
         longPressBlock.current = result.block;
         longPressFace.current = result.face;
         longPressTouchStart.current = { x: event.clientX, y: event.clientY };
-        longPressActive.current = false;
 
         // Show highlight immediately
         setTargetBlock(result.block);
         setTargetFace(result.face);
 
-        // Start long press timer — after hold threshold, start progressive mining
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = setTimeout(() => {
-          longPressActive.current = true;
-          canvas.dataset.longPressAt = String(Date.now());
+        // Stamp canvas for mobile long-press guard
+        canvas.dataset.longPressAt = String(Date.now());
 
-          const block = longPressBlock.current;
-          const face = longPressFace.current;
-          if (!block || !chunkManager) return;
-
-          const store = useGameStore.getState();
-          if (store.blockPlacementMode) {
-            // Placement is still instant
-            const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            let plX = blockX, plY = blockY, plZ = blockZ;
-            switch (face) {
-              case 'top': plY += VOXEL_SIZE; break;
-              case 'bottom': plY -= VOXEL_SIZE; break;
-              case 'north': plZ += VOXEL_SIZE; break;
-              case 'south': plZ -= VOXEL_SIZE; break;
-              case 'east': plX += VOXEL_SIZE; break;
-              case 'west': plX -= VOXEL_SIZE; break;
-              default: return;
-            }
-            const existing = chunkManager.getBlock(plX, plY, plZ);
-            if (!isSolid(existing)) {
-              chunkManager.setBlock(plX, plY, plZ, store.selectedBlockType ?? BlockTypes.DIRT);
-            }
-          } else {
-            // Start progressive mining (useFrame will accumulate)
-            isHoldingMine.current = true;
-            miningAccum.current = 0;
-            miningBlockKey.current = null;
+        const store = useGameStore.getState();
+        if (store.blockPlacementMode) {
+          // Placement mode: place immediately on click
+          const block = result.block;
+          const face = result.face;
+          const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          let plX = blockX, plY = blockY, plZ = blockZ;
+          switch (face) {
+            case 'top': plY += VOXEL_SIZE; break;
+            case 'bottom': plY -= VOXEL_SIZE; break;
+            case 'north': plZ += VOXEL_SIZE; break;
+            case 'south': plZ -= VOXEL_SIZE; break;
+            case 'east': plX += VOXEL_SIZE; break;
+            case 'west': plX -= VOXEL_SIZE; break;
+            default: return;
           }
-        }, LONG_PRESS_DURATION);
+          const existing = chunkManager.getBlock(plX, plY, plZ);
+          if (!isSolid(existing)) {
+            chunkManager.setBlock(plX, plY, plZ, store.selectedBlockType ?? BlockTypes.DIRT);
+          }
+        } else {
+          // Mining mode: start progressive mining immediately (no delay!)
+          isHoldingMine.current = true;
+          miningAccum.current = 0;
+          miningBlockKey.current = null;
+        }
       }
+      // If no block hit, blockClickPending stays false → click passes through to TouchControls
     };
 
     const handleMouseMove = (event) => {
-      if (!longPressTimer.current && !isHoldingMine.current) return;
+      // Cancel right-click placement if mouse moved too far (it's a camera drag)
+      if (rightClickPending) {
+        const rdx = event.clientX - rightClickStart.x;
+        const rdy = event.clientY - rightClickStart.y;
+        if (rdx * rdx + rdy * rdy > 25) { // 5px threshold
+          rightClickPending = false;
+          rightClickResult = null;
+        }
+      }
+
+      if (!isHoldingMine.current) return;
 
       const dx = event.clientX - longPressTouchStart.current.x;
       const dy = event.clientY - longPressTouchStart.current.y;
 
       if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
         longPressBlock.current = null;
         longPressFace.current = null;
         isHoldingMine.current = false;
@@ -707,12 +763,40 @@ export function BlockInteraction({ chunkManager }) {
       }
     };
 
-    const handleMouseUp = () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
+    const handleMouseUp = (event) => {
+      // Right-click release: place block if mouse didn't drag
+      if (event.button === 2 && rightClickPending && rightClickResult?.block) {
+        const result = rightClickResult;
+        const block = result.block;
+        const face = result.face;
+        if (block && face && chunkManager) {
+          const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+          let plX = blockX, plY = blockY, plZ = blockZ;
+          switch (face) {
+            case 'top': plY += VOXEL_SIZE; break;
+            case 'bottom': plY -= VOXEL_SIZE; break;
+            case 'north': plZ += VOXEL_SIZE; break;
+            case 'south': plZ -= VOXEL_SIZE; break;
+            case 'east': plX += VOXEL_SIZE; break;
+            case 'west': plX -= VOXEL_SIZE; break;
+            default: break;
+          }
+          const existing = chunkManager.getBlock(plX, plY, plZ);
+          if (!isSolid(existing)) {
+            const store = useGameStore.getState();
+            chunkManager.setBlock(plX, plY, plZ, store.selectedBlockType ?? BlockTypes.DIRT);
+          }
+        }
+        rightClickPending = false;
+        rightClickResult = null;
+        return;
       }
-      longPressActive.current = false;
+      rightClickPending = false;
+      rightClickResult = null;
+
+      // Stop mining on mouseup
       longPressBlock.current = null;
       longPressFace.current = null;
       isHoldingMine.current = false;
@@ -722,13 +806,23 @@ export function BlockInteraction({ chunkManager }) {
       setTargetFace(null);
     };
 
+    const handleContextMenu3P = (event) => {
+      // Prevent context menu in third-person mode on canvas
+      if (!document.pointerLockElement) {
+        event.preventDefault();
+      }
+    };
+
+    canvas.addEventListener('click', handleClickCapture, true); // capture phase — runs before TouchControls
     canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('contextmenu', handleContextMenu3P);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      clearTimeout(longPressTimer.current);
+      canvas.removeEventListener('click', handleClickCapture, true);
       canvas.removeEventListener('mousedown', handleMouseDown);
+      canvas.removeEventListener('contextmenu', handleContextMenu3P);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };

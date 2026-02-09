@@ -6,6 +6,9 @@ import useGameStore from '../../stores/useGameStore';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { getTotalStats } from '../../utils/equipmentStats';
 import { SPELLS, executeSpell } from '../../data/spells';
+import { isTouchDevice } from '../../utils/deviceDetection';
+import { AUTO_JUMP_COOLDOWN_MS, AUTO_JUMP_DETECT_RANGE, AUTO_JUMP_IMPULSE, AUTO_JUMP_MIN_SPEED } from '../../data/tuning';
+import { isSolid as isBlockSolid } from '../../systems/chunks/blockTypes';
 
 const Player = () => {
   const playerRef = useRef();
@@ -33,6 +36,10 @@ const Player = () => {
   const [isDodging, setIsDodging] = React.useState(false);
   const dodgeDirection = useRef(new THREE.Vector3());
   const dodgeTimer = useRef(0);
+
+  // Auto-jump state (mobile/touch devices)
+  const isMobileDevice = useRef(isTouchDevice());
+  const lastAutoJump = useRef(0);
 
   // Reusable Vector3 refs to avoid per-frame allocations (GC pressure reduction)
   const _velocity = useRef(new THREE.Vector3());
@@ -148,6 +155,16 @@ const Player = () => {
     // Mana regeneration
     regenMana(delta * 10); // 10 mana per second
 
+    // Respawn invincibility countdown
+    if (player.isInvincible && player.invincibilityTimer > 0) {
+      const newTimer = player.invincibilityTimer - delta;
+      if (newTimer <= 0) {
+        updatePlayer({ isInvincible: false, invincibilityTimer: 0 });
+      } else {
+        updatePlayer({ invincibilityTimer: newTimer });
+      }
+    }
+
     // Cooldown timers
     if (player.potionCooldown > 0) {
       updatePlayer({ potionCooldown: Math.max(0, player.potionCooldown - delta) });
@@ -183,6 +200,32 @@ const Player = () => {
         setIsDodging(false);
         // Remove invincibility after dodge
         updatePlayer({ isInvincible: false });
+      }
+    }
+
+    // Auto-jump for mobile: detect 1-block obstacles ahead and jump over them
+    if (isMobileDevice.current && !isDodging && Math.abs(currentVel.y) < 0.1 && isMoving) {
+      const xzSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+      if (xzSpeed > AUTO_JUMP_MIN_SPEED) {
+        const now = Date.now();
+        if (now - lastAutoJump.current > AUTO_JUMP_COOLDOWN_MS) {
+          // Check for obstacle at foot level in movement direction
+          const moveDir = _tempDir.current.set(velocity.x, 0, velocity.z).normalize();
+          const checkX = currentPos.x + moveDir.x * AUTO_JUMP_DETECT_RANGE;
+          const checkZ = currentPos.z + moveDir.z * AUTO_JUMP_DETECT_RANGE;
+          // Check if there's a solid block at foot level but NOT at head level
+          const footY = currentPos.y + 0.5;
+          const headY = currentPos.y + 2.5;
+          const cm = useGameStore.getState()._chunkManager;
+          if (cm) {
+            const footBlock = cm.getBlock(checkX, footY, checkZ);
+            const headBlock = cm.getBlock(checkX, headY, checkZ);
+            if (isBlockSolid(footBlock) && !isBlockSolid(headBlock)) {
+              velocity.y = AUTO_JUMP_IMPULSE;
+              lastAutoJump.current = now;
+            }
+          }
+        }
       }
     }
 
@@ -376,7 +419,7 @@ const Player = () => {
       linearDamping={0.5}
       angularDamping={1}
     >
-      <CapsuleCollider args={[0.8, 0.6]} position={[0, 1.4, 0]} />
+      <CapsuleCollider args={[0.8, 0.6]} position={[0, 1.4, 0]} friction={0} restitution={0} />
       <group rotation={[0, player.facingAngle, 0]}>
         {/* Player body */}
         <mesh position={[0, 1.0, 0]}>

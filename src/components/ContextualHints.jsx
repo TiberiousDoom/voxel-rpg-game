@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useGameStore from '../stores/useGameStore';
 
 /**
@@ -7,6 +7,7 @@ import useGameStore from '../stores/useGameStore';
 const ContextualHints = () => {
   const [currentHint, setCurrentHint] = useState(null);
   const [shownHints, setShownHints] = useState(new Set());
+  const hintCooldowns = useRef(new Map()); // id → timestamp of last show
   const gameState = useGameStore((state) => state.gameState);
   const playerHealth = useGameStore((state) => state.player.health);
   const playerMaxHealth = useGameStore((state) => state.player.maxHealth);
@@ -114,17 +115,28 @@ const ContextualHints = () => {
     }
 
     const checkHints = () => {
+      // Don't check while a hint is currently displayed
+      if (currentHint) return;
+
+      const now = Date.now();
       for (const hint of hints.sort((a, b) => a.priority - b.priority)) {
         // Skip if already shown and showOnce
         if (hint.showOnce && shownHints.has(hint.id)) continue;
+
+        // Check cooldown for repeating hints
+        if (hint.cooldown) {
+          const lastShown = hintCooldowns.current.get(hint.id) || 0;
+          if (now - lastShown < hint.cooldown) continue;
+        }
 
         // Check condition
         if (!hint.condition()) continue;
 
         // Check delay
-        if (hint.delay && Date.now() - startTime < hint.delay) continue;
+        if (hint.delay && now - startTime < hint.delay) continue;
 
         // Show hint
+        hintCooldowns.current.set(hint.id, now);
         setCurrentHint(hint);
         setShownHints((prev) => new Set([...prev, hint.id]));
 
@@ -161,7 +173,7 @@ const ContextualHints = () => {
         fontFamily: 'sans-serif',
         zIndex: 100,
         pointerEvents: 'none',
-        animation: 'fadeInOut 0.3s ease-in-out',
+        animation: 'fadeIn 0.3s ease-in-out',
         border: '1px solid rgba(255, 255, 255, 0.2)',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
       }}

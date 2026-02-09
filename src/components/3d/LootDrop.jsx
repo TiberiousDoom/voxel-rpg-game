@@ -7,7 +7,7 @@ import useGameStore from '../../stores/useGameStore';
 /**
  * LootDrop component - Collectible loot that drops from enemies
  */
-const LootDrop = ({ position, lootType = 'gold', amount = 10, id, onCollect }) => {
+const LootDrop = ({ position, lootType, type, amount = 10, material, color, id, onCollect }) => {
   const rigidBodyRef = useRef();
   const groupRef = useRef();
   const [collected, setCollected] = useState(false);
@@ -19,16 +19,22 @@ const LootDrop = ({ position, lootType = 'gold', amount = 10, id, onCollect }) =
 
   const player = useGameStore((state) => state.player);
   const addGold = useGameStore((state) => state.addGold);
+  const addMaterial = useGameStore((state) => state.addMaterial);
+
+  // Resolve loot type from either prop name
+  const resolvedType = type || lootType || 'gold';
 
   // Cache color since lootType doesn't change
   const lootColor = useMemo(() => {
-    switch (lootType) {
+    if (color) return color;
+    switch (resolvedType) {
       case 'gold': return '#ffd700';
       case 'health': return '#ff6b6b';
       case 'mana': return '#4dabf7';
+      case 'material': return '#88ff88';
       default: return '#ffffff';
     }
-  }, [lootType]);
+  }, [resolvedType, color]);
 
   useFrame((state, delta) => {
     if (!rigidBodyRef.current || collected) return;
@@ -47,8 +53,20 @@ const LootDrop = ({ position, lootType = 'gold', amount = 10, id, onCollect }) =
 
     if (distance < 2.5) {
       setCollected(true);
-      if (lootType === 'gold') {
+      if (resolvedType === 'gold') {
         addGold(amount);
+        useGameStore.getState().addDamageNumber({
+          position: [lootTranslation.x, lootTranslation.y + 1.5, lootTranslation.z],
+          damage: `+${amount} gold`,
+          color: '#ffd700',
+        });
+      } else if (resolvedType === 'material' && material) {
+        addMaterial(material, amount);
+        useGameStore.getState().addDamageNumber({
+          position: [lootTranslation.x, lootTranslation.y + 1.5, lootTranslation.z],
+          damage: `+${amount} ${material}`,
+          color: '#ffffff',
+        });
       }
       if (onCollect && id) {
         onCollect(id);

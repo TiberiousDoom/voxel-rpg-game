@@ -166,18 +166,24 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
         xpAmount: mXp,
       });
 
-      // Grant gold
-      store.addGold(10);
+      // Spawn gold as loot drop in world
+      store.addLootDrop({
+        position: [ePos.x, ePos.y + 1, ePos.z],
+        type: 'gold',
+        amount: 10,
+        color: '#ffdd00',
+      });
 
-      // Material drops
+      // Material drops as world loot entities
       const drops = MONSTER_DROPS[mType] || [];
       for (const drop of drops) {
         if (Math.random() < drop.chance) {
-          store.addMaterial(drop.material, drop.amount);
-          store.addDamageNumber({
-            position: [ePos.x, ePos.y + 1.5, ePos.z],
-            damage: `+${drop.amount} ${drop.material}`,
-            color: '#ffffff',
+          store.addLootDrop({
+            position: [ePos.x + (Math.random() - 0.5) * 2, ePos.y + 1, ePos.z + (Math.random() - 0.5) * 2],
+            type: 'material',
+            material: drop.material,
+            amount: drop.amount,
+            color: '#88ff88',
           });
         }
       }

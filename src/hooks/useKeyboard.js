@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import useGameStore from '../stores/useGameStore';
 
 // Key mapping for game controls
 const KEYMAP = {
@@ -32,6 +33,11 @@ const KEYMAP = {
   AltRight: 'block',
 };
 
+// Keys that fire a toggle action on keydown (not held state)
+const TOGGLE_KEYS = {
+  Tab: 'buildMode',
+};
+
 /**
  * Hook for handling keyboard input in 3D game
  * @returns {Object} Object with boolean values for each action
@@ -41,6 +47,16 @@ export function useKeyboard() {
 
   useEffect(() => {
     const onKeyDown = (e) => {
+      // Toggle keys fire a store action once on keydown
+      const toggle = TOGGLE_KEYS[e.code];
+      if (toggle) {
+        e.preventDefault();
+        if (toggle === 'buildMode') {
+          useGameStore.getState().toggleBuildMode();
+        }
+        return;
+      }
+
       const action = KEYMAP[e.code];
       if (action) {
         e.preventDefault();
@@ -56,14 +72,21 @@ export function useKeyboard() {
       }
     };
 
+    // Reset all keys when window loses focus (prevents stuck keys from Alt+Tab etc.)
+    const onBlur = () => {
+      setKeys({});
+    };
+
     // Add event listeners
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
 
     // Cleanup on unmount
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
     };
   }, []);
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer } from 'lucide-react';
+import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer, Pickaxe } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 import { getTotalStats } from '../utils/equipmentStats';
 import StatBarWithTooltip from './ui/StatBarWithTooltip';
@@ -17,6 +17,8 @@ const GameUI = () => {
   const hunger = useGameStore((state) => state.hunger);
   const shelter = useGameStore((state) => state.shelter);
   const worldTime = useGameStore((state) => state.worldTime);
+  const buildMode = useGameStore((state) => state.buildMode);
+  const toggleBuildMode = useGameStore((state) => state.toggleBuildMode);
   const [isMobile, setIsMobile] = useState(false);
   const statBreakdowns = useStatBreakdown();
 
@@ -126,6 +128,31 @@ const GameUI = () => {
         zIndex: 100,
       }}
     >
+      {/* Build mode badge (top-center) */}
+      {buildMode && (
+        <div
+          style={{
+            position: 'absolute',
+            top: isMobile ? '10px' : '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255, 165, 0, 0.85)',
+            color: '#fff',
+            padding: '6px 18px',
+            borderRadius: '6px',
+            fontSize: isMobile ? '0.85rem' : '1rem',
+            fontWeight: 'bold',
+            letterSpacing: '2px',
+            border: '2px solid #ffa500',
+            textTransform: 'uppercase',
+            pointerEvents: 'none',
+            zIndex: 110,
+          }}
+        >
+          BUILD MODE
+        </div>
+      )}
+
       {/* Top left - Player stats */}
       <div
         style={{
@@ -434,30 +461,30 @@ const GameUI = () => {
           <Hammer size={isMobile ? 28 : 24} style={{ color: '#ffd700' }} />
           {!isMobile && <span style={{ fontSize: '0.7rem' }}>Crafting [C]</span>}
         </div>
+        <div
+          onClick={toggleBuildMode}
+          style={{
+            background: buildMode ? 'rgba(255, 165, 0, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+            padding: isMobile ? '10px' : '12px',
+            borderRadius: '10px',
+            color: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '5px',
+            border: buildMode ? '2px solid #ffa500' : '2px solid #4a5568',
+            minWidth: isMobile ? '56px' : 'auto',
+            minHeight: isMobile ? '56px' : 'auto',
+            cursor: 'pointer',
+            touchAction: 'manipulation',
+          }}
+        >
+          <Pickaxe size={isMobile ? 28 : 24} style={{ color: buildMode ? '#fff' : '#ffa500' }} />
+          {!isMobile && <span style={{ fontSize: '0.7rem' }}>Build [Tab]</span>}
+        </div>
       </div>
 
       {/* Bottom center - Controls hint (positioned above BlockHotbar) */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: isMobile ? '80px' : '160px', // Above BlockHotbar
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'rgba(0, 0, 0, 0.6)',
-          padding: isMobile ? '8px 12px' : '10px 20px',
-          borderRadius: '10px',
-          color: 'white',
-          fontSize: isMobile ? '0.75rem' : '0.9rem',
-          maxWidth: '90vw',
-        }}
-      >
-        <div style={{ display: 'flex', gap: isMobile ? '8px' : '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <span>Tap/Click - Move/Attack</span>
-          {!isMobile && <span>WASD - Move</span>}
-          {!isMobile && <span>Space - Jump</span>}
-          {!isMobile && <span>1-2 - Spells</span>}
-        </div>
-      </div>
 
       {/* Player position debug info (optional) */}
       {!isMobile && (

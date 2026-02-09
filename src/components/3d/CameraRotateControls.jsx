@@ -78,6 +78,11 @@ const CameraRotateControls = () => {
       if (e.button === 2) isDragging.current = false;
     };
 
+    // Cancel drag if window loses focus (Alt+Tab, mouse leaves browser, etc.)
+    const handleBlur = () => {
+      isDragging.current = false;
+    };
+
     // ── Scroll wheel zoom (desktop) ─────────────────
     const handleWheel = (e) => {
       const cam = getCameraState();
@@ -184,27 +189,37 @@ const CameraRotateControls = () => {
       }
     };
 
-    const handleContextMenu = (e) => e.preventDefault();
+    const handleContextMenu = (e) => {
+      // Prevent context menu when right-click-dragging or when right-click is on the canvas
+      if (isDragging.current || e.target === canvas) {
+        e.preventDefault();
+      }
+    };
 
     // ── Register ─────────────────────────────────────
+    // mousedown on canvas (only start drag from game area)
     canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', handleMouseUp);
+    // mousemove/mouseup on document so drag continues even if cursor leaves canvas
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('wheel', handleWheel, { passive: false });
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd);
-    canvas.addEventListener('contextmenu', handleContextMenu);
+    // Prevent context menu on document while dragging (covers cursor outside canvas)
+    document.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('blur', handleBlur);
 
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
       canvas.removeEventListener('wheel', handleWheel);
       canvas.removeEventListener('touchstart', handleTouchStart);
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
-      canvas.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('blur', handleBlur);
     };
   }, [gl]);
 

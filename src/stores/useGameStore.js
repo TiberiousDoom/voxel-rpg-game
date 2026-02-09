@@ -18,6 +18,10 @@ import { ActionHistory, createActionMiddleware } from '../systems/state/ActionSy
 // Action history for replay/rollback/debugging
 export const actionHistory = new ActionHistory(1000);
 
+// Monotonic counter for unique entity IDs (avoids React duplicate key warnings)
+let _entityIdCounter = 0;
+const nextEntityId = () => `e${Date.now()}_${++_entityIdCounter}`;
+
 const useGameStore = create((rawSet, get, api) => {
   // Wrap set with action middleware - intercepts action objects for validation/history
   // Regular set() calls (functions/plain objects without .type) pass through unchanged
@@ -72,6 +76,7 @@ const useGameStore = create((rawSet, get, api) => {
     comboCount: 0,
     comboTimer: 0,
     isInvincible: false,
+    invincibilityTimer: 0,
     rage: 0,
     maxRage: 100,
     statusEffects: [], // Array of {type, duration, value}
@@ -138,6 +143,7 @@ const useGameStore = create((rawSet, get, api) => {
   // Block interaction state (Phase 0.3)
   selectedBlockType: 3, // GRASS by default
   blockPlacementMode: false, // false = mining, true = placing
+  buildMode: false, // Toggle build mode (Tab key) — gates all block interaction
 
   // World time state (Phase 1)
   worldTime: {
@@ -208,6 +214,8 @@ const useGameStore = create((rawSet, get, api) => {
   setSelectedBlockType: (blockType) => set({ selectedBlockType: blockType }),
   setBlockPlacementMode: (mode) => set({ blockPlacementMode: mode }),
   toggleBlockPlacementMode: () => set((state) => ({ blockPlacementMode: !state.blockPlacementMode })),
+  toggleBuildMode: () => set((state) => ({ buildMode: !state.buildMode })),
+  setBuildMode: (mode) => set({ buildMode: mode }),
 
   // World time actions (Phase 1) — called by TimeManager integration each frame
   updateWorldTime: (timeData) =>
@@ -303,7 +311,7 @@ const useGameStore = create((rawSet, get, api) => {
 
   addDamageNumber: (damageNum) =>
     set((state) => ({
-      damageNumbers: [...state.damageNumbers, { ...damageNum, id: Date.now() + Math.random() }],
+      damageNumbers: [...state.damageNumbers, { ...damageNum, id: nextEntityId() }],
     })),
 
   removeDamageNumber: (id) =>
@@ -313,7 +321,7 @@ const useGameStore = create((rawSet, get, api) => {
 
   addLootDrop: (loot) =>
     set((state) => ({
-      lootDrops: [...state.lootDrops, { ...loot, id: Date.now() + Math.random() }],
+      lootDrops: [...state.lootDrops, { ...loot, id: nextEntityId() }],
     })),
 
   removeLootDrop: (id) =>
@@ -323,7 +331,7 @@ const useGameStore = create((rawSet, get, api) => {
 
   addXPOrb: (orb) =>
     set((state) => ({
-      xpOrbs: [...state.xpOrbs, { ...orb, id: Date.now() + Math.random() }],
+      xpOrbs: [...state.xpOrbs, { ...orb, id: nextEntityId() }],
     })),
 
   removeXPOrb: (id) =>
@@ -333,7 +341,7 @@ const useGameStore = create((rawSet, get, api) => {
 
   addParticleEffect: (effect) =>
     set((state) => ({
-      particleEffects: [...state.particleEffects, { ...effect, id: Date.now() + Math.random() }],
+      particleEffects: [...state.particleEffects, { ...effect, id: nextEntityId() }],
     })),
 
   removeParticleEffect: (id) =>
@@ -1160,11 +1168,12 @@ const useGameStore = create((rawSet, get, api) => {
           health: Math.ceil(state.player.maxHealth * 0.5),
           mana: state.player.maxMana,
           stamina: Math.ceil(state.player.maxStamina * 0.5),
-          position: [0, 12, 0],
+          // Spawn at a random offset from origin to avoid enemy clusters
+          position: [(Math.random() - 0.5) * 30, 20, (Math.random() - 0.5) * 30],
           velocity: [0, 0, 0],
           targetPosition: null,
           isInvincible: true,
-          invincibilityTimer: 3.0, // 3 seconds of spawn protection
+          invincibilityTimer: 5.0, // 5 seconds of spawn protection
           isDodging: false,
           isBlocking: false,
         },
@@ -1235,6 +1244,7 @@ const useGameStore = create((rawSet, get, api) => {
       hunger: { current: 100, max: 100, isStarving: false, status: 'well_fed' },
       shelter: { isFullShelter: false, isPartialShelter: false, isExposed: true, tier: 'exposed' },
       tutorialHints: { shownHints: [] },
+      buildMode: false,
     }),
 
   // Character system actions

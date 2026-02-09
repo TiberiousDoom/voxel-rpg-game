@@ -24,6 +24,16 @@ const TouchControls = () => {
       // BlockInteraction handles mining/placement in that mode
       if (document.pointerLockElement) return;
 
+      // Disable movement/attack clicks when build mode is active
+      if (useGameStore.getState().buildMode) return;
+
+      // Skip if a block click just happened (desktop 3P mining/placing)
+      const store = useGameStore.getState();
+      if (store._blockClickActive) {
+        store._blockClickActive = false;
+        return;
+      }
+
       // Skip if a long press just fired - BlockInteraction stamps the canvas
       // dataset when a long-press mine/place happens, and the synthetic click
       // from touchend should not trigger movement
@@ -77,8 +87,17 @@ const TouchControls = () => {
 
         if (enemyHit && enemyData?.takeDamage) {
           // Attack enemy with projectile - DO NOT MOVE
-          const playerPos = useGameStore.getState().player.position;
-          const playerDamage = useGameStore.getState().player.damage;
+          const attackStore = useGameStore.getState();
+          const playerPos = attackStore.player.position;
+          const playerDamage = attackStore.player.damage;
+
+          // Ranged attacks cost mana
+          const manaCost = 5;
+          if (attackStore.player.mana < manaCost) {
+            // No mana — don't attack
+            return;
+          }
+          attackStore.consumeMana(manaCost);
 
           // Calculate direction from player to enemy
           const direction = [
@@ -94,7 +113,7 @@ const TouchControls = () => {
           ];
 
           // Spawn a projectile from player towards enemy
-          useGameStore.getState().addProjectile({
+          attackStore.addProjectile({
             id: `tap-attack-${Date.now()}`,
             position: [playerPos[0], playerPos[1] + 0.5, playerPos[2]],
             direction: normalizedDir,

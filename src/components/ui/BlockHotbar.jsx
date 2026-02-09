@@ -2,9 +2,10 @@
  * BlockHotbar - UI for selecting block types and toggling placement mode
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import useGameStore from '../../stores/useGameStore';
 import { BlockTypes, BlockProperties } from '../../systems/chunks/blockTypes';
+import { isTouchDevice } from '../../utils/deviceDetection';
 
 // Blocks available in the hotbar
 const HOTBAR_BLOCKS = [
@@ -31,19 +32,14 @@ function rgbToCSS(rgb) {
 export function BlockHotbar() {
   const selectedBlockType = useGameStore((state) => state.selectedBlockType);
   const blockPlacementMode = useGameStore((state) => state.blockPlacementMode);
+  const buildMode = useGameStore((state) => state.buildMode);
   const setSelectedBlockType = useGameStore((state) => state.setSelectedBlockType);
   const toggleBlockPlacementMode = useGameStore((state) => state.toggleBlockPlacementMode);
+  const isMobile = useRef(isTouchDevice());
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (number keys for block selection only)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Tab to toggle placement mode
-      if (e.code === 'Tab') {
-        e.preventDefault();
-        toggleBlockPlacementMode();
-        return;
-      }
-
       // Number keys to select blocks (when not focused on input)
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
@@ -55,20 +51,25 @@ export function BlockHotbar() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedBlockType, toggleBlockPlacementMode]);
+  }, [setSelectedBlockType]);
+
+  // Only show when build mode is active
+  if (!buildMode) return null;
 
   return (
     <div style={styles.container}>
-      {/* Mode toggle button */}
-      <button
-        style={{
-          ...styles.modeButton,
-          backgroundColor: blockPlacementMode ? '#4a7c4a' : '#7c4a4a',
-        }}
-        onClick={toggleBlockPlacementMode}
-      >
-        {blockPlacementMode ? 'Place' : 'Mine'}
-      </button>
+      {/* Mode toggle button — mobile only (desktop uses left-click=mine, right-click=place) */}
+      {isMobile.current && (
+        <button
+          style={{
+            ...styles.modeButton,
+            backgroundColor: blockPlacementMode ? '#4a7c4a' : '#7c4a4a',
+          }}
+          onClick={toggleBlockPlacementMode}
+        >
+          {blockPlacementMode ? 'Place' : 'Mine'}
+        </button>
+      )}
 
       {/* Block slots */}
       <div style={styles.slots}>
@@ -96,9 +97,21 @@ export function BlockHotbar() {
 
       {/* Instructions */}
       <div style={styles.instructions}>
-        <span>Click to {blockPlacementMode ? 'place' : 'mine'}</span>
-        <span style={styles.separator}>|</span>
-        <span>Tab to toggle mode</span>
+        {isMobile.current ? (
+          <>
+            <span>Tap to {blockPlacementMode ? 'place' : 'mine'}</span>
+            <span style={styles.separator}>|</span>
+            <span>Tab to exit</span>
+          </>
+        ) : (
+          <>
+            <span>Hold left-click to mine</span>
+            <span style={styles.separator}>|</span>
+            <span>Right-click to place</span>
+            <span style={styles.separator}>|</span>
+            <span>Tab to exit</span>
+          </>
+        )}
       </div>
     </div>
   );

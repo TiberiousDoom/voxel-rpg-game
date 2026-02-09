@@ -152,10 +152,11 @@ export function BlockInteraction({ chunkManager }) {
   // Track if we're on mobile
   const isMobile = useRef(isTouchDevice());
 
-  // Get selected block type, placement mode, and first-person mode from store
+  // Get selected block type, placement mode, first-person mode, and build mode from store
   const selectedBlockType = useGameStore((state) => state.selectedBlockType ?? BlockTypes.DIRT);
   const firstPerson = useGameStore((state) => state.camera.firstPerson);
   const blockPlacementMode = useGameStore((state) => state.blockPlacementMode);
+  const buildMode = useGameStore((state) => state.buildMode);
 
   // Raycaster for screen-space raycasting (mobile + desktop third-person)
   const raycasterRef = useRef(new THREE.Raycaster());
@@ -343,13 +344,23 @@ export function BlockInteraction({ chunkManager }) {
   // Track previous target to avoid unnecessary state updates
   const prevTargetRef = useRef({ block: null, face: null });
 
-  // Update raycast every few frames (desktop first-person mode only)
+  // Update raycast every few frames (first-person mode OR third-person build mode)
   useFrame(() => {
-    // On mobile or in third-person, don't do continuous raycasting
+    // Build mode must be active for any continuous raycasting
+    if (!buildMode) {
+      if (targetBlock !== null && !isHoldingMine.current) {
+        setTargetBlock(null);
+        setTargetFace(null);
+        prevTargetRef.current = { block: null, face: null };
+      }
+      return;
+    }
+
+    // On mobile or in third-person without first-person, don't do continuous raycasting
     // Mobile uses tap-to-target instead
     if (isMobile.current || !firstPerson) {
-      // Clear target when not in first-person (unless mobile has selected a block)
-      if (!isMobile.current && targetBlock !== null) {
+      // Clear target when not in first-person, BUT keep it while actively mining
+      if (!isMobile.current && targetBlock !== null && !isHoldingMine.current) {
         setTargetBlock(null);
         setTargetFace(null);
         prevTargetRef.current = { block: null, face: null };
@@ -382,7 +393,7 @@ export function BlockInteraction({ chunkManager }) {
 
   // Progressive mining: accumulate progress while holding on a block
   useFrame((_, delta) => {
-    if (!isHoldingMine.current || !targetBlock || !chunkManager) {
+    if (!buildMode || !isHoldingMine.current || !chunkManager) {
       if (miningAccum.current > 0) {
         miningAccum.current = 0;
         miningBlockKey.current = null;
@@ -391,21 +402,39 @@ export function BlockInteraction({ chunkManager }) {
       return;
     }
 
-    const bx = Math.floor(targetBlock.x / VOXEL_SIZE);
-    const by = Math.floor(targetBlock.y / VOXEL_SIZE);
-    const bz = Math.floor(targetBlock.z / VOXEL_SIZE);
-    const blockKey = `${bx},${by},${bz}`;
+    // If no target block but we're holding mine, keep using the last known block
+    // This prevents mining interruption from brief raycast misses during camera movement
+    if (!targetBlock && miningBlockKey.current) {
+      // Continue mining the last known block
+    } else if (!targetBlock) {
+      return;
+    }
 
-    // Reset if target block changed
-    if (miningBlockKey.current !== blockKey) {
+    const bx = targetBlock ? Math.floor(targetBlock.x / VOXEL_SIZE) : null;
+    const by = targetBlock ? Math.floor(targetBlock.y / VOXEL_SIZE) : null;
+    const bz = targetBlock ? Math.floor(targetBlock.z / VOXEL_SIZE) : null;
+    const blockKey = targetBlock ? `${bx},${by},${bz}` : miningBlockKey.current;
+
+    // Reset if target block changed (but not if target temporarily went null)
+    if (targetBlock && miningBlockKey.current && miningBlockKey.current !== blockKey) {
       miningAccum.current = 0;
+      miningBlockKey.current = blockKey;
+    } else if (!miningBlockKey.current) {
       miningBlockKey.current = blockKey;
     }
 
-    // Get block hardness
-    const worldX = bx * VOXEL_SIZE + VOXEL_SIZE / 2;
-    const worldY = by * VOXEL_SIZE + VOXEL_SIZE / 2;
-    const worldZ = bz * VOXEL_SIZE + VOXEL_SIZE / 2;
+    // Get block hardness — parse from blockKey if target went null
+    let worldX, worldY, worldZ;
+    if (bx !== null) {
+      worldX = bx * VOXEL_SIZE + VOXEL_SIZE / 2;
+      worldY = by * VOXEL_SIZE + VOXEL_SIZE / 2;
+      worldZ = bz * VOXEL_SIZE + VOXEL_SIZE / 2;
+    } else {
+      const parts = miningBlockKey.current.split(',');
+      worldX = Number(parts[0]) * VOXEL_SIZE + VOXEL_SIZE / 2;
+      worldY = Number(parts[1]) * VOXEL_SIZE + VOXEL_SIZE / 2;
+      worldZ = Number(parts[2]) * VOXEL_SIZE + VOXEL_SIZE / 2;
+    }
     const blockType = chunkManager.getBlock(worldX, worldY, worldZ);
     if (!blockType || blockType === BlockTypes.AIR || blockType === BlockTypes.BEDROCK) return;
 
@@ -559,39 +588,42 @@ export function BlockInteraction({ chunkManager }) {
       const isPointerLocked = document.pointerLockElement != null;
 
       if (firstPerson && isPointerLocked) {
+        // Build mode required for block interaction in first-person
+        if (!store.buildMode) return;
+
         if (event.button === 0) {
-          if (store.blockPlacementMode) {
-            placeBlock(selectedBlockType);
+          // Left click: check for enemy FIRST, then mine block
+          const enemy = checkEnemyFromCamera();
+          if (enemy) {
+            // Attack enemy with projectile (costs mana)
+            const manaCost = 5;
+            if (store.player.mana < manaCost) return; // No mana
+            store.consumeMana(manaCost);
+
+            const playerPos = store.player.position;
+            const hitPt = enemy.hit.point;
+            const dir = [
+              hitPt.x - playerPos[0],
+              (hitPt.y + 0.5) - (playerPos[1] + 0.5),
+              hitPt.z - playerPos[2],
+            ];
+            const len = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2);
+            store.addProjectile({
+              id: `fp-attack-${Date.now()}`,
+              position: [playerPos[0], playerPos[1] + 2.0, playerPos[2]],
+              direction: [dir[0] / len, dir[1] / len, dir[2] / len],
+              speed: 25,
+              damage: store.player.damage,
+              color: '#00ffff',
+            });
           } else {
-            // Check for enemy FIRST, then start mining
-            const enemy = checkEnemyFromCamera();
-            if (enemy) {
-              // Attack enemy with projectile
-              const playerPos = store.player.position;
-              const hitPt = enemy.hit.point;
-              const dir = [
-                hitPt.x - playerPos[0],
-                (hitPt.y + 0.5) - (playerPos[1] + 0.5),
-                hitPt.z - playerPos[2],
-              ];
-              const len = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2);
-              store.addProjectile({
-                id: `fp-attack-${Date.now()}`,
-                position: [playerPos[0], playerPos[1] + 2.0, playerPos[2]],
-                direction: [dir[0] / len, dir[1] / len, dir[2] / len],
-                speed: 25,
-                damage: store.player.damage,
-                color: '#00ffff',
-              });
-            } else {
-              // Start progressive mining (hold to break)
-              isHoldingMine.current = true;
-              miningAccum.current = 0;
-              miningBlockKey.current = null;
-            }
+            // Start progressive mining (hold to break)
+            isHoldingMine.current = true;
+            miningAccum.current = 0;
+            miningBlockKey.current = null;
           }
         } else if (event.button === 2) {
-          // Right click: always place block (regardless of mode)
+          // Right click: place block
           placeBlock(selectedBlockType);
         }
       }
@@ -625,34 +657,24 @@ export function BlockInteraction({ chunkManager }) {
     };
   }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, checkEnemyFromCamera]);
 
-  // Desktop third-person: immediate mining on left-click, right-click to place
-  // Uses capture-phase click handler to prevent TouchControls from moving player
+  // Desktop third-person: left-click to mine, right-click to place
+  // Uses a store flag (_blockClickActive) to coordinate with TouchControls
   useEffect(() => {
     if (isMobile.current) return;
 
     const canvas = gl.domElement;
-
-    // Track whether a block click should be intercepted before TouchControls
-    let blockClickPending = false;
 
     // Track right-click for block placement (without drag)
     const rightClickStart = { x: 0, y: 0 };
     let rightClickPending = false;
     let rightClickResult = null;
 
-    // Capture-phase click handler: intercepts clicks on blocks BEFORE
-    // TouchControls can process them for click-to-move
-    const handleClickCapture = (event) => {
-      if (document.pointerLockElement) return;
-      if (blockClickPending) {
-        event.stopImmediatePropagation();
-        blockClickPending = false;
-      }
-    };
-
     const handleMouseDown = (event) => {
       // Only handle in third-person mode (not pointer locked)
       if (document.pointerLockElement) return;
+
+      // Build mode required for block interaction in third-person
+      if (!useGameStore.getState().buildMode) return;
 
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
@@ -670,8 +692,8 @@ export function BlockInteraction({ chunkManager }) {
       if (event.button !== 0) return;
 
       // First check if click hits an enemy (scene raycast) — if so, let TouchControls handle it
-      const ndcX = (x / canvas.clientWidth) * 2 - 1;
-      const ndcY = -(y / canvas.clientHeight) * 2 + 1;
+      const ndcX = (x / rect.width) * 2 - 1;
+      const ndcY = -(y / rect.height) * 2 + 1;
       const sceneRc = raycasterRef.current;
       sceneRc.setFromCamera({ x: ndcX, y: ndcY }, camera);
       sceneRc.far = REACH_DISTANCE_THIRD_PERSON;
@@ -691,8 +713,11 @@ export function BlockInteraction({ chunkManager }) {
       const result = raycastFromScreen(x, y);
 
       if (result.block) {
-        // Block found, no enemy in the way — intercept this click
-        blockClickPending = true;
+        // Block found — set store flag to suppress TouchControls movement
+        useGameStore.getState()._blockClickActive = true;
+        // Also stamp longPressAt as backup suppression signal
+        canvas.dataset.longPressAt = String(Date.now());
+
         longPressBlock.current = result.block;
         longPressFace.current = result.face;
         longPressTouchStart.current = { x: event.clientX, y: event.clientY };
@@ -701,39 +726,15 @@ export function BlockInteraction({ chunkManager }) {
         setTargetBlock(result.block);
         setTargetFace(result.face);
 
-        // Stamp canvas for mobile long-press guard
-        canvas.dataset.longPressAt = String(Date.now());
-
-        const store = useGameStore.getState();
-        if (store.blockPlacementMode) {
-          // Placement mode: place immediately on click
-          const block = result.block;
-          const face = result.face;
-          const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          let plX = blockX, plY = blockY, plZ = blockZ;
-          switch (face) {
-            case 'top': plY += VOXEL_SIZE; break;
-            case 'bottom': plY -= VOXEL_SIZE; break;
-            case 'north': plZ += VOXEL_SIZE; break;
-            case 'south': plZ -= VOXEL_SIZE; break;
-            case 'east': plX += VOXEL_SIZE; break;
-            case 'west': plX -= VOXEL_SIZE; break;
-            default: return;
-          }
-          const existing = chunkManager.getBlock(plX, plY, plZ);
-          if (!isSolid(existing)) {
-            chunkManager.setBlock(plX, plY, plZ, store.selectedBlockType ?? BlockTypes.DIRT);
-          }
-        } else {
-          // Mining mode: start progressive mining immediately (no delay!)
-          isHoldingMine.current = true;
-          miningAccum.current = 0;
-          miningBlockKey.current = null;
-        }
+        // Desktop: always mine on left-click (no toggle mode)
+        isHoldingMine.current = true;
+        miningAccum.current = 0;
+        // Set miningBlockKey immediately so mining progress can find the block
+        const mbx = Math.floor(result.block.x / VOXEL_SIZE);
+        const mby = Math.floor(result.block.y / VOXEL_SIZE);
+        const mbz = Math.floor(result.block.z / VOXEL_SIZE);
+        miningBlockKey.current = `${mbx},${mby},${mbz}`;
       }
-      // If no block hit, blockClickPending stays false → click passes through to TouchControls
     };
 
     const handleMouseMove = (event) => {
@@ -813,14 +814,12 @@ export function BlockInteraction({ chunkManager }) {
       }
     };
 
-    canvas.addEventListener('click', handleClickCapture, true); // capture phase — runs before TouchControls
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('contextmenu', handleContextMenu3P);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      canvas.removeEventListener('click', handleClickCapture, true);
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('contextmenu', handleContextMenu3P);
       document.removeEventListener('mousemove', handleMouseMove);
@@ -854,6 +853,9 @@ export function BlockInteraction({ chunkManager }) {
 
     const handleTouchStart = (e) => {
       if (e.touches.length !== 1) return;
+
+      // Build mode required for block interaction on mobile
+      if (!useGameStore.getState().buildMode) return;
 
       const touch = e.touches[0];
       longPressTouchStart.current = { x: touch.clientX, y: touch.clientY };

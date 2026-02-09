@@ -6,8 +6,10 @@ import useGameStore from '../stores/useGameStore';
  */
 const ContextualHints = () => {
   const [currentHint, setCurrentHint] = useState(null);
-  const [shownHints, setShownHints] = useState(new Set());
+  const shownHintsRef = useRef(new Set()); // Use ref to avoid stale closure in interval
   const hintCooldowns = useRef(new Map()); // id → timestamp of last show
+  const currentHintRef = useRef(null); // Ref mirrors currentHint to avoid stale closures
+  const hintTimeoutRef = useRef(null); // Active timeout handle
   const gameState = useGameStore((state) => state.gameState);
   const playerHealth = useGameStore((state) => state.player.health);
   const playerMaxHealth = useGameStore((state) => state.player.maxHealth);
@@ -46,7 +48,7 @@ const ContextualHints = () => {
     },
     {
       id: 'blocks',
-      text: 'Hold left-click to mine, right-click to place',
+      text: 'Press Tab to enter Build Mode — mine and place blocks',
       condition: () => gameState === 'playing',
       priority: 4,
       delay: 25000,
@@ -70,6 +72,15 @@ const ContextualHints = () => {
       duration: 4000,
       showOnce: false,
       cooldown: 30000,
+    },
+    {
+      id: 'spells',
+      text: 'Cast spells with 1-6 keys. Attacks cost 5 mana. Hold Ctrl to view spell wheel.',
+      condition: () => gameState === 'playing',
+      priority: 5,
+      delay: 20000,
+      duration: 5000,
+      showOnce: true,
     },
     {
       id: 'firstPerson',
@@ -108,20 +119,28 @@ const ContextualHints = () => {
     },
   ];
 
+  // Keep ref in sync with state
+  useEffect(() => {
+    currentHintRef.current = currentHint;
+  }, [currentHint]);
+
   useEffect(() => {
     if (gameState !== 'playing') {
       setCurrentHint(null);
+      currentHintRef.current = null;
       return;
     }
 
+    const startTime = Date.now();
+
     const checkHints = () => {
-      // Don't check while a hint is currently displayed
-      if (currentHint) return;
+      // Don't check while a hint is currently displayed (use ref for fresh value)
+      if (currentHintRef.current) return;
 
       const now = Date.now();
       for (const hint of hints.sort((a, b) => a.priority - b.priority)) {
         // Skip if already shown and showOnce
-        if (hint.showOnce && shownHints.has(hint.id)) continue;
+        if (hint.showOnce && shownHintsRef.current.has(hint.id)) continue;
 
         // Check cooldown for repeating hints
         if (hint.cooldown) {
@@ -137,24 +156,32 @@ const ContextualHints = () => {
 
         // Show hint
         hintCooldowns.current.set(hint.id, now);
+        currentHintRef.current = hint;
         setCurrentHint(hint);
-        setShownHints((prev) => new Set([...prev, hint.id]));
+        shownHintsRef.current.add(hint.id);
 
         // Hide after duration
-        setTimeout(() => {
-          setCurrentHint((current) => (current?.id === hint.id ? null : current));
+        if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+        hintTimeoutRef.current = setTimeout(() => {
+          currentHintRef.current = null;
+          setCurrentHint(null);
+          hintTimeoutRef.current = null;
         }, hint.duration);
 
         break;
       }
     };
 
-    const startTime = Date.now();
-    const interval = setInterval(checkHints, 1000);
-    checkHints(); // Initial check
+    const interval = setInterval(checkHints, 2000);
+    // Delay initial check to avoid first-frame flash
+    const initialTimeout = setTimeout(checkHints, 500);
 
-    return () => clearInterval(interval);
-  }, [gameState, playerHealth, potions, hunger.current, worldTime.period, shelter.isExposed]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      clearInterval(interval);
+      clearTimeout(initialTimeout);
+      if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    };
+  }, [gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentHint || gameState !== 'playing') return null;
 

@@ -129,7 +129,7 @@ const CameraRotateControls = () => {
     const handleTouchMove = (e) => {
       // Pinch-to-zoom
       if (isPinching.current && e.touches.length === 2) {
-        const cam = getCameraState();
+        getCameraState();
         const currentDist = touchDist(e.touches);
         const scale = pinchStartDist.current / currentDist;
         const newDist = Math.max(

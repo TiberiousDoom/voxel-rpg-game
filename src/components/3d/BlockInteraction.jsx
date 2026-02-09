@@ -455,6 +455,8 @@ export function BlockInteraction({ chunkManager }) {
       miningAccum.current = 0;
       miningBlockKey.current = null;
       setMiningProgress(0);
+      // Force immediate raycast so continuous mining picks up the next block
+      lastRaycast.current = 0;
     }
   });
 
@@ -476,9 +478,14 @@ export function BlockInteraction({ chunkManager }) {
     const success = chunkManager.setBlock(blockX, blockY, blockZ, BlockTypes.AIR);
 
     if (success) {
-      // Force immediate raycast update to allow consecutive mining
+      // Force immediate raycast to update target for consecutive mining
       lastRaycast.current = 0;
       prevTargetRef.current = { block: null, face: null };
+      // Synchronous raycast so next click has fresh target
+      const result = raycastForBlock();
+      setTargetBlock(result.block);
+      setTargetFace(result.face);
+      prevTargetRef.current = { block: result.block, face: result.face };
 
       // Calculate and grant drops
       const store = useGameStore.getState();
@@ -498,7 +505,7 @@ export function BlockInteraction({ chunkManager }) {
     }
 
     return success;
-  }, [targetBlock, chunkManager]);
+  }, [targetBlock, chunkManager, raycastForBlock]);
 
   // Handle block placement
   const placeBlock = useCallback((blockType) => {
@@ -532,15 +539,18 @@ export function BlockInteraction({ chunkManager }) {
     const success = chunkManager.setBlock(placeX, placeY, placeZ, blockType);
 
     if (success) {
-      // Force immediate raycast update to allow consecutive placement
-      // by invalidating the lastRaycast time
+      // Force immediate raycast to update target for consecutive placement
       lastRaycast.current = 0;
-      // Clear prev target to force state update
       prevTargetRef.current = { block: null, face: null };
+      // Synchronous raycast so next click has fresh target
+      const result = raycastForBlock();
+      setTargetBlock(result.block);
+      setTargetFace(result.face);
+      prevTargetRef.current = { block: result.block, face: result.face };
     }
 
     return success;
-  }, [targetBlock, targetFace, chunkManager]);
+  }, [targetBlock, targetFace, chunkManager, raycastForBlock]);
 
   // Expose interaction methods to store for UI/controls to use
   React.useEffect(() => {

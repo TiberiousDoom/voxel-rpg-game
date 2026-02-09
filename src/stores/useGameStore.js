@@ -140,6 +140,9 @@ const useGameStore = create((rawSet, get, api) => {
   // Screen shake state
   screenShake: null, // { intensity, duration } or null when inactive
 
+  // Active spell for left-click casting (set by SpellWheel)
+  activeSpellId: 'fireball', // Default to fireball
+
   // Block interaction state (Phase 0.3)
   selectedBlockType: 3, // GRASS by default
   blockPlacementMode: false, // false = mining, true = placing
@@ -211,6 +214,7 @@ const useGameStore = create((rawSet, get, api) => {
     })),
 
   // Block interaction actions
+  setActiveSpellId: (spellId) => set({ activeSpellId: spellId }),
   setSelectedBlockType: (blockType) => set({ selectedBlockType: blockType }),
   setBlockPlacementMode: (mode) => set({ blockPlacementMode: mode }),
   toggleBlockPlacementMode: () => set((state) => ({ blockPlacementMode: !state.blockPlacementMode })),
@@ -873,6 +877,17 @@ const useGameStore = create((rawSet, get, api) => {
       };
     }),
 
+  // Use a potion: heals, starts cooldown, decrements potion count
+  usePotion: () =>
+    set((state) => {
+      if (state.inventory.potions <= 0 || state.player.potionCooldown > 0) return state;
+      const newHealth = Math.min(state.player.maxHealth, state.player.health + 50);
+      return {
+        player: { ...state.player, health: newHealth, potionCooldown: 5 },
+        inventory: { ...state.inventory, potions: state.inventory.potions - 1 },
+      };
+    }),
+
   consumeMana: (amount) =>
     set((state) => {
       const newMana = Math.max(0, state.player.mana - amount);
@@ -1162,14 +1177,20 @@ const useGameStore = create((rawSet, get, api) => {
         penalizedMaterials[key] = Math.floor(val * (1 - 0.5));
       }
 
+      // Spawn far from death position to avoid enemy clusters
+      const deathPos = state.player.position;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 40 + Math.random() * 20; // 40-60 units away from death
+      const spawnX = deathPos[0] + Math.cos(angle) * dist;
+      const spawnZ = deathPos[2] + Math.sin(angle) * dist;
+
       return {
         player: {
           ...state.player,
           health: Math.ceil(state.player.maxHealth * 0.5),
           mana: state.player.maxMana,
           stamina: Math.ceil(state.player.maxStamina * 0.5),
-          // Spawn at a random offset from origin to avoid enemy clusters
-          position: [(Math.random() - 0.5) * 30, 20, (Math.random() - 0.5) * 30],
+          position: [spawnX, 20, spawnZ],
           velocity: [0, 0, 0],
           targetPosition: null,
           isInvincible: true,

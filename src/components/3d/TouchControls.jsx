@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
+import { getSpellById, executeSpell } from '../../data/spells';
 
 /**
  * Component that handles touch/click controls for movement and attacking
@@ -86,41 +87,29 @@ const TouchControls = () => {
         }
 
         if (enemyHit && enemyData?.takeDamage) {
-          // Attack enemy with projectile - DO NOT MOVE
+          // Attack enemy using the active spell
           const attackStore = useGameStore.getState();
+          const spell = getSpellById(attackStore.activeSpellId);
+          if (!spell) return;
+
+          // Check mana
+          if (attackStore.player.mana < spell.manaCost) return;
+
+          // Check cooldown
+          const cooldown = attackStore.getSpellCooldown(spell.id);
+          if (cooldown > 0) return;
+
+          // Override player facingAngle to aim at enemy for spell direction
           const playerPos = attackStore.player.position;
-          const playerDamage = attackStore.player.damage;
+          const dx = enemyHit.point.x - playerPos[0];
+          const dz = enemyHit.point.z - playerPos[2];
+          const aimAngle = Math.atan2(dx, dz);
+          const playerWithAim = { ...attackStore.player, facingAngle: aimAngle };
 
-          // Ranged attacks cost mana
-          const manaCost = 5;
-          if (attackStore.player.mana < manaCost) {
-            // No mana — don't attack
-            return;
+          const result = executeSpell(spell, playerWithAim, attackStore);
+          if (result.success) {
+            attackStore.setSpellCooldown(spell.id, spell.cooldown);
           }
-          attackStore.consumeMana(manaCost);
-
-          // Calculate direction from player to enemy
-          const direction = [
-            enemyHit.point.x - playerPos[0],
-            (enemyHit.point.y + 0.5) - (playerPos[1] + 0.5),
-            enemyHit.point.z - playerPos[2],
-          ];
-          const length = Math.sqrt(direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2);
-          const normalizedDir = [
-            direction[0] / length,
-            direction[1] / length,
-            direction[2] / length,
-          ];
-
-          // Spawn a projectile from player towards enemy
-          attackStore.addProjectile({
-            id: `tap-attack-${Date.now()}`,
-            position: [playerPos[0], playerPos[1] + 0.5, playerPos[2]],
-            direction: normalizedDir,
-            speed: 25,
-            damage: playerDamage,
-            color: '#00ffff', // Cyan for tap attacks
-          });
 
           // Add red attack marker at enemy center (elevated)
           useGameStore.getState().addTargetMarker({

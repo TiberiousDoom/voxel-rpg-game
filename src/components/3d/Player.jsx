@@ -7,7 +7,7 @@ import { useKeyboard } from '../../hooks/useKeyboard';
 import { getTotalStats } from '../../utils/equipmentStats';
 import { SPELLS, executeSpell } from '../../data/spells';
 import { isTouchDevice } from '../../utils/deviceDetection';
-import { AUTO_JUMP_COOLDOWN_MS, AUTO_JUMP_DETECT_RANGE, AUTO_JUMP_IMPULSE, AUTO_JUMP_MIN_SPEED } from '../../data/tuning';
+import { AUTO_JUMP_COOLDOWN_MS, AUTO_JUMP_DETECT_RANGE, AUTO_JUMP_IMPULSE, AUTO_JUMP_MIN_SPEED, JUMP_IMPULSE, JUMP_STAMINA_COST, JUMP_GROUNDED_THRESHOLD, JUMP_COOLDOWN_MS } from '../../data/tuning';
 import { isSolid as isBlockSolid } from '../../systems/chunks/blockTypes';
 
 const Player = () => {
@@ -40,6 +40,7 @@ const Player = () => {
   // Auto-jump state (mobile/touch devices)
   const isMobileDevice = useRef(isTouchDevice());
   const lastAutoJump = useRef(0);
+  const lastJumpTime = useRef(0); // Cooldown to prevent hold-to-spam
 
   // Reusable Vector3 refs to avoid per-frame allocations (GC pressure reduction)
   const _velocity = useRef(new THREE.Vector3());
@@ -229,21 +230,26 @@ const Player = () => {
       }
     }
 
-    // Jumping (disabled during dodge)
-    if (keys.jump && Math.abs(currentVel.y) < 0.1 && !isDodging) {
-      // Check for double-tap dodge roll
+    // Jumping (disabled during dodge, requires grounded + cooldown + stamina)
+    if (keys.jump && Math.abs(currentVel.y) < JUMP_GROUNDED_THRESHOLD && !isDodging) {
       const now = Date.now();
-      if (now - lastSpacePress.current < 300 && player.stamina >= 30 && movement.length() > 0) {
-        // Double-tap detected - dodge roll!
-        consumeStamina(30);
-        setIsDodging(true);
-        dodgeTimer.current = 0.3; // 0.3 second dodge duration
-        dodgeDirection.current = movement.clone().normalize();
-        lastSpacePress.current = 0; // Reset to prevent triple tap
-      } else {
-        // Single tap - normal jump (needs to clear 1 block = 2 world units)
-        velocity.y = 10;
-        lastSpacePress.current = now;
+      if (now - lastJumpTime.current >= JUMP_COOLDOWN_MS) {
+        // Check for double-tap dodge roll
+        if (now - lastSpacePress.current < 300 && player.stamina >= 30 && movement.length() > 0) {
+          // Double-tap detected - dodge roll!
+          consumeStamina(30);
+          setIsDodging(true);
+          dodgeTimer.current = 0.3; // 0.3 second dodge duration
+          dodgeDirection.current = movement.clone().normalize();
+          lastSpacePress.current = 0; // Reset to prevent triple tap
+          lastJumpTime.current = now;
+        } else if (player.stamina >= JUMP_STAMINA_COST) {
+          // Single tap - normal jump
+          velocity.y = JUMP_IMPULSE;
+          consumeStamina(JUMP_STAMINA_COST);
+          lastSpacePress.current = now;
+          lastJumpTime.current = now;
+        }
       }
     }
 
@@ -358,11 +364,6 @@ const Player = () => {
       spell4: SPELLS.find(s => s.key === '4'),
       spell5: SPELLS.find(s => s.key === '5'),
       spell6: SPELLS.find(s => s.key === '6'),
-      spellQ: SPELLS.find(s => s.key === 'q'),
-      spellE: SPELLS.find(s => s.key === 'e'),
-      spellR: SPELLS.find(s => s.key === 'r'),
-      spellF: SPELLS.find(s => s.key === 'f'),
-      spellT: SPELLS.find(s => s.key === 't'),
     };
 
     // Check each spell key
@@ -392,17 +393,10 @@ const Player = () => {
     trycastSpell('spell4', spellKeyMap.spell4);
     trycastSpell('spell5', spellKeyMap.spell5);
     trycastSpell('spell6', spellKeyMap.spell6);
-    trycastSpell('spellQ', spellKeyMap.spellQ);
-    trycastSpell('spellE', spellKeyMap.spellE);
-    trycastSpell('spellR', spellKeyMap.spellR);
-    trycastSpell('spellF', spellKeyMap.spellF);
-    trycastSpell('spellT', spellKeyMap.spellT);
 
-    // Potion use
+    // Potion use (H key)
     if (keys.potion && store.inventory.potions > 0 && currentPlayer.potionCooldown <= 0) {
-      store.healPlayer(50);
-      store.updatePlayer({ potionCooldown: 5 });
-      store.inventory.potions--;
+      store.usePotion();
     }
   }, [keys]);
 

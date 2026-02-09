@@ -14,6 +14,7 @@ const SpellWheel = () => {
   const [page, setPage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const player = useGameStore((state) => state.player);
+  const setActiveSpellId = useGameStore((state) => state.setActiveSpellId);
 
   // Detect mobile device
   useEffect(() => {
@@ -97,6 +98,11 @@ const SpellWheel = () => {
       if (isMobile) return;
 
       if (e.key === 'Control' || e.key === 'Ctrl') {
+        // Commit selected spell as the active spell for left-click casting
+        const spell = SPELLS[selectedIndex];
+        if (spell) {
+          setActiveSpellId(spell.id);
+        }
         setIsActive(false);
       }
     };
@@ -248,7 +254,10 @@ const SpellWheel = () => {
                   transform: isSelected ? 'scale(1.05)' : 'scale(1)',
                   touchAction: 'manipulation',
                 }}
-                onClick={() => setSelectedIndex(globalIndex)}
+                onClick={() => {
+                  setSelectedIndex(globalIndex);
+                  setActiveSpellId(spell.id);
+                }}
               >
                 <Icon
                   size={isSelected ? 36 : 28}

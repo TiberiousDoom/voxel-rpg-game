@@ -97,7 +97,7 @@ export const RIFT_SPAWN_INTERVAL_DUSK = 60;
 export const RIFT_SPAWN_INTERVAL_NIGHT = 20;
 export const RIFT_POP_CAP_DAY = 3;             // Max monsters per rift (daytime)
 export const RIFT_POP_CAP_NIGHT = 8;           // Max monsters per rift (nighttime)
-export const RIFT_ACTIVE_RANGE = 128;          // Only tick rifts within this range of player
+export const RIFT_ACTIVE_RANGE = 80;           // Only tick rifts within physics collider range (~3 chunks)
 export const RIFT_DORMANT_DURATION = 300;      // Seconds of dormancy when blocks destroyed
 
 export const RIFT_NOCTURNAL_DAMAGE_MULT = 1.5; // Night monster damage multiplier
@@ -127,6 +127,12 @@ export const FOOD_MUSHROOM_STEW_RESTORE = 30;
 export const BERRY_BUSHES_PER_CHUNK = 1.5;     // Average 1-2 per chunk
 export const ANIMALS_PER_CHUNK = 0.5;          // Average 0-1 per chunk
 export const APPLE_DROP_CHANCE = 0.10;         // 10% from leaves
+
+// ─── Jump ────────────────────────────────────────────────────
+export const JUMP_IMPULSE = 12;              // Vertical velocity on jump (clears ~1.5 blocks)
+export const JUMP_STAMINA_COST = 8;          // Stamina consumed per jump
+export const JUMP_GROUNDED_THRESHOLD = 0.5;  // Max |velY| to count as grounded
+export const JUMP_COOLDOWN_MS = 250;         // Min ms between jumps (prevents hold-to-spam)
 
 // ─── Mobile Controls ─────────────────────────────────────────
 export const AUTO_JUMP_COOLDOWN_MS = 300;

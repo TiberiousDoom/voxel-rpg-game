@@ -31,7 +31,7 @@ describe('NPCListView', () => {
       role: 'CRAFTER',
       assignedBuilding: 'building_2',
       health: 50,
-      morale: 40,
+      morale: 30,
     },
   ];
 

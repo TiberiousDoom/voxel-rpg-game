@@ -14,19 +14,7 @@ class MockImage {
   }
 }
 
-// Mock canvas and context for testing
-class MockCanvas {
-  constructor() {
-    this.width = 0;
-    this.height = 0;
-    this._context = new MockContext();
-  }
-
-  getContext(type) {
-    return this._context;
-  }
-}
-
+// MockContext for direct context testing (drawFrame, drawFrameFlipped)
 class MockContext {
   constructor() {
     this.drawImageCalls = [];
@@ -41,16 +29,6 @@ class MockContext {
   translate() {}
   scale() {}
 }
-
-// Mock document.createElement
-global.document = {
-  createElement: (tag) => {
-    if (tag === 'canvas') {
-      return new MockCanvas();
-    }
-    return {};
-  }
-};
 
 describe('SpriteSheetParser', () => {
   describe('constructor', () => {
@@ -133,7 +111,7 @@ describe('SpriteSheetParser', () => {
 
       const frame = parser.extractFrame(0);
 
-      expect(frame).toBeInstanceOf(MockCanvas);
+      expect(frame).toBeInstanceOf(HTMLCanvasElement);
       expect(frame.width).toBe(16);
       expect(frame.height).toBe(16);
     });

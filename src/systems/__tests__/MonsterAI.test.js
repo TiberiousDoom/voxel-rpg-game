@@ -432,8 +432,9 @@ describe('MonsterAI System', () => {
 
       monsterAI.update(monster, 16, mockGameState);
 
-      // Should have attempted to deal damage
-      expect(mockDealDamage).toHaveBeenCalledWith(10);
+      // dealDamageToPlayer is now called with (damage, deathMessage)
+      // monster.type is undefined in this test, so death message is "Killed by undefined"
+      expect(mockDealDamage).toHaveBeenCalledWith(10, 'Killed by undefined');
     });
 
     test('should respect attack cooldown', () => {

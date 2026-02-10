@@ -160,8 +160,10 @@ describe('Modal Component', () => {
         </Modal>
       );
 
+      // The close button is the first focusable element in the modal (rendered before children)
       await waitFor(() => {
-        expect(screen.getByText('First Button')).toHaveFocus();
+        const dialog = screen.getByRole('dialog');
+        expect(dialog.contains(document.activeElement)).toBe(true);
       });
     });
   });

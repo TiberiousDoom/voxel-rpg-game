@@ -197,6 +197,45 @@ class SaveValidator {
   }
 
   /**
+   * Generate checksum synchronously using DJB2 hash
+   * @param {Object} data - Save data
+   * @returns {string} Checksum (hex string)
+   */
+  static generateChecksumSync(data) {
+    // Generate checksum from critical fields (same fields as async version)
+    const criticalData = JSON.stringify({
+      version: data.version,
+      metadata: data.metadata,
+      grid: data.grid,
+      storage: data.storage,
+      npcs: data.npcs
+    });
+
+    // DJB2 hash algorithm
+    let hash = 5381;
+    for (let i = 0; i < criticalData.length; i++) {
+      hash = ((hash << 5) + hash) + criticalData.charCodeAt(i);
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16).padStart(8, '0');
+  }
+
+  /**
+   * Validate checksum synchronously
+   * @param {Object} data - Save data with checksum
+   * @returns {boolean} Is checksum valid
+   */
+  static validateChecksumSync(data) {
+    if (!data.checksum || typeof data.checksum !== 'string') {
+      // No valid checksum, skip validation
+      return true;
+    }
+
+    const expectedChecksum = this.generateChecksumSync(data);
+    return expectedChecksum === data.checksum;
+  }
+
+  /**
    * Generate checksum for save data using SubtleCrypto (browser-native)
    * @param {Object} data - Save data
    * @returns {Promise<string>} Checksum (hex-encoded SHA-256)
@@ -245,9 +284,9 @@ class SaveValidator {
   /**
    * Attempt to repair corrupted save data
    * @param {Object} data - Potentially corrupted save data
-   * @returns {Promise<Object>} {success, data}
+   * @returns {Object} {success, data}
    */
-  static async repairSave(data) {
+  static repairSave(data) {
     if (!data || typeof data !== 'object') {
       return { success: false, data: null };
     }
@@ -297,7 +336,7 @@ class SaveValidator {
     }
 
     // Regenerate checksum
-    repaired.checksum = await this.generateChecksum(repaired);
+    repaired.checksum = this.generateChecksumSync(repaired);
 
     return {
       success: true,

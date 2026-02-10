@@ -17,10 +17,10 @@
 
 // These imports will fail until we create these files (that's expected for TDD)
 import { DerivedStatsCalculator } from '../DerivedStatsCalculator';
-import { SpellIntegration } from '../../utils/integrations/SpellIntegration';
-import { CombatIntegration } from '../../utils/integrations/CombatIntegration';
-import { NPCIntegration } from '../../utils/integrations/NPCIntegration';
-import { BuildingIntegration } from '../../utils/integrations/BuildingIntegration';
+import { SpellIntegration } from '../../../utils/integrations/SpellIntegration';
+import { CombatIntegration } from '../../../utils/integrations/CombatIntegration';
+import { NPCIntegration } from '../../../utils/integrations/NPCIntegration';
+import { BuildingIntegration } from '../../../utils/integrations/BuildingIntegration';
 
 describe('Attribute Integration Tests', () => {
   let mockPlayer;

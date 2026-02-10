@@ -41,12 +41,12 @@ describe('ResourceItem Component', () => {
 
   describe('Basic Rendering', () => {
     it('should render with all basic elements', () => {
-      render(<ResourceItem {...defaultProps} />);
+      const { container } = render(<ResourceItem {...defaultProps} />);
 
       expect(screen.getByText('Food')).toBeInTheDocument();
       expect(screen.getByText('🌾')).toBeInTheDocument();
-      expect(screen.getByText('500')).toBeInTheDocument();
-      expect(screen.getByText('/ 1K')).toBeInTheDocument();
+      expect(container.querySelector('.resource-item-amount')).toHaveTextContent('500');
+      expect(container.querySelector('.resource-item-capacity')).toHaveTextContent('/ 1K');
     });
 
     it('should render without crashing with minimal props', () => {
@@ -57,7 +57,7 @@ describe('ResourceItem Component', () => {
     });
 
     it('should format large numbers correctly', () => {
-      render(
+      const { container } = render(
         <ResourceItem
           name="Wood"
           icon="🪵"
@@ -66,12 +66,12 @@ describe('ResourceItem Component', () => {
         />
       );
 
-      expect(screen.getByText('1.5K')).toBeInTheDocument();
-      expect(screen.getByText('/ 10K')).toBeInTheDocument();
+      expect(container.querySelector('.resource-item-amount')).toHaveTextContent('1.5K');
+      expect(container.querySelector('.resource-item-capacity')).toHaveTextContent('/ 10K');
     });
 
     it('should format millions correctly', () => {
-      render(
+      const { container } = render(
         <ResourceItem
           name="Stone"
           icon="🪨"
@@ -80,8 +80,8 @@ describe('ResourceItem Component', () => {
         />
       );
 
-      expect(screen.getByText('2.5M')).toBeInTheDocument();
-      expect(screen.getByText('/ 10M')).toBeInTheDocument();
+      expect(container.querySelector('.resource-item-amount')).toHaveTextContent('2.5M');
+      expect(container.querySelector('.resource-item-capacity')).toHaveTextContent('/ 10M');
     });
   });
 
@@ -197,9 +197,9 @@ describe('ResourceItem Component', () => {
       const { useResourceAnimation } = require('../../../hooks/useResourceAnimation');
       useResourceAnimation.mockReturnValue(450);
 
-      render(<ResourceItem {...defaultProps} amount={500} />);
+      const { container } = render(<ResourceItem {...defaultProps} amount={500} />);
 
-      expect(screen.getByText('450')).toBeInTheDocument();
+      expect(container.querySelector('.resource-item-amount')).toHaveTextContent('450');
     });
 
     it('should pass correct animation options', () => {
@@ -238,10 +238,10 @@ describe('ResourceItem Component', () => {
 
   describe('Edge Cases', () => {
     it('should handle zero amount', () => {
-      render(<ResourceItem {...defaultProps} amount={0} />);
+      const { container } = render(<ResourceItem {...defaultProps} amount={0} />);
 
-      expect(screen.getByText('0')).toBeInTheDocument();
-      expect(screen.getByText('0%')).toBeInTheDocument();
+      expect(container.querySelector('.resource-item-amount')).toHaveTextContent('0');
+      expect(container.querySelector('.resource-item-percentage')).toHaveTextContent('0%');
     });
 
     it('should handle zero capacity', () => {

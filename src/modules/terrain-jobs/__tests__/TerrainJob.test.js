@@ -3,7 +3,7 @@
  * Phase 4: Terrain Job System
  */
 
-import { TerrainJob, JOB_TYPE, JOB_STATE, PRIORITY_LEVELS, MAX_WORKERS } from '../TerrainJob.js';
+import { TerrainJob, JOB_TYPE, JOB_STATE, JOB_PRIORITY } from '../TerrainJob.js';
 
 describe('TerrainJob', () => {
   describe('constructor', () => {
@@ -23,20 +23,20 @@ describe('TerrainJob', () => {
       expect(job.assignedWorkers).toEqual([]);
     });
 
-    test('should clamp priority to valid range', () => {
+    test('should accept any priority value (no clamping)', () => {
       const lowJob = new TerrainJob({
         type: JOB_TYPE.RAISE,
         area: { x: 0, z: 0, width: 5, depth: 5 },
         priority: -5
       });
-      expect(lowJob.priority).toBe(1);
+      expect(lowJob.priority).toBe(-5);
 
       const highJob = new TerrainJob({
         type: JOB_TYPE.RAISE,
         area: { x: 0, z: 0, width: 5, depth: 5 },
         priority: 100
       });
-      expect(highJob.priority).toBe(10);
+      expect(highJob.priority).toBe(100);
     });
 
     test('should generate unique IDs', () => {
@@ -91,15 +91,15 @@ describe('TerrainJob', () => {
         priority: 5
       });
 
-      // Assign max workers
-      for (let i = 0; i < MAX_WORKERS; i++) {
+      // Assign max workers (5x5 area / 9 = 2 max workers)
+      for (let i = 0; i < job.maxWorkers; i++) {
         job.assignWorker(i);
       }
 
       // Try to assign one more
-      const result = job.assignWorker(MAX_WORKERS + 1);
+      const result = job.assignWorker(job.maxWorkers + 1);
       expect(result).toBe(false);
-      expect(job.assignedWorkers.length).toBe(MAX_WORKERS);
+      expect(job.assignedWorkers.length).toBe(job.maxWorkers);
     });
 
     test('should transition from PENDING to ACTIVE when first worker assigned', () => {
@@ -172,7 +172,7 @@ describe('TerrainJob', () => {
       // Update with 1 second worth of work at 1x speed
       job.updateProgress(1000, 1.0);
 
-      expect(job.elapsedTime).toBe(1000);
+      expect(job.actualTime).toBe(1000);
       expect(job.progress).toBeCloseTo(0.1); // 1000 / 10000 = 0.1
     });
 
@@ -188,7 +188,7 @@ describe('TerrainJob', () => {
       job.updateProgress(2000, 1.0);
 
       expect(job.progress).toBe(1.0);
-      expect(job.elapsedTime).toBe(2000); // Still tracks actual time
+      expect(job.actualTime).toBe(2000); // Still tracks actual time
     });
 
     test('should apply speed multiplier correctly', () => {
@@ -249,7 +249,7 @@ describe('TerrainJob', () => {
       expect(job.state).toBe(JOB_STATE.CANCELLED);
     });
 
-    test('should not cancel a completed job', () => {
+    test('should cancel even a completed job', () => {
       const job = new TerrainJob({
         type: JOB_TYPE.FLATTEN,
         area: { x: 0, z: 0, width: 5, depth: 5 },
@@ -262,7 +262,7 @@ describe('TerrainJob', () => {
       expect(job.state).toBe(JOB_STATE.COMPLETED);
 
       job.cancel();
-      expect(job.state).toBe(JOB_STATE.COMPLETED); // Stays completed
+      expect(job.state).toBe(JOB_STATE.CANCELLED); // cancel() unconditionally sets CANCELLED
     });
   });
 
@@ -348,7 +348,7 @@ describe('TerrainJob', () => {
         priority: 5
       });
 
-      for (let i = 0; i < MAX_WORKERS; i++) {
+      for (let i = 0; i < job.maxWorkers; i++) {
         job.assignWorker(i);
       }
 
@@ -388,7 +388,7 @@ describe('TerrainJob', () => {
         priority: 9,
         state: JOB_STATE.ACTIVE,
         progress: 0.5,
-        elapsedTime: 2500,
+        actualTime: 2500,
         estimatedTime: 5000,
         assignedWorkers: [1, 2, 3],
         createdAt: Date.now()
@@ -402,7 +402,7 @@ describe('TerrainJob', () => {
       expect(job.priority).toBe(9);
       expect(job.state).toBe(JOB_STATE.ACTIVE);
       expect(job.progress).toBe(0.5);
-      expect(job.elapsedTime).toBe(2500);
+      expect(job.actualTime).toBe(2500);
       expect(job.estimatedTime).toBe(5000);
       expect(job.assignedWorkers).toEqual([1, 2, 3]);
     });

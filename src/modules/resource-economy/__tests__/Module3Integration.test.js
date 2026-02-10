@@ -206,7 +206,7 @@ describe('Module 3: Resource Economy', () => {
       const capacity = ResourceEconomyModule.getTotalStorageCapacity(
         storageBuildings
       );
-      expect(capacity).toBe(1000); // 500 per building
+      expect(capacity).toBe(1200); // 600 per building
     });
 
     it('should handle zero storage buildings', () => {
@@ -222,7 +222,7 @@ describe('Module 3: Resource Economy', () => {
       const capacity = ResourceEconomyModule.getTotalStorageCapacity(
         storageBuildings
       );
-      expect(capacity).toBe(600); // 100 + 500
+      expect(capacity).toBe(700); // 100 + 600
     });
   });
 
@@ -236,7 +236,7 @@ describe('Module 3: Resource Economy', () => {
         BUILDING_TYPES.STORAGE_BUILDING
       );
       expect(data).toBeDefined();
-      expect(data.storageCapacity).toBe(500);
+      expect(data.storageCapacity).toBe(600);
     });
 
     it('should identify storage buildings', () => {
@@ -363,7 +363,7 @@ describe('Module 3: Resource Economy', () => {
       const storageBuildings = [{ type: BUILDING_TYPES.STORAGE_BUILDING }];
       store.updateStorageState(storageBuildings, inventory);
       const available = store.getAvailableStorage();
-      expect(available).toBeLessThanOrEqual(500); // Storage capacity
+      expect(available).toBeLessThanOrEqual(600); // Storage capacity
     });
 
     it('should reset economy state', () => {

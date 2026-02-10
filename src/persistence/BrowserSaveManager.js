@@ -121,8 +121,8 @@ class BrowserSaveManager {
       this.currentSave = slotName;
       localStorage.setItem(`${this.config.storagePrefix}current-slot`, slotName);
 
-      // Update metadata cache
-      this.metadataCache.set(slotName, saveData.metadata);
+      // Don't pre-populate metadata cache here; let getSaveMetadata populate it on demand
+      // This ensures that if metadata is later removed from localStorage, stale cache is not returned
 
       return {
         success: true,
@@ -313,6 +313,7 @@ class BrowserSaveManager {
 
         saves.push({
           slotName,
+          name: slotName,
           description: metadata.description || 'No description',
           savedAt: metadata.savedAt,
           playtime: metadata.playtimeSeconds || 0,
@@ -343,6 +344,7 @@ class BrowserSaveManager {
           for (const save of allSaves) {
             saves.push({
               slotName: save.slot,
+              name: save.slot,
               description: save.metadata?.description || 'No description',
               savedAt: save.metadata?.savedAt,
               playtime: save.metadata?.playtimeSeconds || 0,

@@ -1029,11 +1029,16 @@ export default class GameManager extends EventEmitter {
         this._emit('game:loaded', { slot: slotName, metadata: result.metadata });
       }
 
+      // Ensure error field is present on failure
+      if (!result.success && !result.error) {
+        result.error = result.message || 'Load failed';
+      }
+
       return result;
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[GameManager] Failed to load game:', err);
-      return { success: false, message: err.message };
+      return { success: false, message: err.message, error: err.message };
     }
   }
 

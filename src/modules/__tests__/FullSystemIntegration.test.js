@@ -25,6 +25,22 @@ import MoraleCalculator from '../resource-economy/MoraleCalculator';
 import { TerritoryManager } from '../territory-town/TerritoryManager';
 import TownManager from '../territory-town/TownManager';
 
+// Helper: wrap a plain {buildingId: [npcIds]} object into an NPCAssignment-like interface
+function makeNpcAssignments(assignmentMap) {
+  return {
+    getNPCsInBuilding: (buildingId) => assignmentMap[buildingId] || []
+  };
+}
+
+// Helper: create a mock NPCManager with a `npcs` Map
+function makeMockNpcManager(npcEntries = []) {
+  const npcsMap = new Map();
+  for (const entry of npcEntries) {
+    npcsMap.set(entry.id, { id: entry.id, alive: true, ...entry });
+  }
+  return { npcs: npcsMap };
+}
+
 describe('Full System Integration Tests', () => {
   let grid;
   let spatial;
@@ -118,11 +134,12 @@ describe('Full System Integration Tests', () => {
       expect(consumptionResult.starvationOccurred).toBe(false);
 
       // Production
-      const npcAssignments = {
+      const npcAssignments = makeNpcAssignments({
         farm1: [npc1.id],
         house1: [npc2.id]
-      };
-      const productionResult = productionTick.executeTick([farm, house], npcAssignments, 1.0);
+      });
+      const mockNpcMgr = makeMockNpcManager([npc1, npc2]);
+      const productionResult = productionTick.executeTick([farm, house], npcAssignments, mockNpcMgr, 1.0);
       expect(productionResult.production.food || 0).toBeGreaterThanOrEqual(0);
 
       // Update storage
@@ -210,8 +227,9 @@ describe('Full System Integration Tests', () => {
       const consumed = parseFloat(consumptionResult.foodConsumed);
 
       // Production
-      const npcAssignments = { farm1: [npc1.id, npc2.id] };
-      productionTick.executeTick([farm], npcAssignments, 1.0);
+      const npcAssignments = makeNpcAssignments({ farm1: [npc1.id, npc2.id] });
+      const mockNpcMgr = makeMockNpcManager([npc1, npc2]);
+      productionTick.executeTick([farm], npcAssignments, mockNpcMgr, 1.0);
       const produced = productionTick.lastTickResult.production.food || 0;
 
       // Update storage
@@ -332,9 +350,9 @@ describe('Full System Integration Tests', () => {
     const territory = territoryManager.createTerritory({ x: 50, y: 25, z: 50 }, 'SURVIVAL');
 
     const buildings = [
-      { id: 'farm1', type: 'FARM', position: { x: 55, y: 25, z: 55 } },
-      { id: 'farm2', type: 'FARM', position: { x: 45, y: 25, z: 45 } },
-      { id: 'house1', type: 'HOUSE', position: { x: 50, y: 25, z: 60 } }
+      { id: 'farm1', type: 'FARM', state: 'COMPLETE', position: { x: 55, y: 25, z: 55 } },
+      { id: 'farm2', type: 'FARM', state: 'COMPLETE', position: { x: 45, y: 25, z: 45 } },
+      { id: 'house1', type: 'HOUSE', state: 'COMPLETE', position: { x: 50, y: 25, z: 60 } }
     ];
 
     for (const building of buildings) {
@@ -356,6 +374,9 @@ describe('Full System Integration Tests', () => {
     // Initialize resources
     storage.addResource('food', 500);
 
+    // Create mock npcManager with alive NPCs for production tick
+    const mockNpcMgr = makeMockNpcManager(npcs);
+
     // Simulate 12 ticks (60 seconds)
     let totalProduced = 0;
     let totalConsumed = 0;
@@ -367,12 +388,12 @@ describe('Full System Integration Tests', () => {
       totalConsumed += consumed;
 
       // Production
-      const npcAssignments = {
+      const npcAssignments = makeNpcAssignments({
         farm1: npcs.map(n => n.id),
         farm2: [],
         house1: []
-      };
-      const productionResult = productionTick.executeTick(buildings, npcAssignments, 1.0);
+      });
+      const productionResult = productionTick.executeTick(buildings, npcAssignments, mockNpcMgr, 1.0);
       const produced = productionResult.production.food || 0;
       totalProduced += produced;
 

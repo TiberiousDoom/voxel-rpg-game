@@ -73,6 +73,63 @@ afterAll(() => {
   console.error = originalError;
 });
 
+// Mock HTMLCanvasElement.getContext for JSDOM (which returns null for '2d').
+// This must be in beforeEach so it survives jest.clearAllMocks() in afterEach.
+beforeEach(() => {
+  HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+    return {
+      fillRect: jest.fn(),
+      clearRect: jest.fn(),
+      getImageData: jest.fn(() => ({ data: [] })),
+      putImageData: jest.fn(),
+      createImageData: jest.fn(),
+      setTransform: jest.fn(),
+      drawImage: jest.fn(),
+      save: jest.fn(),
+      fillText: jest.fn(),
+      restore: jest.fn(),
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      closePath: jest.fn(),
+      stroke: jest.fn(),
+      translate: jest.fn(),
+      scale: jest.fn(),
+      rotate: jest.fn(),
+      arc: jest.fn(),
+      fill: jest.fn(),
+      measureText: jest.fn(() => ({ width: 0 })),
+      transform: jest.fn(),
+      rect: jest.fn(),
+      clip: jest.fn(),
+      strokeRect: jest.fn(),
+      createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
+      createRadialGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
+      createPattern: jest.fn(),
+      ellipse: jest.fn(),
+      quadraticCurveTo: jest.fn(),
+      bezierCurveTo: jest.fn(),
+      isPointInPath: jest.fn(),
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 1,
+      lineCap: 'butt',
+      lineJoin: 'miter',
+      miterLimit: 10,
+      globalAlpha: 1,
+      globalCompositeOperation: 'source-over',
+      shadowBlur: 0,
+      shadowColor: 'rgba(0, 0, 0, 0)',
+      shadowOffsetX: 0,
+      shadowOffsetY: 0,
+      font: '',
+      textAlign: '',
+      textBaseline: '',
+      canvas: this,
+    };
+  });
+});
+
 // Clean up after each test
 afterEach(() => {
   jest.clearAllMocks();

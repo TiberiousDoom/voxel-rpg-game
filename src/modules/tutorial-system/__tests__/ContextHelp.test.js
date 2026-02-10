@@ -368,17 +368,16 @@ describe('ContextHelp', () => {
     test('should stop showing tips after max limit', () => {
       contextHelp.maxTipsPerSession = 2;
 
+      // First trigger: tip-1 fires (tipsShownCount = 1)
       const gameState1 = { buildingPlacementFailed: true };
       contextHelp.checkTriggers(gameState1);
 
-      contextHelp.resetTriggered();
-
+      // Second trigger: tip-2 and tip-3 both fire (tipsShownCount = 3)
+      // Do NOT call resetTriggered() since that resets tipsShownCount
       const gameState2 = { food: 0 };
       contextHelp.checkTriggers(gameState2);
 
-      contextHelp.resetTriggered();
-
-      // Third trigger should be blocked
+      // Third trigger should be blocked (tipsShownCount >= maxTipsPerSession)
       const gameState3 = { customFlag: true };
       const tips = contextHelp.checkTriggers(gameState3);
 

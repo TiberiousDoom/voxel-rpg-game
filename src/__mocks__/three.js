@@ -242,6 +242,14 @@ export class ConeGeometry {
   dispose() {}
 }
 
+export class EdgesGeometry {
+  constructor(geometry) {
+    this.parameters = { geometry };
+    this.type = 'EdgesGeometry';
+  }
+  dispose() {}
+}
+
 // Mock Materials
 export class MeshStandardMaterial {
   constructor(params = {}) {
@@ -314,6 +322,7 @@ const THREE = {
   SphereGeometry,
   PlaneGeometry,
   ConeGeometry,
+  EdgesGeometry,
   MeshStandardMaterial,
   MeshBasicMaterial,
   Raycaster,

@@ -45,7 +45,7 @@ describe('WildfireEvent', () => {
     expect(wildfire.name).toBe('Wildfire');
     expect(wildfire.type).toBe(EventType.DISASTER);
     expect(wildfire.duration).toBe(30);
-    expect(wildfire.probability).toBe(0.02);
+    expect(wildfire.probability).toBe(0.03);
   });
 
   it('should apply morale penalty on start', () => {

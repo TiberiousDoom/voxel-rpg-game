@@ -43,8 +43,9 @@ const createMockGameState = () => ({
       center: { x: 50, y: 0, z: 50 }
     }])
   },
+  productionTick: true, // Required for HarvestFestival to apply production bonus
   eventMultipliers: {},
-  eventConsumptionModifiers: {}
+  eventConsumptionModifiers: { food: 0 } // Initialize food to avoid NaN from undefined + number
 });
 
 describe('HarvestFestivalEvent', () => {
@@ -170,7 +171,7 @@ describe('MerchantVisitEvent', () => {
     expect(merchant.name).toBe('Merchant Visit');
     expect(merchant.type).toBe(EventType.POSITIVE);
     expect(merchant.duration).toBe(60);
-    expect(merchant.probability).toBe(0.05);
+    expect(merchant.probability).toBe(0.08);
   });
 
   it('should apply morale boost on start', () => {

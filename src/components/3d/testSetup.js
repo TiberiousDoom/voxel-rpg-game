@@ -12,6 +12,27 @@ jest.mock('@react-three/drei');
 jest.mock('@react-three/rapier');
 jest.mock('three');
 
+// Mock useChunkSystem to avoid import.meta.url syntax error in Jest.
+// Uses regular functions (not jest.fn) so CRA's resetMocks: true doesn't
+// strip the implementation between tests.
+jest.mock('../../hooks/useChunkSystem', () => {
+  const mockReturn = () => ({
+    isReady: false,
+    chunkManager: null,
+    workerPool: null,
+    updatePlayerPosition: () => {},
+    chunks: new Map(),
+    getBlock: () => 0,
+    setBlock: () => {},
+    ready: false,
+  });
+  return {
+    useChunkSystem: mockReturn,
+    __esModule: true,
+    default: mockReturn,
+  };
+});
+
 // Mock window properties that Three.js might access
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {

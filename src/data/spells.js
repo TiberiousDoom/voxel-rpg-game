@@ -371,13 +371,25 @@ export const executeSpell = (spell, player, store) => {
 
 const executeProjectileSpell = (spell, player, store) => {
   const camera = store.camera;
-  const pitch = camera?.firstPerson ? (camera.pitch || 0) : 0;
-  const yaw = player.facingAngle;
-  const direction = [
-    Math.sin(yaw) * Math.cos(pitch),
-    Math.sin(pitch),
-    Math.cos(yaw) * Math.cos(pitch),
-  ];
+  let direction;
+
+  if (player.aimTarget) {
+    // Aim at a specific world position (click/tap target)
+    const dx = player.aimTarget[0] - player.position[0];
+    const dy = player.aimTarget[1] - (player.position[1] + 1.5);
+    const dz = player.aimTarget[2] - player.position[2];
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    direction = [dx / len, dy / len, dz / len];
+  } else {
+    // Fall back to facing angle + camera pitch
+    const pitch = camera?.firstPerson ? (camera.pitch || 0) : 0;
+    const yaw = player.facingAngle;
+    direction = [
+      Math.sin(yaw) * Math.cos(pitch),
+      Math.sin(pitch),
+      Math.cos(yaw) * Math.cos(pitch),
+    ];
+  }
 
   // Spawn projectile 2 units ahead of the player to clear the collider
   const spawnOffset = 2;

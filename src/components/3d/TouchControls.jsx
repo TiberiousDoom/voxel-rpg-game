@@ -83,30 +83,31 @@ const TouchControls = () => {
           }
         }
 
-        if (enemyHit && enemyData?.takeDamage) {
-          // Attack enemy using the active spell — works regardless of build mode
+        // Helper: try to cast the active spell toward a world position
+        const tryCastSpellAt = (targetPoint) => {
           const attackStore = useGameStore.getState();
           const spell = getSpellById(attackStore.activeSpellId);
-          if (!spell) return;
-
-          // Check mana
-          if (attackStore.player.mana < spell.manaCost) return;
-
-          // Check cooldown
+          if (!spell) return false;
+          if (attackStore.player.mana < spell.manaCost) return false;
           const cooldown = attackStore.getSpellCooldown(spell.id);
-          if (cooldown > 0) return;
+          if (cooldown > 0) return false;
 
-          // Override player facingAngle to aim at enemy for spell direction
-          const playerPos = attackStore.player.position;
-          const dx = enemyHit.point.x - playerPos[0];
-          const dz = enemyHit.point.z - playerPos[2];
-          const aimAngle = Math.atan2(dx, dz);
-          const playerWithAim = { ...attackStore.player, facingAngle: aimAngle };
+          // Set aimTarget so the projectile flies toward the click point
+          const playerWithAim = {
+            ...attackStore.player,
+            aimTarget: [targetPoint.x, targetPoint.y, targetPoint.z],
+          };
 
           const result = executeSpell(spell, playerWithAim, attackStore);
           if (result.success) {
             attackStore.setSpellCooldown(spell.id, spell.cooldown);
           }
+          return result.success;
+        };
+
+        if (enemyHit && enemyData?.takeDamage) {
+          // Attack enemy — cast spell at the enemy hit point
+          tryCastSpellAt(enemyHit.point);
 
           // Add red attack marker at enemy center (elevated)
           useGameStore.getState().addTargetMarker({
@@ -130,26 +131,31 @@ const TouchControls = () => {
         if (useGameStore.getState().buildMode) return;
 
         if (groundHit) {
-          // Move to location (hit ground or other non-enemy object)
-          useGameStore.getState().setPlayerTarget([
-            groundHit.point.x,
-            groundHit.point.y,
-            groundHit.point.z,
-          ]);
+          // Try to cast spell at the clicked ground location
+          const didCast = tryCastSpellAt(groundHit.point);
 
-          // Add green movement marker
+          if (!didCast) {
+            // No spell available or on cooldown — move to location instead
+            useGameStore.getState().setPlayerTarget([
+              groundHit.point.x,
+              groundHit.point.y,
+              groundHit.point.z,
+            ]);
+          }
+
+          // Add marker (red for attack, green for move)
           useGameStore.getState().addTargetMarker({
             position: [groundHit.point.x, groundHit.point.y, groundHit.point.z],
-            color: '#00ff00',
+            color: didCast ? '#ff6600' : '#00ff00',
           });
 
-          // Remove marker after 2 seconds
+          // Remove marker after timeout
           setTimeout(() => {
             const markers = useGameStore.getState().targetMarkers;
             if (markers.length > 0) {
               useGameStore.getState().removeTargetMarker(markers[0].id);
             }
-          }, 2000);
+          }, didCast ? 800 : 2000);
         }
       }
     };

@@ -35,6 +35,15 @@ const DayNightCycle = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only create once on mount
 
+  // Sync elapsed time from store → TimeManager (needed after save/load)
+  useEffect(() => {
+    // Only re-sync if the store value differs significantly from the TimeManager's
+    // (avoids fighting our own per-frame writes back to the store)
+    if (Math.abs(timeManager.worldTime - savedElapsed) > 1) {
+      timeManager.worldTime = savedElapsed;
+    }
+  }, [timeManager, savedElapsed]);
+
   // Sync debug controls from store → TimeManager
   useEffect(() => {
     timeManager.timeScale = timeScale;

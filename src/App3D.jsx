@@ -10,6 +10,8 @@ import BlockHotbar from './components/ui/BlockHotbar';
 import Crosshair from './components/ui/Crosshair';
 import ContextualHints from './components/ContextualHints';
 import TestTracker from './components/TestTracker';
+import DebugOverlay from './components/ui/DebugOverlay';
+import PauseMenu from './components/PauseMenu';
 import DeathScreen from './components/DeathScreen';
 import useGameStore from './stores/useGameStore';
 
@@ -68,8 +70,14 @@ function App3D() {
       {/* Contextual hints for new players */}
       <ContextualHints />
 
+      {/* Debug overlay (F3 to toggle) */}
+      <DebugOverlay />
+
       {/* QA Test Tracker (backtick key to toggle) */}
       <TestTracker />
+
+      {/* Pause menu (F10 to toggle) */}
+      <PauseMenu />
 
       {/* Death screen overlay */}
       {isDead && (

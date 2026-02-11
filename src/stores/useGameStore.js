@@ -13,6 +13,7 @@ import {
   grantLevelUpPoints,
   calculateDerivedStats,
 } from '../modules/character/CharacterSystem';
+import { DAY_LENGTH_SECONDS } from '../data/tuning';
 import { ActionHistory, createActionMiddleware } from '../systems/state/ActionSystem';
 
 // Action history for replay/rollback/debugging
@@ -148,17 +149,17 @@ const useGameStore = create((rawSet, get, api) => {
   blockPlacementMode: false, // false = mining, true = placing
   buildMode: false, // Toggle build mode (Tab key) — gates all block interaction
 
-  // World time state (Phase 1)
+  // World time state (Phase 1) — start at 05:00 (dawn)
   worldTime: {
-    elapsed: 0,          // Total seconds elapsed
-    timeOfDay: 0,        // 0.0–1.0 (0=midnight, 0.5=noon)
+    elapsed: (5 / 24) * DAY_LENGTH_SECONDS, // Total seconds elapsed — 05:00
+    timeOfDay: 5 / 24,   // 0.0–1.0 (0=midnight, 0.5=noon) — start at 05:00
     dayNumber: 1,
-    isNight: true,
-    period: 'night',     // 'night'|'dawn'|'day'|'dusk'
-    hour: 0,
+    isNight: false,
+    period: 'dawn',      // 'night'|'dawn'|'day'|'dusk'
+    hour: 5,
     minute: 0,
     timeScale: 1,        // Debug: 0=paused, 1=normal, 2/5/10=fast
-    paused: false,
+    paused: true,         // Starts paused until player presses Start Game
   },
 
   // Hunger state (Phase 1)
@@ -183,6 +184,16 @@ const useGameStore = create((rawSet, get, api) => {
   // Tutorial hints tracking (Phase 1)
   tutorialHints: {
     shownHints: [],      // IDs of hints already shown
+  },
+
+  // Settlement state (Phase 2)
+  settlement: {
+    npcs: [],              // Settler NPC entities
+    attractiveness: 0,
+    settlementCenter: null, // [x,y,z] of first campfire
+    lastImmigrationCheck: 0,
+    lastAttractivenessCalc: 0,
+    lastNeedsUpdate: 0,
   },
 
   // Actions
@@ -257,11 +268,15 @@ const useGameStore = create((rawSet, get, api) => {
     }),
 
   // Eat a raw material (berry, meat, etc.) directly from inventory
-  eatMaterial: (materialType, restoreAmount) =>
+  // restoreAmount = hunger restored, healAmount = health restored (optional)
+  eatMaterial: (materialType, restoreAmount, healAmount) =>
     set((state) => {
       const current = state.inventory.materials[materialType] || 0;
       if (current <= 0) return state;
       const newHunger = Math.min(state.hunger.max, state.hunger.current + restoreAmount);
+      const newHealth = healAmount
+        ? Math.min(state.player.maxHealth, state.player.health + healAmount)
+        : state.player.health;
       return {
         inventory: {
           ...state.inventory,
@@ -269,6 +284,10 @@ const useGameStore = create((rawSet, get, api) => {
             ...state.inventory.materials,
             [materialType]: current - 1,
           },
+        },
+        player: {
+          ...state.player,
+          health: newHealth,
         },
         hunger: {
           ...state.hunger,
@@ -1213,6 +1232,45 @@ const useGameStore = create((rawSet, get, api) => {
       };
     }),
 
+  // Settlement actions (Phase 2)
+  setSettlementCenter: (center) =>
+    set((state) => ({
+      settlement: { ...state.settlement, settlementCenter: center },
+    })),
+
+  addSettlementNPC: (npc) =>
+    set((state) => ({
+      settlement: { ...state.settlement, npcs: [...state.settlement.npcs, npc] },
+    })),
+
+  updateSettlementNPC: (id, updates) =>
+    set((state) => ({
+      settlement: {
+        ...state.settlement,
+        npcs: state.settlement.npcs.map((npc) =>
+          npc.id === id ? { ...npc, ...updates } : npc
+        ),
+      },
+    })),
+
+  removeSettlementNPC: (id) =>
+    set((state) => ({
+      settlement: {
+        ...state.settlement,
+        npcs: state.settlement.npcs.filter((npc) => npc.id !== id),
+      },
+    })),
+
+  updateSettlementAttractiveness: (score) =>
+    set((state) => ({
+      settlement: { ...state.settlement, attractiveness: score },
+    })),
+
+  updateSettlementTimestamps: (updates) =>
+    set((state) => ({
+      settlement: { ...state.settlement, ...updates },
+    })),
+
   reset: () =>
     set({
       gameState: 'intro',
@@ -1259,12 +1317,16 @@ const useGameStore = create((rawSet, get, api) => {
       xpOrbs: [],
       particleEffects: [],
       worldTime: {
-        elapsed: 0, timeOfDay: 0, dayNumber: 1, isNight: true,
-        period: 'night', hour: 0, minute: 0, timeScale: 1, paused: false,
+        elapsed: (5 / 24) * DAY_LENGTH_SECONDS, timeOfDay: 5 / 24, dayNumber: 1, isNight: false,
+        period: 'dawn', hour: 5, minute: 0, timeScale: 1, paused: true,
       },
       hunger: { current: 100, max: 100, isStarving: false, status: 'well_fed' },
       shelter: { isFullShelter: false, isPartialShelter: false, isExposed: true, tier: 'exposed' },
       tutorialHints: { shownHints: [] },
+      settlement: {
+        npcs: [], attractiveness: 0, settlementCenter: null,
+        lastImmigrationCheck: 0, lastAttractivenessCalc: 0, lastNeedsUpdate: 0,
+      },
       buildMode: false,
     }),
 

@@ -117,6 +117,15 @@ const ContextualHints = () => {
       duration: 5000,
       showOnce: true,
     },
+    {
+      id: 'use-key',
+      text: 'Press E to pick up items or harvest bushes',
+      condition: () => gameState === 'playing',
+      priority: 5,
+      delay: 30000,
+      duration: 5000,
+      showOnce: true,
+    },
   ];
 
   // Keep ref in sync with state

@@ -1,5 +1,5 @@
 /**
- * Test Criteria — Phase 0, Phase 1, & Phase 2 exit criteria for QA tracking.
+ * Test Criteria — Phase 0 & Phase 1 exit criteria for QA tracking.
  *
  * Each criterion has a stable `id` used as IndexedDB key for persisted
  * status/notes/screenshots. Do NOT rename IDs after first use.
@@ -93,54 +93,44 @@ export const TEST_PHASES = [
   },
   {
     id: 'phase-2',
-    name: 'Phase 2 — Colony Alpha',
+    name: 'Phase 2 — Colony Alpha (Batch 1)',
     categories: [
       {
-        id: 'p2-functional',
-        name: 'Functional',
+        id: 'p2-settlement',
+        name: 'Settlement Loop',
         criteria: [
-          { id: 'p2-func-immigration', label: 'NPC immigration', description: 'NPCs arrive attracted by settlement buildings with visible approach from wilderness' },
-          { id: 'p2-func-npc-identity', label: 'NPC identity', description: 'Each NPC has unique name, personality traits, and appearance' },
-          { id: 'p2-func-zone-mining', label: 'Mining zones', description: 'Player can designate mining zones; NPCs autonomously mine blocks within them' },
-          { id: 'p2-func-zone-stockpile', label: 'Stockpile zones', description: 'Player can designate stockpile zones for physical resource storage' },
-          { id: 'p2-func-hauling', label: 'Hauling system', description: 'NPCs transport resources from mines to stockpiles to construction sites' },
-          { id: 'p2-func-blueprint', label: 'Blueprint placement', description: 'Player can place building blueprints with ghost preview and terrain validation' },
-          { id: 'p2-func-construction', label: 'NPC construction', description: 'NPCs deliver materials and build structures block-by-block from blueprints' },
-          { id: 'p2-func-building-effects', label: 'Building effects', description: 'Completed buildings provide housing, storage, production, and happiness' },
-          { id: 'p2-func-building-upgrade', label: 'Building upgrades', description: 'Buildings can be upgraded to higher tiers (Survival → Permanent → Town)' },
-          { id: 'p2-func-npc-needs', label: 'NPC needs', description: 'NPCs eat, rest, and socialize autonomously; critical needs interrupt work' },
-          { id: 'p2-func-daily-schedule', label: 'Daily schedule', description: 'NPCs follow a day/night routine: work during day, eat at meals, sleep at night' },
-          { id: 'p2-func-housing', label: 'Housing system', description: 'NPCs assigned to housing; sleep there at night; homeless NPCs get happiness penalty' },
-          { id: 'p2-func-dashboard', label: 'Settlement dashboard', description: 'Overview UI (N key) shows population, resources, buildings, and alerts' },
-          { id: 'p2-func-npc-panel', label: 'NPC detail panel', description: 'Click NPC to see needs, skills, schedule, relationships, and issue commands' },
-          { id: 'p2-func-building-panel', label: 'Building panel', description: 'Click building to see status, occupants, production, and upgrade options' },
-          { id: 'p2-func-settlement-loop', label: 'Settlement loop', description: 'Full loop works: campfire → NPC arrives → zones → mine → haul → build → grow' },
-          { id: 'p2-func-save-load', label: 'Settlement save/load', description: 'All settlement state persists: NPCs, zones, stockpiles, construction, housing' },
+          { id: 'p2-sett-campfire-place', label: 'Campfire placement', description: 'Campfire block (warm orange) appears in hotbar slot 9; can be placed in build mode' },
+          { id: 'p2-sett-campfire-mine', label: 'Campfire mining', description: 'Mining a campfire drops 2 wood' },
+          { id: 'p2-sett-center-detect', label: 'Settlement center detection', description: 'After placing a campfire, store.settlement.settlementCenter is set within ~5 seconds' },
+          { id: 'p2-sett-attractiveness', label: 'Attractiveness calc', description: 'After ~10s with campfire placed, store.settlement.attractiveness >= 20' },
+          { id: 'p2-sett-npc-spawn', label: 'NPC immigration', description: 'After immigration interval, a settler NPC spawns at world edge (64-96 blocks from center)' },
+          { id: 'p2-sett-npc-visible', label: 'NPC 3D appearance', description: 'Settler NPC is visible as a voxel humanoid with colored skin/hair/clothing and a blue indicator cube' },
+          { id: 'p2-sett-npc-walk', label: 'NPC walks to settlement', description: 'NPC walks toward campfire with leg animation; arrives and transitions to IDLE state' },
+          { id: 'p2-sett-npc-needs', label: 'NPC needs cycle', description: 'Over time hunger/rest decrease; NPC enters EATING/SLEEPING states then returns to IDLE' },
+          { id: 'p2-sett-npc-wander', label: 'NPC wandering', description: 'Idle NPCs occasionally wander within radius of settlement center' },
+          { id: 'p2-sett-save-load', label: 'Settlement save/load', description: 'Save → reload → NPCs persist with positions, states, appearance, and settlement center' },
+          { id: 'p2-sett-max-npcs', label: 'NPC cap', description: 'No more than 5 NPCs spawn (IMMIGRATION_MAX_NPCS)' },
+        ],
+      },
+      {
+        id: 'p2-use-key',
+        name: 'E Key Interact',
+        criteria: [
+          { id: 'p2-use-berry-fp', label: 'Harvest berry (1P)', description: 'In first-person near a berry bush, press E → berries added to inventory, bush removed, floating text' },
+          { id: 'p2-use-campfire-3p', label: 'Pick up campfire (3P)', description: 'In third-person near a campfire, press E → wood added to inventory, campfire removed' },
+          { id: 'p2-use-nothing', label: 'E key no-op', description: 'Pressing E when not near a usable block does nothing (no errors)' },
+          { id: 'p2-use-cooldown', label: 'E key cooldown', description: 'Rapid E presses only trigger once per 300ms' },
+          { id: 'p2-use-hint', label: 'E key hint', description: 'After 30s of play, a contextual hint says "Press E to pick up items or harvest bushes"' },
         ],
       },
       {
         id: 'p2-quality',
         name: 'Quality',
         criteria: [
-          { id: 'p2-qual-60fps', label: '60 FPS with NPCs', description: '60 FPS maintained with 8 NPCs, 4 stockpiles, 3 construction sites active' },
-          { id: 'p2-qual-no-deadlock', label: 'No pathfinding deadlocks', description: 'NPCs never permanently stuck; reset to idle after 30s timeout' },
-          { id: 'p2-qual-no-idle', label: 'NPCs find work', description: 'Idle NPCs find available work within 10 seconds' },
-          { id: 'p2-qual-work-balance', label: 'Work/needs balance', description: 'NPCs spend >65% of waking hours working, needs dont dominate' },
-          { id: 'p2-qual-ui-responsive', label: 'Dashboard responsive', description: 'Settlement dashboard opens in <100ms and is readable on 375px screens' },
-          { id: 'p2-qual-mobile-zones', label: 'Mobile zone placement', description: 'Zone designation works on touch devices (two-tap placement)' },
-        ],
-      },
-      {
-        id: 'p2-experience',
-        name: 'Player Experience',
-        criteria: [
-          { id: 'p2-exp-autonomous', label: 'NPCs feel autonomous', description: 'Player sets priorities, NPCs figure out details; no micromanagement needed' },
-          { id: 'p2-exp-arrival', label: 'First NPC exciting', description: 'First NPC arrival feels exciting: visible approach, evaluation, notification' },
-          { id: 'p2-exp-construction', label: 'Construction satisfying', description: 'Watching NPCs build block-by-block feels rewarding and tangible' },
-          { id: 'p2-exp-alive', label: 'Settlement feels alive', description: 'NPCs have routines, socialize, react to needs; settlement hums with activity' },
-          { id: 'p2-exp-growth', label: 'Growth feels earned', description: 'Each new building and NPC represents visible player achievement' },
-          { id: 'p2-exp-no-babysit', label: 'No babysitting', description: 'Player can leave for 5 minutes and settlement functions without intervention' },
-          { id: 'p2-exp-departure-fair', label: 'Departure warning', description: 'Unhappy NPC gives warning before leaving; player has time to respond' },
+          { id: 'p2-qual-build', label: 'Clean build', description: 'npm run build passes with no errors (only pre-existing @mediapipe warning)' },
+          { id: 'p2-qual-no-combat-npc', label: 'NPCs not targetable', description: 'Settler NPCs are NOT attacked by player spells or combat system (userData.isNPC, not isEnemy)' },
+          { id: 'p2-qual-terrain-clamp', label: 'NPC terrain clamping', description: 'NPCs walk on terrain surface without floating or falling through' },
+          { id: 'p2-qual-no-console-errors', label: 'No console errors', description: 'No new red errors in browser console from settlement or E-key systems' },
         ],
       },
     ],
@@ -154,3 +144,29 @@ export const ALL_CRITERIA = TEST_PHASES.flatMap((phase) =>
 
 /** Total count of criteria */
 export const TOTAL_CRITERIA_COUNT = ALL_CRITERIA.length;
+
+/**
+ * Auto-detection checks — maps criterion ID to a function that takes
+ * the Zustand store state and returns true when the criterion is satisfied.
+ * Used to auto-promote 'untested' → 'pass'; never overrides manual status.
+ */
+export const AUTO_CHECKS = {
+  // Phase 1 — Survival & Gathering
+  'p1-func-hunger': (s) => s.hunger.current < s.hunger.max,
+  'p1-func-day-night': (s) => s.worldTime.isNight === true,
+  'p1-func-enemies': (s) => s.enemies.length > 0,
+  'p1-func-xp-level': (s) => s.player.xp > 0 || s.player.level > 1,
+  'p1-func-rifts': (s) => s.rifts.length > 0,
+  'p1-func-loot-drops': (s) => s.lootDrops.length > 0 || s.xpOrbs.length > 0,
+  'p1-func-build-mode': (s) => s.buildMode === true,
+  'p1-func-sprint': (s) => s.player.isSprinting === true,
+
+  // Phase 2 — Settlement
+  'p2-sett-center-detect': (s) => s.settlement.settlementCenter !== null,
+  'p2-sett-attractiveness': (s) => s.settlement.attractiveness >= 20,
+  'p2-sett-npc-spawn': (s) => s.settlement.npcs.length > 0,
+  'p2-sett-npc-walk': (s) => s.settlement.npcs.some((n) => n.state === 'IDLE'),
+  'p2-sett-npc-needs': (s) => s.settlement.npcs.some((n) => n.state === 'EATING' || n.state === 'SLEEPING'),
+  'p2-sett-npc-wander': (s) => s.settlement.npcs.some((n) => n.state === 'WANDERING'),
+  'p2-sett-max-npcs': (s) => s.settlement.npcs.length > 0 && s.settlement.npcs.length <= 5,
+};

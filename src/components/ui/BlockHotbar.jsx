@@ -13,10 +13,12 @@ const HOTBAR_BLOCKS = [
   BlockTypes.GRASS,
   BlockTypes.STONE,
   BlockTypes.SAND,
+  BlockTypes.SNOW,
   BlockTypes.WOOD,
   BlockTypes.LEAVES,
   BlockTypes.GRAVEL,
   BlockTypes.COAL_ORE,
+  BlockTypes.CAMPFIRE,
 ];
 
 /**

@@ -118,10 +118,17 @@ class Game3DSaveManager {
         timeScale: state.worldTime.timeScale,
       } : null;
 
+      // Settlement state
+      const settlementState = state.settlement ? {
+        npcs: state.settlement.npcs,
+        settlementCenter: state.settlement.settlementCenter,
+        attractiveness: state.settlement.attractiveness,
+      } : null;
+
       // Main save data
       const saveData = {
         slot,
-        version: 2,
+        version: 3,
         savedAt: Date.now(),
         player: playerState,
         inventory: inventoryState,
@@ -130,6 +137,7 @@ class Game3DSaveManager {
         camera: cameraState,
         hunger: hungerState,
         worldTime: worldTimeState,
+        settlement: settlementState,
       };
 
       // Save main state
@@ -232,6 +240,12 @@ class Game3DSaveManager {
         saveData.version = 2;
       }
 
+      // Migrate V2 saves → V3 (add settlement)
+      if (saveData.version < 3) {
+        saveData.settlement = null; // Let store defaults handle it
+        saveData.version = 3;
+      }
+
       // Restore player state
       if (store.updatePlayer) {
         store.updatePlayer(saveData.player);
@@ -260,6 +274,20 @@ class Game3DSaveManager {
       // Restore world time
       if (saveData.worldTime && store.setState) {
         store.setState({ worldTime: { ...saveData.worldTime, paused: false } });
+      }
+
+      // Restore settlement
+      if (saveData.settlement && store.setState) {
+        store.setState({
+          settlement: {
+            npcs: saveData.settlement.npcs || [],
+            attractiveness: saveData.settlement.attractiveness || 0,
+            settlementCenter: saveData.settlement.settlementCenter || null,
+            lastImmigrationCheck: 0,
+            lastAttractivenessCalc: 0,
+            lastNeedsUpdate: 0,
+          },
+        });
       }
 
       // Load modified chunks

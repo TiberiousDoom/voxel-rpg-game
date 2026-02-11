@@ -19,6 +19,8 @@ import DayNightCycle from './DayNightCycle';
 import SurvivalTick from './SurvivalTick';
 import RiftController from './RiftController';
 import RiftVisual from './RiftVisual';
+import SettlementTick from './SettlementTick';
+import SettlerNPC from './SettlerNPC';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
@@ -105,6 +107,7 @@ const Experience = () => {
   const riftEnemies = useGameStore((state) => state.enemies);
   const rifts = useGameStore((state) => state.rifts);
   const isNight = useGameStore((state) => state.worldTime.isNight);
+  const settlementNPCs = useGameStore((state) => state.settlement.npcs);
 
   // Initialize chunk system
   const {
@@ -160,6 +163,9 @@ const Experience = () => {
       {/* Survival systems tick (hunger drain, starvation damage, shelter detection) */}
       <SurvivalTick chunkManager={isReady ? chunkManager : null} />
 
+      {/* Settlement tick — campfire detection, attractiveness, immigration, NPC needs */}
+      <SettlementTick chunkManager={isReady ? chunkManager : null} />
+
       {/* Rift controller — manages spawning logic */}
       <RiftController chunkManager={isReady ? chunkManager : null} />
 
@@ -191,6 +197,11 @@ const Experience = () => {
             name={monster.name}
             monsterData={monster}
           />
+        ))}
+
+        {/* Settlement NPCs */}
+        {settlementNPCs.map((npc) => (
+          <SettlerNPC key={npc.id} npcData={npc} />
         ))}
 
         <Suspense fallback={null}>

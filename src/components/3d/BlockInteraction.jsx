@@ -12,7 +12,8 @@ import { VOXEL_SIZE } from '../../systems/chunks/coordinates';
 import { BlockTypes, isSolid, getBlockHardness } from '../../systems/chunks/blockTypes';
 import useGameStore from '../../stores/useGameStore';
 import { calculateDrops } from '../../data/blockDrops';
-import { HARVEST_SPEED_BARE_HANDS } from '../../data/tuning';
+import { BLOCK_USE_ACTIONS } from '../../data/blockUseActions';
+import { HARVEST_SPEED_BARE_HANDS, USE_KEY_RANGE, USE_KEY_COOLDOWN } from '../../data/tuning';
 import { getSpellById, executeSpell } from '../../data/spells';
 import { isTouchDevice } from '../../utils/deviceDetection';
 
@@ -53,7 +54,61 @@ const BLOCK_COLORS = {
   [BlockTypes.SAND]: '#F4A460',
   [BlockTypes.WATER]: '#4169E1',
   [BlockTypes.LEAVES]: '#32CD32',
+  [BlockTypes.CAMPFIRE]: '#E6661A',
 };
+
+/**
+ * Check if placing a block at (bx, by, bz) would overlap the player's body.
+ * Player capsule: radius 0.6, centered at playerY+1.4, half-height 0.8
+ * → AABB from (px±0.6, py+0, pz±0.6) to (px±0.6, py+2.8, pz±0.6)
+ * Block AABB: center ± VOXEL_SIZE/2
+ */
+function wouldOverlapPlayer(bx, by, bz) {
+  const pos = useGameStore.getState().player.position;
+  const px = pos[0], py = pos[1], pz = pos[2];
+  const half = VOXEL_SIZE / 2;
+
+  // Player AABB
+  const pMinX = px - 0.6, pMaxX = px + 0.6;
+  const pMinY = py,       pMaxY = py + 2.8;
+  const pMinZ = pz - 0.6, pMaxZ = pz + 0.6;
+
+  // Block AABB
+  const bMinX = bx - half, bMaxX = bx + half;
+  const bMinY = by - half, bMaxY = by + half;
+  const bMinZ = bz - half, bMaxZ = bz + half;
+
+  return pMinX < bMaxX && pMaxX > bMinX &&
+         pMinY < bMaxY && pMaxY > bMinY &&
+         pMinZ < bMaxZ && pMaxZ > bMinZ;
+}
+
+/**
+ * Execute a use-action on a block (harvest berries, pick up campfire, etc.)
+ */
+function _executeUseAction(action, wx, wy, wz, blockType, chunkManager, store) {
+  // Calculate drops
+  for (const drop of action.drops) {
+    const amount = drop.min === drop.max
+      ? drop.min
+      : drop.min + Math.floor(Math.random() * (drop.max - drop.min + 1));
+    if (amount > 0) {
+      store.addMaterial(drop.material, amount);
+      store.addDamageNumber({
+        position: [wx, wy + 1.5, wz],
+        damage: `+${amount} ${drop.material}`,
+        color: '#ffffff',
+      });
+    }
+  }
+
+  // Destroy block if specified
+  if (action.destroyBlock) {
+    chunkManager.setBlock(wx, wy, wz, BlockTypes.AIR);
+  }
+
+  return true;
+}
 
 /**
  * BlockHighlight - Wireframe cube showing selected block
@@ -222,9 +277,9 @@ export function BlockInteraction({ chunkManager }) {
         return;
     }
 
-    // Check if placement is valid (position is empty)
+    // Check if placement is valid (position is empty and doesn't overlap player)
     const existingBlock = chunkManager.getBlock(placeX, placeY, placeZ);
-    const isValid = !isSolid(existingBlock);
+    const isValid = !isSolid(existingBlock) && !wouldOverlapPlayer(placeX, placeY, placeZ);
 
     setPreviewPosition([placeX, placeY, placeZ]);
     setPreviewValid(isValid);
@@ -540,9 +595,10 @@ export function BlockInteraction({ chunkManager }) {
       default: return false;
     }
 
-    // Check if placement position is empty
+    // Check if placement position is empty and doesn't overlap the player
     const existingBlock = chunkManager.getBlock(placeX, placeY, placeZ);
     if (isSolid(existingBlock)) return false;
+    if (wouldOverlapPlayer(placeX, placeY, placeZ)) return false;
 
     // Place the block
     const success = chunkManager.setBlock(placeX, placeY, placeZ, blockType);
@@ -561,6 +617,79 @@ export function BlockInteraction({ chunkManager }) {
     return success;
   }, [targetBlock, targetFace, chunkManager, raycastForBlock]);
 
+  // E key "use" action — interact with usable blocks (berry bushes, campfires, etc.)
+  const useBlockCooldown = useRef(0);
+
+  const useBlock = useCallback(() => {
+    if (!chunkManager) return false;
+    const now = Date.now();
+    if (now - useBlockCooldown.current < USE_KEY_COOLDOWN) return false;
+
+    const store = useGameStore.getState();
+    const playerPos = store.player.position;
+
+    // In first-person with a target block: use it if usable
+    if (firstPerson && targetBlock) {
+      const bx = Math.floor(targetBlock.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+      const by = Math.floor(targetBlock.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+      const bz = Math.floor(targetBlock.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+      const blockType = chunkManager.getBlock(bx, by, bz);
+      const action = BLOCK_USE_ACTIONS[blockType];
+      if (action) {
+        useBlockCooldown.current = now;
+        return _executeUseAction(action, bx, by, bz, blockType, chunkManager, store);
+      }
+    }
+
+    // Otherwise (or if first-person had no usable target): proximity scan
+    if (!firstPerson || !targetBlock) {
+      const range = USE_KEY_RANGE;
+      const px = playerPos[0];
+      const py = playerPos[1];
+      const pz = playerPos[2];
+
+      // Scan blocks in range (7x4x7 grid centered on player)
+      const halfRange = Math.ceil(range / VOXEL_SIZE);
+      const playerVX = Math.floor(px / VOXEL_SIZE);
+      const playerVY = Math.floor(py / VOXEL_SIZE);
+      const playerVZ = Math.floor(pz / VOXEL_SIZE);
+
+      let bestDist = Infinity;
+      let bestBlock = null;
+
+      for (let dy = -1; dy <= 2; dy++) {
+        for (let dz = -halfRange; dz <= halfRange; dz++) {
+          for (let dx = -halfRange; dx <= halfRange; dx++) {
+            const wx = (playerVX + dx) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            const wy = (playerVY + dy) * VOXEL_SIZE + VOXEL_SIZE / 2;
+            const wz = (playerVZ + dz) * VOXEL_SIZE + VOXEL_SIZE / 2;
+
+            const blockType = chunkManager.getBlock(wx, wy, wz);
+            if (!BLOCK_USE_ACTIONS[blockType]) continue;
+
+            const ddx = wx - px;
+            const ddy = wy - py;
+            const ddz = wz - pz;
+            const dist = ddx * ddx + ddy * ddy + ddz * ddz;
+
+            if (dist < bestDist && dist <= range * range) {
+              bestDist = dist;
+              bestBlock = { x: wx, y: wy, z: wz, type: blockType };
+            }
+          }
+        }
+      }
+
+      if (bestBlock) {
+        useBlockCooldown.current = now;
+        const action = BLOCK_USE_ACTIONS[bestBlock.type];
+        return _executeUseAction(action, bestBlock.x, bestBlock.y, bestBlock.z, bestBlock.type, chunkManager, store);
+      }
+    }
+
+    return false;
+  }, [chunkManager, firstPerson, targetBlock]);
+
   // Expose interaction methods to store for UI/controls to use
   React.useEffect(() => {
     const store = useGameStore.getState();
@@ -569,14 +698,16 @@ export function BlockInteraction({ chunkManager }) {
     store.mineBlock = mineBlock;
     store.placeBlock = () => placeBlock(selectedBlockType);
     store.getTargetBlock = () => targetBlock;
+    store.useBlock = useBlock;
 
     return () => {
       // Cleanup
       store.mineBlock = null;
       store.placeBlock = null;
       store.getTargetBlock = null;
+      store.useBlock = null;
     };
-  }, [mineBlock, placeBlock, selectedBlockType, targetBlock]);
+  }, [mineBlock, placeBlock, selectedBlockType, targetBlock, useBlock]);
 
   // Check for enemy along camera center ray (first-person attack)
   const checkEnemyFromCamera = useCallback(() => {
@@ -653,7 +784,7 @@ export function BlockInteraction({ chunkManager }) {
               case 'west': px -= VOXEL_SIZE; break;
               default: break;
             }
-            if (chunkManager && !isSolid(chunkManager.getBlock(px, py, pz))) {
+            if (chunkManager && !isSolid(chunkManager.getBlock(px, py, pz)) && !wouldOverlapPlayer(px, py, pz)) {
               chunkManager.setBlock(px, py, pz, selectedBlockType);
               // Refresh target after placement
               lastRaycast.current = 0;
@@ -835,7 +966,7 @@ export function BlockInteraction({ chunkManager }) {
             default: break;
           }
           const existing = chunkManager.getBlock(plX, plY, plZ);
-          if (!isSolid(existing)) {
+          if (!isSolid(existing) && !wouldOverlapPlayer(plX, plY, plZ)) {
             const store = useGameStore.getState();
             chunkManager.setBlock(plX, plY, plZ, store.selectedBlockType ?? BlockTypes.DIRT);
           }
@@ -963,7 +1094,7 @@ export function BlockInteraction({ chunkManager }) {
               default: return;
             }
             const existing = chunkManager.getBlock(placeX, placeY, placeZ);
-            if (!isSolid(existing)) {
+            if (!isSolid(existing) && !wouldOverlapPlayer(placeX, placeY, placeZ)) {
               chunkManager.setBlock(placeX, placeY, placeZ, store.selectedBlockType ?? BlockTypes.DIRT);
             }
           } else {

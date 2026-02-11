@@ -34,6 +34,7 @@ const BlockTypes = {
   SNOW: 14,
   ICE: 15,
   BERRY_BUSH: 16,
+  CAMPFIRE: 17,
 };
 
 // Block colors [r, g, b] in 0-1 range
@@ -55,6 +56,7 @@ const BlockColors = {
   [BlockTypes.SNOW]: [0.95, 0.95, 0.98],
   [BlockTypes.ICE]: [0.7, 0.85, 0.95],
   [BlockTypes.BERRY_BUSH]: [0.2, 0.45, 0.15],
+  [BlockTypes.CAMPFIRE]: [0.9, 0.4, 0.1],
 };
 
 // Transparent blocks
@@ -389,6 +391,13 @@ function buildChunkMesh(params) {
 
   const AO_BRIGHTNESS = [0.5, 0.65, 0.8, 1.0];
 
+  // Simple hash for per-block color variation (deterministic, no allocations)
+  function blockHash(x, y, z) {
+    let h = (x * 374761393 + y * 668265263 + z * 1274126177) | 0;
+    h = ((h ^ (h >> 13)) * 1103515245) | 0;
+    return (h & 0x7fffffff) / 0x7fffffff; // 0.0–1.0
+  }
+
   function addFace(x, y, z, face, blockType) {
     if (vertexCount + 4 > maxVertices) return;
 
@@ -399,6 +408,13 @@ function buildChunkMesh(params) {
     if (face === 'bottom') lightMod = 0.5;
     else if (face === 'north' || face === 'south') lightMod = 0.8;
     else if (face === 'east' || face === 'west') lightMod = 0.7;
+
+    // Height-based brightness: lower blocks are slightly darker, higher are brighter
+    // Range: ~0.88 at y=0 to ~1.08 at y=15 (subtle but visible at elevation changes)
+    const heightMod = 0.88 + (y / CHUNK_SIZE_Y) * 0.20;
+
+    // Per-block noise: ±4% brightness variation to break up uniform surfaces
+    const noiseMod = 0.96 + blockHash(x, y, z) * 0.08;
 
     const aoOffsets = AO_OFFSETS[face];
     const startVertex = vertexCount;
@@ -422,11 +438,11 @@ function buildChunkMesh(params) {
       const cn = isSolidForAO(x + offsets[2][0], y + offsets[2][1], z + offsets[2][2]);
       const ao = (s1 && s2) ? 0 : 3 - (s1 + s2 + cn);
       const aoMod = AO_BRIGHTNESS[ao];
-      const finalMod = lightMod * aoMod;
+      const finalMod = lightMod * aoMod * heightMod * noiseMod;
 
-      colors[idx] = color[0] * finalMod;
-      colors[idx + 1] = color[1] * finalMod;
-      colors[idx + 2] = color[2] * finalMod;
+      colors[idx] = Math.min(1, color[0] * finalMod);
+      colors[idx + 1] = Math.min(1, color[1] * finalMod);
+      colors[idx + 2] = Math.min(1, color[2] * finalMod);
 
       vertexCount++;
     }
@@ -594,6 +610,12 @@ function buildLODMesh(params) {
 
   const AO_BRIGHTNESS_LOD = [0.5, 0.65, 0.8, 1.0];
 
+  function lodBlockHash(x, y, z) {
+    let h = (x * 374761393 + y * 668265263 + z * 1274126177) | 0;
+    h = ((h ^ (h >> 13)) * 1103515245) | 0;
+    return (h & 0x7fffffff) / 0x7fffffff;
+  }
+
   function addFace(x, y, z, face, blockType) {
     if (vertexCount + 4 > maxVertices) return;
     const faceData = FACES[face];
@@ -602,6 +624,9 @@ function buildLODMesh(params) {
     if (face === 'bottom') lightMod = 0.5;
     else if (face === 'north' || face === 'south') lightMod = 0.8;
     else if (face === 'east' || face === 'west') lightMod = 0.7;
+
+    const heightMod = 0.88 + (y / lodSizeY) * 0.20;
+    const noiseMod = 0.96 + lodBlockHash(x, y, z) * 0.08;
 
     const aoOffsets = AO_OFFSETS_LOD[face];
     const startVertex = vertexCount;
@@ -620,11 +645,11 @@ function buildLODMesh(params) {
       const s2 = isSolidForAO(x + offsets[1][0], y + offsets[1][1], z + offsets[1][2]);
       const cn = isSolidForAO(x + offsets[2][0], y + offsets[2][1], z + offsets[2][2]);
       const ao = (s1 && s2) ? 0 : 3 - (s1 + s2 + cn);
-      const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao];
+      const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao] * heightMod * noiseMod;
 
-      colors[idx] = color[0] * finalMod;
-      colors[idx + 1] = color[1] * finalMod;
-      colors[idx + 2] = color[2] * finalMod;
+      colors[idx] = Math.min(1, color[0] * finalMod);
+      colors[idx + 1] = Math.min(1, color[1] * finalMod);
+      colors[idx + 2] = Math.min(1, color[2] * finalMod);
       vertexCount++;
     }
     indices.push(startVertex, startVertex + 1, startVertex + 2, startVertex, startVertex + 2, startVertex + 3);

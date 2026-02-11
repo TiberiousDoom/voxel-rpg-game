@@ -21,6 +21,7 @@ export const BlockTypes = {
   SNOW: 14,
   ICE: 15,
   BERRY_BUSH: 16,
+  CAMPFIRE: 17,
 };
 
 // Block properties
@@ -141,6 +142,13 @@ export const BlockProperties = {
     transparent: false,
     color: [0.2, 0.45, 0.15],
     hardness: 0.3,
+  },
+  [BlockTypes.CAMPFIRE]: {
+    name: 'Campfire',
+    solid: true,
+    transparent: false,
+    color: [0.9, 0.4, 0.1],
+    hardness: 0.5,
   },
 };
 

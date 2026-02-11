@@ -6,6 +6,7 @@ import {
   compareStatsWithItem,
   formatStatDifference,
 } from '../utils/EquipmentStatsIntegration';
+import { FOOD_BERRY_RESTORE, FOOD_RAW_MEAT_RESTORE, FOOD_BERRY_HEAL, FOOD_RAW_MEAT_HEAL } from '../data/tuning';
 
 /**
  * Material definitions - icons and display names for harvested materials
@@ -21,6 +22,12 @@ const MATERIAL_INFO = {
   meat: { icon: '🍖', name: 'Meat', color: '#DC143C' },
   berry: { icon: '🫐', name: 'Berries', color: '#9370DB' },
   mushroom: { icon: '🍄', name: 'Mushrooms', color: '#FF6347' },
+};
+
+/** Materials the player can eat directly from inventory */
+const EDIBLE_MATERIALS = {
+  berry: { restore: FOOD_BERRY_RESTORE, heal: FOOD_BERRY_HEAL, label: 'Eat' },
+  meat: { restore: FOOD_RAW_MEAT_RESTORE, heal: FOOD_RAW_MEAT_HEAL, label: 'Eat Raw' },
 };
 
 /**
@@ -39,8 +46,10 @@ const InventoryUI = () => {
   const unequipItemWithStats = useGameStore((state) => state.unequipItemWithStats);
   const removeItem = useGameStore((state) => state.removeItem);
   const consumeItem = useGameStore((state) => state.consumeItem);
+  const eatMaterial = useGameStore((state) => state.eatMaterial);
   const character = useGameStore((state) => state.character);
   const player = useGameStore((state) => state.player);
+  const hunger = useGameStore((state) => state.hunger);
 
   // Get harvested materials
   const materials = inventory.materials || {};
@@ -548,6 +557,9 @@ const InventoryUI = () => {
                       color: '#4a5568'
                     };
 
+                    const edible = EDIBLE_MATERIALS[materialType];
+                    const hungerFull = hunger.current >= hunger.max;
+
                     return (
                       <div
                         key={materialType}
@@ -578,6 +590,28 @@ const InventoryUI = () => {
                             Quantity: <span style={{ color: '#51cf66', fontWeight: 'bold' }}>{amount}</span>
                           </div>
                         </div>
+                        {edible && (
+                          <button
+                            onClick={() => eatMaterial(materialType, edible.restore, edible.heal)}
+                            disabled={hungerFull}
+                            title={hungerFull ? 'Not hungry' : `+${edible.restore} hunger, +${edible.heal} HP`}
+                            style={{
+                              padding: isMobile ? '8px 14px' : '6px 12px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              background: hungerFull ? '#4a5568' : '#51cf66',
+                              color: hungerFull ? '#a0aec0' : '#1a202c',
+                              fontWeight: 'bold',
+                              fontSize: isMobile ? '0.9rem' : '0.8rem',
+                              cursor: hungerFull ? 'default' : 'pointer',
+                              whiteSpace: 'nowrap',
+                              opacity: hungerFull ? 0.5 : 1,
+                              touchAction: 'manipulation',
+                            }}
+                          >
+                            {edible.label} (+{edible.heal}HP)
+                          </button>
+                        )}
                       </div>
                     );
                   })

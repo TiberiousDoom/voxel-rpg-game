@@ -37,6 +37,14 @@ const Player = () => {
   const dodgeDirection = useRef(new THREE.Vector3());
   const dodgeTimer = useRef(0);
 
+  // E key use/interact state
+  const prevUseRef = useRef(false);
+
+  // Leg animation state
+  const leftLegRef = useRef();
+  const rightLegRef = useRef();
+  const walkPhaseRef = useRef(0);
+
   // Auto-jump state (mobile/touch devices)
   const isMobileDevice = useRef(isTouchDevice());
   const lastAutoJump = useRef(0);
@@ -270,6 +278,19 @@ const Player = () => {
     const newPos = [currentPos.x, currentPos.y, currentPos.z];
     setPlayerPosition(newPos);
 
+    // Leg walk animation
+    const xzSpeed = Math.sqrt(currentVel.x * currentVel.x + currentVel.z * currentVel.z);
+    if (xzSpeed > 0.5) {
+      walkPhaseRef.current += delta * 10;
+      const swing = Math.sin(walkPhaseRef.current) * 0.6;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
+    } else {
+      walkPhaseRef.current = 0;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
+    }
+
     // Update camera based on mode (first-person or third-person)
     const targetCameraPos = _targetCameraPos.current;
     const targetLookAt = _targetLookAt.current;
@@ -417,6 +438,12 @@ const Player = () => {
     if (keys.potion && store.inventory.potions > 0 && currentPlayer.potionCooldown <= 0) {
       store.usePotion();
     }
+
+    // E key use/interact (detect false→true transition)
+    if (keys.use && !prevUseRef.current) {
+      store.useBlock?.();
+    }
+    prevUseRef.current = !!keys.use;
   }, [keys]);
 
   // Capsule collider: halfHeight=0.8, radius=0.6 → total height = 2*0.8 + 2*0.6 = 2.8 units (~1.4 blocks)
@@ -434,11 +461,27 @@ const Player = () => {
     >
       <CapsuleCollider args={[0.8, 0.6]} position={[0, 1.4, 0]} friction={0} restitution={0} />
       <group rotation={[0, player.facingAngle, 0]}>
-        {/* Player body */}
-        <mesh position={[0, 1.0, 0]}>
-          <boxGeometry args={[1.2, 2.0, 0.8]} />
+        {/* Player body (torso) */}
+        <mesh position={[0, 1.35, 0]}>
+          <boxGeometry args={[1.2, 1.3, 0.8]} />
           <meshBasicMaterial color="#4169e1" />
         </mesh>
+
+        {/* Left leg */}
+        <group ref={leftLegRef} position={[-0.28, 0.45, 0]}>
+          <mesh>
+            <boxGeometry args={[0.35, 0.9, 0.45]} />
+            <meshBasicMaterial color="#2a4cb0" />
+          </mesh>
+        </group>
+
+        {/* Right leg */}
+        <group ref={rightLegRef} position={[0.28, 0.45, 0]}>
+          <mesh>
+            <boxGeometry args={[0.35, 0.9, 0.45]} />
+            <meshBasicMaterial color="#2a4cb0" />
+          </mesh>
+        </group>
 
         {/* Player head */}
         <mesh position={[0, 2.4, 0]}>
@@ -446,10 +489,10 @@ const Player = () => {
           <meshBasicMaterial color="#5a7fd6" />
         </mesh>
 
-        {/* Direction indicator (nose) */}
-        <mesh position={[0, 2.4, 0.55]} rotation={[Math.PI / 2, 0, 0]}>
-          <coneGeometry args={[0.15, 0.3, 4]} />
-          <meshBasicMaterial color="#ff6b6b" />
+        {/* Nose (small protruding box) */}
+        <mesh position={[0, 2.3, 0.5]}>
+          <boxGeometry args={[0.18, 0.15, 0.15]} />
+          <meshBasicMaterial color="#e8967a" />
         </mesh>
       </group>
 

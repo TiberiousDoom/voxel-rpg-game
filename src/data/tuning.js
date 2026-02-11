@@ -115,13 +115,18 @@ export const DEATH_RESPAWN_HUNGER_PERCENT = 0.5;
 export const DEATH_RESPAWN_STAMINA_PERCENT = 0.5;
 export const DEATH_TOOL_DURABILITY_LOSS = 0.25;   // 25% durability lost on death
 
-// ─── Food ────────────────────────────────────────────────────
+// ─── Food (hunger restore) ───────────────────────────────────
 export const FOOD_BERRY_RESTORE = 10;
 export const FOOD_APPLE_RESTORE = 15;
 export const FOOD_RAW_MEAT_RESTORE = 15;
 export const FOOD_COOKED_MEAT_RESTORE = 35;
 export const FOOD_BREAD_RESTORE = 25;
 export const FOOD_MUSHROOM_STEW_RESTORE = 30;
+
+// ─── Food (health restore) ──────────────────────────────────
+export const FOOD_BERRY_HEAL = 5;
+export const FOOD_RAW_MEAT_HEAL = 8;
+export const FOOD_COOKED_MEAT_HEAL = 20;
 
 // Food source density (per chunk in appropriate biomes)
 export const BERRY_BUSHES_PER_CHUNK = 1.5;     // Average 1-2 per chunk
@@ -151,6 +156,36 @@ export const CAMERA_ROTATION_SENSITIVITY = 0.008; // Radians per pixel
 // Gesture disambiguation
 export const TAP_MAX_DURATION_MS = 200;
 export const TAP_MAX_DISTANCE_PX = 10;
+
+// ─── Settlement & Attractiveness ─────────────────────────────
+export const ATTRACT_CAMPFIRE_SCORE = 20;           // Points per campfire block
+export const ATTRACT_WALL_SCORE = 1;                // Points per structural block (capped)
+export const ATTRACT_WALL_CAP = 100;                // Max structural blocks counted
+export const ATTRACT_FOOD_SCORE = 2;                // Points per food item
+export const ATTRACT_FOOD_CAP = 20;                 // Max food items counted
+export const ATTRACT_RIFT_PENALTY = -15;            // Penalty per nearby rift
+export const ATTRACT_SCAN_RADIUS = 48;              // World units to scan
+export const ATTRACT_RECALC_INTERVAL = 10;          // Seconds between recalcs (low for testing)
+
+export const IMMIGRATION_CHECK_INTERVAL = 30;       // Seconds between immigration checks (low for testing)
+export const IMMIGRATION_THRESHOLD = 10;            // Min attractiveness to spawn first NPC (low for testing)
+export const IMMIGRATION_THRESHOLD_PER_NPC = 15;    // Additional threshold per existing NPC
+export const IMMIGRATION_SPAWN_MIN_DIST = 64;       // World units from center
+export const IMMIGRATION_SPAWN_MAX_DIST = 96;       // World units from center
+export const IMMIGRATION_MAX_NPCS = 5;              // Max settler NPCs
+
+export const NPC_HUNGER_DECAY_RATE = 0.005;         // Per second
+export const NPC_REST_DECAY_RATE = 0.007;           // Per second
+export const NPC_HUNGER_CRITICAL = 15;              // Below: NPC eats
+export const NPC_REST_CRITICAL = 15;                // Below: NPC sleeps
+export const NPC_WALK_SPEED = 2.0;                  // World units/sec (wandering)
+export const NPC_APPROACH_SPEED = 3.0;              // World units/sec (approaching settlement)
+export const NPC_WANDER_RADIUS = 16;                // World units from center
+export const NPC_NEEDS_TICK_INTERVAL = 2;           // Seconds between needs updates
+
+// ─── E Key Interact ─────────────────────────────────────────
+export const USE_KEY_RANGE = 6;                     // World units (3 blocks) for proximity search
+export const USE_KEY_COOLDOWN = 300;                // ms between uses
 
 // ─── Debug ───────────────────────────────────────────────────
 export const DEBUG_TIME_SCALES = [1, 2, 5, 10, 0]; // 0 = paused

@@ -90,7 +90,11 @@ const GameUI = () => {
             </div>
           )}
           <button
-            onClick={() => useGameStore.getState().setGameState('playing')}
+            onClick={() => {
+              const store = useGameStore.getState();
+              store.setGameState('playing');
+              store.updateWorldTime({ paused: false });
+            }}
             style={{
               padding: isMobile ? '14px 28px' : '1rem 2rem',
               fontSize: isMobile ? '1.2rem' : '1.5rem',
@@ -408,15 +412,16 @@ const GameUI = () => {
         </div>
       )}
 
-      {/* Bottom right - Quick access */}
+      {/* Bottom right - Quick access (shift up when block hotbar is visible) */}
       <div
         style={{
           position: 'absolute',
-          bottom: isMobile ? '10px' : '20px',
+          bottom: buildMode ? (isMobile ? '100px' : '110px') : (isMobile ? '10px' : '20px'),
           right: isMobile ? '10px' : '20px',
           display: 'flex',
           gap: isMobile ? '8px' : '10px',
           pointerEvents: 'all',
+          transition: 'bottom 0.2s ease',
         }}
       >
         <div

@@ -23,6 +23,7 @@ const KEYMAP = {
   KeyB: 'base',
   KeyM: 'map',
   Escape: 'menu',
+  KeyE: 'use',
   KeyH: 'potion',
   AltLeft: 'block',
   AltRight: 'block',

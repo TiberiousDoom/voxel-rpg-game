@@ -62,6 +62,7 @@ const InventoryUI = () => {
   const getSlotForItem = useCallback((item) => {
     const slotMap = {
       [ITEM_TYPES.WEAPON]: 'weapon',
+      [ITEM_TYPES.TOOL]: 'weapon',
       [ITEM_TYPES.ARMOR]: 'armor',
       [ITEM_TYPES.HELMET]: 'helmet',
       [ITEM_TYPES.GLOVES]: 'gloves',
@@ -128,6 +129,7 @@ const InventoryUI = () => {
   const handleEquipItem = (item) => {
     const slotMap = {
       [ITEM_TYPES.WEAPON]: 'weapon',
+      [ITEM_TYPES.TOOL]: 'weapon',
       [ITEM_TYPES.ARMOR]: 'armor',
       [ITEM_TYPES.HELMET]: 'helmet',
       [ITEM_TYPES.GLOVES]: 'gloves',

@@ -8,7 +8,7 @@
 
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RigidBody } from '@react-three/rapier';
+import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { NPC_WALK_SPEED, NPC_APPROACH_SPEED } from '../../data/tuning';
@@ -78,14 +78,21 @@ const SettlerNPC = React.memo(({ npcData }) => {
     const rb = bodyRef.current;
     const pos = rb.translation();
 
-    // Terrain Y clamping (check every 500ms)
+    // Terrain Y clamping (check every 500ms, max 1-block step)
     const now = Date.now();
     if (now - lastTerrainCheck.current > 500) {
       lastTerrainCheck.current = now;
       const chunkMgr = store._chunkManager;
       if (chunkMgr) {
         const ty = getTerrainY(chunkMgr, pos.x, pos.z);
-        if (ty !== null) terrainY.current = ty;
+        if (ty !== null) {
+          const diff = ty - terrainY.current;
+          // Allow stepping down freely, but limit step-up to 1 block (VOXEL_SIZE)
+          if (diff <= VOXEL_SIZE) {
+            terrainY.current = ty;
+          }
+          // If too steep upward, don't update — NPC stays at current height
+        }
       }
     }
 
@@ -164,6 +171,7 @@ const SettlerNPC = React.memo(({ npcData }) => {
       colliders={false}
       userData={{ isNPC: true, npcId: npcData.id }}
     >
+      <CapsuleCollider args={[0.6, 0.35]} position={[0, 1.2, 0]} />
       <group rotation={[0, npcData.facingAngle || 0, 0]}>
         {/* Head */}
         <mesh geometry={headGeo} material={materials.skin} position={[0, 2.1, 0]} />

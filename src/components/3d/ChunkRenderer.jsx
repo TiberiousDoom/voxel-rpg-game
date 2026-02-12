@@ -270,7 +270,13 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
       const chunkKey = chunk.key; // Capture for closure
       const lodLevel = chunkLODRef.current.get(chunkKey) ?? 0;
 
+      const sendTime = performance.now();
       workerPool.execute(buildMeshRequest(chunk, lodLevel)).then(result => {
+        const elapsed = performance.now() - sendTime;
+        const stats = useGameStore.getState()._debugStats;
+        stats.meshRebuilds++;
+        stats.meshRebuildMs = elapsed;
+
         setMeshData(prev => {
           const next = new Map(prev);
           next.set(chunkKey, result);

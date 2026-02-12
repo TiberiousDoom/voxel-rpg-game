@@ -36,7 +36,7 @@ const DebugOverlay = () => {
   if (!visible) return null;
 
   const state = useGameStore.getState();
-  const { player, settlement, worldTime, hunger, shelter, enemies, rifts, buildMode } = state;
+  const { player, settlement, worldTime, hunger, shelter, enemies, rifts, buildMode, _debugStats: ds } = state;
 
   const pos = player.position;
   const center = settlement.settlementCenter;
@@ -85,6 +85,14 @@ const DebugOverlay = () => {
         <Row label="Wood" value={state.inventory.materials.wood || 0} />
         <Row label="Stone" value={state.inventory.materials.stone || 0} />
       </Section>
+
+      <Section title="Performance">
+        <PerfRow label="Draw Calls" value={ds.drawCalls} limit={300} unit="" />
+        <PerfRow label="Triangles" value={ds.triangles} limit={500000} unit="" />
+        <PerfRow label="Mesh Rebuild" value={ds.meshRebuildMs.toFixed(1)} limit={16} unit="ms" />
+        <Row label="Mesh Rebuilds" value={ds.meshRebuilds} />
+        <Row label="E Cooldown" value={ds.useKeyCooldownLeft > 0 ? `${ds.useKeyCooldownLeft}ms` : 'ready'} highlight={ds.useKeyCooldownLeft <= 0} />
+      </Section>
     </div>
   );
 };
@@ -109,13 +117,26 @@ function Row({ label, value, highlight }) {
   );
 }
 
+function PerfRow({ label, value, limit, unit }) {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  const pass = num <= limit;
+  return (
+    <div style={styles.row}>
+      <span style={styles.label}>{label}</span>
+      <span style={{ ...styles.value, color: pass ? '#51cf66' : '#ff6b6b' }}>
+        {value}{unit} {pass ? 'PASS' : 'FAIL'} (&le;{limit})
+      </span>
+    </div>
+  );
+}
+
 const styles = {
   container: {
     position: 'fixed',
     top: '52px', // below drei Stats panel
     left: '4px',
     zIndex: 9999,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
     color: '#ccc',
     fontFamily: 'monospace',
     fontSize: '11px',

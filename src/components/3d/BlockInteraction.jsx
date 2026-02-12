@@ -623,7 +623,10 @@ export function BlockInteraction({ chunkManager }) {
   const useBlock = useCallback(() => {
     if (!chunkManager) return false;
     const now = Date.now();
-    if (now - useBlockCooldown.current < USE_KEY_COOLDOWN) return false;
+    if (now - useBlockCooldown.current < USE_KEY_COOLDOWN) {
+      useGameStore.getState()._debugStats.useKeyCooldownLeft = USE_KEY_COOLDOWN - (now - useBlockCooldown.current);
+      return false;
+    }
 
     const store = useGameStore.getState();
     const playerPos = store.player.position;

@@ -319,6 +319,9 @@ const useGameStore = create((rawSet, get, api) => {
   _chunkManager: null,
   setChunkManager: (cm) => set({ _chunkManager: cm }),
 
+  // Debug stats (mutable, written by Canvas-internal components, read by DebugOverlay)
+  _debugStats: { drawCalls: 0, triangles: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },
+
   // Rift actions (Phase 1)
   setRifts: (rifts) => set({ rifts }),
 

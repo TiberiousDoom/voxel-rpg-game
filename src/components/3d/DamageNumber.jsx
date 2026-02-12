@@ -7,7 +7,7 @@ import { useFrame } from '@react-three/fiber';
  * Floating damage number that rises and fades out
  * Uses a simple colored sphere indicator instead of text
  */
-const DamageNumber = ({ position, damage, id, onComplete }) => {
+const DamageNumber = ({ position, damage, color: colorProp, id, onComplete }) => {
   const groupRef = useRef();
   const matRef = useRef();
   const yOffset = useRef(0);
@@ -33,7 +33,7 @@ const DamageNumber = ({ position, damage, id, onComplete }) => {
 
   const isCrit = typeof damage === 'string' && damage.includes('CRIT');
   const isCombo = typeof damage === 'string' && damage.includes('COMBO');
-  const color = isCrit ? '#ffff00' : isCombo ? '#00ffff' : '#ff4444';
+  const color = colorProp || (isCrit ? '#ffff00' : isCombo ? '#00ffff' : '#ff4444');
   const size = isCrit ? 0.35 : 0.25;
 
   return (

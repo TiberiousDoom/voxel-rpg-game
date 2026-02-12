@@ -1,5 +1,5 @@
-import React, { Suspense, useEffect, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React, { Suspense, useEffect, useState, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import Player from './Player';
 import Enemy from './Enemy';
@@ -89,6 +89,25 @@ const RiftVisualWithTerrainY = React.memo(({ rift, chunkManager, isNight }) => {
 });
 
 /**
+ * Writes WebGL renderer stats to store._debugStats every 30 frames (~0.5s).
+ * DebugOverlay reads these for perf automation.
+ */
+function DebugStatsTick() {
+  const { gl } = useThree();
+  const frameCount = useRef(0);
+
+  useFrame(() => {
+    frameCount.current++;
+    if (frameCount.current % 30 !== 0) return;
+    const stats = useGameStore.getState()._debugStats;
+    stats.drawCalls = gl.info.render.calls;
+    stats.triangles = gl.info.render.triangles;
+  });
+
+  return null;
+}
+
+/**
  * Experience component - Main 3D scene container
  */
 const Experience = () => {
@@ -159,6 +178,9 @@ const Experience = () => {
       {/* Day/night lighting cycle (ambient + directional + sky/fog colors) */}
       {/* DayNightCycle manages scene.background and fog dynamically */}
       <DayNightCycle />
+
+      {/* Debug stats tick (renderer info for DebugOverlay) */}
+      <DebugStatsTick />
 
       {/* Survival systems tick (hunger drain, starvation damage, shelter detection) */}
       <SurvivalTick chunkManager={isReady ? chunkManager : null} />
@@ -260,6 +282,7 @@ const Experience = () => {
           key={dmg.id}
           position={dmg.position}
           damage={dmg.damage}
+          color={dmg.color}
           id={dmg.id}
           onComplete={removeDamageNumber}
         />

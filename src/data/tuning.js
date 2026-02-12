@@ -140,9 +140,9 @@ export const JUMP_GROUNDED_THRESHOLD = 0.1;  // Max |velY| to count as grounded 
 export const JUMP_COOLDOWN_MS = 500;         // Min ms between jumps (prevents hold-to-spam)
 
 // ─── Mobile Controls ─────────────────────────────────────────
-export const AUTO_JUMP_COOLDOWN_MS = 300;
-export const AUTO_JUMP_DETECT_RANGE = 1.5;     // World units ahead of player
-export const AUTO_JUMP_IMPULSE = 8;            // Same as manual jump
+export const AUTO_JUMP_COOLDOWN_MS = 250;
+export const AUTO_JUMP_DETECT_RANGE = 2.5;     // World units ahead of player (~1.25 blocks)
+export const AUTO_JUMP_IMPULSE = 10;           // Slightly less than manual jump (12)
 export const AUTO_JUMP_MIN_SPEED = 0.5;        // Min XZ velocity to trigger
 
 export const CAMERA_MIN_DISTANCE = 4;

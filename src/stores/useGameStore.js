@@ -190,6 +190,7 @@ const useGameStore = create((rawSet, get, api) => {
   settlement: {
     npcs: [],              // Settler NPC entities
     attractiveness: 0,
+    wallCount: 0,          // Structural blocks counted (for housing cap)
     settlementCenter: null, // [x,y,z] of first campfire
     lastImmigrationCheck: 0,
     lastAttractivenessCalc: 0,
@@ -1341,7 +1342,7 @@ const useGameStore = create((rawSet, get, api) => {
       shelter: { isFullShelter: false, isPartialShelter: false, isExposed: true, tier: 'exposed' },
       tutorialHints: { shownHints: [] },
       settlement: {
-        npcs: [], attractiveness: 0, settlementCenter: null,
+        npcs: [], attractiveness: 0, wallCount: 0, settlementCenter: null,
         lastImmigrationCheck: 0, lastAttractivenessCalc: 0, lastNeedsUpdate: 0,
       },
       buildMode: false,

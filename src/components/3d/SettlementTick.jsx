@@ -25,11 +25,23 @@ import {
   NPC_REST_CRITICAL,
   NPC_WANDER_RADIUS,
   NPC_NEEDS_TICK_INTERVAL,
+  NPC_SOCIAL_DECAY_RATE,
+  NPC_SOCIAL_CRITICAL,
+  NPC_SOCIAL_RESTORE,
+  NPC_SOCIAL_DURATION,
+  NPC_EVALUATION_DURATION,
+  NPC_LEAVE_HAPPINESS_THRESHOLD,
+  NPC_LEAVE_WARNING_DAYS,
+  NPC_LEAVE_DEPARTURE_DAYS,
+  DAY_LENGTH_SECONDS,
 } from '../../data/tuning';
 import { isSolid } from '../../systems/chunks/blockTypes';
 
 // Monotonic counter for NPC IDs
 let _npcIdCounter = 0;
+
+// Track which NPCs have had their departure warning fired (avoid repeat notifications)
+const _warnedNPCs = new Set();
 
 function getTerrainYAt(chunkManager, wx, wz) {
   if (!chunkManager) return 10;
@@ -41,6 +53,40 @@ function getTerrainYAt(chunkManager, wx, wz) {
     }
   }
   return 2;
+}
+
+// Personality-based idle timer range
+function getIdleTimerRange(personality) {
+  switch (personality) {
+    case 'diligent': return [3, 8];
+    case 'lazy': return [10, 20];
+    case 'curious': return [3, 8];
+    default: return [5, 15];
+  }
+}
+
+// Personality-based wander radius multiplier
+function getWanderRadiusMult(personality) {
+  switch (personality) {
+    case 'brave': return 2.0;
+    case 'cautious': return 0.5;
+    default: return 1.0;
+  }
+}
+
+// Personality-based social decay multiplier
+function getSocialDecayMult(personality) {
+  if (personality === 'stoic') return 0.5;
+  return 1.0;
+}
+
+// Personality happiness bonus
+function getPersonalityHappinessBonus(personality) {
+  switch (personality) {
+    case 'cheerful': return 10;
+    case 'grumpy': return -10;
+    default: return 0;
+  }
 }
 
 export default function SettlementTick({ chunkManager }) {
@@ -90,9 +136,12 @@ export default function SettlementTick({ chunkManager }) {
     attractAccum.current += delta;
     if (attractAccum.current >= ATTRACT_RECALC_INTERVAL) {
       attractAccum.current = 0;
-      const score = calculateAttractiveness(center, chunkManager, store);
-      store.updateSettlementAttractiveness(score);
-      store.updateSettlementTimestamps({ lastAttractivenessCalc: Date.now() });
+      const result = calculateAttractiveness(center, chunkManager, store);
+      store.updateSettlementAttractiveness(result.score);
+      store.updateSettlementTimestamps({
+        lastAttractivenessCalc: Date.now(),
+        wallCount: result.wallCount,
+      });
     }
 
     // ── 3. Immigration check ──
@@ -102,7 +151,11 @@ export default function SettlementTick({ chunkManager }) {
       const npcCount = settlement.npcs.length;
       const threshold = IMMIGRATION_THRESHOLD + npcCount * IMMIGRATION_THRESHOLD_PER_NPC;
 
-      if (settlement.attractiveness >= threshold && npcCount < IMMIGRATION_MAX_NPCS) {
+      // Housing-based population cap
+      const housingSlots = Math.floor((settlement.wallCount || 0) / 25);
+      const maxNPCs = Math.min(IMMIGRATION_MAX_NPCS, Math.max(3, housingSlots));
+
+      if (settlement.attractiveness >= threshold && npcCount < maxNPCs) {
         // Spawn immigrant
         const angle = Math.random() * Math.PI * 2;
         const dist = IMMIGRATION_SPAWN_MIN_DIST +
@@ -124,6 +177,10 @@ export default function SettlementTick({ chunkManager }) {
           stateTimer: 0,
           hunger: 80,
           rest: 80,
+          social: 80,
+          happiness: 65,
+          unhappyDays: 0,
+          dayCheckpoint: store.worldTime.elapsed,
           currentJob: null,
           arrivedAtSettlement: false,
         };
@@ -139,36 +196,170 @@ export default function SettlementTick({ chunkManager }) {
       const tickDelta = needsAccum.current;
       needsAccum.current = 0;
 
+      const worldTimeElapsed = store.worldTime.elapsed;
+
       for (const npc of settlement.npcs) {
-        // Skip NPCs still approaching
+        // Skip NPCs still approaching or already leaving
         if (npc.state === 'APPROACHING') continue;
+        if (npc.state === 'LEAVING') {
+          // Just tick the state timer for LEAVING NPCs — movement handled by SettlerNPC
+          const timer = (npc.stateTimer || 0) + tickDelta;
+          store.updateSettlementNPC(npc.id, { stateTimer: timer });
+          continue;
+        }
 
         const updates = {};
+        const personality = npc.personality || 'stoic';
+
+        // Decay needs
         let newHunger = npc.hunger - NPC_HUNGER_DECAY_RATE * tickDelta;
         let newRest = npc.rest - NPC_REST_DECAY_RATE * tickDelta;
+        let newSocial = (npc.social ?? 80) - NPC_SOCIAL_DECAY_RATE * getSocialDecayMult(personality) * tickDelta;
         newHunger = Math.max(0, Math.min(100, newHunger));
         newRest = Math.max(0, Math.min(100, newRest));
+        newSocial = Math.max(0, Math.min(100, newSocial));
         updates.hunger = newHunger;
         updates.rest = newRest;
+        updates.social = newSocial;
+
+        // Compute happiness
+        const happinessBonus = getPersonalityHappinessBonus(personality);
+        updates.happiness = Math.max(0, Math.min(100,
+          newHunger * 0.35 + newRest * 0.3 + newSocial * 0.2 + 15 + happinessBonus
+        ));
+
+        // ── Unhappy day tracking & departure ──
+        const dayCheckpoint = npc.dayCheckpoint ?? worldTimeElapsed;
+        let unhappyDays = npc.unhappyDays ?? 0;
+
+        // Check if a full in-game day has passed since last checkpoint
+        if (worldTimeElapsed - dayCheckpoint >= DAY_LENGTH_SECONDS) {
+          updates.dayCheckpoint = worldTimeElapsed;
+          if (updates.happiness < NPC_LEAVE_HAPPINESS_THRESHOLD) {
+            unhappyDays++;
+          } else {
+            unhappyDays = Math.max(0, unhappyDays - 1); // recover
+          }
+          updates.unhappyDays = unhappyDays;
+
+          // Warning notification (once)
+          if (unhappyDays >= NPC_LEAVE_WARNING_DAYS && !_warnedNPCs.has(npc.id)) {
+            _warnedNPCs.add(npc.id);
+            if (window.addNotification) {
+              window.addNotification({
+                type: 'warning',
+                title: 'Unhappy Settler',
+                message: `${npc.fullName} is unhappy and may leave soon!`,
+              });
+            }
+          }
+
+          // Departure
+          if (unhappyDays >= NPC_LEAVE_DEPARTURE_DAYS) {
+            const leaveAngle = Math.random() * Math.PI * 2;
+            const leaveDist = IMMIGRATION_SPAWN_MAX_DIST + 20;
+            updates.state = 'LEAVING';
+            updates.stateTimer = 0;
+            updates.targetPosition = [
+              center[0] + Math.cos(leaveAngle) * leaveDist,
+              center[1],
+              center[2] + Math.sin(leaveAngle) * leaveDist,
+            ];
+            if (window.addNotification) {
+              window.addNotification({
+                type: 'error',
+                title: 'Settler Leaving',
+                message: `${npc.fullName} has decided to leave your settlement.`,
+              });
+            }
+            _warnedNPCs.delete(npc.id);
+            store.updateSettlementNPC(npc.id, updates);
+            continue;
+          }
+        }
+
+        // Reset warning if happiness recovered
+        if (unhappyDays < NPC_LEAVE_WARNING_DAYS) {
+          _warnedNPCs.delete(npc.id);
+        }
 
         // State machine
         const timer = (npc.stateTimer || 0) + tickDelta;
         updates.stateTimer = timer;
 
         switch (npc.state) {
-          case 'IDLE':
+          case 'EVALUATING':
+            // NPC evaluating settlement — after duration, join or leave
+            if (timer >= NPC_EVALUATION_DURATION) {
+              // Simple check: if attractiveness > threshold, join
+              const joinThreshold = IMMIGRATION_THRESHOLD;
+              if (settlement.attractiveness >= joinThreshold) {
+                updates.state = 'IDLE';
+                updates.stateTimer = 0;
+                // Arrival notification
+                if (window.addNotification) {
+                  window.addNotification({
+                    type: 'success',
+                    title: 'New Settler!',
+                    message: `${npc.fullName} has joined your settlement!`,
+                  });
+                }
+              } else {
+                // Rejected — leave
+                const leaveAngle = Math.random() * Math.PI * 2;
+                const leaveDist = IMMIGRATION_SPAWN_MAX_DIST + 20;
+                updates.state = 'LEAVING';
+                updates.stateTimer = 0;
+                updates.targetPosition = [
+                  center[0] + Math.cos(leaveAngle) * leaveDist,
+                  center[1],
+                  center[2] + Math.sin(leaveAngle) * leaveDist,
+                ];
+                if (window.addNotification) {
+                  window.addNotification({
+                    type: 'warning',
+                    title: 'Settler Rejected',
+                    message: `${npc.fullName} didn't like what they saw and left.`,
+                  });
+                }
+              }
+            }
+            break;
+
+          case 'IDLE': {
+            const [idleMin, idleMax] = getIdleTimerRange(personality);
             if (newHunger < NPC_HUNGER_CRITICAL) {
               updates.state = 'EATING';
               updates.stateTimer = 0;
             } else if (newRest < NPC_REST_CRITICAL) {
               updates.state = 'SLEEPING';
               updates.stateTimer = 0;
-            } else if (timer > 5 + Math.random() * 10) {
+            } else if (newSocial < NPC_SOCIAL_CRITICAL && settlement.npcs.length > 1) {
+              // Find nearest other NPC within 20 world units to socialize with
+              let nearestDist = 20;
+              let nearestNPC = null;
+              for (const other of settlement.npcs) {
+                if (other.id === npc.id || other.state === 'APPROACHING' || other.state === 'LEAVING') continue;
+                const dx = (other.position[0] || 0) - (npc.position[0] || 0);
+                const dz = (other.position[2] || 0) - (npc.position[2] || 0);
+                const d = Math.sqrt(dx * dx + dz * dz);
+                if (d < nearestDist) {
+                  nearestDist = d;
+                  nearestNPC = other;
+                }
+              }
+              if (nearestNPC) {
+                updates.state = 'SOCIALIZING';
+                updates.stateTimer = 0;
+                updates.targetPosition = [...nearestNPC.position];
+              }
+            } else if (timer > idleMin + Math.random() * (idleMax - idleMin)) {
               // Random wander
               updates.state = 'WANDERING';
               updates.stateTimer = 0;
               const wanderAngle = Math.random() * Math.PI * 2;
-              const wanderDist = Math.random() * NPC_WANDER_RADIUS;
+              const wanderMult = getWanderRadiusMult(personality);
+              const wanderDist = Math.random() * NPC_WANDER_RADIUS * wanderMult;
               updates.targetPosition = [
                 center[0] + Math.cos(wanderAngle) * wanderDist,
                 center[1],
@@ -176,6 +367,7 @@ export default function SettlementTick({ chunkManager }) {
               ];
             }
             break;
+          }
 
           case 'EATING':
             updates.hunger = Math.min(100, newHunger + 5 * tickDelta);
@@ -190,6 +382,15 @@ export default function SettlementTick({ chunkManager }) {
             if (updates.rest >= 80) {
               updates.state = 'IDLE';
               updates.stateTimer = 0;
+            }
+            break;
+
+          case 'SOCIALIZING':
+            updates.social = Math.min(100, newSocial + (NPC_SOCIAL_RESTORE / NPC_SOCIAL_DURATION) * tickDelta);
+            if (timer >= NPC_SOCIAL_DURATION) {
+              updates.state = 'IDLE';
+              updates.stateTimer = 0;
+              updates.targetPosition = null;
             }
             break;
 

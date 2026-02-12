@@ -48,6 +48,8 @@ export const BLOCK_DROPS = {
   [BlockTypes.ICE]: { material: 'ice', min: 1, max: 1 },
   [BlockTypes.BERRY_BUSH]: { material: 'berry', min: 1, max: 3 },
   [BlockTypes.CAMPFIRE]: { material: 'wood', min: 2, max: 2 },
+  [BlockTypes.CORRUPTED_STONE]: { material: 'stone', min: 1, max: 1 },
+  [BlockTypes.CORRUPTED_GRASS]: { material: 'dirt', min: 1, max: 1 },
 };
 
 /**

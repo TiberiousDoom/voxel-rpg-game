@@ -36,6 +36,9 @@ const STATUS_COLORS = {
   EATING: '#ffcc00',
   SLEEPING: '#8844cc',
   WORKING: '#4488ff',
+  EVALUATING: '#00ccff',
+  SOCIALIZING: '#ff88ff',
+  LEAVING: '#ff4444',
 };
 
 function getTerrainY(chunkManager, wx, wz) {
@@ -52,11 +55,13 @@ function getTerrainY(chunkManager, wx, wz) {
 
 const SettlerNPC = React.memo(({ npcData }) => {
   const bodyRef = useRef();
+  const groupRef = useRef();
   const leftLegRef = useRef();
   const rightLegRef = useRef();
   const walkPhase = useRef(0);
   const lastTerrainCheck = useRef(0);
   const terrainY = useRef(npcData.position[1]);
+  const evalRotation = useRef(0);
 
   // Materials (memoized per NPC)
   const materials = useMemo(() => ({
@@ -98,6 +103,17 @@ const SettlerNPC = React.memo(({ npcData }) => {
 
     let moving = false;
 
+    // LEAVING NPC that reached edge → remove
+    if (npc.state === 'LEAVING' && npc.targetPosition) {
+      _targetVec.set(npc.targetPosition[0], 0, npc.targetPosition[2]);
+      _currentVec.set(pos.x, 0, pos.z);
+      const dist = _currentVec.distanceTo(_targetVec);
+      if (dist < 3) {
+        store.removeSettlementNPC(npc.id);
+        return;
+      }
+    }
+
     if (npc.targetPosition) {
       // Move toward target
       _targetVec.set(npc.targetPosition[0], 0, npc.targetPosition[2]);
@@ -105,15 +121,26 @@ const SettlerNPC = React.memo(({ npcData }) => {
       const dist = _currentVec.distanceTo(_targetVec);
 
       if (dist < 1.5) {
-        // Arrived
-        store.updateSettlementNPC(npc.id, {
-          targetPosition: null,
-          arrivedAtSettlement: true,
-          state: 'IDLE',
-          stateTimer: 0,
-        });
+        // Arrived at target
+        if (npc.state === 'APPROACHING') {
+          // Transition to EVALUATING instead of IDLE
+          store.updateSettlementNPC(npc.id, {
+            targetPosition: null,
+            arrivedAtSettlement: true,
+            state: 'EVALUATING',
+            stateTimer: 0,
+          });
+        } else {
+          store.updateSettlementNPC(npc.id, {
+            targetPosition: null,
+            arrivedAtSettlement: true,
+            state: npc.state === 'WANDERING' || npc.state === 'SOCIALIZING' ? 'IDLE' : npc.state,
+            stateTimer: npc.state === 'WANDERING' ? 0 : npc.stateTimer,
+          });
+        }
       } else {
-        const speed = npc.state === 'APPROACHING' ? NPC_APPROACH_SPEED : NPC_WALK_SPEED;
+        const speed = npc.state === 'APPROACHING' || npc.state === 'LEAVING'
+          ? NPC_APPROACH_SPEED : NPC_WALK_SPEED;
         _dirVec.subVectors(_targetVec, _currentVec).normalize();
         const step = speed * delta;
 
@@ -174,6 +201,16 @@ const SettlerNPC = React.memo(({ npcData }) => {
       }
     }
 
+    // EVALUATING: slow look-around rotation
+    if (npc.state === 'EVALUATING' && groupRef.current) {
+      evalRotation.current += delta * 1.2;
+      groupRef.current.rotation.y = Math.sin(evalRotation.current) * 1.0;
+    } else if (groupRef.current) {
+      // Reset to facing angle
+      groupRef.current.rotation.y = npc.facingAngle || 0;
+      evalRotation.current = 0;
+    }
+
     // Walk animation
     if (moving) {
       walkPhase.current += delta * 8;
@@ -200,7 +237,7 @@ const SettlerNPC = React.memo(({ npcData }) => {
       userData={{ isNPC: true, npcId: npcData.id }}
     >
       <CapsuleCollider args={[0.6, 0.35]} position={[0, 1.2, 0]} />
-      <group rotation={[0, npcData.facingAngle || 0, 0]}>
+      <group ref={groupRef} rotation={[0, npcData.facingAngle || 0, 0]}>
         {/* Head */}
         <mesh geometry={headGeo} material={materials.skin} position={[0, 2.1, 0]} />
         {/* Hair */}

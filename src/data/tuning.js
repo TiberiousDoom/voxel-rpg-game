@@ -100,6 +100,11 @@ export const RIFT_POP_CAP_NIGHT = 8;           // Max monsters per rift (nightti
 export const RIFT_ACTIVE_RANGE = 80;           // Only tick rifts within physics collider range (~3 chunks)
 export const RIFT_DORMANT_DURATION = 300;      // Seconds of dormancy when blocks destroyed
 
+// Rift terrain corruption radii (in blocks, 1 block = 2 world units)
+export const CORRUPTION_RADIUS_FULL = 16;      // Z1: 100% → corrupted stone
+export const CORRUPTION_RADIUS_HEAVY = 28;     // Z2: 80% corrupted stone, 20% corrupted grass
+export const CORRUPTION_RADIUS_LIGHT = 32;     // Z3: 50% → corrupted grass (starts at Z2 boundary)
+
 export const RIFT_NOCTURNAL_DAMAGE_MULT = 1.5; // Night monster damage multiplier
 export const RIFT_NOCTURNAL_SPEED_MULT = 1.25; // Night monster speed multiplier
 
@@ -182,6 +187,23 @@ export const NPC_WALK_SPEED = 2.0;                  // World units/sec (wanderin
 export const NPC_APPROACH_SPEED = 3.0;              // World units/sec (approaching settlement)
 export const NPC_WANDER_RADIUS = 16;                // World units from center
 export const NPC_NEEDS_TICK_INTERVAL = 2;           // Seconds between needs updates
+
+// Housing & attractiveness
+export const ATTRACT_HOUSING_SCORE = 10;             // Per estimated housing slot
+export const ATTRACT_HAPPINESS_MIN_MULT = 0.5;       // Score multiplier at 0% avg happiness
+export const ATTRACT_HAPPINESS_MAX_MULT = 1.5;       // Score multiplier at 100% avg happiness
+
+// Social need
+export const NPC_SOCIAL_DECAY_RATE = 0.15;           // Per second
+export const NPC_SOCIAL_CRITICAL = 25;               // Below: NPC socializes
+export const NPC_SOCIAL_RESTORE = 20;                // Restored after socializing
+export const NPC_SOCIAL_DURATION = 15;               // Seconds to socialize
+
+// NPC evaluation & departure
+export const NPC_EVALUATION_DURATION = 8;            // Seconds to evaluate settlement
+export const NPC_LEAVE_HAPPINESS_THRESHOLD = 20;     // Below: unhappy
+export const NPC_LEAVE_WARNING_DAYS = 2;             // In-game days before warning
+export const NPC_LEAVE_DEPARTURE_DAYS = 3;           // In-game days before leaving
 
 // ─── E Key Interact ─────────────────────────────────────────
 export const USE_KEY_RANGE = 6;                     // World units (3 blocks) for proximity search

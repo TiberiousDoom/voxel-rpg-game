@@ -14,6 +14,9 @@ import {
   ATTRACT_FOOD_CAP,
   ATTRACT_RIFT_PENALTY,
   ATTRACT_SCAN_RADIUS,
+  ATTRACT_HOUSING_SCORE,
+  ATTRACT_HAPPINESS_MIN_MULT,
+  ATTRACT_HAPPINESS_MAX_MULT,
 } from '../../data/tuning';
 
 // Block types that count as player-placed structural blocks
@@ -34,10 +37,10 @@ const FOOD_MATERIALS = ['berry', 'meat'];
  * @param {number[]} center - [x, y, z] world position of settlement center
  * @param {Object} chunkManager - ChunkManager instance
  * @param {Object} gameState - Current zustand state snapshot
- * @returns {number} Attractiveness score (>= 0)
+ * @returns {{ score: number, wallCount: number }} Attractiveness score and wall count
  */
 export function calculateAttractiveness(center, chunkManager, gameState) {
-  if (!center || !chunkManager) return 0;
+  if (!center || !chunkManager) return { score: 0, wallCount: 0 };
 
   const [cx, , cz] = center;
   let campfireScore = 0;
@@ -76,6 +79,10 @@ export function calculateAttractiveness(center, chunkManager, gameState) {
   // Cap wall score
   const wallScore = Math.min(wallCount, ATTRACT_WALL_CAP) * ATTRACT_WALL_SCORE;
 
+  // Housing bonus: each 25 structural blocks ≈ 1 housing slot
+  const housingSlots = Math.floor(wallCount / 25);
+  const housingScore = housingSlots * ATTRACT_HOUSING_SCORE;
+
   // Food bonus from inventory
   let foodCount = 0;
   if (gameState.inventory?.materials) {
@@ -98,5 +105,20 @@ export function calculateAttractiveness(center, chunkManager, gameState) {
     }
   }
 
-  return Math.max(0, campfireScore + wallScore + foodScore + riftPenalty);
+  let baseScore = campfireScore + wallScore + housingScore + foodScore + riftPenalty;
+
+  // Happiness multiplier: if NPCs exist, scale by average happiness
+  const npcs = gameState.settlement?.npcs;
+  if (npcs && npcs.length > 0) {
+    let totalHappiness = 0;
+    for (const npc of npcs) {
+      totalHappiness += npc.happiness ?? 65;
+    }
+    const avgHappiness = totalHappiness / npcs.length;
+    const t = Math.max(0, Math.min(1, avgHappiness / 100));
+    const mult = ATTRACT_HAPPINESS_MIN_MULT + t * (ATTRACT_HAPPINESS_MAX_MULT - ATTRACT_HAPPINESS_MIN_MULT);
+    baseScore *= mult;
+  }
+
+  return { score: Math.max(0, Math.round(baseScore)), wallCount };
 }

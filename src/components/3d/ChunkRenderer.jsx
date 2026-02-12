@@ -25,6 +25,52 @@ const LOD_HYSTERESIS = 1;
 const LOD_CHECK_INTERVAL = 30;
 
 /**
+ * Create a MeshLambertMaterial with per-vertex emissive support.
+ * The aEmissive attribute (0.0–1.0) controls how much of the vertex color
+ * bypasses scene lighting, keeping campfire blocks bright at night.
+ */
+function createEmissiveChunkMaterial() {
+  const mat = new THREE.MeshLambertMaterial({
+    vertexColors: true,
+    side: THREE.DoubleSide,
+  });
+
+  mat.customProgramCacheKey = () => 'chunk-emissive';
+  mat.onBeforeCompile = (shader) => {
+    // Vertex shader: pass emissive attribute to fragment
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <common>',
+      `#include <common>
+attribute float aEmissive;
+varying float vEmissive;`
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <fog_vertex>',
+      `#include <fog_vertex>
+vEmissive = aEmissive;`
+    );
+
+    // Fragment shader: add per-vertex emissive to output
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <common>',
+      `#include <common>
+varying float vEmissive;`
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <output_fragment>',
+      `#include <output_fragment>
+gl_FragColor.rgb += vColor * vEmissive;`
+    );
+  };
+
+  return mat;
+}
+
+// Shared material instances (one per component type to avoid re-creation)
+const _physicsMaterial = createEmissiveChunkMaterial();
+const _visualMaterial = createEmissiveChunkMaterial();
+
+/**
  * Select LOD level with hysteresis to prevent oscillation at boundaries
  */
 function selectLODWithHysteresis(dx, dz, currentLOD) {
@@ -78,6 +124,10 @@ function useChunkGeometry(meshData) {
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(meshData.positions), 3));
     geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(meshData.normals), 3));
     geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(meshData.colors), 3));
+    // Per-vertex emissive factor for campfire glow (0=none, 1=full)
+    if (meshData.emissive) {
+      geo.setAttribute('aEmissive', new THREE.BufferAttribute(new Float32Array(meshData.emissive), 1));
+    }
     geo.setIndex(new THREE.BufferAttribute(new Uint32Array(meshData.indices), 1));
     geo.computeBoundingSphere();
 
@@ -108,9 +158,7 @@ function PhysicsChunkMesh({ chunk, meshData }) {
 
   return (
     <RigidBody type="fixed" colliders="trimesh" position={position}>
-      <mesh geometry={geometry} frustumCulled={false}>
-        <meshLambertMaterial vertexColors side={THREE.DoubleSide} />
-      </mesh>
+      <mesh geometry={geometry} frustumCulled={false} material={_physicsMaterial} />
     </RigidBody>
   );
 }
@@ -129,9 +177,7 @@ function VisualChunkMesh({ chunk, meshData }) {
 
   return (
     <group position={position}>
-      <mesh geometry={geometry} frustumCulled={false}>
-        <meshLambertMaterial vertexColors side={THREE.DoubleSide} />
-      </mesh>
+      <mesh geometry={geometry} frustumCulled={false} material={_visualMaterial} />
     </group>
   );
 }

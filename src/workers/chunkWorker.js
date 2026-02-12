@@ -438,11 +438,19 @@ function buildChunkMesh(params) {
       const cn = isSolidForAO(x + offsets[2][0], y + offsets[2][1], z + offsets[2][2]);
       const ao = (s1 && s2) ? 0 : 3 - (s1 + s2 + cn);
       const aoMod = AO_BRIGHTNESS[ao];
-      const finalMod = lightMod * aoMod * heightMod * noiseMod;
 
-      colors[idx] = Math.min(1, color[0] * finalMod);
-      colors[idx + 1] = Math.min(1, color[1] * finalMod);
-      colors[idx + 2] = Math.min(1, color[2] * finalMod);
+      // Campfire blocks glow — skip darkening, boost brightness with flicker
+      if (blockType === BlockTypes.CAMPFIRE) {
+        const flicker = 0.9 + blockHash(x + i, y, z + i) * 0.2; // 0.9–1.1
+        colors[idx] = Math.min(1, 1.0 * flicker);       // bright orange-white
+        colors[idx + 1] = Math.min(1, 0.55 * flicker);
+        colors[idx + 2] = Math.min(1, 0.15 * flicker);
+      } else {
+        const finalMod = lightMod * aoMod * heightMod * noiseMod;
+        colors[idx] = Math.min(1, color[0] * finalMod);
+        colors[idx + 1] = Math.min(1, color[1] * finalMod);
+        colors[idx + 2] = Math.min(1, color[2] * finalMod);
+      }
 
       vertexCount++;
     }
@@ -645,11 +653,18 @@ function buildLODMesh(params) {
       const s2 = isSolidForAO(x + offsets[1][0], y + offsets[1][1], z + offsets[1][2]);
       const cn = isSolidForAO(x + offsets[2][0], y + offsets[2][1], z + offsets[2][2]);
       const ao = (s1 && s2) ? 0 : 3 - (s1 + s2 + cn);
-      const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao] * heightMod * noiseMod;
 
-      colors[idx] = Math.min(1, color[0] * finalMod);
-      colors[idx + 1] = Math.min(1, color[1] * finalMod);
-      colors[idx + 2] = Math.min(1, color[2] * finalMod);
+      if (blockType === BlockTypes.CAMPFIRE) {
+        const flicker = 0.9 + lodBlockHash(x + i, y, z + i) * 0.2;
+        colors[idx] = Math.min(1, 1.0 * flicker);
+        colors[idx + 1] = Math.min(1, 0.55 * flicker);
+        colors[idx + 2] = Math.min(1, 0.15 * flicker);
+      } else {
+        const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao] * heightMod * noiseMod;
+        colors[idx] = Math.min(1, color[0] * finalMod);
+        colors[idx + 1] = Math.min(1, color[1] * finalMod);
+        colors[idx + 2] = Math.min(1, color[2] * finalMod);
+      }
       vertexCount++;
     }
     indices.push(startVertex, startVertex + 1, startVertex + 2, startVertex, startVertex + 2, startVertex + 3);

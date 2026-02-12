@@ -174,8 +174,8 @@ export const IMMIGRATION_SPAWN_MIN_DIST = 64;       // World units from center
 export const IMMIGRATION_SPAWN_MAX_DIST = 96;       // World units from center
 export const IMMIGRATION_MAX_NPCS = 5;              // Max settler NPCs
 
-export const NPC_HUNGER_DECAY_RATE = 0.005;         // Per second
-export const NPC_REST_DECAY_RATE = 0.007;           // Per second
+export const NPC_HUNGER_DECAY_RATE = 0.5;            // Per second (~2 min to critical)
+export const NPC_REST_DECAY_RATE = 0.35;             // Per second (~3 min to critical)
 export const NPC_HUNGER_CRITICAL = 15;              // Below: NPC eats
 export const NPC_REST_CRITICAL = 15;                // Below: NPC sleeps
 export const NPC_WALK_SPEED = 2.0;                  // World units/sec (wandering)

@@ -94,11 +94,7 @@ function _executeUseAction(action, wx, wy, wz, blockType, chunkManager, store) {
       : drop.min + Math.floor(Math.random() * (drop.max - drop.min + 1));
     if (amount > 0) {
       store.addMaterial(drop.material, amount);
-      store.addDamageNumber({
-        position: [wx, wy + 1.5, wz],
-        damage: `+${amount} ${drop.material}`,
-        color: '#ffffff',
-      });
+      store.addPickupText(`+${amount} ${drop.material}`, '#44ff44');
     }
   }
 
@@ -559,12 +555,7 @@ export function BlockInteraction({ chunkManager }) {
 
       drops.forEach((drop) => {
         store.addMaterial(drop.material, drop.amount);
-        // Show floating pickup text via damage number system (white color)
-        store.addDamageNumber({
-          position: [blockX, blockY + 1.5, blockZ],
-          damage: `+${drop.amount} ${drop.material}`,
-          color: '#ffffff',
-        });
+        store.addPickupText(`+${drop.amount} ${drop.material}`, '#44ff44');
       });
     }
 

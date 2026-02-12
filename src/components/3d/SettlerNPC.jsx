@@ -113,7 +113,6 @@ const SettlerNPC = React.memo(({ npcData }) => {
           stateTimer: 0,
         });
       } else {
-        moving = true;
         const speed = npc.state === 'APPROACHING' ? NPC_APPROACH_SPEED : NPC_WALK_SPEED;
         _dirVec.subVectors(_targetVec, _currentVec).normalize();
         const step = speed * delta;
@@ -121,18 +120,47 @@ const SettlerNPC = React.memo(({ npcData }) => {
         const newX = pos.x + _dirVec.x * step;
         const newZ = pos.z + _dirVec.z * step;
 
-        rb.setNextKinematicTranslation({
-          x: newX,
-          y: terrainY.current,
-          z: newZ,
-        });
+        // Check for solid blocks at feet and torso height before moving
+        const chunkMgr = store._chunkManager;
+        let blocked = false;
+        let stepUp = false;
+        if (chunkMgr) {
+          const feetY = terrainY.current + VOXEL_SIZE / 2;
+          const torsoY = terrainY.current + VOXEL_SIZE + VOXEL_SIZE / 2;
+          const feetSolid = isSolid(chunkMgr.getBlock(newX, feetY, newZ));
+          const torsoSolid = isSolid(chunkMgr.getBlock(newX, torsoY, newZ));
 
-        // Update facing
-        const angle = Math.atan2(_dirVec.x, _dirVec.z);
-        store.updateSettlementNPC(npc.id, {
-          position: [newX, terrainY.current, newZ],
-          facingAngle: angle,
-        });
+          if (feetSolid && !torsoSolid) {
+            // 1-block obstacle — check if headroom is clear above the step
+            const aboveStepY = terrainY.current + VOXEL_SIZE * 2 + VOXEL_SIZE / 2;
+            if (!isSolid(chunkMgr.getBlock(newX, aboveStepY, newZ))) {
+              stepUp = true; // auto-step up
+            } else {
+              blocked = true;
+            }
+          } else if (torsoSolid) {
+            blocked = true; // 2+ block wall, can't pass
+          }
+        }
+
+        if (!blocked) {
+          moving = true;
+          const moveY = stepUp ? terrainY.current + VOXEL_SIZE : terrainY.current;
+          if (stepUp) terrainY.current = moveY;
+
+          rb.setNextKinematicTranslation({
+            x: newX,
+            y: moveY,
+            z: newZ,
+          });
+
+          // Update facing
+          const angle = Math.atan2(_dirVec.x, _dirVec.z);
+          store.updateSettlementNPC(npc.id, {
+            position: [newX, moveY, newZ],
+            facingAngle: angle,
+          });
+        }
       }
     } else {
       // Clamp to terrain when stationary

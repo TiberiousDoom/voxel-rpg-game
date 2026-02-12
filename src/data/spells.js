@@ -374,8 +374,12 @@ export const executeSpell = (spell, player, store) => {
  * Returns 0 if no suitable target found (shoots horizontal as fallback).
  */
 function calcAutoAimPitch(player, store) {
-  const enemies = store.getState ? store.getState().enemies : store.enemies;
+  const state = store.getState ? store.getState() : store;
+  const enemies = state.enemies;
   if (!enemies || enemies.length === 0) return 0;
+
+  // Use live physics positions (updated each frame by Enemy.jsx)
+  const livePositions = state._enemyPositions;
 
   const yaw = player.facingAngle;
   const fwdX = Math.sin(yaw);
@@ -386,9 +390,11 @@ function calcAutoAimPitch(player, store) {
   let bestPitch = 0;
 
   for (const enemy of enemies) {
-    if (!enemy.position) continue;
-    const dx = enemy.position[0] - player.position[0];
-    const dz = enemy.position[2] - player.position[2];
+    // Prefer live physics position, fall back to store position
+    const pos = (livePositions && livePositions.get(enemy.id)) || enemy.position;
+    if (!pos) continue;
+    const dx = pos[0] - player.position[0];
+    const dz = pos[2] - player.position[2];
     const horizDist = Math.sqrt(dx * dx + dz * dz);
     if (horizDist < 1 || horizDist > 60) continue;
 
@@ -399,7 +405,7 @@ function calcAutoAimPitch(player, store) {
     if (horizDist < bestDist) {
       bestDist = horizDist;
       // Aim at enemy center (position + ~1 unit up for body center)
-      const dy = (enemy.position[1] + 1) - castY;
+      const dy = (pos[1] + 1) - castY;
       bestPitch = Math.atan2(dy, horizDist);
     }
   }

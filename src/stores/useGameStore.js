@@ -322,6 +322,9 @@ const useGameStore = create((rawSet, get, api) => {
   // Debug stats (mutable, written by Canvas-internal components, read by DebugOverlay)
   _debugStats: { drawCalls: 0, triangles: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },
 
+  // Live enemy positions (mutable Map, written by Enemy.jsx each frame, read by spell auto-aim)
+  _enemyPositions: new Map(),
+
   // Rift actions (Phase 1)
   setRifts: (rifts) => set({ rifts }),
 
@@ -343,6 +346,17 @@ const useGameStore = create((rawSet, get, api) => {
   removeDamageNumber: (id) =>
     set((state) => ({
       damageNumbers: state.damageNumbers.filter((d) => d.id !== id),
+    })),
+
+  // Pickup text (HTML overlay, always readable)
+  pickupTexts: [],
+  addPickupText: (text, color = '#ffffff') =>
+    set((state) => ({
+      pickupTexts: [...state.pickupTexts, { id: nextEntityId(), text, color, createdAt: Date.now() }],
+    })),
+  removePickupText: (id) =>
+    set((state) => ({
+      pickupTexts: state.pickupTexts.filter((p) => p.id !== id),
     })),
 
   addLootDrop: (loot) =>

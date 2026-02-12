@@ -222,8 +222,9 @@ const Player = () => {
       }
     }
 
-    // Auto-jump for mobile: detect 1-block obstacles ahead and jump over them
-    if (isMobileDevice.current && !isDodging && Math.abs(currentVel.y) < 0.1 && isMoving) {
+    // Auto-jump: detect 1-block obstacles ahead and jump over them
+    // Triggers on mobile (always) and desktop click-to-move (no keyboard to press Space)
+    if ((isMobileDevice.current || player.targetPosition) && !isDodging && Math.abs(currentVel.y) < 0.1 && isMoving) {
       const xzSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
       if (xzSpeed > AUTO_JUMP_MIN_SPEED) {
         const now = Date.now();

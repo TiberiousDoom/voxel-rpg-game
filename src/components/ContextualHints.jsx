@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useGameStore from '../stores/useGameStore';
-import { BlockTypes } from '../systems/chunks/blockTypes';
 import { VOXEL_SIZE } from '../systems/chunks/coordinates';
 import { isUsableBlock } from '../data/blockUseActions';
 

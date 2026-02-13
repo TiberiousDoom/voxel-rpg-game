@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer, Pickaxe } from 'lucide-react';
+import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer, Pickaxe, MapPin } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 import { getTotalStats } from '../utils/equipmentStats';
 import StatBarWithTooltip from './ui/StatBarWithTooltip';
@@ -512,6 +512,35 @@ const GameUI = () => {
         >
           <Pickaxe size={isMobile ? 28 : 24} style={{ color: buildMode ? '#fff' : '#ffa500' }} />
           {!isMobile && <span style={{ fontSize: '0.7rem' }}>Build [Tab]</span>}
+        </div>
+        <div
+          onClick={() => {
+            const store = useGameStore.getState();
+            if (store.zoneMode) {
+              store.setZoneMode(false);
+            } else {
+              if (store.buildMode) store.setBuildMode(false);
+              store.setZoneMode(true, 'MINING');
+            }
+          }}
+          style={{
+            background: zoneMode ? 'rgba(255, 140, 0, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+            padding: isMobile ? '10px' : '12px',
+            borderRadius: '10px',
+            color: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '5px',
+            border: zoneMode ? '2px solid #ff8c00' : '2px solid #4a5568',
+            minWidth: isMobile ? '56px' : 'auto',
+            minHeight: isMobile ? '56px' : 'auto',
+            cursor: 'pointer',
+            touchAction: 'manipulation',
+          }}
+        >
+          <MapPin size={isMobile ? 28 : 24} style={{ color: zoneMode ? '#fff' : '#ff8c00' }} />
+          {!isMobile && <span style={{ fontSize: '0.7rem' }}>Zones [Z]</span>}
         </div>
       </div>
 

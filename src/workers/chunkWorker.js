@@ -585,14 +585,62 @@ function buildChunkMesh(params) {
     return (h & 0x7fffffff) / 0x7fffffff; // 0.0–1.0
   }
 
-  // Pre-scan for campfire positions in chunk (for warm glow on neighbors)
+  // Pre-scan for campfire positions in chunk AND neighbor edges (for warm glow)
   const campfirePositions = [];
   const CAMPFIRE_GLOW_RADIUS = 5;
+  // Scan own chunk
   for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
     for (let cz = 0; cz < CHUNK_SIZE; cz++) {
       for (let cx = 0; cx < CHUNK_SIZE; cx++) {
         if (blocks[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
           campfirePositions.push(cx, cy, cz);
+        }
+      }
+    }
+  }
+  // Scan neighbor chunk edges for campfires within glow radius of boundary
+  // Positions are stored in local-space coordinates (negative or >= CHUNK_SIZE)
+  const R = CAMPFIRE_GLOW_RADIUS;
+  if (neighborWest) {
+    for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+      for (let cz = 0; cz < CHUNK_SIZE; cz++) {
+        for (let cx = CHUNK_SIZE - R; cx < CHUNK_SIZE; cx++) {
+          if (neighborWest[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+            campfirePositions.push(cx - CHUNK_SIZE, cy, cz);
+          }
+        }
+      }
+    }
+  }
+  if (neighborEast) {
+    for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+      for (let cz = 0; cz < CHUNK_SIZE; cz++) {
+        for (let cx = 0; cx < R; cx++) {
+          if (neighborEast[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+            campfirePositions.push(cx + CHUNK_SIZE, cy, cz);
+          }
+        }
+      }
+    }
+  }
+  if (neighborSouth) {
+    for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+      for (let cz = CHUNK_SIZE - R; cz < CHUNK_SIZE; cz++) {
+        for (let cx = 0; cx < CHUNK_SIZE; cx++) {
+          if (neighborSouth[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+            campfirePositions.push(cx, cy, cz - CHUNK_SIZE);
+          }
+        }
+      }
+    }
+  }
+  if (neighborNorth) {
+    for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+      for (let cz = 0; cz < R; cz++) {
+        for (let cx = 0; cx < CHUNK_SIZE; cx++) {
+          if (neighborNorth[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+            campfirePositions.push(cx, cy, cz + CHUNK_SIZE);
+          }
         }
       }
     }

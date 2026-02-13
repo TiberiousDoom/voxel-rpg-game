@@ -13,6 +13,7 @@ import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { chunkOriginWorld, worldToChunk } from '../../systems/chunks/coordinates.js';
 import { selectLODLevel, LOD_DISTANCES } from '../../systems/chunks/LODGenerator.js';
+import { getDaylightFactor } from '../../systems/lighting/DayNightLighting.js';
 import useGameStore from '../../stores/useGameStore';
 
 // Only chunks within this Chebyshev distance get physics colliders
@@ -25,9 +26,26 @@ const LOD_HYSTERESIS = 1;
 const LOD_CHECK_INTERVAL = 30;
 
 /**
+ * Shared uniform for daylight factor (0=night, 1=day).
+ * Updated each frame from ChunkRenderer's useFrame.
+ * Both materials reference the same object so one write updates both.
+ */
+const _daylightUniform = { value: 0.5 };
+
+/**
  * Create a MeshLambertMaterial with per-vertex emissive support.
- * The aEmissive attribute (0.0–1.0) controls how much of the vertex color
- * bypasses scene lighting, keeping campfire blocks bright at night.
+ *
+ * Injects a per-vertex `aEmissive` attribute (0.0–1.0) that adds emissive
+ * light to `outgoingLight` BEFORE tone mapping, so campfire blocks stay
+ * bright at night. Strength scales inversely with daylightFactor.
+ *
+ * Three.js v0.160 MeshLambertMaterial fragment order:
+ *   ... lights → outgoingLight = direct+indirect+emissive → envmap →
+ *   opaque_fragment → tonemapping → colorspace → fog → premultiplied_alpha → dithering
+ *
+ * We inject just before `opaque_fragment` to add per-vertex emissive
+ * into the linear HDR `outgoingLight`, so it goes through tone mapping
+ * and fog naturally.
  */
 function createEmissiveChunkMaterial() {
   const mat = new THREE.MeshLambertMaterial({
@@ -37,7 +55,10 @@ function createEmissiveChunkMaterial() {
 
   mat.customProgramCacheKey = () => 'chunk-emissive';
   mat.onBeforeCompile = (shader) => {
-    // Vertex shader: pass emissive attribute to fragment
+    shader.uniforms.uDaylightFactor = _daylightUniform;
+
+    // ── Vertex shader ──
+    // Declare the attribute + varying, pass to fragment
     shader.vertexShader = shader.vertexShader.replace(
       '#include <common>',
       `#include <common>
@@ -50,16 +71,23 @@ varying float vEmissive;`
 vEmissive = aEmissive;`
     );
 
-    // Fragment shader: add per-vertex emissive to output
+    // ── Fragment shader ──
+    // Declare the varying + uniform
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <common>',
       `#include <common>
-varying float vEmissive;`
+varying float vEmissive;
+uniform float uDaylightFactor;`
     );
+
+    // Inject per-vertex emissive into outgoingLight before opaque_fragment
+    // writes gl_FragColor. This keeps it in linear HDR space for proper
+    // tone mapping. nightBoost ramps from 0.15 (day) to 1.0 (full night).
     shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <output_fragment>',
-      `#include <output_fragment>
-gl_FragColor.rgb += vColor * vEmissive;`
+      '#include <opaque_fragment>',
+      `float nightBoost = max(0.15, 1.0 - uDaylightFactor);
+outgoingLight += vColor * vEmissive * nightBoost * 2.0;
+#include <opaque_fragment>`
     );
   };
 
@@ -145,7 +173,13 @@ function useChunkGeometry(meshData) {
 }
 
 /**
- * Chunk with physics collider (for nearby chunks)
+ * Chunk with physics collider (for nearby chunks).
+ *
+ * Uses stable React key (no meshVersion) and manages RigidBody transitions
+ * internally. When geometry changes, briefly renders BOTH old and new
+ * RigidBodies so the old trimesh collider stays alive until the new one
+ * registers in the physics world. This prevents the player falling through
+ * terrain during chunk mesh rebuilds (e.g., after placing a block).
  */
 function PhysicsChunkMesh({ chunk, meshData }) {
   const position = useMemo(() => {
@@ -154,12 +188,44 @@ function PhysicsChunkMesh({ chunk, meshData }) {
   }, [chunk.x, chunk.z]);
 
   const geometry = useChunkGeometry(meshData);
-  if (!geometry) return null;
+
+  // Track RigidBody instances: [{id, geometry}]. During transition,
+  // both old and new coexist briefly to bridge the physics gap.
+  const nextIdRef = useRef(0);
+  const [bodies, setBodies] = useState([]);
+
+  useEffect(() => {
+    if (!geometry) {
+      setBodies([]);
+      return;
+    }
+
+    const newId = nextIdRef.current++;
+    setBodies(prev => [...prev, { id: newId, geometry }]);
+
+    // After overlap period, keep only the latest body
+    const timer = setTimeout(() => {
+      setBodies(prev => prev.length > 1 ? prev.slice(-1) : prev);
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [geometry]);
+
+  if (bodies.length === 0) return null;
 
   return (
-    <RigidBody type="fixed" colliders="trimesh" position={position}>
-      <mesh geometry={geometry} frustumCulled={false} material={_physicsMaterial} />
-    </RigidBody>
+    <>
+      {bodies.map((b, i) => (
+        <RigidBody key={b.id} type="fixed" colliders="trimesh" position={position}>
+          <mesh
+            geometry={b.geometry}
+            frustumCulled={false}
+            material={_physicsMaterial}
+            visible={i === bodies.length - 1}
+          />
+        </RigidBody>
+      ))}
+    </>
   );
 }
 
@@ -279,6 +345,10 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
 
   // Process mesh rebuilds for dirty chunks and detect LOD changes
   useFrame(() => {
+    // Update daylight uniform every frame (cheap — one store read + one function call)
+    const timeOfDay = useGameStore.getState().worldTime.timeOfDay;
+    _daylightUniform.value = getDaylightFactor(timeOfDay);
+
     if (!chunkManager || !workerPool) return;
 
     frameCountRef.current++;
@@ -357,7 +427,7 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
         if (needsPhysics) {
           return (
             <PhysicsChunkMesh
-              key={`${chunk.key}-p-${version}`}
+              key={`${chunk.key}-p`}
               chunk={chunk}
               meshData={data}
             />

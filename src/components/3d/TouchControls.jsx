@@ -3,6 +3,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { getSpellById, executeSpell } from '../../data/spells';
+import { findPath } from '../../utils/playerPathfinder';
 
 /**
  * Component that handles touch/click controls for movement and attacking
@@ -126,21 +127,36 @@ const TouchControls = () => {
           return;
         }
 
-        // Block movement clicks when build mode is active (but attacks above still work)
+        // Block movement clicks when build mode or zone mode is active (but attacks above still work)
         if (useGameStore.getState().buildMode) return;
+        if (useGameStore.getState().zoneMode) return;
 
         if (groundHit) {
-          // Move to location (hit ground or other non-enemy object)
-          useGameStore.getState().setPlayerTarget([
-            groundHit.point.x,
-            groundHit.point.y,
-            groundHit.point.z,
-          ]);
+          const goalPos = [groundHit.point.x, groundHit.point.y, groundHit.point.z];
+          const clickStore = useGameStore.getState();
+          const playerPos = clickStore.player.position;
+          const cm = clickStore._chunkManager;
 
-          // Add green movement marker
-          useGameStore.getState().addTargetMarker({
-            position: [groundHit.point.x, groundHit.point.y, groundHit.point.z],
-            color: '#00ff00',
+          let markerColor = '#00ff00';
+
+          if (cm) {
+            const path = findPath(cm, playerPos, goalPos);
+            if (path && path.length > 0) {
+              clickStore.setPlayerNavPath(path, goalPos);
+            } else {
+              // No path found — fallback to direct move
+              clickStore.setPlayerTarget(goalPos);
+              markerColor = '#ff8800'; // orange = direct move
+            }
+          } else {
+            // ChunkManager not ready — fallback to direct move
+            clickStore.setPlayerTarget(goalPos);
+          }
+
+          // Add movement marker
+          clickStore.addTargetMarker({
+            position: goalPos,
+            color: markerColor,
           });
 
           // Remove marker after 2 seconds

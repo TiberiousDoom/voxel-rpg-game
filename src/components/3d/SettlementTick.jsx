@@ -30,6 +30,8 @@ import {
   NPC_SOCIAL_RESTORE,
   NPC_SOCIAL_DURATION,
   NPC_EVALUATION_DURATION,
+  NPC_EATING_DURATION,
+  NPC_FOOD_SOURCES,
   NPC_LEAVE_HAPPINESS_THRESHOLD,
   NPC_LEAVE_WARNING_DAYS,
   NPC_LEAVE_DEPARTURE_DAYS,
@@ -198,13 +200,37 @@ export default function SettlementTick({ chunkManager }) {
 
       const worldTimeElapsed = store.worldTime.elapsed;
 
+      // Collect all NPC updates into a single batch to minimize store writes
+      const batchUpdates = {};
+      const removeIds = [];
+
       for (const npc of settlement.npcs) {
-        // Skip NPCs still approaching or already leaving
-        if (npc.state === 'APPROACHING') continue;
-        if (npc.state === 'LEAVING') {
-          // Just tick the state timer for LEAVING NPCs — movement handled by SettlerNPC
+        // APPROACHING — tick timer; if stuck for 60s, force to LEAVING
+        if (npc.state === 'APPROACHING') {
           const timer = (npc.stateTimer || 0) + tickDelta;
-          store.updateSettlementNPC(npc.id, { stateTimer: timer });
+          if (timer > 60) {
+            batchUpdates[npc.id] = {
+              state: 'LEAVING',
+              stateTimer: 0,
+              targetPosition: [
+                center[0] + (Math.random() - 0.5) * IMMIGRATION_SPAWN_MAX_DIST * 2,
+                center[1],
+                center[2] + (Math.random() - 0.5) * IMMIGRATION_SPAWN_MAX_DIST * 2,
+              ],
+            };
+          } else {
+            batchUpdates[npc.id] = { stateTimer: timer };
+          }
+          continue;
+        }
+        // LEAVING — tick timer; if stuck for 30s, force-remove
+        if (npc.state === 'LEAVING') {
+          const timer = (npc.stateTimer || 0) + tickDelta;
+          if (timer > 30) {
+            removeIds.push(npc.id);
+          } else {
+            batchUpdates[npc.id] = { stateTimer: timer };
+          }
           continue;
         }
 
@@ -273,7 +299,7 @@ export default function SettlementTick({ chunkManager }) {
               });
             }
             _warnedNPCs.delete(npc.id);
-            store.updateSettlementNPC(npc.id, updates);
+            batchUpdates[npc.id] = updates;
             continue;
           }
         }
@@ -329,8 +355,34 @@ export default function SettlementTick({ chunkManager }) {
           case 'IDLE': {
             const [idleMin, idleMax] = getIdleTimerRange(personality);
             if (newHunger < NPC_HUNGER_CRITICAL) {
-              updates.state = 'EATING';
-              updates.stateTimer = 0;
+              // Try to consume food from player's stockpile
+              const mats = store.inventory?.materials;
+              let consumed = false;
+              if (mats) {
+                for (const src of NPC_FOOD_SOURCES) {
+                  if ((mats[src.material] || 0) >= 1) {
+                    store.removeMaterial(src.material, 1);
+                    updates.state = 'EATING';
+                    updates.stateTimer = 0;
+                    updates.eatingRestore = src.restore;
+                    consumed = true;
+                    break;
+                  }
+                }
+              }
+              // No food available — NPC stays IDLE and hungry
+              if (!consumed && !npc._hungryWarned) {
+                updates._hungryWarned = true;
+                if (window.addNotification) {
+                  window.addNotification({
+                    type: 'warning',
+                    title: 'No Food',
+                    message: `${npc.fullName} is hungry but there's no food!`,
+                  });
+                }
+              } else if (consumed) {
+                updates._hungryWarned = false;
+              }
             } else if (newRest < NPC_REST_CRITICAL) {
               updates.state = 'SLEEPING';
               updates.stateTimer = 0;
@@ -369,13 +421,18 @@ export default function SettlementTick({ chunkManager }) {
             break;
           }
 
-          case 'EATING':
-            updates.hunger = Math.min(100, newHunger + 5 * tickDelta);
-            if (updates.hunger >= 80) {
+          case 'EATING': {
+            // Restore hunger over NPC_EATING_DURATION using consumed food value
+            const restoreTotal = npc.eatingRestore || 10;
+            const restoreRate = restoreTotal / NPC_EATING_DURATION;
+            updates.hunger = Math.min(100, newHunger + restoreRate * tickDelta);
+            if (timer >= NPC_EATING_DURATION) {
               updates.state = 'IDLE';
               updates.stateTimer = 0;
+              updates.eatingRestore = 0;
             }
             break;
+          }
 
           case 'SLEEPING':
             updates.rest = Math.min(100, newRest + 8 * tickDelta);
@@ -407,7 +464,16 @@ export default function SettlementTick({ chunkManager }) {
             break;
         }
 
-        store.updateSettlementNPC(npc.id, updates);
+        batchUpdates[npc.id] = updates;
+      }
+
+      // Single store write for all NPC updates
+      if (Object.keys(batchUpdates).length > 0) {
+        store.batchUpdateSettlementNPCs(batchUpdates);
+      }
+      // Remove departed NPCs
+      for (const id of removeIds) {
+        store.removeSettlementNPC(id);
       }
 
       store.updateSettlementTimestamps({ lastNeedsUpdate: Date.now() });

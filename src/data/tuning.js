@@ -197,6 +197,13 @@ export const ATTRACT_HAPPINESS_MAX_MULT = 1.5;       // Score multiplier at 100%
 export const NPC_SOCIAL_DECAY_RATE = 0.15;           // Per second
 export const NPC_SOCIAL_CRITICAL = 25;               // Below: NPC socializes
 export const NPC_SOCIAL_RESTORE = 20;                // Restored after socializing
+export const NPC_EATING_DURATION = 3;                // Seconds to eat (animation time)
+
+// NPC food sources: priority order (best first), material key → hunger restored
+export const NPC_FOOD_SOURCES = [
+  { material: 'meat', restore: 15 },
+  { material: 'berry', restore: 10 },
+];
 export const NPC_SOCIAL_DURATION = 15;               // Seconds to socialize
 
 // NPC evaluation & departure
@@ -205,9 +212,34 @@ export const NPC_LEAVE_HAPPINESS_THRESHOLD = 20;     // Below: unhappy
 export const NPC_LEAVE_WARNING_DAYS = 2;             // In-game days before warning
 export const NPC_LEAVE_DEPARTURE_DAYS = 3;           // In-game days before leaving
 
+// ─── Zone Designation ────────────────────────────────────────
+export const ZONE_MAX_COUNT = 10;
+export const ZONE_MAX_SIDE_VOXELS = 32;     // Max voxels per side (64 world units)
+export const ZONE_MIN_SIDE_VOXELS = 2;      // Min voxels per side (4 world units)
+
 // ─── E Key Interact ─────────────────────────────────────────
 export const USE_KEY_RANGE = 6;                     // World units (3 blocks) for proximity search
 export const USE_KEY_COOLDOWN = 300;                // ms between uses
+
+// ─── Wildlife ───────────────────────────────────────────────
+export const WILDLIFE_MAX_POPULATION = 25;        // Max animals alive at once
+export const WILDLIFE_SPAWN_INTERVAL = 5;         // Seconds between spawn attempts
+export const WILDLIFE_SPAWN_RANGE_MIN = 30;       // Min distance from player to spawn
+export const WILDLIFE_SPAWN_RANGE_MAX = 60;       // Max distance from player to spawn
+export const WILDLIFE_DESPAWN_RANGE = 80;         // Distance at which animals despawn
+export const WILDLIFE_WANDER_RADIUS = 12;         // How far animals wander from spawn
+export const WILDLIFE_WANDER_INTERVAL_MIN = 3;    // Min seconds between wander moves
+export const WILDLIFE_WANDER_INTERVAL_MAX = 10;
+export const WILDLIFE_FLY_HEIGHT_MIN = 8;         // Min altitude for flying animals
+export const WILDLIFE_FLY_HEIGHT_MAX = 20;        // Max altitude for flying animals
+
+// ─── Click-to-Move Navigation ──────────────────────────────────
+export const NAV_MAX_ITERATIONS = 2000;       // A* iteration safety cap
+export const NAV_MAX_STEP_UP = 1;             // Max voxel climb per step
+export const NAV_MAX_STEP_DOWN = 3;           // Max voxel drop per step
+export const NAV_PLAYER_HEIGHT_VOXELS = 2;    // Air clearance needed
+export const NAV_WAYPOINT_ARRIVAL = 1.5;      // World units to count as "arrived at waypoint"
+export const NAV_STUCK_TIMEOUT = 3.0;         // Seconds before canceling a stuck path
 
 // ─── Debug ───────────────────────────────────────────────────
 export const DEBUG_TIME_SCALES = [1, 2, 5, 10, 0]; // 0 = paused

@@ -14,6 +14,11 @@ import {
   CHUNK_SIZE,
   VOXEL_SIZE,
 } from './coordinates.js';
+import { BlockTypes } from './blockTypes.js';
+
+// Campfire glow extends this many blocks — neighbors must rebuild when
+// a campfire is placed/removed within this distance of a chunk edge.
+const CAMPFIRE_GLOW_RADIUS = 5;
 
 /**
  * Priority queue for chunk loading
@@ -545,20 +550,24 @@ export class ChunkManager {
       chunk.meshDirty = true;
       this.meshRebuildQueue.add(chunk.key);
 
-      // Check if we need to rebuild neighbor meshes (edge block)
-      if (localX === 0 && chunk.neighbors.west) {
+      // Campfire glow extends across chunk boundaries — use wider margin
+      const edgeMargin = (blockType === BlockTypes.CAMPFIRE || blockType === BlockTypes.AIR)
+        ? CAMPFIRE_GLOW_RADIUS : 0;
+
+      // Check if we need to rebuild neighbor meshes (edge block or glow radius)
+      if (localX < 1 + edgeMargin && chunk.neighbors.west) {
         chunk.neighbors.west.meshDirty = true;
         this.meshRebuildQueue.add(chunk.neighbors.west.key);
       }
-      if (localX === CHUNK_SIZE - 1 && chunk.neighbors.east) {
+      if (localX > CHUNK_SIZE - 2 - edgeMargin && chunk.neighbors.east) {
         chunk.neighbors.east.meshDirty = true;
         this.meshRebuildQueue.add(chunk.neighbors.east.key);
       }
-      if (localZ === 0 && chunk.neighbors.south) {
+      if (localZ < 1 + edgeMargin && chunk.neighbors.south) {
         chunk.neighbors.south.meshDirty = true;
         this.meshRebuildQueue.add(chunk.neighbors.south.key);
       }
-      if (localZ === CHUNK_SIZE - 1 && chunk.neighbors.north) {
+      if (localZ > CHUNK_SIZE - 2 - edgeMargin && chunk.neighbors.north) {
         chunk.neighbors.north.meshDirty = true;
         this.meshRebuildQueue.add(chunk.neighbors.north.key);
       }

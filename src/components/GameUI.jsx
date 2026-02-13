@@ -18,6 +18,7 @@ const GameUI = () => {
   const shelter = useGameStore((state) => state.shelter);
   const worldTime = useGameStore((state) => state.worldTime);
   const buildMode = useGameStore((state) => state.buildMode);
+  const zoneMode = useGameStore((state) => state.zoneMode);
   const toggleBuildMode = useGameStore((state) => state.toggleBuildMode);
   const [isMobile, setIsMobile] = useState(false);
   const statBreakdowns = useStatBreakdown();
@@ -154,6 +155,31 @@ const GameUI = () => {
           }}
         >
           BUILD MODE
+        </div>
+      )}
+
+      {/* Zone mode badge (top-center) */}
+      {zoneMode && (
+        <div
+          style={{
+            position: 'absolute',
+            top: isMobile ? '10px' : '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255, 140, 0, 0.85)',
+            color: '#fff',
+            padding: '6px 18px',
+            borderRadius: '6px',
+            fontSize: isMobile ? '0.85rem' : '1rem',
+            fontWeight: 'bold',
+            letterSpacing: '2px',
+            border: '2px solid #ff8c00',
+            textTransform: 'uppercase',
+            pointerEvents: 'none',
+            zIndex: 110,
+          }}
+        >
+          ZONE MODE
         </div>
       )}
 
@@ -416,7 +442,7 @@ const GameUI = () => {
       <div
         style={{
           position: 'absolute',
-          bottom: buildMode ? (isMobile ? '100px' : '110px') : (isMobile ? '10px' : '20px'),
+          bottom: (buildMode || zoneMode) ? (isMobile ? '100px' : '110px') : (isMobile ? '10px' : '20px'),
           right: isMobile ? '10px' : '20px',
           display: 'flex',
           gap: isMobile ? '8px' : '10px',

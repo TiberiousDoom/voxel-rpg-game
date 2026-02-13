@@ -21,6 +21,11 @@ import RiftController from './RiftController';
 import RiftVisual from './RiftVisual';
 import SettlementTick from './SettlementTick';
 import SettlerNPC from './SettlerNPC';
+import WildlifeTick from './WildlifeTick';
+import WildlifeAnimal from './WildlifeAnimal';
+import PathVisualization from './PathVisualization';
+import ZoneOverlay from './ZoneOverlay';
+import ZoneInteraction from './ZoneInteraction';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
@@ -127,6 +132,7 @@ const Experience = () => {
   const rifts = useGameStore((state) => state.rifts);
   const isNight = useGameStore((state) => state.worldTime.isNight);
   const settlementNPCs = useGameStore((state) => state.settlement.npcs);
+  const wildlife = useGameStore((state) => state.wildlife);
 
   // Initialize chunk system
   const {
@@ -188,6 +194,9 @@ const Experience = () => {
       {/* Settlement tick — campfire detection, attractiveness, immigration, NPC needs */}
       <SettlementTick chunkManager={isReady ? chunkManager : null} />
 
+      {/* Wildlife tick — ambient animal spawning/despawning */}
+      <WildlifeTick chunkManager={isReady ? chunkManager : null} />
+
       {/* Rift controller — manages spawning logic */}
       <RiftController chunkManager={isReady ? chunkManager : null} />
 
@@ -224,6 +233,11 @@ const Experience = () => {
         {/* Settlement NPCs */}
         {settlementNPCs.map((npc) => (
           <SettlerNPC key={npc.id} npcData={npc} />
+        ))}
+
+        {/* Ambient wildlife */}
+        {wildlife.map((animal) => (
+          <WildlifeAnimal key={animal.id} animalData={animal} chunkManager={chunkManager} />
         ))}
 
         <Suspense fallback={null}>
@@ -263,6 +277,13 @@ const Experience = () => {
           onComplete={removeParticleEffect}
         />
       ))}
+
+      {/* Path visualization dots for click-to-move navigation */}
+      <PathVisualization />
+
+      {/* Zone designation overlays + interaction (Phase 2.2) */}
+      <ZoneOverlay chunkManager={isReady ? chunkManager : null} />
+      <ZoneInteraction chunkManager={isReady ? chunkManager : null} />
 
       {/* Target markers for tap-to-move/attack feedback */}
       {targetMarkers.map((marker) => (

@@ -6,7 +6,7 @@
  * (userData.isNPC, NOT isEnemy).
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -63,15 +63,21 @@ const SettlerNPC = React.memo(({ npcData }) => {
   const terrainY = useRef(npcData.position[1]);
   const evalRotation = useRef(0);
 
-  // Materials (memoized per NPC)
+  // Materials (memoized per NPC, stable across state changes)
   const materials = useMemo(() => ({
     skin: new THREE.MeshLambertMaterial({ color: new THREE.Color(...npcData.appearance.skinColor) }),
     hair: new THREE.MeshLambertMaterial({ color: new THREE.Color(...npcData.appearance.hairColor) }),
     clothing: new THREE.MeshLambertMaterial({ color: new THREE.Color(...npcData.appearance.clothingPrimary) }),
     clothingAlt: new THREE.MeshLambertMaterial({ color: new THREE.Color(...npcData.appearance.clothingSecondary) }),
     indicator: new THREE.MeshBasicMaterial({ color: '#4488ff' }),
-    status: new THREE.MeshBasicMaterial({ color: STATUS_COLORS[npcData.state] || '#44cc44' }),
-  }), [npcData.appearance, npcData.state]);
+    status: new THREE.MeshBasicMaterial({ color: '#44cc44' }), // color updated in useFrame
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [npcData.appearance]);
+
+  // Dispose materials on unmount
+  useEffect(() => {
+    return () => Object.values(materials).forEach(m => m.dispose());
+  }, [materials]);
 
   useFrame((_, delta) => {
     if (!bodyRef.current) return;

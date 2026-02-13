@@ -125,10 +125,13 @@ class Game3DSaveManager {
         attractiveness: state.settlement.attractiveness,
       } : null;
 
+      // Zones state
+      const zonesState = state.zones || [];
+
       // Main save data
       const saveData = {
         slot,
-        version: 3,
+        version: 4,
         savedAt: Date.now(),
         player: playerState,
         inventory: inventoryState,
@@ -138,6 +141,7 @@ class Game3DSaveManager {
         hunger: hungerState,
         worldTime: worldTimeState,
         settlement: settlementState,
+        zones: zonesState,
       };
 
       // Save main state
@@ -246,6 +250,12 @@ class Game3DSaveManager {
         saveData.version = 3;
       }
 
+      // Migrate V3 saves → V4 (add zones)
+      if (saveData.version < 4) {
+        saveData.zones = [];
+        saveData.version = 4;
+      }
+
       // Restore player state
       if (store.updatePlayer) {
         store.updatePlayer(saveData.player);
@@ -288,6 +298,11 @@ class Game3DSaveManager {
             lastNeedsUpdate: 0,
           },
         });
+      }
+
+      // Restore zones
+      if (saveData.zones && store.setState) {
+        store.setState({ zones: saveData.zones });
       }
 
       // Load modified chunks

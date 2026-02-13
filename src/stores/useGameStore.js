@@ -13,7 +13,7 @@ import {
   grantLevelUpPoints,
   calculateDerivedStats,
 } from '../modules/character/CharacterSystem';
-import { DAY_LENGTH_SECONDS } from '../data/tuning';
+import { DAY_LENGTH_SECONDS, ZONE_MAX_COUNT } from '../data/tuning';
 import { ActionHistory, createActionMiddleware } from '../systems/state/ActionSystem';
 
 // Action history for replay/rollback/debugging
@@ -52,6 +52,8 @@ const useGameStore = create((rawSet, get, api) => {
     position: [0, 12, 0], // x, y, z in 3D space - spawn above terrain
     velocity: [0, 0, 0],
     targetPosition: null, // For tap-to-move
+    navPath: null,        // Array of [x,y,z] waypoints or null
+    navPathIndex: 0,      // Current waypoint being pursued
     health: 100,
     maxHealth: 100,
     mana: 100,
@@ -197,6 +199,12 @@ const useGameStore = create((rawSet, get, api) => {
     lastNeedsUpdate: 0,
   },
 
+  // Zone designation state (Phase 2.2)
+  zones: [],
+  zoneMode: false,
+  zoneTypeToPlace: null,
+  zoneDragStart: null,    // [worldX, worldZ] of first corner
+
   // Actions
   setGameState: (state) => set({ gameState: state }),
 
@@ -213,6 +221,21 @@ const useGameStore = create((rawSet, get, api) => {
   setPlayerTarget: (targetPosition) =>
     set((state) => ({
       player: { ...state.player, targetPosition },
+    })),
+
+  setPlayerNavPath: (path, finalTarget) =>
+    set((state) => ({
+      player: { ...state.player, navPath: path, navPathIndex: 0, targetPosition: finalTarget },
+    })),
+
+  clearNavPath: () =>
+    set((state) => ({
+      player: { ...state.player, navPath: null, navPathIndex: 0, targetPosition: null },
+    })),
+
+  advanceNavPathIndex: () =>
+    set((state) => ({
+      player: { ...state.player, navPathIndex: state.player.navPathIndex + 1 },
     })),
 
   addTargetMarker: (marker) =>
@@ -1230,6 +1253,8 @@ const useGameStore = create((rawSet, get, api) => {
           position: [spawnX, 20, spawnZ],
           velocity: [0, 0, 0],
           targetPosition: null,
+          navPath: null,
+          navPathIndex: 0,
           isInvincible: true,
           invincibilityTimer: 5.0, // 5 seconds of spawn protection
           isDodging: false,
@@ -1271,6 +1296,18 @@ const useGameStore = create((rawSet, get, api) => {
       },
     })),
 
+  // Batch update multiple NPCs in a single store write (reduces re-renders)
+  // updatesMap: { [npcId]: { ...updates } }
+  batchUpdateSettlementNPCs: (updatesMap) =>
+    set((state) => ({
+      settlement: {
+        ...state.settlement,
+        npcs: state.settlement.npcs.map((npc) =>
+          updatesMap[npc.id] ? { ...npc, ...updatesMap[npc.id] } : npc
+        ),
+      },
+    })),
+
   removeSettlementNPC: (id) =>
     set((state) => ({
       settlement: {
@@ -1289,6 +1326,22 @@ const useGameStore = create((rawSet, get, api) => {
       settlement: { ...state.settlement, ...updates },
     })),
 
+  // Zone designation actions (Phase 2.2)
+  addZone: (zone) => set((state) => {
+    if (state.zones.length >= ZONE_MAX_COUNT) return state;
+    return { zones: [...state.zones, zone] };
+  }),
+  removeZone: (zoneId) => set((state) => ({
+    zones: state.zones.filter(z => z.id !== zoneId),
+  })),
+  updateZone: (zoneId, updates) => set((state) => ({
+    zones: state.zones.map(z => z.id === zoneId ? { ...z, ...updates } : z),
+  })),
+  setZoneMode: (active, zoneType = null) =>
+    set({ zoneMode: active, zoneTypeToPlace: zoneType, zoneDragStart: null }),
+  setZoneDragStart: (pos) => set({ zoneDragStart: pos }),
+  clearZoneDrag: () => set({ zoneDragStart: null }),
+
   reset: () =>
     set({
       gameState: 'intro',
@@ -1304,6 +1357,8 @@ const useGameStore = create((rawSet, get, api) => {
         position: [0, 12, 0],
         velocity: [0, 0, 0],
         targetPosition: null,
+        navPath: null,
+        navPathIndex: 0,
         health: 100,
         maxHealth: 100,
         mana: 100,
@@ -1346,6 +1401,7 @@ const useGameStore = create((rawSet, get, api) => {
         lastImmigrationCheck: 0, lastAttractivenessCalc: 0, lastNeedsUpdate: 0,
       },
       buildMode: false,
+      zones: [], zoneMode: false, zoneTypeToPlace: null, zoneDragStart: null,
     }),
 
   // Character system actions

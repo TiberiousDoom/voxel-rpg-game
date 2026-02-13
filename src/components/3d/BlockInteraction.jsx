@@ -405,9 +405,11 @@ export function BlockInteraction({ chunkManager }) {
   const prevTargetRef = useRef({ block: null, face: null });
 
   // Update raycast every few frames (first-person mode OR third-person build mode)
+  const zoneMode = useGameStore((state) => state.zoneMode);
+
   useFrame(() => {
-    // Build mode must be active for any continuous raycasting
-    if (!buildMode) {
+    // Build mode must be active for any continuous raycasting; skip in zone mode
+    if (!buildMode || zoneMode) {
       if (targetBlock !== null && !isHoldingMine.current) {
         setTargetBlock(null);
         setTargetFace(null);

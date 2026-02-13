@@ -7,10 +7,12 @@ import SpellWheel from './components/SpellWheel';
 import CraftingUI from './components/CraftingUI';
 import InventoryUI from './components/InventoryUI';
 import BlockHotbar from './components/ui/BlockHotbar';
+import ZoneHotbar from './components/ui/ZoneHotbar';
 import Crosshair from './components/ui/Crosshair';
 import ContextualHints from './components/ContextualHints';
 import TestTracker from './components/TestTracker';
 import DebugOverlay from './components/ui/DebugOverlay';
+import NPCDebugPanel from './components/ui/NPCDebugPanel';
 import MobileDebugOverlay from './components/ui/MobileDebugOverlay';
 import PickupTextOverlay from './components/ui/PickupTextOverlay';
 import PauseMenu from './components/PauseMenu';
@@ -66,6 +68,9 @@ function App3D() {
       {/* Block selection hotbar */}
       <BlockHotbar />
 
+      {/* Zone type selection hotbar */}
+      <ZoneHotbar />
+
       {/* Crosshair for first-person mode */}
       <Crosshair />
 
@@ -77,6 +82,9 @@ function App3D() {
 
       {/* Debug overlay (F3 to toggle) */}
       <DebugOverlay />
+
+      {/* NPC debug panel (F4 to toggle) */}
+      <NPCDebugPanel />
 
       {/* Mobile debug overlay (touch button to toggle) */}
       <MobileDebugOverlay />

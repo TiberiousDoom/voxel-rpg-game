@@ -8,9 +8,12 @@ import useGameStore from '../../stores/useGameStore';
 import { ZoneType, ZONE_COLORS } from '../../data/zoneTypes';
 import { ZONE_MAX_COUNT } from '../../data/tuning';
 
+const DELETE_TYPE = '__DELETE__';
+
 const ZONE_BUTTONS = [
   { type: ZoneType.MINING, label: 'Mining', icon: '\u26CF' },
   { type: ZoneType.STOCKPILE, label: 'Stockpile', icon: '\uD83D\uDCE6' },
+  { type: DELETE_TYPE, label: 'Delete', icon: '\uD83D\uDDD1' },
 ];
 
 export default function ZoneHotbar() {
@@ -52,12 +55,21 @@ export default function ZoneHotbar() {
       {/* Zone type buttons */}
       <div style={{ display: 'flex', gap: '8px' }}>
         {ZONE_BUTTONS.map(({ type, label, icon }) => {
-          const colors = ZONE_COLORS[type];
+          const isDelete = type === DELETE_TYPE;
+          const colors = isDelete ? { fill: '#cc3333', border: '#ff4444' } : ZONE_COLORS[type];
           const isSelected = zoneTypeToPlace === type;
           return (
             <button
               key={type}
-              onClick={() => setZoneMode(true, type)}
+              onClick={() => {
+                if (isDelete) {
+                  // Toggle delete mode — clear any drag in progress
+                  useGameStore.getState().clearZoneDrag();
+                  setZoneMode(true, isSelected ? ZoneType.MINING : DELETE_TYPE);
+                } else {
+                  setZoneMode(true, type);
+                }
+              }}
               style={{
                 background: isSelected ? colors.fill : 'rgba(255, 255, 255, 0.1)',
                 color: '#fff',
@@ -97,8 +109,8 @@ export default function ZoneHotbar() {
         lineHeight: '1.4',
       }}>
         {isMobile
-          ? 'Tap two corners to place zone | Z to exit'
-          : 'Click & drag or click two corners | Right-click zone to remove | Z to exit'
+          ? 'Tap two corners to place | Select Delete to remove zones'
+          : 'Click & drag or click two corners | Right-click or Delete tool to remove | Z to exit'
         }
       </div>
     </div>

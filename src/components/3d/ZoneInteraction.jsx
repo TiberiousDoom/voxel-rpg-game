@@ -213,6 +213,16 @@ export default function ZoneInteraction({ chunkManager }) {
       const pos = screenToWorldXZ(event.clientX, event.clientY, camera, gl, planeY);
       if (!pos) return;
 
+      // Delete mode: tap a zone to remove it
+      if (store.zoneTypeToPlace === '__DELETE__') {
+        const zone = findZoneAtPoint(pos[0], pos[1]);
+        if (zone) {
+          store.removeZone(zone.id);
+          store.addPickupText('Zone removed', '#ff4444');
+        }
+        return;
+      }
+
       if (!store.zoneDragStart) {
         // First corner
         store.setZoneDragStart(pos);

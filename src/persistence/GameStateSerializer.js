@@ -604,7 +604,15 @@ class GameStateSerializer {
         position: npc.position ? { ...npc.position } : null,
         skills: npc.skills ? { ...npc.skills } : {},
         assignedBuilding: npc.assignedBuilding,
-        status: npc.status
+        status: npc.status,
+        // Phase 2.1.3: Identity data
+        firstName: npc.firstName || null,
+        surname: npc.surname || null,
+        appearance: npc.appearance ? { ...npc.appearance } : null,
+        preferredJob: npc.preferredJob || null,
+        baseSkills: npc.baseSkills ? { ...npc.baseSkills } : null,
+        personalityTraits: npc.personality && npc.personality.traits
+          ? { ...npc.personality.traits } : null,
       })),
       totalSpawned: npcManager.stats?.totalSpawned || 0,
       nextId: npcManager.npcIdCounter || 0
@@ -655,6 +663,16 @@ class GameStateSerializer {
           }
           if (npcData.hungry !== undefined) {
             npc.hungry = npcData.hungry;
+          }
+
+          // Phase 2.1.3: Restore identity data
+          if (npcData.firstName) npc.firstName = npcData.firstName;
+          if (npcData.surname) npc.surname = npcData.surname;
+          if (npcData.appearance) npc.appearance = { ...npcData.appearance };
+          if (npcData.preferredJob) npc.preferredJob = npcData.preferredJob;
+          if (npcData.baseSkills) npc.baseSkills = { ...npcData.baseSkills };
+          if (npcData.personalityTraits && npc.personality) {
+            Object.assign(npc.personality.traits, npcData.personalityTraits);
           }
 
           npcManager.npcs.set(npc.id, npc);

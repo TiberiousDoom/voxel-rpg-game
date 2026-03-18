@@ -21,6 +21,7 @@ import {
 
 import AttractivenessCalculator from './AttractivenessCalculator.js';
 import ImmigrationManager from './ImmigrationManager.js';
+import NPCIdentityGenerator from './NPCIdentityGenerator.js';
 
 class SettlementModule {
   /**
@@ -45,6 +46,7 @@ class SettlementModule {
     // Sub-managers (created in initialize)
     this.attractivenessCalculator = null;
     this.immigrationManager = null;
+    this.identityGenerator = null;
     // Future sub-managers (Phase 2 weeks 2-8):
     // this.zoneManager = null;
     // this.stockpileManager = null;
@@ -79,12 +81,22 @@ class SettlementModule {
       npcManager: this.npcManager,
     });
 
+    this.identityGenerator = new NPCIdentityGenerator();
+
+    // Register existing NPC names so they aren't reused
+    if (this.npcManager && this.npcManager.npcs) {
+      for (const npc of this.npcManager.npcs.values()) {
+        if (npc.name) this.identityGenerator.registerName(npc.name);
+      }
+    }
+
     this.immigrationManager = new ImmigrationManager({
       attractivenessCalculator: this.attractivenessCalculator,
       npcManager: this.npcManager,
       townManager: this.townManager,
       storage: this.storage,
       settlementModule: this,
+      identityGenerator: this.identityGenerator,
     });
 
     this.initialized = true;
@@ -183,6 +195,7 @@ class SettlementModule {
       elapsedTime: this.elapsedTime,
       immigration: this.immigrationManager ? this.immigrationManager.serialize() : null,
       attractiveness: this.attractivenessCalculator ? this.attractivenessCalculator.getScore() : 0,
+      identityGenerator: this.identityGenerator ? this.identityGenerator.serialize() : null,
     };
   }
 
@@ -198,6 +211,9 @@ class SettlementModule {
 
     if (state.immigration && this.immigrationManager) {
       this.immigrationManager.deserialize(state.immigration);
+    }
+    if (state.identityGenerator && this.identityGenerator) {
+      this.identityGenerator.deserialize(state.identityGenerator);
     }
   }
 

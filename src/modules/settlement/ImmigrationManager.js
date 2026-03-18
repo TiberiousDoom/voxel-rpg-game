@@ -44,6 +44,7 @@ class ImmigrationManager {
    * @param {Object} deps.townManager - TownManager instance
    * @param {Object} deps.storage - StorageManager instance
    * @param {Object} deps.settlementModule - SettlementModule (for emitting events)
+   * @param {Object} deps.identityGenerator - NPCIdentityGenerator instance
    */
   constructor(deps = {}) {
     this.attractivenessCalculator = deps.attractivenessCalculator || null;
@@ -51,6 +52,7 @@ class ImmigrationManager {
     this.townManager = deps.townManager || null;
     this.storage = deps.storage || null;
     this.settlementModule = deps.settlementModule || null;
+    this.identityGenerator = deps.identityGenerator || null;
 
     // Timing
     this._timeSinceLastCheck = 0;
@@ -291,18 +293,26 @@ class ImmigrationManager {
     approachingNPC.status = 'JOINING';
     this._totalArrivals++;
 
+    // Generate unique identity for the new settler
+    const identity = this.identityGenerator
+      ? this.identityGenerator.generate()
+      : null;
+
     // Spawn actual NPC through NPCManager
     let spawnedNPC = null;
     if (this.npcManager && typeof this.npcManager.spawnNPC === 'function') {
       const center = this._getSettlementCenter(gameState);
-      spawnedNPC = this.npcManager.spawnNPC('settler', center);
+      const result = this.npcManager.spawnNPC('settler', center, identity);
+      spawnedNPC = result && result.npc ? result.npc : null;
     }
 
     // Emit events
+    const npcName = spawnedNPC ? spawnedNPC.name
+      : (identity ? identity.fullName : 'Settler');
     if (this.settlementModule) {
       this.settlementModule.emit('npc:joined', {
         npcId: spawnedNPC ? spawnedNPC.id : approachingNPC.id,
-        name: spawnedNPC ? spawnedNPC.name : 'Settler',
+        name: npcName,
         totalArrivals: this._totalArrivals,
       });
     }

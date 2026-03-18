@@ -22,6 +22,7 @@ import {
 import AttractivenessCalculator from './AttractivenessCalculator.js';
 import ImmigrationManager from './ImmigrationManager.js';
 import NPCIdentityGenerator from './NPCIdentityGenerator.js';
+import ZoneManager from './ZoneManager.js';
 
 class SettlementModule {
   /**
@@ -47,8 +48,8 @@ class SettlementModule {
     this.attractivenessCalculator = null;
     this.immigrationManager = null;
     this.identityGenerator = null;
+    this.zoneManager = null;
     // Future sub-managers (Phase 2 weeks 2-8):
-    // this.zoneManager = null;
     // this.stockpileManager = null;
     // this.haulingManager = null;
     // this.constructionManager = null;
@@ -99,6 +100,11 @@ class SettlementModule {
       identityGenerator: this.identityGenerator,
     });
 
+    this.zoneManager = new ZoneManager({
+      grid: this.grid,
+      settlementModule: this,
+    });
+
     this.initialized = true;
   }
 
@@ -135,8 +141,11 @@ class SettlementModule {
       const immigrationResult = this.immigrationManager.update(deltaSeconds, gameState);
       result.settlement.immigration = immigrationResult;
 
-      // Future steps (uncomment as sub-managers are implemented):
       // ── Step 2: Zone ──────────────────────────────────────
+      const zoneResult = this.zoneManager.update(deltaSeconds, gameState);
+      result.settlement.zones = zoneResult;
+
+      // Future steps (uncomment as sub-managers are implemented):
       // ── Step 3: Stockpile ─────────────────────────────────
       // ── Step 4: Construction ──────────────────────────────
       // ── Step 5: Hauling ───────────────────────────────────
@@ -196,6 +205,7 @@ class SettlementModule {
       immigration: this.immigrationManager ? this.immigrationManager.serialize() : null,
       attractiveness: this.attractivenessCalculator ? this.attractivenessCalculator.getScore() : 0,
       identityGenerator: this.identityGenerator ? this.identityGenerator.serialize() : null,
+      zones: this.zoneManager ? this.zoneManager.serialize() : null,
     };
   }
 
@@ -215,6 +225,9 @@ class SettlementModule {
     if (state.identityGenerator && this.identityGenerator) {
       this.identityGenerator.deserialize(state.identityGenerator);
     }
+    if (state.zones && this.zoneManager) {
+      this.zoneManager.deserialize(state.zones);
+    }
   }
 
   // ── Statistics ──────────────────────────────────────────────
@@ -224,6 +237,7 @@ class SettlementModule {
       tickCount: this.tickCount,
       attractiveness: this.attractivenessCalculator ? this.attractivenessCalculator.getScore() : 0,
       immigration: this.immigrationManager ? this.immigrationManager.getStatistics() : null,
+      zones: this.zoneManager ? { total: this.zoneManager.zones.size } : null,
       initialized: this.initialized,
     };
   }

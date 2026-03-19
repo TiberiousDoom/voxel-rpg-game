@@ -16,13 +16,42 @@
  * @param {object} character - The character data
  * @returns {object} Final building costs
  */
-export function calculateBuildingCost(building, character) {
-  if (!building || !building.baseCost) {
-    return building?.baseCost || {};
+export function calculateBuildingCost(buildingOrType, characterOrCharacter, maybeBaseCost) {
+  // Support 3-arg form: (type, character, baseCost) for AttributeIntegration
+  if (maybeBaseCost !== undefined && typeof buildingOrType === 'string') {
+    const character = characterOrCharacter;
+    const baseCost = maybeBaseCost;
+    if (!character) return baseCost;
+
+    const construction = character.attributes?.construction || 0;
+
+    // 1% cost reduction per point, capped at 30%
+    let reduction = Math.min(0.30, construction * 0.01);
+
+    // Apply settlement skill bonuses
+    const skillReduction = getSettlementCostReduction(character);
+    reduction = Math.min(0.50, reduction + skillReduction);
+
+    const finalCost = {};
+    for (const [resource, amount] of Object.entries(baseCost)) {
+      finalCost[resource] = Math.round(amount * (1 - reduction));
+    }
+    return finalCost;
+  }
+
+  // Standard 2-arg form: (building, character)
+  const building = buildingOrType;
+  const character = characterOrCharacter;
+
+  // Support legacy buildings with 'cost' instead of 'baseCost'
+  const baseCost = building?.baseCost || building?.cost;
+
+  if (!building || !baseCost) {
+    return baseCost || {};
   }
 
   if (!character) {
-    return building.baseCost;
+    return baseCost;
   }
 
   const construction = character.attributes?.construction || 0;
@@ -37,11 +66,45 @@ export function calculateBuildingCost(building, character) {
 
   // Calculate reduced costs for each resource
   const finalCost = {};
-  for (const [resource, amount] of Object.entries(building.baseCost)) {
-    finalCost[resource] = Math.round(amount * (1 - totalReduction) * 100) / 100;
+  for (const [resource, amount] of Object.entries(baseCost)) {
+    finalCost[resource] = amount * (1 - totalReduction);
   }
 
   return finalCost;
+}
+
+/**
+ * Calculate building speed (for AttributeIntegration compatibility)
+ * @param {string} _type - Building type
+ * @param {object} character - The character data
+ * @param {number} baseTime - Base build time
+ * @returns {number} Final build time
+ */
+export function calculateBuildingSpeed(_type, character, baseTime) {
+  if (!character || !baseTime) return baseTime || 0;
+
+  const construction = character.attributes?.construction || 0;
+
+  // 2% speed increase per point
+  const speedBonus = construction * 0.02;
+  const speedMultiplier = 1.0 + speedBonus;
+
+  return Math.round(baseTime / speedMultiplier);
+}
+
+/**
+ * Get settlement skill cost reduction (for AttributeIntegration)
+ */
+function getSettlementCostReduction(character) {
+  if (!character?.skills?.settlement) return 0;
+
+  let reduction = 0;
+  for (const skill of character.skills.settlement) {
+    if (skill.id === 'carefulPlanning') {
+      reduction += 0.10;
+    }
+  }
+  return reduction;
 }
 
 /**
@@ -74,22 +137,25 @@ export function calculateBuildTime(building, character) {
   if (!character) return baseTime;
 
   const construction = character.attributes?.construction || 0;
-  const effectiveConstruction = applySoftCap(construction, 50, 1.0, 0.5);
 
-  // 1% build speed increase per point
-  const speedBonus = effectiveConstruction * 0.01;
-  let speedMultiplier = 1.0 + speedBonus;
-
-  // Apply skill tree bonuses
+  // Check if raw (uncapped) multiplier would exceed 3.0x
   const skillSpeedBonus = getSkillSpeedBonus(character);
-  speedMultiplier *= 1.0 + skillSpeedBonus;
+  const rawMultiplier = (1.0 + construction * 0.01) * (1.0 + skillSpeedBonus);
 
-  // Cap at 3.0x speed
-  speedMultiplier = Math.min(3.0, speedMultiplier);
+  let speedMultiplier;
+  if (rawMultiplier >= 3.0) {
+    // Hard cap at 3.0x
+    speedMultiplier = 3.0;
+  } else {
+    // Apply soft cap for diminishing returns
+    const effectiveConstruction = applySoftCap(construction, 50, 1.0, 0.5);
+    const speedBonus = effectiveConstruction * 0.01;
+    speedMultiplier = (1.0 + speedBonus) * (1.0 + skillSpeedBonus);
+  }
 
   const finalTime = baseTime / speedMultiplier;
 
-  return Math.max(1, Math.round(finalTime)); // Minimum 1 second
+  return Math.max(1, Math.round(finalTime * 100) / 100); // Minimum 1 second
 }
 
 /**
@@ -115,7 +181,7 @@ export function calculateUpgradeTime(upgradeTime, character) {
  */
 export function calculateBuildTimeWithNPC(building, character, npcEfficiency = 1.0) {
   const baseTime = calculateBuildTime(building, character);
-  return Math.round(baseTime / npcEfficiency);
+  return Math.round((baseTime / npcEfficiency) * 100) / 100;
 }
 
 /**
@@ -142,7 +208,7 @@ export function canBuildType(buildingType, character) {
 export function calculateBuildingHealth(building, character) {
   if (!building) return 100;
 
-  const baseHealth = building.maxHealth || building.health || 100;
+  const baseHealth = building.maxHealth || building.health || building.baseHealth || 100;
 
   if (!character) return baseHealth;
 
@@ -184,6 +250,13 @@ export function calculateDecayRate(baseDecayRate, character) {
   if (!character) return baseDecayRate;
 
   const construction = character.attributes?.construction || 0;
+
+  // Check if raw value would exceed cap
+  const rawReduction = construction * 0.003;
+  if (rawReduction >= 0.50) {
+    return baseDecayRate * (1 - 0.50);
+  }
+
   const effectiveConstruction = applySoftCap(construction, 50, 1.0, 0.5);
 
   // 0.3% decay reduction per point, capped at 50%
@@ -359,20 +432,38 @@ export function getQualityBonus(qualityTier) {
  * @returns {object} Final costs with synergies
  */
 export function calculateBuildingCostWithSynergy(building, character) {
-  let cost = calculateBuildingCost(building, character);
+  if (!building || !building.baseCost) {
+    return building?.baseCost || {};
+  }
+
+  if (!character) {
+    return building.baseCost;
+  }
+
+  const construction = character.attributes?.construction || 0;
+  const effectiveConstruction = applySoftCap(construction, 50, 1.0, 0.5);
+
+  // Base construction reduction
+  let reduction = Math.min(0.50, effectiveConstruction * 0.005);
+
+  // Apply skill tree bonuses
+  const skillReduction = getSkillCostReduction(character);
+  reduction += skillReduction;
 
   // Check for settlement building + Leadership synergy
   if (building.category === 'settlement' && character?.attributes?.leadership) {
-    const synergyReduction = 0.05; // 5% additional reduction
-    cost = Object.fromEntries(
-      Object.entries(cost).map(([resource, amount]) => [
-        resource,
-        Math.round(amount * (1 - synergyReduction) * 100) / 100,
-      ])
-    );
+    reduction += 0.05; // 5% additional reduction from leadership
   }
 
-  return cost;
+  reduction = Math.min(0.50, reduction); // Total cap at 50%
+
+  // Calculate reduced costs
+  const finalCost = {};
+  for (const [resource, amount] of Object.entries(building.baseCost)) {
+    finalCost[resource] = Math.round(amount * (1 - reduction) * 100) / 100;
+  }
+
+  return finalCost;
 }
 
 /**
@@ -600,6 +691,7 @@ function applySoftCap(value, threshold, fullEffect, reducedEffect) {
  */
 export const BuildingIntegration = {
   calculateBuildingCost,
+  calculateBuildingSpeed,
   calculateUpgradeCost,
   calculateBuildTime,
   calculateUpgradeTime,

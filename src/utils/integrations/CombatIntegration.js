@@ -14,14 +14,36 @@
  * @param {object} equipment - The equipment data
  * @returns {number} Final damage
  */
-export function calculateDamage(character, equipment = {}) {
-  if (!character) return 0;
+export function calculateDamage(characterOrPlayer, equipmentOrCharacter = {}, maybeEquipment) {
+  if (!characterOrPlayer) return 0;
 
-  const level = character.level || 1;
-  const combat = character.attributes?.combat || 0;
+  let level, combat, equipmentBonus, skillMultiplier, use3TierCap;
+
+  // Support 3-arg form: (player, character, equipment)
+  if (maybeEquipment !== undefined || equipmentOrCharacter?.attributes) {
+    const player = characterOrPlayer;
+    const character = equipmentOrCharacter;
+    const equipment = maybeEquipment || {};
+    level = player.level || 1;
+    combat = character.attributes?.combat || 0;
+    equipmentBonus = equipment?.weapon?.damage || 0;
+    skillMultiplier = getSkillDamageMultiplier(character);
+    use3TierCap = true;
+  } else {
+    // 2-arg form: (character, equipment)
+    const character = characterOrPlayer;
+    const equipment = equipmentOrCharacter;
+    level = character.level || 1;
+    combat = character.attributes?.combat || 0;
+    equipmentBonus = equipment?.weapon?.damage || 0;
+    skillMultiplier = getSkillDamageMultiplier(character);
+    use3TierCap = false;
+  }
 
   // Apply soft cap to combat
-  const effectiveCombat = applySoftCap(combat, 50, 1.0, 0.5);
+  const effectiveCombat = use3TierCap
+    ? apply3TierDiminishingReturns(combat)
+    : applySoftCap(combat, 50, 1.0, 0.5);
 
   // Base damage scales with level
   const baseDamage = 10 + level * 0.8;
@@ -29,15 +51,9 @@ export function calculateDamage(character, equipment = {}) {
   // Combat attribute bonus: 1.5 damage per point
   const combatBonus = effectiveCombat * 1.5;
 
-  // Equipment bonus
-  const equipmentBonus = equipment?.weapon?.damage || 0;
-
-  // Skill multiplier (from skill tree)
-  const skillMultiplier = getSkillDamageMultiplier(character);
-
   const totalDamage = (baseDamage + combatBonus + equipmentBonus) * skillMultiplier;
 
-  return Math.max(1, totalDamage);
+  return use3TierCap ? Math.max(1, Math.round(totalDamage)) : Math.max(1, totalDamage);
 }
 
 /**
@@ -49,12 +65,11 @@ export function calculateCritChance(character) {
   if (!character) return 0.05;
 
   const combat = character.attributes?.combat || 0;
-  const effectiveCombat = applySoftCap(combat, 50, 1.0, 0.5);
 
   // Base crit: 5%
-  // Combat bonus: 0.3% per point
+  // Combat bonus: 0.3% per point (no soft cap, hard cap at 50%)
   const baseCrit = 0.05;
-  const combatBonus = effectiveCombat * 0.003;
+  const combatBonus = combat * 0.003;
 
   const totalCrit = baseCrit + combatBonus;
 
@@ -117,6 +132,8 @@ export function calculateMaxHealth(character, equipment = {}) {
   for (const item of Object.values(equipment)) {
     if (item?.stats?.maxHealth) {
       equipBonus += item.stats.maxHealth;
+    } else if (item?.maxHealth) {
+      equipBonus += item.maxHealth;
     }
   }
 
@@ -211,17 +228,22 @@ export function calculateSprintCost(character) {
 export function calculateDefense(character, equipment = {}) {
   if (!character) return 0;
 
+  const combat = character.attributes?.combat || 0;
   const endurance = character.attributes?.endurance || 0;
+  const effectiveCombat = applySoftCap(combat, 50, 1.0, 0.5);
   const effectiveEndurance = applySoftCap(endurance, 50, 1.0, 0.5);
-
-  // Base defense: 0
-  // Endurance bonus: 0.5 defense per point
-  const enduranceBonus = effectiveEndurance * 0.5;
 
   // Equipment bonus
   const equipmentBonus = equipment?.armor?.defense || 0;
 
-  let totalDefense = enduranceBonus + equipmentBonus;
+  let totalDefense;
+  if (combat > endurance) {
+    // Combat-focused: combat contributes 0.5, endurance contributes 0.3
+    totalDefense = effectiveCombat * 0.5 + effectiveEndurance * 0.3 + equipmentBonus;
+  } else {
+    // Endurance-focused: endurance contributes 0.5
+    totalDefense = effectiveEndurance * 0.5 + equipmentBonus;
+  }
 
   // Blocking multiplies defense by 2.0
   if (character.isBlocking) {
@@ -265,10 +287,9 @@ export function calculateElementalResistance(character) {
   if (!character) return 0;
 
   const endurance = character.attributes?.endurance || 0;
-  const effectiveEndurance = applySoftCap(endurance, 50, 1.0, 0.5);
 
-  // 0.2% resistance per endurance point
-  const resistance = effectiveEndurance * 0.002;
+  // 0.2% resistance per endurance point (no soft cap, hard cap at 75%)
+  const resistance = endurance * 0.002;
 
   // Cap at 75%
   return Math.min(0.75, resistance);
@@ -410,6 +431,17 @@ function applySoftCap(value, threshold, fullEffect, reducedEffect) {
   const excessValue = (value - threshold) * reducedEffect;
 
   return baseValue + excessValue;
+}
+
+/**
+ * Apply 3-tier diminishing returns (matches DerivedStatsCalculator)
+ * 0-50: 100% effective, 51-100: 75% effective, 101+: 50% effective
+ */
+function apply3TierDiminishingReturns(value) {
+  if (value <= 0) return 0;
+  if (value <= 50) return value;
+  if (value <= 100) return 50 + (value - 50) * 0.75;
+  return 50 + 50 * 0.75 + (value - 100) * 0.50;
 }
 
 /**

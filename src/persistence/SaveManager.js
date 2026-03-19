@@ -64,7 +64,7 @@ class SaveManager {
       }
 
       // Add checksum for integrity
-      saveData.checksum = SaveValidator.generateChecksum(saveData);
+      saveData.checksum = SaveValidator.generateChecksumSync(saveData);
 
       // Write to file
       const filename = this._getSaveFilePath(slotName);
@@ -82,7 +82,7 @@ class SaveManager {
     } catch (err) {
       return {
         success: false,
-        message: `Failed to save game: ${err.message}`,
+        message: `Save game error: ${err.message}`,
         error: err
       };
     }
@@ -122,7 +122,7 @@ class SaveManager {
       }
 
       // Validate checksum
-      const checksumValid = SaveValidator.validateChecksum(saveData);
+      const checksumValid = SaveValidator.validateChecksumSync(saveData);
       if (!checksumValid) {
         // Try to recover
         const recovered = SaveValidator.repairSave(saveData);
@@ -241,7 +241,7 @@ class SaveManager {
             currentTier: saveData.metadata?.currentTier,
             tick: saveData.metadata?.gameTick,
             fileSize: fs.statSync(filename).size,
-            valid: SaveValidator.validateChecksum(saveData)
+            valid: SaveValidator.validateChecksumSync(saveData)
           });
         } catch (err) {
           // Skip invalid saves

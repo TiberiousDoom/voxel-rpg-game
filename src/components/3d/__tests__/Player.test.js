@@ -42,31 +42,40 @@ const mockEquipment = {
   armor: null,
 };
 
+const createPlayerStoreState = () => ({
+  player: mockPlayerState,
+  inventory: mockInventory,
+  equipment: mockEquipment,
+  camera: { rotationAngle: 0, distance: 12, height: 10, firstPerson: false },
+  enemies: [],
+  projectiles: [],
+  worldTime: { isNight: false, elapsed: 0, timeScale: 1, paused: false },
+  gameState: 'playing',
+  buildMode: false,
+  _chunkManager: null,
+  updatePlayer: () => {},
+  setPlayerPosition: () => {},
+  setPlayerTarget: () => {},
+  consumeMana: () => {},
+  consumeStamina: () => {},
+  regenStamina: () => {},
+  regenMana: () => {},
+  healPlayer: () => {},
+  addProjectile: () => {},
+  setSpellCooldown: () => {},
+  getSpellCooldown: () => 0,
+  updateSpellCooldowns: () => {},
+  attackMonster: () => {},
+  updateCamera: () => {},
+});
+
 jest.mock('../../../stores/useGameStore', () => {
-  return jest.fn((selector) => {
-    const state = {
-      player: mockPlayerState,
-      inventory: mockInventory,
-      equipment: mockEquipment,
-      camera: { rotationAngle: 0, distance: 12, height: 10 },
-      enemies: [],
-      projectiles: [],
-      updatePlayer: jest.fn(),
-      setPlayerPosition: jest.fn(),
-      consumeMana: jest.fn(),
-      consumeStamina: jest.fn(),
-      regenStamina: jest.fn(),
-      regenMana: jest.fn(),
-      healPlayer: jest.fn(),
-      addProjectile: jest.fn(),
-      setSpellCooldown: jest.fn(),
-      getSpellCooldown: jest.fn(() => 0),
-      updateSpellCooldowns: jest.fn(),
-      attackMonster: jest.fn(),
-      updateCamera: jest.fn(),
-    };
+  const mockStore = jest.fn((selector) => {
+    const state = createPlayerStoreState();
     return selector ? selector(state) : state;
   });
+  mockStore.getState = () => createPlayerStoreState();
+  return mockStore;
 });
 
 // Import after mocks
@@ -79,7 +88,14 @@ const TestWrapper = ({ children }) => (
 
 describe('Player Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Re-initialize mock after clearAllMocks
+    const useGameStore = require('../../../stores/useGameStore');
+    useGameStore.mockImplementation((selector) => {
+      const state = createPlayerStoreState();
+      return selector ? selector(state) : state;
+    });
+    useGameStore.getState = () => createPlayerStoreState();
+
     // Reset keyboard state
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA' }));
@@ -132,8 +148,10 @@ describe('Player Component', () => {
 
     test('player has correct initial stats from store', () => {
       const useGameStore = require('../../../stores/useGameStore');
-      const playerSelector = useGameStore.mock.calls.find(
-        (call) => call[0]?.toString().includes('player')
+      render(
+        <TestWrapper>
+          <Player />
+        </TestWrapper>
       );
       // Store should be called with player selector
       expect(useGameStore).toHaveBeenCalled();

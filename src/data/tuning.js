@@ -1,5 +1,5 @@
 /**
- * tuning.js — Centralized game balance constants for Phase 1
+ * tuning.js — Centralized game balance constants
  *
  * Every gameplay-affecting number lives here. Change one value,
  * see the effect immediately. Each constant includes:
@@ -7,6 +7,7 @@
  *   - Acceptable range for playtesting
  *
  * Architectural constants (chunk size, voxel size, etc.) stay in src/shared/config.js.
+ * Block-level building voxel layouts stay in src/data/buildingBlueprints.js.
  */
 
 // ─── World Time ──────────────────────────────────────────────
@@ -162,23 +163,55 @@ export const CAMERA_ROTATION_SENSITIVITY = 0.008; // Radians per pixel
 export const TAP_MAX_DURATION_MS = 200;
 export const TAP_MAX_DISTANCE_PX = 10;
 
-// ─── Settlement & Attractiveness ─────────────────────────────
-export const ATTRACT_CAMPFIRE_SCORE = 20;           // Points per campfire block
+// ─── Settlement Attractiveness ──────────────────────────────
+// Score components that drive NPC immigration decisions.
+export const ATTRACTIVENESS_CAMPFIRE_BONUS = 20;           // Base attractor for having a campfire/hearth
+export const ATTRACTIVENESS_PER_SURVIVAL_BUILDING = 5;     // Per completed Survival-tier building
+export const ATTRACTIVENESS_PER_PERMANENT_BUILDING = 15;   // Per completed Permanent-tier building
+export const ATTRACTIVENESS_PER_TOWN_BUILDING = 30;        // Per completed Town/Castle-tier building
+export const ATTRACTIVENESS_PER_HOUSING_SLOT = 10;         // Per unoccupied housing slot
+export const ATTRACTIVENESS_PER_FOOD_UNIT = 0.5;           // Per food unit in stockpile
+export const ATTRACTIVENESS_PER_WALL = 10;                 // Per wall segment (defense)
+export const ATTRACTIVENESS_PER_WATCHTOWER = 20;           // Per watchtower (defense)
+export const ATTRACTIVENESS_RIFT_PENALTY = -15;            // Per active rift within 128 blocks
+export const ATTRACTIVENESS_HAPPINESS_MIN_MULT = 0.5;      // Multiplier at 0% average happiness
+export const ATTRACTIVENESS_HAPPINESS_MAX_MULT = 1.5;      // Multiplier at 100% average happiness
+export const ATTRACTIVENESS_RECALC_INTERVAL = 5;           // Seconds between full recalculations. Range: 1–30.
+// Simplified attractiveness aliases (used by some callers)
+export const ATTRACT_CAMPFIRE_SCORE = ATTRACTIVENESS_CAMPFIRE_BONUS;
 export const ATTRACT_WALL_SCORE = 1;                // Points per structural block (capped)
 export const ATTRACT_WALL_CAP = 100;                // Max structural blocks counted
 export const ATTRACT_FOOD_SCORE = 2;                // Points per food item
 export const ATTRACT_FOOD_CAP = 20;                 // Max food items counted
-export const ATTRACT_RIFT_PENALTY = -15;            // Penalty per nearby rift
+export const ATTRACT_RIFT_PENALTY = ATTRACTIVENESS_RIFT_PENALTY;
 export const ATTRACT_SCAN_RADIUS = 48;              // World units to scan
-export const ATTRACT_RECALC_INTERVAL = 10;          // Seconds between recalcs (low for testing)
+export const ATTRACT_RECALC_INTERVAL = ATTRACTIVENESS_RECALC_INTERVAL;
+export const ATTRACT_HOUSING_SCORE = ATTRACTIVENESS_PER_HOUSING_SLOT;
+export const ATTRACT_HAPPINESS_MIN_MULT = ATTRACTIVENESS_HAPPINESS_MIN_MULT;
+export const ATTRACT_HAPPINESS_MAX_MULT = ATTRACTIVENESS_HAPPINESS_MAX_MULT;
 
-export const IMMIGRATION_CHECK_INTERVAL = 30;       // Seconds between immigration checks (low for testing)
+// ─── Immigration ────────────────────────────────────────────
+// Controls how and when NPCs arrive at the settlement.
+export const IMMIGRATION_CHECK_INTERVAL = 30;              // Seconds between immigration checks (low for testing)
+export const IMMIGRATION_MIN_ATTRACTIVENESS = 25;          // Minimum score before any NPC will consider coming
+export const IMMIGRATION_MAX_CHANCE = 0.6;                 // Max probability per check. Range: 0.1–0.9.
+export const IMMIGRATION_SPAWN_MIN_DISTANCE = 64;          // World units — closest spawn from settlement center
+export const IMMIGRATION_SPAWN_MAX_DISTANCE = 96;          // World units — farthest spawn from settlement center
+export const IMMIGRATION_APPROACH_SPEED_MULT = 1.2;        // NPC walk speed multiplier while approaching
+export const IMMIGRATION_EVALUATION_TIME = 10;             // Seconds NPC spends evaluating before deciding. Range: 5–60.
+export const IMMIGRATION_HOUSING_WAIT_DAYS = 2;            // In-game days NPC waits for housing before leaving
+// Aliases used by some callers
 export const IMMIGRATION_THRESHOLD = 10;            // Min attractiveness to spawn first NPC (low for testing)
 export const IMMIGRATION_THRESHOLD_PER_NPC = 15;    // Additional threshold per existing NPC
-export const IMMIGRATION_SPAWN_MIN_DIST = 64;       // World units from center
-export const IMMIGRATION_SPAWN_MAX_DIST = 96;       // World units from center
-export const IMMIGRATION_MAX_NPCS = 5;              // Max settler NPCs
+export const IMMIGRATION_SPAWN_MIN_DIST = IMMIGRATION_SPAWN_MIN_DISTANCE;
+export const IMMIGRATION_SPAWN_MAX_DIST = IMMIGRATION_SPAWN_MAX_DISTANCE;
+export const IMMIGRATION_MAX_NPCS = 5;              // Max settler NPCs (testing value, see NPC_MAX_POPULATION_PHASE_2)
 
+// ─── NPC Population ─────────────────────────────────────────
+export const NPC_FIRST_SETTLER_FREE = true;                // First NPC joins without housing (pioneer mechanic)
+export const NPC_MAX_POPULATION_PHASE_2 = 20;              // Hard population cap for Phase 2. Range: 10–30.
+
+// ─── NPC Needs ──────────────────────────────────────────────
 export const NPC_HUNGER_DECAY_RATE = 0.5;            // Per second (~2 min to critical)
 export const NPC_REST_DECAY_RATE = 0.35;             // Per second (~3 min to critical)
 export const NPC_HUNGER_CRITICAL = 15;              // Below: NPC eats
@@ -187,11 +220,6 @@ export const NPC_WALK_SPEED = 2.0;                  // World units/sec (wanderin
 export const NPC_APPROACH_SPEED = 3.0;              // World units/sec (approaching settlement)
 export const NPC_WANDER_RADIUS = 16;                // World units from center
 export const NPC_NEEDS_TICK_INTERVAL = 2;           // Seconds between needs updates
-
-// Housing & attractiveness
-export const ATTRACT_HOUSING_SCORE = 10;             // Per estimated housing slot
-export const ATTRACT_HAPPINESS_MIN_MULT = 0.5;       // Score multiplier at 0% avg happiness
-export const ATTRACT_HAPPINESS_MAX_MULT = 1.5;       // Score multiplier at 100% avg happiness
 
 // Social need
 export const NPC_SOCIAL_DECAY_RATE = 0.15;           // Per second
@@ -211,6 +239,23 @@ export const NPC_EVALUATION_DURATION = 8;            // Seconds to evaluate sett
 export const NPC_LEAVE_HAPPINESS_THRESHOLD = 20;     // Below: unhappy
 export const NPC_LEAVE_WARNING_DAYS = 2;             // In-game days before warning
 export const NPC_LEAVE_DEPARTURE_DAYS = 3;           // In-game days before leaving
+
+// ─── Mining Zone ────────────────────────────────────────────
+export const MINING_TASK_REGEN_INTERVAL = 10;        // Seconds between task regeneration scans
+export const MINING_BASE_TIME_PER_BLOCK = 4;         // Seconds to mine one block (modified by skill)
+export const MINING_SKILL_BASE = 0.5;                // Minimum skill factor in speed calc
+
+// ─── Farming Zone ───────────────────────────────────────────
+export const FARM_GROW_TIME = 300;                   // Seconds per growth cycle. Range: 60–600.
+export const FARM_HARVEST_YIELD = 4;                 // Food units per tile per harvest
+export const FARM_PLANT_TIME = 2;                    // Seconds to plant one tile
+export const FARM_HARVEST_TIME = 2;                  // Seconds to harvest one tile
+export const FARM_UNATTENDED_RATE = 0.25;            // Passive auto-collection rate when no farmer assigned
+export const MAX_FARMERS_PER_ZONE = 2;               // Max NPCs farming one zone simultaneously
+
+// ─── Stockpile ──────────────────────────────────────────────
+export const STOCKPILE_STACK_LIMIT = 64;             // Max quantity per slot
+export const STOCKPILE_RESERVATION_TIMEOUT = 300;    // Seconds before a reservation auto-releases
 
 // ─── Zone Designation ────────────────────────────────────────
 export const ZONE_MAX_COUNT = 10;

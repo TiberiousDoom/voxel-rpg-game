@@ -73,6 +73,13 @@ class NPC {
     this.currentMood = 'neutral'; // Current emotional state
     this.recentMemories = []; // Recent events/interactions
 
+    // Phase 2.1.3: Identity
+    this.firstName = data.firstName || null;
+    this.surname = data.surname || null;
+    this.appearance = data.appearance || null;  // { skinTone, hairColor, clothingColor }
+    this.preferredJob = data.preferredJob || null;
+    this.baseSkills = data.baseSkills || null;  // { mining, building, combat, gathering, farming, crafting }
+
     // Inventory
     this.inventory = {
       food: 0,
@@ -372,9 +379,10 @@ class NPCManager {
    * Spawn a new NPC
    * @param {string} role - NPC role (FARMER, CRAFTSMAN, GUARD, WORKER)
    * @param {Object} position - Starting position (if null, generates random position)
+   * @param {Object} [identity] - Optional identity data from NPCIdentityGenerator
    * @returns {NPC} Created NPC object (or null if failed)
    */
-  spawnNPC(role, position = null) {
+  spawnNPC(role, position = null, identity = null) {
     const GRID_SIZE = 10; // Must match GRID.GRID_WIDTH from config.js
 
     // If no position provided, generate random position within grid bounds
@@ -416,12 +424,25 @@ class NPCManager {
 
     // Continue with the rest of YOUR branch's code for creating the NPC
     const id = String(this.npcIdCounter++); // Convert to string for save validation
-    const npc = new NPC(id, {
+    const npcData = {
       role: role,
       position: position,
       happiness: 50,
-      morale: 0
-    });
+      morale: 0,
+    };
+
+    // Merge identity data if provided (from NPCIdentityGenerator)
+    if (identity) {
+      if (identity.fullName) npcData.name = identity.fullName;
+      if (identity.firstName) npcData.firstName = identity.firstName;
+      if (identity.surname) npcData.surname = identity.surname;
+      if (identity.appearance) npcData.appearance = identity.appearance;
+      if (identity.personality) npcData.personality = identity.personality;
+      if (identity.preferredJob) npcData.preferredJob = identity.preferredJob;
+      if (identity.baseSkills) npcData.baseSkills = identity.baseSkills;
+    }
+
+    const npc = new NPC(id, npcData);
 
     this.npcs.set(id, npc);
     this.idleNPCs.add(id);

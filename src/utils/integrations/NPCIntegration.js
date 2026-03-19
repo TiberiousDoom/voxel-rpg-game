@@ -27,8 +27,48 @@ export function calculateNPCEfficiency(npc, character) {
 
   // Leadership bonus: 1% per point
   const leadershipBonus = effectiveLeadership * 0.01;
+  let efficiency = baseEfficiency * (1 + leadershipBonus);
 
-  return baseEfficiency * (1 + leadershipBonus);
+  // Apply settlement skill bonuses
+  const skillBonus = getSettlementSkillBonus(character);
+  if (skillBonus > 0) {
+    efficiency *= (1 + skillBonus);
+  }
+
+  return efficiency;
+}
+
+/**
+ * Get max NPC capacity from leadership
+ * @param {object} character - The character data
+ * @returns {number} Max NPC capacity
+ */
+export function getMaxNPCCapacity(character) {
+  const baseCapacity = 10;
+  if (!character) return baseCapacity;
+
+  const leadership = character.attributes?.leadership || 0;
+  const bonus = Math.floor(leadership / 10);
+
+  return baseCapacity + bonus;
+}
+
+/**
+ * Get settlement skill efficiency bonus
+ * @param {object} character - The character data
+ * @returns {number} Bonus multiplier
+ */
+function getSettlementSkillBonus(character) {
+  if (!character?.skills?.settlement) return 0;
+
+  let bonus = 0;
+  for (const skill of character.skills.settlement) {
+    if (skill.id === 'inspiringLeader') {
+      bonus += 0.05; // +5% efficiency
+    }
+  }
+
+  return bonus;
 }
 
 /**
@@ -105,13 +145,23 @@ export function calculateNPCMorale(npc, character) {
  * @returns {number} Happiness value (0-1, capped)
  */
 export function calculateNPCHappiness(npc, character) {
-  const baseHappiness = Math.max(0, npc?.happiness || 0.8);
-  const happinessBonus = calculateHappinessBonus(character);
+  const rawHappiness = npc?.happiness ?? 0.8;
+  const baseHappiness = Math.max(0, rawHappiness);
 
-  const totalHappiness = baseHappiness * (1 + happinessBonus);
+  const leadership = character?.attributes?.leadership || 0;
+  const effectiveLeadership = applySoftCap(leadership, 50, 1.0, 0.5);
 
-  // Cap at 1.0 (100%)
-  return Math.min(1.0, totalHappiness);
+  // Support both 0-100 scale (additive) and 0-1 scale (multiplicative)
+  if (baseHappiness > 1) {
+    // 0-100 scale: add 0.5 points per leadership point
+    const leadershipBonus = effectiveLeadership * 0.5;
+    return Math.min(100, baseHappiness + leadershipBonus);
+  } else {
+    // 0-1 scale: multiplicative bonus
+    const happinessBonus = calculateHappinessBonus(character);
+    const totalHappiness = baseHappiness * (1 + happinessBonus);
+    return Math.min(1.0, totalHappiness);
+  }
 }
 
 /**
@@ -122,12 +172,9 @@ export function calculateNPCHappiness(npc, character) {
  */
 export function calculateTurnoverRate(npc, character) {
   const happiness = calculateNPCHappiness(npc, character);
-  const baseTurnoverRate = 0.05; // 5% base chance
 
-  // Higher happiness = lower turnover
-  const turnoverRate = baseTurnoverRate * (1 - happiness);
-
-  return Math.max(0, turnoverRate);
+  // Turnover rate is inversely proportional to happiness
+  return Math.max(0, 1 - happiness);
 }
 
 /**
@@ -174,10 +221,9 @@ export function calculateRecruitmentCost(baseCost, character) {
   if (!character) return baseCost;
 
   const leadership = character.attributes?.leadership || 0;
-  const effectiveLeadership = applySoftCap(leadership, 50, 1.0, 0.5);
 
-  // 0.5% cost reduction per point, capped at 40%
-  const reduction = Math.min(0.40, effectiveLeadership * 0.005);
+  // 0.5% cost reduction per point, capped at 40% (no soft cap, hard cap serves as limiter)
+  const reduction = Math.min(0.40, leadership * 0.005);
 
   return Math.round(baseCost * (1 - reduction));
 }
@@ -193,10 +239,9 @@ export function calculateRecruitmentChance(character) {
   if (!character) return baseChance;
 
   const leadership = character.attributes?.leadership || 0;
-  const effectiveLeadership = applySoftCap(leadership, 50, 1.0, 0.5);
 
-  // 0.3% increase per leadership point
-  const bonus = effectiveLeadership * 0.003;
+  // 0.3% increase per leadership point (no soft cap, hard cap at 50%)
+  const bonus = leadership * 0.003;
 
   const totalChance = baseChance + bonus;
 
@@ -241,10 +286,14 @@ export function applyLeadershipToSkillGain(baseXP, character) {
  * @returns {number} Final training time
  */
 export function calculateTrainingTime(baseTime, character) {
-  const skillGainRate = calculateSkillGainRate(character);
+  if (!character) return baseTime;
 
-  // Higher skill gain rate = faster training
-  return baseTime / skillGainRate;
+  const leadership = character.attributes?.leadership || 0;
+  const effectiveLeadership = applySoftCap(leadership, 50, 1.0, 0.5);
+
+  // Direct percentage reduction from leadership
+  const reduction = effectiveLeadership * 0.003;
+  return baseTime * (1 - reduction);
 }
 
 /**
@@ -326,8 +375,8 @@ export function calculateSpecializedEfficiency(npc, character) {
       synergyBonus = 0;
   }
 
-  // Apply soft cap to synergy bonus
-  synergyBonus = Math.min(0.20, synergyBonus); // Cap synergy at 20%
+  // Cap synergy at 10% per role
+  synergyBonus = Math.min(0.10, synergyBonus);
 
   return baseEfficiency * (1 + synergyBonus);
 }
@@ -415,6 +464,7 @@ function applySoftCap(value, threshold, fullEffect, reducedEffect) {
  */
 export const NPCIntegration = {
   calculateNPCEfficiency,
+  getMaxNPCCapacity,
   calculateNPCWorkSpeed,
   calculateGatheringRate,
   calculateBuildSpeed,

@@ -8,17 +8,63 @@ import '../testSetup';
 
 // Mock the store
 jest.mock('../../../stores/useGameStore', () => {
-  return jest.fn((selector) => {
-    const state = {
-      player: { position: [0, 2, 0] },
-      enemies: [],
-      removeProjectile: jest.fn(),
-      attackMonster: jest.fn(),
-      addDamageNumber: jest.fn(),
-      addParticleEffect: jest.fn(),
-    };
+  const noop = () => {};
+  const createState = () => ({
+    player: {
+      position: { x: 0, y: 2, z: 0 },
+      health: 100, maxHealth: 100,
+      mana: 100, maxMana: 100,
+      stamina: 100, maxStamina: 100,
+      level: 1, xp: 0,
+    },
+    enemies: [],
+    projectiles: [],
+    targetMarkers: [],
+    damageNumbers: [],
+    xpOrbs: [],
+    lootDrops: [],
+    particleEffects: [],
+    equipment: {},
+    camera: { firstPerson: false, distance: 20, angle: 0, pitch: 0.8 },
+    worldTime: { isNight: false, elapsed: 0, timeScale: 1, paused: false },
+    gameState: 'playing',
+    buildMode: false,
+    blockPlacementMode: false,
+    screenShake: null,
+    _chunkManager: null,
+    removeProjectile: noop,
+    attackMonster: noop,
+    addDamageNumber: noop,
+    addParticleEffect: noop,
+    addXP: noop,
+    addGold: noop,
+    addMaterial: noop,
+    addTargetMarker: noop,
+    removeDamageNumber: noop,
+    removeXPOrb: noop,
+    removeLootDrop: noop,
+    removeParticleEffect: noop,
+    removeTargetMarker: noop,
+    updateCamera: noop,
+    setPlayerTarget: noop,
+    setChunkManager: noop,
+    clearScreenShake: noop,
+    updatePlayer: noop,
+    setPlayerPosition: noop,
+    consumeStamina: noop,
+    regenStamina: noop,
+    regenMana: noop,
+    updateWorldTime: noop,
+    updateSpellCooldowns: noop,
+    dealDamageToPlayer: noop,
+    removeRiftEnemy: noop,
+  });
+  const mockStore = jest.fn((selector) => {
+    const state = createState();
     return selector ? selector(state) : state;
   });
+  mockStore.getState = () => createState();
+  return mockStore;
 });
 
 // Import after mocks
@@ -33,6 +79,69 @@ import CameraRotateControls from '../CameraRotateControls';
 const TestWrapper = ({ children }) => (
   <div data-testid="test-wrapper">{children}</div>
 );
+
+// Re-init store mock after every clearAllMocks call
+beforeEach(() => {
+  const useGameStore = require('../../../stores/useGameStore');
+  if (useGameStore.mockImplementation) {
+    const noop = () => {};
+    const createState = () => ({
+      player: {
+        position: { x: 0, y: 2, z: 0 },
+        health: 100, maxHealth: 100,
+        mana: 100, maxMana: 100,
+        stamina: 100, maxStamina: 100,
+        level: 1, xp: 0,
+      },
+      enemies: [],
+      projectiles: [],
+      targetMarkers: [],
+      damageNumbers: [],
+      xpOrbs: [],
+      lootDrops: [],
+      particleEffects: [],
+      equipment: {},
+      camera: { firstPerson: false, distance: 20, angle: 0, pitch: 0.8 },
+      worldTime: { isNight: false, elapsed: 0, timeScale: 1, paused: false },
+      gameState: 'playing',
+      buildMode: false,
+      blockPlacementMode: false,
+      screenShake: null,
+      _chunkManager: null,
+      removeProjectile: noop,
+      attackMonster: noop,
+      addDamageNumber: noop,
+      addParticleEffect: noop,
+      addXP: noop,
+      addGold: noop,
+      addMaterial: noop,
+      addTargetMarker: noop,
+      removeDamageNumber: noop,
+      removeXPOrb: noop,
+      removeLootDrop: noop,
+      removeParticleEffect: noop,
+      removeTargetMarker: noop,
+      updateCamera: noop,
+      setPlayerTarget: noop,
+      setChunkManager: noop,
+      clearScreenShake: noop,
+      updatePlayer: noop,
+      setPlayerPosition: noop,
+      consumeStamina: noop,
+      regenStamina: noop,
+      regenMana: noop,
+      updateWorldTime: noop,
+      updateSpellCooldowns: noop,
+      dealDamageToPlayer: noop,
+      removeRiftEnemy: noop,
+    });
+    useGameStore.mockImplementation((selector) => {
+      const state = createState();
+      return selector ? selector(state) : state;
+    });
+    useGameStore.getState = () => createState();
+  }
+});
 
 // ============================================
 // Projectile Tests

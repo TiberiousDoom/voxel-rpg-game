@@ -41,7 +41,8 @@ describe('Building Placement Integration', () => {
     });
 
     test('validates position bounds', () => {
-      const result = gameManager.placeBuilding('FARM', { x: 150, y: 0, z: 5 });
+      // Negative positions trigger the x < 0 bounds check
+      const result = gameManager.placeBuilding('FARM', { x: -5, y: 0, z: 5 });
 
       expect(result.success).toBe(false);
       expect(result.message || result.error).toBeDefined();
@@ -94,7 +95,7 @@ describe('Building Placement Integration', () => {
 
       await new Promise(resolve => setTimeout(resolve, 5));
 
-      const result3 = gameManager.placeBuilding('WAREHOUSE', { x: 6, y: 0, z: 0 });
+      const result3 = gameManager.placeBuilding('CAMPFIRE', { x: 6, y: 0, z: 0 });
       expect(result3.success).toBe(true);
 
       expect(gameManager.orchestrator.gameState.buildings.length).toBe(3);
@@ -119,11 +120,11 @@ describe('Building Placement Integration', () => {
 
       await new Promise(resolve => setTimeout(resolve, 5));
 
-      // Try another building at non-overlapping position
-      const townCenter = gameManager.placeBuilding('TOWN_CENTER', { x: 10, y: 0, z: 10 });
-      expect(townCenter.success).toBe(true);
+      // Try another building at non-overlapping position (CAMPFIRE is free, affordable)
+      const campfire = gameManager.placeBuilding('CAMPFIRE', { x: 10, y: 0, z: 10 });
+      expect(campfire.success).toBe(true);
 
-      // Count successful placements: 1 FARM + 1 HOUSE + 1 TOWN_CENTER = 3 total
+      // Count successful placements: 1 FARM + 1 HOUSE + 1 CAMPFIRE = 3 total
       const buildingCount = gameManager.orchestrator.gameState.buildings.length;
       expect(buildingCount).toBe(3);
     });

@@ -5,8 +5,8 @@
 import React from 'react';
 
 // Mock Canvas component
-export const Canvas = ({ children, ...props }) => (
-  <div data-testid="r3f-canvas" {...props}>
+export const Canvas = ({ children, shadows, ...props }) => (
+  <div data-testid="r3f-canvas" {...(shadows ? { shadows: '' } : {})} {...props}>
     {children}
   </div>
 );
@@ -30,32 +30,34 @@ const createMockCanvas = () => {
   };
 };
 
-// Mock useThree hook - returns actual values, not a function
-const useThreeMock = () => ({
-  camera: {
-    position: { x: 0, y: 15, z: 20, set: jest.fn(), copy: jest.fn() },
-    lookAt: jest.fn(),
-    updateProjectionMatrix: jest.fn(),
-  },
-  scene: {
-    add: jest.fn(),
-    remove: jest.fn(),
-  },
-  gl: {
-    domElement: createMockCanvas(),
-    setSize: jest.fn(),
-  },
-  size: { width: 800, height: 600 },
-  viewport: { width: 800, height: 600 },
-  raycaster: {
-    setFromCamera: jest.fn(),
-    intersectObjects: jest.fn(() => []),
-  },
-  pointer: { x: 0, y: 0 },
-  clock: { elapsedTime: 0 },
-});
-
-export const useThree = jest.fn(useThreeMock);
+// Mock useThree hook - defined as a regular function (not jest.fn) so that
+// CRA's resetMocks: true doesn't strip the implementation between tests.
+export const useThree = (selector) => {
+  const state = {
+    camera: {
+      position: { x: 0, y: 15, z: 20, set: () => {}, copy: () => {} },
+      lookAt: () => {},
+      updateProjectionMatrix: () => {},
+    },
+    scene: {
+      add: () => {},
+      remove: () => {},
+    },
+    gl: {
+      domElement: createMockCanvas(),
+      setSize: () => {},
+    },
+    size: { width: 800, height: 600 },
+    viewport: { width: 800, height: 600 },
+    raycaster: {
+      setFromCamera: () => {},
+      intersectObjects: () => [],
+    },
+    pointer: { x: 0, y: 0 },
+    clock: { elapsedTime: 0 },
+  };
+  return selector ? selector(state) : state;
+};
 
 // Mock extend function
 export const extend = jest.fn();

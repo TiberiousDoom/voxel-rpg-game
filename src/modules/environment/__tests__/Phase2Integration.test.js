@@ -32,12 +32,12 @@ describe('Phase 2: Enhanced Terrain Integration', () => {
     it('should generate diverse biomes across terrain', () => {
       const biomes = new Set();
 
-      // Sample 100 points across terrain
-      for (let i = 0; i < 100; i++) {
-        const x = Math.floor(Math.random() * 200);
-        const z = Math.floor(Math.random() * 200);
-        const biome = worldGenerator.getBiome(x, z);
-        biomes.add(biome);
+      // Grid sample across terrain for deterministic results
+      for (let x = 0; x < 200; x += 20) {
+        for (let z = 0; z < 200; z += 20) {
+          const biome = worldGenerator.getBiome(x, z);
+          biomes.add(biome);
+        }
       }
 
       // Should have at least 3 different biomes in 100 samples
@@ -127,16 +127,15 @@ describe('Phase 2: Enhanced Terrain Integration', () => {
     it('should have water in ocean biomes', () => {
       let oceanBiomeWithWater = false;
 
-      // Sample ocean biomes
-      for (let i = 0; i < 100; i++) {
-        const x = Math.floor(Math.random() * 200);
-        const z = Math.floor(Math.random() * 200);
-        const biome = worldGenerator.getBiome(x, z);
-        const height = terrainSystem.getHeight(x, z);
+      // Systematic grid search to reliably find ocean tiles
+      for (let x = 0; x < 200 && !oceanBiomeWithWater; x += 5) {
+        for (let z = 0; z < 200 && !oceanBiomeWithWater; z += 5) {
+          const biome = worldGenerator.getBiome(x, z);
+          const height = terrainSystem.getHeight(x, z);
 
-        if (biome === 'ocean' && height <= 3) {
-          oceanBiomeWithWater = true;
-          break;
+          if (biome === 'ocean' && height <= 3) {
+            oceanBiomeWithWater = true;
+          }
         }
       }
 
@@ -401,13 +400,13 @@ describe('Phase 2: Enhanced Terrain Integration', () => {
     it('should track biome distribution in region', () => {
       const biomeCount = {};
 
-      // Sample 500 tiles
-      for (let i = 0; i < 500; i++) {
-        const x = Math.floor(Math.random() * 100);
-        const z = Math.floor(Math.random() * 100);
+      // Grid sample across 100x100 region
+      for (let x = 0; x < 100; x += 5) {
+        for (let z = 0; z < 100; z += 5) {
         const biome = worldGenerator.getBiome(x, z);
 
         biomeCount[biome] = (biomeCount[biome] || 0) + 1;
+        }
       }
 
       // Should have at least 2 different biomes

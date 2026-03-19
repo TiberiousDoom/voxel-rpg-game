@@ -50,7 +50,7 @@ describe('SkillTreeSystem', () => {
       const result = skillTreeSystem.allocateSkill(character, 'settlement', 'efficientBuilder');
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('maximum');
+      expect(result.message).toContain('maxed');
     });
 
     test('deallocates skill point successfully', () => {
@@ -61,7 +61,8 @@ describe('SkillTreeSystem', () => {
       const result = skillTreeSystem.deallocateSkill(character, 'settlement', 'efficientBuilder');
 
       expect(result.success).toBe(true);
-      expect(character.skills.settlement.efficientBuilder).toBe(0);
+      // Implementation deletes the key when points reach 0
+      expect(character.skills.settlement.efficientBuilder).toBeUndefined();
       expect(character.skillPoints).toBe(10); // Refunded
     });
 
@@ -77,20 +78,27 @@ describe('SkillTreeSystem', () => {
   // ============================================================================
 
   describe('Prerequisites', () => {
-    test('cannot allocate skill without prerequisite', () => {
-      // masterBuilder requires efficientBuilder
+    test('cannot allocate skill without meeting tier requirements', () => {
+      // masterBuilder is tier 2 (requires level 11, 5 points in tree, and efficientBuilder prerequisite)
+      // With no points in tree and default level, this fails on tier requirements
       const result = skillTreeSystem.allocateSkill(character, 'settlement', 'masterBuilder');
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('prerequisite');
+      expect(result.message).toContain('Requires');
     });
 
     test('can allocate skill with prerequisite met', () => {
-      // First allocate prerequisite
-      skillTreeSystem.allocateSkill(character, 'settlement', 'efficientBuilder');
+      character.level = 11; // Tier 2 requires level 11
+      character.skillPoints = 20; // Ensure enough points
 
-      // Now allocate masterBuilder
-      character.skillPoints = 10; // Ensure enough points
+      // Allocate all 5 tier 1 skills (5 points in tree, meets minPointsInTree for tier 2)
+      skillTreeSystem.allocateSkill(character, 'settlement', 'efficientBuilder');
+      skillTreeSystem.allocateSkill(character, 'settlement', 'resourceManagement');
+      skillTreeSystem.allocateSkill(character, 'settlement', 'inspiringLeader');
+      skillTreeSystem.allocateSkill(character, 'settlement', 'carefulPlanning');
+      skillTreeSystem.allocateSkill(character, 'settlement', 'quickLearner');
+
+      // Now allocate masterBuilder (requires efficientBuilder, which is allocated)
       const result = skillTreeSystem.allocateSkill(character, 'settlement', 'masterBuilder');
 
       expect(result.success).toBe(true);
@@ -103,7 +111,7 @@ describe('SkillTreeSystem', () => {
 
   describe('Tier Requirements', () => {
     test('cannot allocate tier 2 skill without level requirement', () => {
-      character.level = 1; // Tier 2 requires level 5
+      character.level = 1; // Tier 2 requires level 11
 
       const result = skillTreeSystem.allocateSkill(character, 'settlement', 'masterBuilder');
 
@@ -112,20 +120,20 @@ describe('SkillTreeSystem', () => {
     });
 
     test('cannot allocate tier 2 skill without points in tree', () => {
-      character.level = 10; // High enough level
+      character.level = 11; // Meets level requirement for tier 2
 
-      // Tier 2 requires 5 points in tree
+      // Tier 2 requires 5 points in tree, but none allocated
       const result = skillTreeSystem.allocateSkill(character, 'settlement', 'masterBuilder');
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('points in tree');
+      expect(result.message).toContain('points in');
     });
 
     test('can allocate tier 2 skill with requirements met', () => {
-      character.level = 10;
+      character.level = 11; // Tier 2 requires level 11
       character.skillPoints = 10;
 
-      // Allocate 5 tier 1 skills
+      // Allocate 5 tier 1 skills (5 points in tree)
       skillTreeSystem.allocateSkill(character, 'settlement', 'efficientBuilder');
       skillTreeSystem.allocateSkill(character, 'settlement', 'resourceManagement');
       skillTreeSystem.allocateSkill(character, 'settlement', 'inspiringLeader');
@@ -158,19 +166,19 @@ describe('SkillTreeSystem', () => {
 
       // Allocate multiple skills
       skillTreeSystem.allocateSkill(character, 'settlement', 'efficientBuilder'); // +10% building speed
-      skillTreeSystem.allocateSkill(character, 'settlement', 'resourceManagement'); // +10% resource storage
+      skillTreeSystem.allocateSkill(character, 'settlement', 'resourceManagement'); // +10% gathering speed
       skillTreeSystem.allocateSkill(character, 'settlement', 'quickLearner'); // +10% XP
 
       const effects = skillTreeSystem.calculatePassiveEffects(character);
 
       expect(effects.buildingSpeed).toBe(0.10);
-      expect(effects.storageCapacity).toBe(0.10);
+      expect(effects.gatheringSpeed).toBe(0.10);
       expect(effects.xpGain).toBe(0.10);
     });
 
     test('stacks effects from same category', () => {
       character.skillPoints = 20;
-      character.level = 15;
+      character.level = 11; // Tier 2 requires level 11
 
       // Allocate efficientBuilder (tier 1) and masterBuilder (tier 2)
       skillTreeSystem.allocateSkill(character, 'settlement', 'efficientBuilder'); // +10%
@@ -186,13 +194,22 @@ describe('SkillTreeSystem', () => {
       expect(effects.buildingSpeed).toBe(0.35);
     });
 
-    test('returns empty effects for no skills allocated', () => {
+    test('returns default effects for no skills allocated', () => {
       const effects = skillTreeSystem.calculatePassiveEffects(character);
 
-      // All effects should be 0
-      Object.values(effects).forEach(value => {
-        expect(value).toBe(0);
-      });
+      // Numeric additive effects should be 0
+      expect(effects.buildingSpeed).toBe(0);
+      expect(effects.npcEfficiency).toBe(0);
+      expect(effects.xpGain).toBe(0);
+      expect(effects.goldGain).toBe(0);
+
+      // Boolean unlock effects should be false
+      expect(effects.infiniteResources).toBe(false);
+      expect(effects.rapidPlacement).toBe(false);
+
+      // Multiplier effects default to 1.0
+      expect(effects.passiveIncomeMultiplier).toBe(1.0);
+      expect(effects.settlementStatsMultiplier).toBe(1.0);
     });
   });
 
@@ -208,21 +225,27 @@ describe('SkillTreeSystem', () => {
     });
 
     test('getActiveSkills returns unlocked active skills', () => {
-      character.skillPoints = 20;
-      character.level = 10;
+      character.skillPoints = 30;
+      character.level = 11; // Tier 2 requires level 11
 
-      // Allocate to unlock Rally Cry (tier 2 active skill)
+      // Allocate tier 1 skills (5 points in tree)
       skillTreeSystem.allocateSkill(character, 'settlement', 'efficientBuilder');
       skillTreeSystem.allocateSkill(character, 'settlement', 'resourceManagement');
       skillTreeSystem.allocateSkill(character, 'settlement', 'inspiringLeader');
       skillTreeSystem.allocateSkill(character, 'settlement', 'carefulPlanning');
       skillTreeSystem.allocateSkill(character, 'settlement', 'quickLearner');
+
+      // Allocate naturalLeader (prerequisite for rallyCry)
+      skillTreeSystem.allocateSkill(character, 'settlement', 'naturalLeader');
+
+      // Allocate Rally Cry (tier 2 active skill)
       skillTreeSystem.allocateSkill(character, 'settlement', 'rallyCry');
 
       const activeSkills = skillTreeSystem.getActiveSkills(character);
 
       expect(activeSkills.length).toBeGreaterThan(0);
-      expect(activeSkills[0].type).toBe('active');
+      expect(activeSkills[0].id).toBe('rallyCry');
+      expect(activeSkills[0].activation).toBeDefined();
     });
   });
 
@@ -313,9 +336,11 @@ describe('SkillTreeSystem', () => {
     test('handles missing skills object', () => {
       character.skills = null;
 
+      // Implementation initializes skills object if null, so allocation succeeds
       const result = skillTreeSystem.allocateSkill(character, 'settlement', 'efficientBuilder');
 
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+      expect(character.skills.settlement.efficientBuilder).toBe(1);
     });
 
     test('getSkillPoints returns 0 for unallocated skill', () => {

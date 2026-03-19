@@ -385,7 +385,8 @@ describe('Formation System', () => {
     npcManager.addToFormation(formation.id, member.npcId);
     npcManager.removeFromFormation(member.npcId);
 
+    // removeFromFormation deletes the formation when it becomes empty
     const formationInfo = npcManager.getFormation(formation.id);
-    expect(formationInfo.memberCount).toBe(0);
+    expect(formationInfo).toBeNull();
   });
 });

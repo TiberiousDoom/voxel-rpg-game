@@ -721,7 +721,7 @@ export class VoxelBuildingOrchestrator {
    */
   fromJSON(data) {
     if (data.voxelWorld) {
-      this.voxelWorld.fromJSON(data.voxelWorld);
+      this.voxelWorld = VoxelWorld.fromJSON(data.voxelWorld);
     }
 
     if (data.stockpileManager) {

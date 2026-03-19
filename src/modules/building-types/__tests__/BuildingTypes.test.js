@@ -61,12 +61,13 @@ describe('Module 2: Building Types & Properties', () => {
       const survivalTypes = config.getTypesByTier('SURVIVAL');
       expect(survivalTypes).toContain('CAMPFIRE');
       expect(survivalTypes).toContain('FARM');
-      expect(survivalTypes.length).toBe(2);
+      expect(survivalTypes).toContain('HOUSE');
+      expect(survivalTypes.length).toBe(3);
     });
 
     test('getTypesByTier should work for all tiers', () => {
-      expect(config.getTypesByTier('SURVIVAL').length).toBe(2);
-      expect(config.getTypesByTier('PERMANENT').length).toBe(2);
+      expect(config.getTypesByTier('SURVIVAL').length).toBe(3);
+      expect(config.getTypesByTier('PERMANENT').length).toBe(1);
       expect(config.getTypesByTier('TOWN').length).toBe(3);
       expect(config.getTypesByTier('CASTLE').length).toBe(1);
     });

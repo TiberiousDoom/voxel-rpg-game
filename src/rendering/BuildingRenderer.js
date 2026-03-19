@@ -103,6 +103,8 @@ export class BuildingRenderer {
   renderBuilding(ctx, building, canvasPos, options = {}) {
     if (!building || !building.position) return;
 
+    ctx.save();
+
     const state = this.normalizeState(building.state || 'COMPLETE');
     const icon = getBuildingIcon(building.type);
     const color = getBuildingColor(building.type, state);
@@ -249,8 +251,14 @@ export class BuildingRenderer {
     if (!overlay) return;
 
     // Create pattern overlay using image data manipulation
-    // For damaged buildings, draw crack patterns
+    // For damaged buildings, draw damage overlay and crack patterns
     if (state === 'DAMAGED' || healthPercent < 1) {
+      ctx.strokeStyle = overlay.color || 'rgba(139, 0, 0, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + width, y + height);
+      ctx.stroke();
       this.drawCracks(ctx, x, y, width, height, healthPercent, building.id);
     }
 
@@ -479,9 +487,6 @@ export class BuildingRenderer {
     ctx.shadowBlur = 10;
     ctx.shadowColor = '#FFD700';
     ctx.strokeRect(x - 2, y - 2, width + 4, height + 4);
-
-    // Reset shadow
-    ctx.shadowBlur = 0;
   }
 
   /**

@@ -270,15 +270,17 @@ describe('MaterialCraftingSystem', () => {
       });
       const system = new MaterialCraftingSystem(store);
 
-      // Craft multiple times to get different qualities
+      // Without tool bonus, base quality score is 50 + random(0-10) = [50, 60),
+      // which always yields NORMAL quality (multiplier 1.0, no stat modification).
+      // Use a tool bonus to push quality into EXCELLENT+ range for variance.
       const results = [];
       for (let i = 0; i < 10; i++) {
-        results.push(system.craftItem('ironSword'));
+        results.push(system.craftItem('ironSword', { tool: { craftingBonus: 30 } }));
       }
 
-      // At least one should have modified stats due to quality
+      // With tool bonus (quality score 80+), crafts should have non-NORMAL quality
       const hasQualityVariance = results.some(r =>
-        r.item.stats.damage !== CRAFTING_RECIPES.ironSword.stats.damage
+        r.item.quality !== 'Normal'
       );
       expect(hasQualityVariance).toBe(true);
     });

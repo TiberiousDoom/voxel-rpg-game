@@ -84,30 +84,31 @@ const TouchControls = () => {
           }
         }
 
-        if (enemyHit && enemyData?.takeDamage) {
-          // Attack enemy using the active spell — works regardless of build mode
+        // Helper: try to cast the active spell toward a world position
+        const tryCastSpellAt = (targetPoint) => {
           const attackStore = useGameStore.getState();
           const spell = getSpellById(attackStore.activeSpellId);
-          if (!spell) return;
-
-          // Check mana
-          if (attackStore.player.mana < spell.manaCost) return;
-
-          // Check cooldown
+          if (!spell) return false;
+          if (attackStore.player.mana < spell.manaCost) return false;
           const cooldown = attackStore.getSpellCooldown(spell.id);
-          if (cooldown > 0) return;
+          if (cooldown > 0) return false;
 
-          // Override player facingAngle to aim at enemy for spell direction
-          const playerPos = attackStore.player.position;
-          const dx = enemyHit.point.x - playerPos[0];
-          const dz = enemyHit.point.z - playerPos[2];
-          const aimAngle = Math.atan2(dx, dz);
-          const playerWithAim = { ...attackStore.player, facingAngle: aimAngle };
+          // Set aimTarget so the projectile flies toward the click point
+          const playerWithAim = {
+            ...attackStore.player,
+            aimTarget: [targetPoint.x, targetPoint.y, targetPoint.z],
+          };
 
           const result = executeSpell(spell, playerWithAim, attackStore);
           if (result.success) {
             attackStore.setSpellCooldown(spell.id, spell.cooldown);
           }
+          return result.success;
+        };
+
+        if (enemyHit && enemyData?.takeDamage) {
+          // Attack enemy — cast spell at the enemy hit point
+          tryCastSpellAt(enemyHit.point);
 
           // Add red attack marker at enemy center (elevated)
           useGameStore.getState().addTargetMarker({
@@ -132,40 +133,44 @@ const TouchControls = () => {
         if (useGameStore.getState().zoneMode) return;
 
         if (groundHit) {
-          const goalPos = [groundHit.point.x, groundHit.point.y, groundHit.point.z];
-          const clickStore = useGameStore.getState();
-          const playerPos = clickStore.player.position;
-          const cm = clickStore._chunkManager;
+          // Try to cast spell at the clicked ground location
+          const didCast = tryCastSpellAt(groundHit.point);
 
-          let markerColor = '#00ff00';
+          if (!didCast) {
+            // No spell available or on cooldown — move to location with pathfinding
+            const goalPos = [groundHit.point.x, groundHit.point.y, groundHit.point.z];
+            const clickStore = useGameStore.getState();
+            const playerPos = clickStore.player.position;
+            const cm = clickStore._chunkManager;
 
-          if (cm) {
-            const path = findPath(cm, playerPos, goalPos);
-            if (path && path.length > 0) {
-              clickStore.setPlayerNavPath(path, goalPos);
+            if (cm) {
+              const path = findPath(cm, playerPos, goalPos);
+              if (path && path.length > 0) {
+                clickStore.setPlayerNavPath(path, goalPos);
+              } else {
+                // No path found — fallback to direct move
+                clickStore.setPlayerTarget(goalPos);
+              }
             } else {
-              // No path found — fallback to direct move
+              // ChunkManager not ready — fallback to direct move
               clickStore.setPlayerTarget(goalPos);
-              markerColor = '#ff8800'; // orange = direct move
             }
-          } else {
-            // ChunkManager not ready — fallback to direct move
-            clickStore.setPlayerTarget(goalPos);
           }
 
-          // Add movement marker
-          clickStore.addTargetMarker({
-            position: goalPos,
+          // Add marker (orange for spell, green for move)
+          const markerColor = didCast ? '#ff6600' : '#00ff00';
+          useGameStore.getState().addTargetMarker({
+            position: [groundHit.point.x, groundHit.point.y, groundHit.point.z],
             color: markerColor,
           });
 
-          // Remove marker after 2 seconds
+          // Remove marker after timeout
           setTimeout(() => {
             const markers = useGameStore.getState().targetMarkers;
             if (markers.length > 0) {
               useGameStore.getState().removeTargetMarker(markers[0].id);
             }
-          }, 2000);
+          }, didCast ? 800 : 2000);
         }
       }
     };

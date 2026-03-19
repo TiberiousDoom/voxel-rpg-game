@@ -104,6 +104,12 @@ class ModuleOrchestrator {
     // Phase 4: AI System Manager
     this.aiSystemManager = modules.aiSystemManager || null;
 
+    // Phase 2: Settlement System
+    this.settlementModule = modules.settlementModule || null;
+    if (this.settlementModule && typeof this.settlementModule.initialize === 'function') {
+      this.settlementModule.initialize();
+    }
+
     // Phase 10: Voxel Building System
     this.voxelBuildingOrchestrator = modules.voxelBuildingOrchestrator || null;
     if (this.aiSystemManager) {
@@ -179,7 +185,7 @@ class ModuleOrchestrator {
     // Phase 3A & 3B modules are optional for backwards compatibility
     const optional = [
       'idleTaskManager', 'npcNeedsTracker', 'autonomousDecision',
-      'eventSystem'
+      'eventSystem', 'settlementModule'
     ];
 
     for (const module of required) {
@@ -476,6 +482,14 @@ class ModuleOrchestrator {
           quests: aiResult.quests,
           economic: aiResult.economic
         };
+      }
+
+      // ============================================
+      // STEP 4.8: PHASE 2 - SETTLEMENT UPDATE
+      // ============================================
+      if (this.settlementModule) {
+        const settlementResult = this.settlementModule.update(deltaTime, this.gameState);
+        result.settlement = settlementResult.settlement;
       }
 
       // ============================================

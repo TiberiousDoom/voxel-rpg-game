@@ -162,18 +162,11 @@ export class WorldGenerator {
    * @returns {string} Biome type (from BiomeType enum)
    */
   getBiome(x, z) {
-    // Phase 2: Use BiomeManager if available (Voronoi-based biomes)
-    if (this.biomeManager) {
-      return this.biomeManager.getBiomeAt(x, z);
-    }
-
-    // Phase 1: Fallback to temperature×moisture approach
-    // Get normalized height (0-1)
+    // Elevation-based biome overrides (apply for both Phase 1 and Phase 2)
     const height = this.generateHeight(x, z);
     const normalizedHeight = (height - this.config.minHeight) /
       (this.config.maxHeight - this.config.minHeight);
 
-    // Elevation-based biomes (override temp/moisture)
     if (normalizedHeight < this.config.oceanThreshold) {
       return BiomeType.OCEAN;
     }
@@ -185,6 +178,11 @@ export class WorldGenerator {
     }
     if (normalizedHeight > this.config.hillsThreshold) {
       return BiomeType.HILLS;
+    }
+
+    // Phase 2: Use BiomeManager for mid-elevation biomes
+    if (this.biomeManager) {
+      return this.biomeManager.getBiomeAt(x, z);
     }
 
     // Temperature and moisture-based biomes

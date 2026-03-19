@@ -159,10 +159,25 @@ class GameStateSerializer {
 
       // Update buildingsMap in NPCManager with loaded buildings
       if (orchestrator.npcManager && orchestrator.grid) {
-        const buildings = orchestrator.grid.getAllBuildings();
-        orchestrator.npcManager.updateBuildingsMap(buildings);
-        // eslint-disable-next-line no-console
-        console.log('[GameStateSerializer] Updated NPCManager buildingsMap with', buildings.length, 'buildings');
+        try {
+          const buildings = orchestrator.grid.getAllBuildings();
+          if (typeof orchestrator.npcManager.updateBuildingsMap === 'function') {
+            orchestrator.npcManager.updateBuildingsMap(buildings);
+            // eslint-disable-next-line no-console
+            console.log('[GameStateSerializer] Updated NPCManager buildingsMap with', buildings.length, 'buildings');
+          }
+        } catch (err) {
+          errors.push(`[Warning] Could not update NPC buildings map: ${err.message}`);
+        }
+      }
+
+      // Sync gameState from restored modules
+      if (typeof orchestrator._updateGameState === 'function') {
+        try {
+          orchestrator._updateGameState();
+        } catch (err) {
+          errors.push(`[Warning] Could not sync game state: ${err.message}`);
+        }
       }
 
       // Log all errors for debugging
@@ -189,7 +204,8 @@ class GameStateSerializer {
           errStr.includes('event') ||
           errStr.includes('phase 3') ||
           errStr.includes('restored previous') ||
-          errStr.includes('backup')
+          errStr.includes('backup') ||
+          errStr.includes('voxel')
         );
       });
 
@@ -197,7 +213,7 @@ class GameStateSerializer {
       console.log('[GameStateSerializer] Total errors:', errors.length, 'Critical errors:', criticalErrors.length);
       if (criticalErrors.length > 0) {
         // eslint-disable-next-line no-console
-        console.error('[GameStateSerializer] Critical errors blocking load:', criticalErrors);
+        console.log('[GameStateSerializer] Critical errors blocking load:', JSON.stringify(criticalErrors));
       }
 
       return {
@@ -242,13 +258,15 @@ class GameStateSerializer {
       if (grid.positionIndex) grid.positionIndex.clear();
 
       // Restore buildings
-      for (const building of data.buildings) {
-        grid.placeBuilding({
-          id: building.id,
-          type: building.type,
-          position: building.position,
-          health: building.health
-        });
+      if (typeof grid.placeBuilding === 'function') {
+        for (const building of data.buildings) {
+          grid.placeBuilding({
+            id: building.id,
+            type: building.type,
+            position: building.position,
+            health: building.health
+          });
+        }
       }
     } catch (err) {
       errors.push(`Grid deserialization error: ${err.message}`);
@@ -277,14 +295,14 @@ class GameStateSerializer {
     if (!data) return;
 
     try {
-      if (data.chunks) {
+      if (data.chunks && spatial.chunks) {
         spatial.chunks.clear();
         for (const chunk of data.chunks) {
           spatial.chunks.set(chunk.key, new Set(chunk.buildingIds));
         }
       }
 
-      if (data.buildingChunks) {
+      if (data.buildingChunks && spatial.buildingChunks) {
         spatial.buildingChunks.clear();
         for (const mapping of data.buildingChunks) {
           spatial.buildingChunks.set(mapping.buildingId, new Set(mapping.chunkKeys));
@@ -329,15 +347,17 @@ class GameStateSerializer {
     if (!data || !data.activeEffects) return;
 
     try {
-      buildingEffect.activeEffects.clear();
+      if (buildingEffect.activeEffects) {
+        buildingEffect.activeEffects.clear();
 
-      // Restore active effects (will be recomputed when buildings are placed)
-      for (const effect of data.activeEffects) {
-        buildingEffect.activeEffects.set(effect.id, {
-          building: effect.building,
-          type: effect.type,
-          strength: effect.strength
-        });
+        // Restore active effects (will be recomputed when buildings are placed)
+        for (const effect of data.activeEffects) {
+          buildingEffect.activeEffects.set(effect.id, {
+            building: effect.building,
+            type: effect.type,
+            strength: effect.strength
+          });
+        }
       }
     } catch (err) {
       errors.push(`BuildingEffect deserialization error: ${err.message}`);
@@ -360,7 +380,9 @@ class GameStateSerializer {
     if (!data || !data.storage) return;
 
     try {
-      storage.setResources(data.storage);
+      if (typeof storage.setResources === 'function') {
+        storage.setResources(data.storage);
+      }
       if (data.capacity) {
         storage.capacity = data.capacity;
       }
@@ -475,6 +497,10 @@ class GameStateSerializer {
       return;
     }
 
+    if (!territoryManager.territories) {
+      return;
+    }
+
     // Backup existing territories in case deserialization fails
     const backup = new Map(territoryManager.territories);
 
@@ -548,14 +574,14 @@ class GameStateSerializer {
     if (!data) return;
 
     try {
-      if (data.npcs) {
+      if (data.npcs && townManager.npcs) {
         townManager.npcs.clear();
         for (const npc of data.npcs) {
           townManager.npcs.set(npc.id, npc.count);
         }
       }
 
-      if (data.buildingAssignments) {
+      if (data.buildingAssignments && townManager.buildingAssignments) {
         townManager.buildingAssignments.clear();
         for (const assign of data.buildingAssignments) {
           townManager.buildingAssignments.set(assign.building, new Set(assign.npcs));
@@ -588,7 +614,15 @@ class GameStateSerializer {
         position: npc.position ? { ...npc.position } : null,
         skills: npc.skills ? { ...npc.skills } : {},
         assignedBuilding: npc.assignedBuilding,
-        status: npc.status
+        status: npc.status,
+        // Phase 2.1.3: Identity data
+        firstName: npc.firstName || null,
+        surname: npc.surname || null,
+        appearance: npc.appearance ? { ...npc.appearance } : null,
+        preferredJob: npc.preferredJob || null,
+        baseSkills: npc.baseSkills ? { ...npc.baseSkills } : null,
+        personalityTraits: npc.personality && npc.personality.traits
+          ? { ...npc.personality.traits } : null,
       })),
       totalSpawned: npcManager.stats?.totalSpawned || 0,
       nextId: npcManager.npcIdCounter || 0
@@ -599,51 +633,63 @@ class GameStateSerializer {
     if (!data || !data.npcs) return;
 
     try {
-      npcManager.npcs.clear();
+      if (npcManager.npcs) {
+        npcManager.npcs.clear();
 
-      for (const npcData of data.npcs) {
-        // Create a proper NPC instance instead of a plain object
-        const npc = new NPC(npcData.id, {
-          name: npcData.name,
-          role: npcData.role,
-          position: npcData.position,
-          happiness: npcData.happiness,
-          morale: npcData.morale
-        });
+        for (const npcData of data.npcs) {
+          // Create a proper NPC instance instead of a plain object
+          const npc = new NPC(npcData.id, {
+            name: npcData.name,
+            role: npcData.role,
+            position: npcData.position,
+            happiness: npcData.happiness,
+            morale: npcData.morale
+          });
 
-        // Restore additional state that isn't set by constructor
-        if (npcData.skills) {
-          npc.skills = { ...npcData.skills };
-        }
-        if (npcData.health !== undefined) {
-          npc.health = npcData.health;
-        }
-        if (npcData.alive !== undefined) {
-          npc.alive = npcData.alive;
-        }
-        if (npcData.assignedBuilding !== undefined) {
-          npc.assignedBuilding = npcData.assignedBuilding;
-        }
-        if (npcData.isWorking !== undefined) {
-          npc.isWorking = npcData.isWorking;
-        }
-        if (npcData.isMoving !== undefined) {
-          npc.isMoving = npcData.isMoving;
-        }
-        if (npcData.isResting !== undefined) {
-          npc.isResting = npcData.isResting;
-        }
-        if (npcData.fatigued !== undefined) {
-          npc.fatigued = npcData.fatigued;
-        }
-        if (npcData.hungry !== undefined) {
-          npc.hungry = npcData.hungry;
-        }
+          // Restore additional state that isn't set by constructor
+          if (npcData.skills) {
+            npc.skills = { ...npcData.skills };
+          }
+          if (npcData.health !== undefined) {
+            npc.health = npcData.health;
+          }
+          if (npcData.alive !== undefined) {
+            npc.alive = npcData.alive;
+          }
+          if (npcData.assignedBuilding !== undefined) {
+            npc.assignedBuilding = npcData.assignedBuilding;
+          }
+          if (npcData.isWorking !== undefined) {
+            npc.isWorking = npcData.isWorking;
+          }
+          if (npcData.isMoving !== undefined) {
+            npc.isMoving = npcData.isMoving;
+          }
+          if (npcData.isResting !== undefined) {
+            npc.isResting = npcData.isResting;
+          }
+          if (npcData.fatigued !== undefined) {
+            npc.fatigued = npcData.fatigued;
+          }
+          if (npcData.hungry !== undefined) {
+            npc.hungry = npcData.hungry;
+          }
 
-        npcManager.npcs.set(npc.id, npc);
+          // Phase 2.1.3: Restore identity data
+          if (npcData.firstName) npc.firstName = npcData.firstName;
+          if (npcData.surname) npc.surname = npcData.surname;
+          if (npcData.appearance) npc.appearance = { ...npcData.appearance };
+          if (npcData.preferredJob) npc.preferredJob = npcData.preferredJob;
+          if (npcData.baseSkills) npc.baseSkills = { ...npcData.baseSkills };
+          if (npcData.personalityTraits && npc.personality) {
+            Object.assign(npc.personality.traits, npcData.personalityTraits);
+          }
+
+          npcManager.npcs.set(npc.id, npc);
+        }
       }
 
-      if (data.totalSpawned !== undefined) {
+      if (data.totalSpawned !== undefined && npcManager.stats) {
         npcManager.stats.totalSpawned = data.totalSpawned;
       }
       if (data.nextId !== undefined) {
@@ -676,7 +722,7 @@ class GameStateSerializer {
     if (!data) return;
 
     try {
-      if (data.npcAssignments) {
+      if (data.npcAssignments && npcAssignment.npcAssignments) {
         npcAssignment.npcAssignments.clear();
         for (const assign of data.npcAssignments) {
           npcAssignment.npcAssignments.set(assign.id, {
@@ -686,9 +732,11 @@ class GameStateSerializer {
         }
       }
 
-      if (data.buildingSlots) {
+      // Handle both serialized field names: 'buildingSlots' and 'slots'
+      const slotsData = data.buildingSlots || data.slots;
+      if (slotsData && npcAssignment.buildingSlots) {
         npcAssignment.buildingSlots.clear();
-        for (const building of data.buildingSlots) {
+        for (const building of slotsData) {
           const slots = building.slots.map(s => ({
             id: s.id,
             occupied: s.occupied,
@@ -770,6 +818,7 @@ class GameStateSerializer {
       currentTier: gameState.currentTier,
       buildings: gameState.buildings ? [...gameState.buildings] : [],
       npcs: gameState.npcs ? [...gameState.npcs] : [],
+      resources: gameState.resources ? { ...gameState.resources } : undefined,
       storage: gameState.storage ? { ...gameState.storage } : {},
       morale: gameState.morale,
       tick: gameState.tick,
@@ -787,6 +836,9 @@ class GameStateSerializer {
       }
       if (data.tick !== undefined) {
         orchestrator.tickCount = data.tick;
+      }
+      if (data.resources) {
+        orchestrator.gameState.resources = { ...data.resources };
       }
     } catch (err) {
       errors.push(`Engine state deserialization error: ${err.message}`);

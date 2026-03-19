@@ -21,6 +21,21 @@ import { DungeonRoom, ROOM_TYPES } from '../entities/DungeonRoom';
 import { LootGenerator } from '../systems/LootGenerator';
 import { audioManager } from '../utils/AudioManager';
 
+/**
+ * High-level dungeon state machine states
+ * Used by DungeonIntegration and UI for tracking dungeon progress
+ */
+export const DUNGEON_STATES = {
+  INACTIVE: 'INACTIVE',
+  EXPLORING: 'EXPLORING',
+  IN_ROOM: 'IN_ROOM',
+  COMBAT: 'COMBAT',
+  BOSS_FIGHT: 'BOSS_FIGHT',
+  CLEARED: 'CLEARED',
+  FAILED: 'FAILED',
+  RETREATING: 'RETREATING'
+};
+
 // Create a singleton loot generator for dungeon rewards
 let lootGenerator = null;
 function getLootGenerator() {
@@ -536,6 +551,43 @@ const useDungeonStore = create((set, get) => ({
   dungeonPlayerMana: 100,
   dungeonPlayerMaxMana: 100,
   playerPosition: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 60 },
+
+  // === High-level state machine (used by DungeonIntegration) ===
+  status: DUNGEON_STATES.INACTIVE,
+  layout: null,
+  rooms: [],
+  seed: null,
+  previousRoomId: null,
+  roomsTotal: 0,
+  roomsExplored: 0,
+
+  // High-level combat state
+  enemies: [],
+  enemiesRemaining: 0,
+
+  // Boss state
+  boss: null,
+  bossHealthPercent: 100,
+  bossPhase: 0,
+  bossEnraged: false,
+  showBossHealth: false,
+
+  // Loot & rewards (high-level)
+  loot: [],
+  goldCollected: 0,
+  xpGained: 0,
+  showLootPopup: false,
+  pendingLoot: null,
+
+  // Stats tracking
+  damageDealt: 0,
+  damageTaken: 0,
+
+  // Player (high-level)
+  playerFacing: 0,
+
+  // UI
+  showMiniMap: true,
   playerAttackCooldown: 0,
   playerAttackSpeed: 1.0, // attacks per second
 
@@ -1515,9 +1567,16 @@ const useDungeonStore = create((set, get) => ({
 
   /**
    * Get current room info
+   * Works with both the real-time activeDungeon and the high-level rooms array
    */
   getCurrentRoom: () => {
-    const { activeDungeon, currentRoomId } = get();
+    const { activeDungeon, currentRoomId, rooms } = get();
+    // Try high-level rooms array first
+    if (rooms && rooms.length > 0 && currentRoomId) {
+      const room = rooms.find(r => r.id === currentRoomId);
+      if (room) return room;
+    }
+    // Fall back to activeDungeon
     if (!activeDungeon || !currentRoomId) return null;
     return activeDungeon.getRoom(currentRoomId);
   },
@@ -1741,6 +1800,366 @@ const useDungeonStore = create((set, get) => ({
     } catch (err) {
       return false;
     }
+  },
+
+  // === High-level state machine actions (used by DungeonIntegration and tests) ===
+
+  /**
+   * Reset dungeon to initial state
+   */
+  resetDungeon: () => {
+    set({
+      // High-level state machine
+      status: DUNGEON_STATES.INACTIVE,
+      layout: null,
+      rooms: [],
+      seed: null,
+      previousRoomId: null,
+      roomsTotal: 0,
+      roomsExplored: 0,
+      enemies: [],
+      enemiesRemaining: 0,
+      boss: null,
+      bossHealthPercent: 100,
+      bossPhase: 0,
+      bossEnraged: false,
+      showBossHealth: false,
+      loot: [],
+      goldCollected: 0,
+      xpGained: 0,
+      showLootPopup: false,
+      pendingLoot: null,
+      damageDealt: 0,
+      damageTaken: 0,
+      playerFacing: 0,
+      showMiniMap: true,
+
+      // Real-time state
+      activeDungeon: null,
+      currentRoomId: null,
+      exploredRooms: new Set(),
+      inDungeon: false,
+      dungeonType: null,
+      dungeonLevel: 1,
+      currentEnemies: [],
+      inCombat: false,
+      combatLog: [],
+      selectedTargetId: null,
+      dungeonPlayerHealth: 100,
+      dungeonPlayerMaxHealth: 100,
+      dungeonPlayerMana: 100,
+      dungeonPlayerMaxMana: 100,
+      playerPosition: { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT - 60 },
+      playerAttackCooldown: 0,
+      playerAttackSpeed: 1.0,
+      damageNumbers: [],
+      skillCooldowns: {},
+      bossDefeated: false,
+      roomsCleared: 0,
+      enemiesKilled: 0,
+      killsByType: {},
+      collectedXP: 0,
+      collectedGold: 0,
+      collectedLoot: [],
+      isTransitioning: false,
+      transitionDirection: null
+    });
+  },
+
+  /**
+   * Start a dungeon (high-level state machine)
+   * Called by DungeonIntegration after generating layout
+   */
+  startDungeon: (dungeonType, level, layout, seed) => {
+    let rooms = [];
+    let entranceRoomId = null;
+
+    if (layout && layout.rooms) {
+      if (layout.rooms instanceof Map) {
+        rooms = Array.from(layout.rooms.values()).map(r => ({
+          id: r.id,
+          type: r.type,
+          gridPosition: r.gridPosition,
+          connections: r.connections || {},
+          ...(r.enemyIds ? { enemyIds: r.enemyIds } : {}),
+          ...(r.bossId ? { bossId: r.bossId } : {})
+        }));
+      } else if (Array.isArray(layout.rooms)) {
+        rooms = layout.rooms;
+      }
+      entranceRoomId = layout.entranceRoomId || (rooms.find(r => r.type === 'ENTRANCE') || {}).id || null;
+    }
+
+    set({
+      status: DUNGEON_STATES.EXPLORING,
+      dungeonType,
+      dungeonLevel: level,
+      layout,
+      rooms,
+      seed,
+      currentRoomId: entranceRoomId,
+      roomsTotal: rooms.length,
+      roomsExplored: entranceRoomId ? 1 : 0,
+      roomsCleared: 0,
+      loot: [],
+      goldCollected: 0,
+      xpGained: 0,
+      damageDealt: 0,
+      damageTaken: 0,
+      enemies: [],
+      enemiesRemaining: 0,
+      boss: null,
+      bossHealthPercent: 100,
+      bossPhase: 0,
+      bossEnraged: false,
+      showBossHealth: false,
+      showLootPopup: false,
+      pendingLoot: null
+    });
+  },
+
+  /**
+   * End dungeon run (high-level)
+   * @param {boolean} success - Whether dungeon was cleared
+   * @returns {Object} Run results
+   */
+  endDungeon: (success) => {
+    const state = get();
+    const result = {
+      success,
+      dungeonType: state.dungeonType,
+      dungeonLevel: state.dungeonLevel,
+      goldCollected: state.goldCollected,
+      xpGained: state.xpGained,
+      loot: state.loot,
+      roomsExplored: state.roomsExplored,
+      roomsCleared: state.roomsCleared
+    };
+
+    set({
+      status: success ? DUNGEON_STATES.CLEARED : DUNGEON_STATES.FAILED
+    });
+
+    return result;
+  },
+
+  /**
+   * Enter a room (high-level state machine)
+   */
+  enterRoom: (roomId, enemies = []) => {
+    const { currentRoomId, rooms, roomsExplored } = get();
+    const room = rooms.find(r => r.id === roomId);
+    const isBossRoom = room && room.type === 'BOSS';
+
+    set({
+      previousRoomId: currentRoomId,
+      currentRoomId: roomId,
+      roomsExplored: roomsExplored + 1,
+      status: enemies.length > 0 ? DUNGEON_STATES.COMBAT : DUNGEON_STATES.IN_ROOM,
+      enemies,
+      enemiesRemaining: enemies.length,
+      showBossHealth: isBossRoom
+    });
+  },
+
+  /**
+   * Clear the current room (all enemies defeated)
+   */
+  clearRoom: () => {
+    set((state) => ({
+      status: DUNGEON_STATES.IN_ROOM,
+      enemies: [],
+      enemiesRemaining: 0,
+      roomsCleared: state.roomsCleared + 1
+    }));
+  },
+
+  /**
+   * Start a boss fight
+   */
+  startBossFight: (boss) => {
+    set({
+      status: DUNGEON_STATES.BOSS_FIGHT,
+      boss,
+      bossHealthPercent: 100,
+      showBossHealth: true
+    });
+  },
+
+  /**
+   * Update boss state
+   */
+  updateBoss: (updates) => {
+    set({
+      ...(updates.healthPercent !== undefined ? { bossHealthPercent: updates.healthPercent } : {}),
+      ...(updates.phase !== undefined ? { bossPhase: updates.phase } : {}),
+      ...(updates.enraged !== undefined ? { bossEnraged: updates.enraged } : {}),
+      ...(updates.health !== undefined ? { boss: { ...get().boss, health: updates.health } } : {})
+    });
+  },
+
+  /**
+   * Defeat boss and collect rewards
+   */
+  defeatBoss: (loot, xp, gold) => {
+    set((state) => ({
+      status: DUNGEON_STATES.IN_ROOM,
+      boss: null,
+      showBossHealth: false,
+      loot: [...state.loot, ...loot],
+      xpGained: state.xpGained + xp,
+      goldCollected: state.goldCollected + gold,
+      roomsCleared: state.roomsCleared + 1
+    }));
+  },
+
+  /**
+   * Update a specific enemy
+   */
+  updateEnemy: (enemyId, updates) => {
+    set((state) => ({
+      enemies: state.enemies.map(e =>
+        e.id === enemyId ? { ...e, ...updates } : e
+      )
+    }));
+  },
+
+  /**
+   * Remove a defeated enemy
+   */
+  removeEnemy: (enemyId) => {
+    set((state) => {
+      const newEnemies = state.enemies.filter(e => e.id !== enemyId);
+      const newRemaining = newEnemies.length;
+      return {
+        enemies: newEnemies,
+        enemiesRemaining: newRemaining,
+        ...(newRemaining === 0 ? { status: DUNGEON_STATES.IN_ROOM } : {})
+      };
+    });
+  },
+
+  /**
+   * Record damage dealt by player
+   */
+  recordDamageDealt: (amount) => {
+    set((state) => ({
+      damageDealt: state.damageDealt + amount
+    }));
+  },
+
+  /**
+   * Record damage taken by player
+   */
+  recordDamageTaken: (amount) => {
+    set((state) => ({
+      damageTaken: state.damageTaken + amount
+    }));
+  },
+
+  /**
+   * Add a loot item
+   */
+  addLoot: (item) => {
+    set((state) => ({
+      loot: [...state.loot, item],
+      showLootPopup: true,
+      pendingLoot: item
+    }));
+  },
+
+  /**
+   * Add gold
+   */
+  addGold: (amount) => {
+    set((state) => ({
+      goldCollected: state.goldCollected + amount
+    }));
+  },
+
+  /**
+   * Add XP
+   */
+  addXP: (amount) => {
+    set((state) => ({
+      xpGained: state.xpGained + amount
+    }));
+  },
+
+  /**
+   * Close loot popup
+   */
+  closeLootPopup: () => {
+    set({
+      showLootPopup: false,
+      pendingLoot: null
+    });
+  },
+
+  /**
+   * Update player position (high-level, x/y grid coords)
+   */
+  updatePlayerPosition: (x, y) => {
+    set({ playerPosition: { x, y } });
+  },
+
+  /**
+   * Update player facing direction
+   */
+  updatePlayerFacing: (angle) => {
+    set({ playerFacing: angle });
+  },
+
+  /**
+   * Toggle mini-map visibility
+   */
+  toggleMiniMap: () => {
+    set((state) => ({
+      showMiniMap: !state.showMiniMap
+    }));
+  },
+
+  /**
+   * Get connected rooms from current room
+   */
+  getConnectedRooms: () => {
+    const { rooms, currentRoomId } = get();
+    if (!rooms || !currentRoomId) return [];
+
+    const currentRoom = rooms.find(r => r.id === currentRoomId);
+    if (!currentRoom || !currentRoom.connections) return [];
+
+    const connectedIds = Object.values(currentRoom.connections);
+    return rooms.filter(r => connectedIds.includes(r.id));
+  },
+
+  /**
+   * Check if dungeon is active
+   */
+  isActive: () => {
+    const { status } = get();
+    return status !== DUNGEON_STATES.INACTIVE;
+  },
+
+  /**
+   * Check if currently in combat
+   */
+  isInCombat: () => {
+    const { status } = get();
+    return status === DUNGEON_STATES.COMBAT || status === DUNGEON_STATES.BOSS_FIGHT;
+  },
+
+  /**
+   * Get dungeon progress
+   */
+  getProgress: () => {
+    const { roomsExplored, roomsTotal, roomsCleared } = get();
+    return {
+      explored: roomsExplored,
+      total: roomsTotal,
+      cleared: roomsCleared,
+      percent: roomsTotal > 0 ? Math.round((roomsExplored / roomsTotal) * 100) : 0
+    };
   }
 }));
 

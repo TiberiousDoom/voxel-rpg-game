@@ -24,3 +24,5 @@ function createTestMonster(overrides = {}) {
 }
 
 module.exports = { createTestMonster };
+
+test('testHelpers exports createTestMonster', () => { expect(createTestMonster).toBeDefined(); });

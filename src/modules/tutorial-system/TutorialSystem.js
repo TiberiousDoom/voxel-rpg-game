@@ -310,7 +310,7 @@ class TutorialSystem {
       totalSteps,
       progressPercent: totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0,
       isCompleted: this.hasCompletedTutorial,
-      timeElapsed: this.flowManager.startedAt ? Date.now() - this.flowManager.startedAt : 0
+      timeElapsed: this.flowManager.startedAt ? Math.max(1, Date.now() - this.flowManager.startedAt) : 0
     };
   }
 }

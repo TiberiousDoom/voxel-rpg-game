@@ -199,22 +199,27 @@ export class ParticleSystem {
       const delay = i * 0.05;
       const dx = toX - fromX;
       const dy = toY - fromY;
+      const particleConfig = {
+        x: fromX,
+        y: fromY,
+        vx: dx * 0.002,
+        vy: dy * 0.002,
+        size: 4,
+        color,
+        life: 1.0,
+        maxLife: 1.0,
+        gravity: 0,
+        fade: false,
+        shrink: false
+      };
 
-      setTimeout(() => {
-        this.addParticle({
-          x: fromX,
-          y: fromY,
-          vx: dx * 0.002,
-          vy: dy * 0.002,
-          size: 4,
-          color,
-          life: 1.0,
-          maxLife: 1.0,
-          gravity: 0,
-          fade: false,
-          shrink: false
-        });
-      }, delay * 1000);
+      if (delay === 0) {
+        this.addParticle(particleConfig);
+      } else {
+        setTimeout(() => {
+          this.addParticle(particleConfig);
+        }, delay * 1000);
+      }
     }
   }
 
@@ -267,7 +272,11 @@ export class ParticleSystem {
    */
   update() {
     const now = Date.now();
-    const deltaTime = (now - this.lastUpdate) / 1000; // Convert to seconds
+    let deltaTime = (now - this.lastUpdate) / 1000; // Convert to seconds
+    // Clamp deltaTime to avoid issues with mocked timers or large gaps
+    if (deltaTime < 0 || deltaTime > 10) {
+      deltaTime = 1 / 60; // Default to ~16ms frame
+    }
     this.lastUpdate = now;
 
     // Update and filter out dead particles

@@ -64,7 +64,7 @@ describe('GameEngine Integration Tests', () => {
     perfNowSpy = jest.spyOn(performance, 'now').mockImplementation(() => Date.now());
 
     // Initialize all modules in dependency order
-    grid = new GridManager();
+    grid = new GridManager(100, 100);
     spatial = new SpatialPartitioning();
     buildingConfig = new BuildingConfig();
     tierProgression = new TierProgression(buildingConfig);
@@ -94,6 +94,11 @@ describe('GameEngine Integration Tests', () => {
       npcManager,
       npcAssignment
     });
+
+    // Add starting resources so building placement doesn't fail due to cost
+    storage.addResource('wood', 1000);
+    storage.addResource('food', 1000);
+    storage.addResource('stone', 1000);
 
     // Create game engine
     gameEngine = new GameEngine(orchestrator);

@@ -12,6 +12,9 @@ describe('ParticleSystem', () => {
   let mockCtx;
 
   beforeEach(() => {
+    // Mock Date.now BEFORE creating ParticleSystem so lastUpdate uses mocked value
+    jest.spyOn(Date, 'now').mockReturnValue(1000);
+
     particleSystem = new ParticleSystem();
 
     // Mock canvas context
@@ -24,9 +27,6 @@ describe('ParticleSystem', () => {
       fillStyle: '',
       globalAlpha: 1
     };
-
-    // Mock Date.now for consistent testing
-    jest.spyOn(Date, 'now').mockReturnValue(1000);
   });
 
   afterEach(() => {
@@ -172,6 +172,9 @@ describe('ParticleSystem', () => {
     test('creates resource particles over time', () => {
       particleSystem.createResourceParticles(0, 0, 100, 100, 'GOLD');
 
+      // First particle has delay=0, need to advance fake timers to fire setTimeout(..., 0)
+      jest.advanceTimersByTime(0);
+
       // Initially should have 1 particle
       expect(particleSystem.particles.length).toBe(1);
 
@@ -225,8 +228,8 @@ describe('ParticleSystem', () => {
 
       const initialX = particleSystem.particles[0].x;
 
-      // Advance time
-      Date.now.mockReturnValue(2000); // 1 second later
+      // Advance time by 100ms (not 1s, which would kill the particle with life=1.0)
+      Date.now.mockReturnValue(1100);
       particleSystem.update();
 
       expect(particleSystem.particles[0].x).not.toBe(initialX);

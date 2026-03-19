@@ -37,6 +37,10 @@ describe('ResourceItem Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-apply mock implementations after clearAllMocks wipes them
+    const { useResourceAnimation, useResourceTrend } = require('../../../hooks/useResourceAnimation');
+    useResourceAnimation.mockImplementation((value) => value);
+    useResourceTrend.mockImplementation(() => 0);
   });
 
   describe('Basic Rendering', () => {

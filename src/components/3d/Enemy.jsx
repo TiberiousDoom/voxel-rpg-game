@@ -107,6 +107,12 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
     const body = enemyRef.current;
     const currentPos = body.translation();
 
+    // Sync live position for spell auto-aim
+    const enemyId = monsterData?.id;
+    if (enemyId) {
+      useGameStore.getState()._enemyPositions.set(enemyId, [currentPos.x, currentPos.y, currentPos.z]);
+    }
+
     // Calculate distance to player (reuse vectors)
     const playerPos = _playerPos.current.set(player.position[0], player.position[1], player.position[2]);
     const enemyPos = _enemyPos.current.set(currentPos.x, currentPos.y, currentPos.z);
@@ -180,6 +186,7 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
       deathPosition.current = [currentPos.x, currentPos.y, currentPos.z];
       setIsAlive(false);
       const store = useGameStore.getState();
+      if (enemyId) store._enemyPositions.delete(enemyId);
       const ePos = body.translation();
 
       // Spawn XP orb

@@ -1,5 +1,5 @@
-import React, { Suspense, useEffect, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React, { Suspense, useEffect, useState, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import Player from './Player';
 import Enemy from './Enemy';
@@ -19,6 +19,13 @@ import DayNightCycle from './DayNightCycle';
 import SurvivalTick from './SurvivalTick';
 import RiftController from './RiftController';
 import RiftVisual from './RiftVisual';
+import SettlementTick from './SettlementTick';
+import SettlerNPC from './SettlerNPC';
+import WildlifeTick from './WildlifeTick';
+import WildlifeAnimal from './WildlifeAnimal';
+import PathVisualization from './PathVisualization';
+import ZoneOverlay from './ZoneOverlay';
+import ZoneInteraction from './ZoneInteraction';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
@@ -87,6 +94,25 @@ const RiftVisualWithTerrainY = React.memo(({ rift, chunkManager, isNight }) => {
 });
 
 /**
+ * Writes WebGL renderer stats to store._debugStats every 30 frames (~0.5s).
+ * DebugOverlay reads these for perf automation.
+ */
+function DebugStatsTick() {
+  const { gl } = useThree();
+  const frameCount = useRef(0);
+
+  useFrame(() => {
+    frameCount.current++;
+    if (frameCount.current % 30 !== 0) return;
+    const stats = useGameStore.getState()._debugStats;
+    stats.drawCalls = gl.info.render.calls;
+    stats.triangles = gl.info.render.triangles;
+  });
+
+  return null;
+}
+
+/**
  * Experience component - Main 3D scene container
  */
 const Experience = () => {
@@ -105,6 +131,8 @@ const Experience = () => {
   const riftEnemies = useGameStore((state) => state.enemies);
   const rifts = useGameStore((state) => state.rifts);
   const isNight = useGameStore((state) => state.worldTime.isNight);
+  const settlementNPCs = useGameStore((state) => state.settlement.npcs);
+  const wildlife = useGameStore((state) => state.wildlife);
 
   // Initialize chunk system
   const {
@@ -157,8 +185,17 @@ const Experience = () => {
       {/* DayNightCycle manages scene.background and fog dynamically */}
       <DayNightCycle />
 
+      {/* Debug stats tick (renderer info for DebugOverlay) */}
+      <DebugStatsTick />
+
       {/* Survival systems tick (hunger drain, starvation damage, shelter detection) */}
       <SurvivalTick chunkManager={isReady ? chunkManager : null} />
+
+      {/* Settlement tick — campfire detection, attractiveness, immigration, NPC needs */}
+      <SettlementTick chunkManager={isReady ? chunkManager : null} />
+
+      {/* Wildlife tick — ambient animal spawning/despawning */}
+      <WildlifeTick chunkManager={isReady ? chunkManager : null} />
 
       {/* Rift controller — manages spawning logic */}
       <RiftController chunkManager={isReady ? chunkManager : null} />
@@ -191,6 +228,16 @@ const Experience = () => {
             name={monster.name}
             monsterData={monster}
           />
+        ))}
+
+        {/* Settlement NPCs */}
+        {settlementNPCs.map((npc) => (
+          <SettlerNPC key={npc.id} npcData={npc} />
+        ))}
+
+        {/* Ambient wildlife */}
+        {wildlife.map((animal) => (
+          <WildlifeAnimal key={animal.id} animalData={animal} chunkManager={chunkManager} />
         ))}
 
         <Suspense fallback={null}>
@@ -231,6 +278,13 @@ const Experience = () => {
         />
       ))}
 
+      {/* Path visualization dots for click-to-move navigation */}
+      <PathVisualization />
+
+      {/* Zone designation overlays + interaction (Phase 2.2) */}
+      <ZoneOverlay chunkManager={isReady ? chunkManager : null} />
+      <ZoneInteraction chunkManager={isReady ? chunkManager : null} />
+
       {/* Target markers for tap-to-move/attack feedback */}
       {targetMarkers.map((marker) => (
         <TargetMarker
@@ -249,6 +303,7 @@ const Experience = () => {
           key={dmg.id}
           position={dmg.position}
           damage={dmg.damage}
+          color={dmg.color}
           id={dmg.id}
           onComplete={removeDamageNumber}
         />

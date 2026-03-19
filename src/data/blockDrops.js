@@ -44,9 +44,12 @@ export const BLOCK_DROPS = {
     requiresTier: TOOL_TIER.IRON,
   },
   [BlockTypes.CLAY]: { material: 'clay', min: 1, max: 2 },
-  [BlockTypes.SNOW]: { material: null, min: 0, max: 0 },
-  [BlockTypes.ICE]: { material: null, min: 0, max: 0 },
+  [BlockTypes.SNOW]: { material: 'snow', min: 1, max: 1 },
+  [BlockTypes.ICE]: { material: 'ice', min: 1, max: 1 },
   [BlockTypes.BERRY_BUSH]: { material: 'berry', min: 1, max: 3 },
+  [BlockTypes.CAMPFIRE]: { material: 'wood', min: 2, max: 2 },
+  [BlockTypes.CORRUPTED_STONE]: { material: 'stone', min: 1, max: 1 },
+  [BlockTypes.CORRUPTED_GRASS]: { material: 'dirt', min: 1, max: 1 },
 };
 
 /**

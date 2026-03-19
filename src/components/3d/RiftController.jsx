@@ -52,8 +52,23 @@ const RiftController = ({ chunkManager }) => {
     const state = useGameStore.getState();
     if (state.gameState !== 'playing') return;
 
+    // Repopulate rift visuals if store was cleared (e.g., HMR, state reset)
+    if (state.rifts.length === 0 && rm.rifts.length > 0) {
+      state.setRifts(rm.rifts.map((r) => ({ id: r.id, x: r.x, z: r.z })));
+    }
+
     // Throttle to every 2 seconds
     const now = state.worldTime.elapsed;
+
+    // Handle time going backward (e.g., after loading an earlier save)
+    if (now < lastUpdateRef.current) {
+      lastUpdateRef.current = 0;
+      // Reset rift spawn timers so they don't stall
+      for (const rift of rm.rifts) {
+        rift.lastSpawnTime = 0;
+      }
+    }
+
     if (now - lastUpdateRef.current < 2) return;
     lastUpdateRef.current = now;
 

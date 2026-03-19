@@ -13,6 +13,7 @@ import {
   grantLevelUpPoints,
   calculateDerivedStats,
 } from '../modules/character/CharacterSystem';
+import { DAY_LENGTH_SECONDS, ZONE_MAX_COUNT } from '../data/tuning';
 import { ActionHistory, createActionMiddleware } from '../systems/state/ActionSystem';
 
 // Action history for replay/rollback/debugging
@@ -51,6 +52,8 @@ const useGameStore = create((rawSet, get, api) => {
     position: [0, 12, 0], // x, y, z in 3D space - spawn above terrain
     velocity: [0, 0, 0],
     targetPosition: null, // For tap-to-move
+    navPath: null,        // Array of [x,y,z] waypoints or null
+    navPathIndex: 0,      // Current waypoint being pursued
     health: 100,
     maxHealth: 100,
     mana: 100,
@@ -148,17 +151,17 @@ const useGameStore = create((rawSet, get, api) => {
   blockPlacementMode: false, // false = mining, true = placing
   buildMode: false, // Toggle build mode (Tab key) — gates all block interaction
 
-  // World time state (Phase 1)
+  // World time state (Phase 1) — start at 05:00 (dawn)
   worldTime: {
-    elapsed: 0,          // Total seconds elapsed
-    timeOfDay: 0,        // 0.0–1.0 (0=midnight, 0.5=noon)
+    elapsed: (5 / 24) * DAY_LENGTH_SECONDS, // Total seconds elapsed — 05:00
+    timeOfDay: 5 / 24,   // 0.0–1.0 (0=midnight, 0.5=noon) — start at 05:00
     dayNumber: 1,
-    isNight: true,
-    period: 'night',     // 'night'|'dawn'|'day'|'dusk'
-    hour: 0,
+    isNight: false,
+    period: 'dawn',      // 'night'|'dawn'|'day'|'dusk'
+    hour: 5,
     minute: 0,
     timeScale: 1,        // Debug: 0=paused, 1=normal, 2/5/10=fast
-    paused: false,
+    paused: true,         // Starts paused until player presses Start Game
   },
 
   // Hunger state (Phase 1)
@@ -185,6 +188,23 @@ const useGameStore = create((rawSet, get, api) => {
     shownHints: [],      // IDs of hints already shown
   },
 
+  // Settlement state (Phase 2)
+  settlement: {
+    npcs: [],              // Settler NPC entities
+    attractiveness: 0,
+    wallCount: 0,          // Structural blocks counted (for housing cap)
+    settlementCenter: null, // [x,y,z] of first campfire
+    lastImmigrationCheck: 0,
+    lastAttractivenessCalc: 0,
+    lastNeedsUpdate: 0,
+  },
+
+  // Zone designation state (Phase 2.2)
+  zones: [],
+  zoneMode: false,
+  zoneTypeToPlace: null,
+  zoneDragStart: null,    // [worldX, worldZ] of first corner
+
   // Actions
   setGameState: (state) => set({ gameState: state }),
 
@@ -201,6 +221,21 @@ const useGameStore = create((rawSet, get, api) => {
   setPlayerTarget: (targetPosition) =>
     set((state) => ({
       player: { ...state.player, targetPosition },
+    })),
+
+  setPlayerNavPath: (path, finalTarget) =>
+    set((state) => ({
+      player: { ...state.player, navPath: path, navPathIndex: 0, targetPosition: finalTarget },
+    })),
+
+  clearNavPath: () =>
+    set((state) => ({
+      player: { ...state.player, navPath: null, navPathIndex: 0, targetPosition: null },
+    })),
+
+  advanceNavPathIndex: () =>
+    set((state) => ({
+      player: { ...state.player, navPathIndex: state.player.navPathIndex + 1 },
     })),
 
   addTargetMarker: (marker) =>
@@ -257,11 +292,15 @@ const useGameStore = create((rawSet, get, api) => {
     }),
 
   // Eat a raw material (berry, meat, etc.) directly from inventory
-  eatMaterial: (materialType, restoreAmount) =>
+  // restoreAmount = hunger restored, healAmount = health restored (optional)
+  eatMaterial: (materialType, restoreAmount, healAmount) =>
     set((state) => {
       const current = state.inventory.materials[materialType] || 0;
       if (current <= 0) return state;
       const newHunger = Math.min(state.hunger.max, state.hunger.current + restoreAmount);
+      const newHealth = healAmount
+        ? Math.min(state.player.maxHealth, state.player.health + healAmount)
+        : state.player.health;
       return {
         inventory: {
           ...state.inventory,
@@ -269,6 +308,10 @@ const useGameStore = create((rawSet, get, api) => {
             ...state.inventory.materials,
             [materialType]: current - 1,
           },
+        },
+        player: {
+          ...state.player,
+          health: newHealth,
         },
         hunger: {
           ...state.hunger,
@@ -300,6 +343,12 @@ const useGameStore = create((rawSet, get, api) => {
   _chunkManager: null,
   setChunkManager: (cm) => set({ _chunkManager: cm }),
 
+  // Debug stats (mutable, written by Canvas-internal components, read by DebugOverlay)
+  _debugStats: { drawCalls: 0, triangles: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },
+
+  // Live enemy positions (mutable Map, written by Enemy.jsx each frame, read by spell auto-aim)
+  _enemyPositions: new Map(),
+
   // Rift actions (Phase 1)
   setRifts: (rifts) => set({ rifts }),
 
@@ -321,6 +370,17 @@ const useGameStore = create((rawSet, get, api) => {
   removeDamageNumber: (id) =>
     set((state) => ({
       damageNumbers: state.damageNumbers.filter((d) => d.id !== id),
+    })),
+
+  // Pickup text (HTML overlay, always readable)
+  pickupTexts: [],
+  addPickupText: (text, color = '#ffffff') =>
+    set((state) => ({
+      pickupTexts: [...state.pickupTexts, { id: nextEntityId(), text, color, createdAt: Date.now() }],
+    })),
+  removePickupText: (id) =>
+    set((state) => ({
+      pickupTexts: state.pickupTexts.filter((p) => p.id !== id),
     })),
 
   addLootDrop: (loot) =>
@@ -1193,6 +1253,8 @@ const useGameStore = create((rawSet, get, api) => {
           position: [spawnX, 20, spawnZ],
           velocity: [0, 0, 0],
           targetPosition: null,
+          navPath: null,
+          navPathIndex: 0,
           isInvincible: true,
           invincibilityTimer: 5.0, // 5 seconds of spawn protection
           isDodging: false,
@@ -1213,6 +1275,73 @@ const useGameStore = create((rawSet, get, api) => {
       };
     }),
 
+  // Settlement actions (Phase 2)
+  setSettlementCenter: (center) =>
+    set((state) => ({
+      settlement: { ...state.settlement, settlementCenter: center },
+    })),
+
+  addSettlementNPC: (npc) =>
+    set((state) => ({
+      settlement: { ...state.settlement, npcs: [...state.settlement.npcs, npc] },
+    })),
+
+  updateSettlementNPC: (id, updates) =>
+    set((state) => ({
+      settlement: {
+        ...state.settlement,
+        npcs: state.settlement.npcs.map((npc) =>
+          npc.id === id ? { ...npc, ...updates } : npc
+        ),
+      },
+    })),
+
+  // Batch update multiple NPCs in a single store write (reduces re-renders)
+  // updatesMap: { [npcId]: { ...updates } }
+  batchUpdateSettlementNPCs: (updatesMap) =>
+    set((state) => ({
+      settlement: {
+        ...state.settlement,
+        npcs: state.settlement.npcs.map((npc) =>
+          updatesMap[npc.id] ? { ...npc, ...updatesMap[npc.id] } : npc
+        ),
+      },
+    })),
+
+  removeSettlementNPC: (id) =>
+    set((state) => ({
+      settlement: {
+        ...state.settlement,
+        npcs: state.settlement.npcs.filter((npc) => npc.id !== id),
+      },
+    })),
+
+  updateSettlementAttractiveness: (score) =>
+    set((state) => ({
+      settlement: { ...state.settlement, attractiveness: score },
+    })),
+
+  updateSettlementTimestamps: (updates) =>
+    set((state) => ({
+      settlement: { ...state.settlement, ...updates },
+    })),
+
+  // Zone designation actions (Phase 2.2)
+  addZone: (zone) => set((state) => {
+    if (state.zones.length >= ZONE_MAX_COUNT) return state;
+    return { zones: [...state.zones, zone] };
+  }),
+  removeZone: (zoneId) => set((state) => ({
+    zones: state.zones.filter(z => z.id !== zoneId),
+  })),
+  updateZone: (zoneId, updates) => set((state) => ({
+    zones: state.zones.map(z => z.id === zoneId ? { ...z, ...updates } : z),
+  })),
+  setZoneMode: (active, zoneType = null) =>
+    set({ zoneMode: active, zoneTypeToPlace: zoneType, zoneDragStart: null }),
+  setZoneDragStart: (pos) => set({ zoneDragStart: pos }),
+  clearZoneDrag: () => set({ zoneDragStart: null }),
+
   reset: () =>
     set({
       gameState: 'intro',
@@ -1228,6 +1357,8 @@ const useGameStore = create((rawSet, get, api) => {
         position: [0, 12, 0],
         velocity: [0, 0, 0],
         targetPosition: null,
+        navPath: null,
+        navPathIndex: 0,
         health: 100,
         maxHealth: 100,
         mana: 100,
@@ -1259,13 +1390,18 @@ const useGameStore = create((rawSet, get, api) => {
       xpOrbs: [],
       particleEffects: [],
       worldTime: {
-        elapsed: 0, timeOfDay: 0, dayNumber: 1, isNight: true,
-        period: 'night', hour: 0, minute: 0, timeScale: 1, paused: false,
+        elapsed: (5 / 24) * DAY_LENGTH_SECONDS, timeOfDay: 5 / 24, dayNumber: 1, isNight: false,
+        period: 'dawn', hour: 5, minute: 0, timeScale: 1, paused: true,
       },
       hunger: { current: 100, max: 100, isStarving: false, status: 'well_fed' },
       shelter: { isFullShelter: false, isPartialShelter: false, isExposed: true, tier: 'exposed' },
       tutorialHints: { shownHints: [] },
+      settlement: {
+        npcs: [], attractiveness: 0, wallCount: 0, settlementCenter: null,
+        lastImmigrationCheck: 0, lastAttractivenessCalc: 0, lastNeedsUpdate: 0,
+      },
       buildMode: false,
+      zones: [], zoneMode: false, zoneTypeToPlace: null, zoneDragStart: null,
     }),
 
   // Character system actions

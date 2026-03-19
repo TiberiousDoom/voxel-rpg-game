@@ -2,7 +2,7 @@
  * npcNames.js — Name pools for NPC identity generation
  *
  * ~100 first names and ~100 surnames for settler NPC generation.
- * Names are fantasy-flavored but grounded (no extreme high-fantasy).
+ * Names are fantasy-flavored but grounded — Norse/Celtic/medieval mix.
  */
 
 export const FIRST_NAMES = [
@@ -13,6 +13,8 @@ export const FIRST_NAMES = [
   'Ansel', 'Beric', 'Corwin', 'Daven', 'Elric', 'Farren', 'Galen', 'Hale',
   'Jasper', 'Kellan', 'Loren', 'Moss', 'Nolan', 'Orrin', 'Pike', 'Rowan',
   'Silas', 'Thane', 'Vale', 'Ward',
+  'Bjorn', 'Eirik', 'Gunnar', 'Harald', 'Ragnar', 'Torsten', 'Magnus',
+  'Sven', 'Ivar', 'Thorin', 'Vidar', 'Halvar', 'Grim', 'Cormac', 'Declan',
   // Female-coded
   'Ada', 'Brynn', 'Calla', 'Denna', 'Elara', 'Freya', 'Gwyn', 'Hana',
   'Iris', 'Jessa', 'Kira', 'Lira', 'Maren', 'Nessa', 'Opal', 'Petra',
@@ -20,6 +22,7 @@ export const FIRST_NAMES = [
   'Zara', 'Anya', 'Brin', 'Cora', 'Darla', 'Elin', 'Fern', 'Gemma',
   'Hazel', 'Ivy', 'Jolene', 'Kenna', 'Luna', 'Maple', 'Nell', 'Olive',
   'Poppy', 'Roslin', 'Sable', 'Tamsin', 'Vesper', 'Wynne',
+  'Sigrid', 'Astrid', 'Ingrid', 'Runa', 'Solveig', 'Saga', 'Thora', 'Niamh',
 ];
 
 export const SURNAMES = [
@@ -41,6 +44,9 @@ export const SURNAMES = [
   'Greystone', 'Hartwell', 'Ironfist', 'Longstride', 'Marshwood',
   'Nighthollow', 'Oakheart', 'Proudfoot', 'Quicksilver', 'Roughstone',
   'Silverleaf', 'Tallowmere', 'Warmstone', 'Windmere',
+  // Norse/fantasy-flavored
+  'Ironforge', 'Woodheart', 'Ashborn', 'Frostwind', 'Brightaxe',
+  'Wolfsbane', 'Oakshield', 'Stormborn', 'Ravencrest', 'Ironbark',
   // Short/punchy
   'Ash', 'Bolt', 'Clay', 'Dirk', 'Fell', 'Gale', 'Hart', 'Lark',
   'Reed', 'Rook', 'Stone', 'Vale', 'Wren',

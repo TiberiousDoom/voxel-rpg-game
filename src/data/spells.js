@@ -369,8 +369,52 @@ export const executeSpell = (spell, player, store) => {
   }
 };
 
+/**
+ * Calculate pitch angle to aim at the nearest enemy in the player's facing direction.
+ * Returns 0 if no suitable target found (shoots horizontal as fallback).
+ */
+function calcAutoAimPitch(player, store) {
+  const state = store.getState ? store.getState() : store;
+  const enemies = state.enemies;
+  if (!enemies || enemies.length === 0) return 0;
+
+  // Use live physics positions (updated each frame by Enemy.jsx)
+  const livePositions = state._enemyPositions;
+
+  const yaw = player.facingAngle;
+  const fwdX = Math.sin(yaw);
+  const fwdZ = Math.cos(yaw);
+  const castY = player.position[1] + 1.5; // spell origin height
+
+  let bestDist = Infinity;
+  let bestPitch = 0;
+
+  for (const enemy of enemies) {
+    // Prefer live physics position, fall back to store position
+    const pos = (livePositions && livePositions.get(enemy.id)) || enemy.position;
+    if (!pos) continue;
+    const dx = pos[0] - player.position[0];
+    const dz = pos[2] - player.position[2];
+    const horizDist = Math.sqrt(dx * dx + dz * dz);
+    if (horizDist < 1 || horizDist > 60) continue;
+
+    // Check if enemy is roughly in facing direction (within ~60° cone)
+    const dot = (dx * fwdX + dz * fwdZ) / horizDist;
+    if (dot < 0.5) continue;
+
+    if (horizDist < bestDist) {
+      bestDist = horizDist;
+      // Aim at enemy center (position + ~1 unit up for body center)
+      const dy = (pos[1] + 1) - castY;
+      bestPitch = Math.atan2(dy, horizDist);
+    }
+  }
+
+  return bestPitch;
+}
+
 const executeProjectileSpell = (spell, player, store) => {
-  const camera = store.camera;
+  const camera = store.camera || (store.getState ? store.getState().camera : null);
   let direction;
 
   if (player.aimTarget) {
@@ -381,8 +425,8 @@ const executeProjectileSpell = (spell, player, store) => {
     const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
     direction = [dx / len, dy / len, dz / len];
   } else {
-    // Fall back to facing angle + camera pitch
-    const pitch = camera?.firstPerson ? (camera.pitch || 0) : 0;
+    // Fall back to facing angle + auto-aim pitch
+    const pitch = camera?.firstPerson ? (camera.pitch || 0) : calcAutoAimPitch(player, store);
     const yaw = player.facingAngle;
     direction = [
       Math.sin(yaw) * Math.cos(pitch),
@@ -494,8 +538,8 @@ const executeBuffSpell = (spell, player, store) => {
 
 const executeBeamSpell = (spell, player, store) => {
   // Create beam projectile that travels far
-  const camera = store.camera;
-  const pitch = camera?.firstPerson ? (camera.pitch || 0) : 0;
+  const camera = store.camera || (store.getState ? store.getState().camera : null);
+  const pitch = camera?.firstPerson ? (camera.pitch || 0) : calcAutoAimPitch(player, store);
   const yaw = player.facingAngle;
   const direction = [
     Math.sin(yaw) * Math.cos(pitch),

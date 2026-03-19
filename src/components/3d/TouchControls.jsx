@@ -3,6 +3,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { getSpellById, executeSpell } from '../../data/spells';
+import { findPath } from '../../utils/playerPathfinder';
 
 /**
  * Component that handles touch/click controls for movement and attacking
@@ -127,26 +128,40 @@ const TouchControls = () => {
           return;
         }
 
-        // Block movement clicks when build mode is active (but attacks above still work)
+        // Block movement clicks when build mode or zone mode is active (but attacks above still work)
         if (useGameStore.getState().buildMode) return;
+        if (useGameStore.getState().zoneMode) return;
 
         if (groundHit) {
           // Try to cast spell at the clicked ground location
           const didCast = tryCastSpellAt(groundHit.point);
 
           if (!didCast) {
-            // No spell available or on cooldown — move to location instead
-            useGameStore.getState().setPlayerTarget([
-              groundHit.point.x,
-              groundHit.point.y,
-              groundHit.point.z,
-            ]);
+            // No spell available or on cooldown — move to location with pathfinding
+            const goalPos = [groundHit.point.x, groundHit.point.y, groundHit.point.z];
+            const clickStore = useGameStore.getState();
+            const playerPos = clickStore.player.position;
+            const cm = clickStore._chunkManager;
+
+            if (cm) {
+              const path = findPath(cm, playerPos, goalPos);
+              if (path && path.length > 0) {
+                clickStore.setPlayerNavPath(path, goalPos);
+              } else {
+                // No path found — fallback to direct move
+                clickStore.setPlayerTarget(goalPos);
+              }
+            } else {
+              // ChunkManager not ready — fallback to direct move
+              clickStore.setPlayerTarget(goalPos);
+            }
           }
 
-          // Add marker (red for attack, green for move)
+          // Add marker (orange for spell, green for move)
+          const markerColor = didCast ? '#ff6600' : '#00ff00';
           useGameStore.getState().addTargetMarker({
             position: [groundHit.point.x, groundHit.point.y, groundHit.point.z],
-            color: didCast ? '#ff6600' : '#00ff00',
+            color: markerColor,
           });
 
           // Remove marker after timeout

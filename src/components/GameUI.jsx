@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer, Pickaxe } from 'lucide-react';
+import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer, Pickaxe, MapPin } from 'lucide-react';
 import useGameStore from '../stores/useGameStore';
 import { getTotalStats } from '../utils/equipmentStats';
 import StatBarWithTooltip from './ui/StatBarWithTooltip';
@@ -18,6 +18,7 @@ const GameUI = () => {
   const shelter = useGameStore((state) => state.shelter);
   const worldTime = useGameStore((state) => state.worldTime);
   const buildMode = useGameStore((state) => state.buildMode);
+  const zoneMode = useGameStore((state) => state.zoneMode);
   const toggleBuildMode = useGameStore((state) => state.toggleBuildMode);
   const [isMobile, setIsMobile] = useState(false);
   const statBreakdowns = useStatBreakdown();
@@ -90,7 +91,11 @@ const GameUI = () => {
             </div>
           )}
           <button
-            onClick={() => useGameStore.getState().setGameState('playing')}
+            onClick={() => {
+              const store = useGameStore.getState();
+              store.setGameState('playing');
+              store.updateWorldTime({ paused: false });
+            }}
             style={{
               padding: isMobile ? '14px 28px' : '1rem 2rem',
               fontSize: isMobile ? '1.2rem' : '1.5rem',
@@ -150,6 +155,31 @@ const GameUI = () => {
           }}
         >
           BUILD MODE
+        </div>
+      )}
+
+      {/* Zone mode badge (top-center) */}
+      {zoneMode && (
+        <div
+          style={{
+            position: 'absolute',
+            top: isMobile ? '10px' : '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255, 140, 0, 0.85)',
+            color: '#fff',
+            padding: '6px 18px',
+            borderRadius: '6px',
+            fontSize: isMobile ? '0.85rem' : '1rem',
+            fontWeight: 'bold',
+            letterSpacing: '2px',
+            border: '2px solid #ff8c00',
+            textTransform: 'uppercase',
+            pointerEvents: 'none',
+            zIndex: 110,
+          }}
+        >
+          ZONE MODE
         </div>
       )}
 
@@ -408,15 +438,16 @@ const GameUI = () => {
         </div>
       )}
 
-      {/* Bottom right - Quick access */}
+      {/* Bottom right - Quick access (shift up when block hotbar is visible) */}
       <div
         style={{
           position: 'absolute',
-          bottom: isMobile ? '10px' : '20px',
+          bottom: (buildMode || zoneMode) ? (isMobile ? '100px' : '110px') : (isMobile ? '10px' : '20px'),
           right: isMobile ? '10px' : '20px',
           display: 'flex',
           gap: isMobile ? '8px' : '10px',
           pointerEvents: 'all',
+          transition: 'bottom 0.2s ease',
         }}
       >
         <div
@@ -481,6 +512,35 @@ const GameUI = () => {
         >
           <Pickaxe size={isMobile ? 28 : 24} style={{ color: buildMode ? '#fff' : '#ffa500' }} />
           {!isMobile && <span style={{ fontSize: '0.7rem' }}>Build [Tab]</span>}
+        </div>
+        <div
+          onClick={() => {
+            const store = useGameStore.getState();
+            if (store.zoneMode) {
+              store.setZoneMode(false);
+            } else {
+              if (store.buildMode) store.setBuildMode(false);
+              store.setZoneMode(true, 'MINING');
+            }
+          }}
+          style={{
+            background: zoneMode ? 'rgba(255, 140, 0, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+            padding: isMobile ? '10px' : '12px',
+            borderRadius: '10px',
+            color: 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '5px',
+            border: zoneMode ? '2px solid #ff8c00' : '2px solid #4a5568',
+            minWidth: isMobile ? '56px' : 'auto',
+            minHeight: isMobile ? '56px' : 'auto',
+            cursor: 'pointer',
+            touchAction: 'manipulation',
+          }}
+        >
+          <MapPin size={isMobile ? 28 : 24} style={{ color: zoneMode ? '#fff' : '#ff8c00' }} />
+          {!isMobile && <span style={{ fontSize: '0.7rem' }}>Zones [Z]</span>}
         </div>
       </div>
 

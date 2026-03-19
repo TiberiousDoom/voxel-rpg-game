@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import useGameStore from '../stores/useGameStore';
 
 // Key mapping for game controls
@@ -23,6 +23,7 @@ const KEYMAP = {
   KeyB: 'base',
   KeyM: 'map',
   Escape: 'menu',
+  KeyE: 'use',
   KeyH: 'potion',
   AltLeft: 'block',
   AltRight: 'block',
@@ -31,14 +32,20 @@ const KEYMAP = {
 // Keys that fire a toggle action on keydown (not held state)
 const TOGGLE_KEYS = {
   Tab: 'buildMode',
+  KeyZ: 'zoneMode',
 };
 
+// Shared mutable key state — updated synchronously in event handlers,
+// read directly in useFrame (no React render cycle delay).
+const _keys = {};
+
 /**
- * Hook for handling keyboard input in 3D game
- * @returns {Object} Object with boolean values for each action
+ * Hook for handling keyboard input in 3D game.
+ * Returns a mutable ref whose .current is updated synchronously on key events.
+ * Read it inside useFrame for zero-latency input.
  */
 export function useKeyboard() {
-  const [keys, setKeys] = useState({});
+  const keysRef = useRef(_keys);
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -47,7 +54,18 @@ export function useKeyboard() {
       if (toggle) {
         e.preventDefault();
         if (toggle === 'buildMode') {
-          useGameStore.getState().toggleBuildMode();
+          const store = useGameStore.getState();
+          if (store.zoneMode) store.setZoneMode(false);
+          store.toggleBuildMode();
+        }
+        if (toggle === 'zoneMode') {
+          const store = useGameStore.getState();
+          if (store.zoneMode) {
+            store.setZoneMode(false);
+          } else {
+            if (store.buildMode) store.setBuildMode(false);
+            store.setZoneMode(true, 'MINING');
+          }
         }
         return;
       }
@@ -55,7 +73,7 @@ export function useKeyboard() {
       const action = KEYMAP[e.code];
       if (action) {
         e.preventDefault();
-        setKeys((prev) => ({ ...prev, [action]: true }));
+        _keys[action] = true;
       }
     };
 
@@ -63,13 +81,15 @@ export function useKeyboard() {
       const action = KEYMAP[e.code];
       if (action) {
         e.preventDefault();
-        setKeys((prev) => ({ ...prev, [action]: false }));
+        _keys[action] = false;
       }
     };
 
     // Reset all keys when window loses focus (prevents stuck keys from Alt+Tab etc.)
     const onBlur = () => {
-      setKeys({});
+      for (const key in _keys) {
+        _keys[key] = false;
+      }
     };
 
     // Add event listeners
@@ -85,22 +105,5 @@ export function useKeyboard() {
     };
   }, []);
 
-  return keys;
-}
-
-/**
- * Hook for getting movement direction from keyboard input
- * @returns {[number, number, number]} [x, y, z] direction vector
- */
-export function useMovementKeys() {
-  const keys = useKeyboard();
-
-  const direction = [0, 0, 0];
-
-  if (keys.forward) direction[2] -= 1;
-  if (keys.backward) direction[2] += 1;
-  if (keys.left) direction[0] -= 1;
-  if (keys.right) direction[0] += 1;
-
-  return direction;
+  return keysRef.current;
 }

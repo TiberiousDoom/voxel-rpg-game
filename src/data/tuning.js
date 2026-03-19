@@ -101,6 +101,11 @@ export const RIFT_POP_CAP_NIGHT = 8;           // Max monsters per rift (nightti
 export const RIFT_ACTIVE_RANGE = 80;           // Only tick rifts within physics collider range (~3 chunks)
 export const RIFT_DORMANT_DURATION = 300;      // Seconds of dormancy when blocks destroyed
 
+// Rift terrain corruption radii (in blocks, 1 block = 2 world units)
+export const CORRUPTION_RADIUS_FULL = 16;      // Z1: 100% → corrupted stone
+export const CORRUPTION_RADIUS_HEAVY = 28;     // Z2: 80% corrupted stone, 20% corrupted grass
+export const CORRUPTION_RADIUS_LIGHT = 32;     // Z3: 50% → corrupted grass (starts at Z2 boundary)
+
 export const RIFT_NOCTURNAL_DAMAGE_MULT = 1.5; // Night monster damage multiplier
 export const RIFT_NOCTURNAL_SPEED_MULT = 1.25; // Night monster speed multiplier
 
@@ -116,13 +121,18 @@ export const DEATH_RESPAWN_HUNGER_PERCENT = 0.5;
 export const DEATH_RESPAWN_STAMINA_PERCENT = 0.5;
 export const DEATH_TOOL_DURABILITY_LOSS = 0.25;   // 25% durability lost on death
 
-// ─── Food ────────────────────────────────────────────────────
+// ─── Food (hunger restore) ───────────────────────────────────
 export const FOOD_BERRY_RESTORE = 10;
 export const FOOD_APPLE_RESTORE = 15;
 export const FOOD_RAW_MEAT_RESTORE = 15;
 export const FOOD_COOKED_MEAT_RESTORE = 35;
 export const FOOD_BREAD_RESTORE = 25;
 export const FOOD_MUSHROOM_STEW_RESTORE = 30;
+
+// ─── Food (health restore) ──────────────────────────────────
+export const FOOD_BERRY_HEAL = 5;
+export const FOOD_RAW_MEAT_HEAL = 8;
+export const FOOD_COOKED_MEAT_HEAL = 20;
 
 // Food source density (per chunk in appropriate biomes)
 export const BERRY_BUSHES_PER_CHUNK = 1.5;     // Average 1-2 per chunk
@@ -136,9 +146,9 @@ export const JUMP_GROUNDED_THRESHOLD = 0.1;  // Max |velY| to count as grounded 
 export const JUMP_COOLDOWN_MS = 500;         // Min ms between jumps (prevents hold-to-spam)
 
 // ─── Mobile Controls ─────────────────────────────────────────
-export const AUTO_JUMP_COOLDOWN_MS = 300;
-export const AUTO_JUMP_DETECT_RANGE = 1.5;     // World units ahead of player
-export const AUTO_JUMP_IMPULSE = 8;            // Same as manual jump
+export const AUTO_JUMP_COOLDOWN_MS = 250;
+export const AUTO_JUMP_DETECT_RANGE = 2.5;     // World units ahead of player (~1.25 blocks)
+export const AUTO_JUMP_IMPULSE = 10;           // Slightly less than manual jump (12)
 export const AUTO_JUMP_MIN_SPEED = 0.5;        // Min XZ velocity to trigger
 
 export const CAMERA_MIN_DISTANCE = 4;
@@ -167,21 +177,68 @@ export const ATTRACTIVENESS_RIFT_PENALTY = -15;            // Per active rift wi
 export const ATTRACTIVENESS_HAPPINESS_MIN_MULT = 0.5;      // Multiplier at 0% average happiness
 export const ATTRACTIVENESS_HAPPINESS_MAX_MULT = 1.5;      // Multiplier at 100% average happiness
 export const ATTRACTIVENESS_RECALC_INTERVAL = 5;           // Seconds between full recalculations. Range: 1–30.
+// Simplified attractiveness aliases (used by some callers)
+export const ATTRACT_CAMPFIRE_SCORE = ATTRACTIVENESS_CAMPFIRE_BONUS;
+export const ATTRACT_WALL_SCORE = 1;                // Points per structural block (capped)
+export const ATTRACT_WALL_CAP = 100;                // Max structural blocks counted
+export const ATTRACT_FOOD_SCORE = 2;                // Points per food item
+export const ATTRACT_FOOD_CAP = 20;                 // Max food items counted
+export const ATTRACT_RIFT_PENALTY = ATTRACTIVENESS_RIFT_PENALTY;
+export const ATTRACT_SCAN_RADIUS = 48;              // World units to scan
+export const ATTRACT_RECALC_INTERVAL = ATTRACTIVENESS_RECALC_INTERVAL;
+export const ATTRACT_HOUSING_SCORE = ATTRACTIVENESS_PER_HOUSING_SLOT;
+export const ATTRACT_HAPPINESS_MIN_MULT = ATTRACTIVENESS_HAPPINESS_MIN_MULT;
+export const ATTRACT_HAPPINESS_MAX_MULT = ATTRACTIVENESS_HAPPINESS_MAX_MULT;
 
 // ─── Immigration ────────────────────────────────────────────
 // Controls how and when NPCs arrive at the settlement.
-export const IMMIGRATION_CHECK_INTERVAL = 120;             // Seconds between immigration rolls. Range: 30–300.
+export const IMMIGRATION_CHECK_INTERVAL = 30;              // Seconds between immigration checks (low for testing)
 export const IMMIGRATION_MIN_ATTRACTIVENESS = 25;          // Minimum score before any NPC will consider coming
 export const IMMIGRATION_MAX_CHANCE = 0.6;                 // Max probability per check. Range: 0.1–0.9.
-export const IMMIGRATION_SPAWN_MIN_DISTANCE = 80;          // World units — closest spawn from settlement center
-export const IMMIGRATION_SPAWN_MAX_DISTANCE = 150;         // World units — farthest spawn from settlement center
+export const IMMIGRATION_SPAWN_MIN_DISTANCE = 64;          // World units — closest spawn from settlement center
+export const IMMIGRATION_SPAWN_MAX_DISTANCE = 96;          // World units — farthest spawn from settlement center
 export const IMMIGRATION_APPROACH_SPEED_MULT = 1.2;        // NPC walk speed multiplier while approaching
 export const IMMIGRATION_EVALUATION_TIME = 10;             // Seconds NPC spends evaluating before deciding. Range: 5–60.
 export const IMMIGRATION_HOUSING_WAIT_DAYS = 2;            // In-game days NPC waits for housing before leaving
+// Aliases used by some callers
+export const IMMIGRATION_THRESHOLD = 10;            // Min attractiveness to spawn first NPC (low for testing)
+export const IMMIGRATION_THRESHOLD_PER_NPC = 15;    // Additional threshold per existing NPC
+export const IMMIGRATION_SPAWN_MIN_DIST = IMMIGRATION_SPAWN_MIN_DISTANCE;
+export const IMMIGRATION_SPAWN_MAX_DIST = IMMIGRATION_SPAWN_MAX_DISTANCE;
+export const IMMIGRATION_MAX_NPCS = 5;              // Max settler NPCs (testing value, see NPC_MAX_POPULATION_PHASE_2)
 
 // ─── NPC Population ─────────────────────────────────────────
 export const NPC_FIRST_SETTLER_FREE = true;                // First NPC joins without housing (pioneer mechanic)
 export const NPC_MAX_POPULATION_PHASE_2 = 20;              // Hard population cap for Phase 2. Range: 10–30.
+
+// ─── NPC Needs ──────────────────────────────────────────────
+export const NPC_HUNGER_DECAY_RATE = 0.5;            // Per second (~2 min to critical)
+export const NPC_REST_DECAY_RATE = 0.35;             // Per second (~3 min to critical)
+export const NPC_HUNGER_CRITICAL = 15;              // Below: NPC eats
+export const NPC_REST_CRITICAL = 15;                // Below: NPC sleeps
+export const NPC_WALK_SPEED = 2.0;                  // World units/sec (wandering)
+export const NPC_APPROACH_SPEED = 3.0;              // World units/sec (approaching settlement)
+export const NPC_WANDER_RADIUS = 16;                // World units from center
+export const NPC_NEEDS_TICK_INTERVAL = 2;           // Seconds between needs updates
+
+// Social need
+export const NPC_SOCIAL_DECAY_RATE = 0.15;           // Per second
+export const NPC_SOCIAL_CRITICAL = 25;               // Below: NPC socializes
+export const NPC_SOCIAL_RESTORE = 20;                // Restored after socializing
+export const NPC_EATING_DURATION = 3;                // Seconds to eat (animation time)
+
+// NPC food sources: priority order (best first), material key → hunger restored
+export const NPC_FOOD_SOURCES = [
+  { material: 'meat', restore: 15 },
+  { material: 'berry', restore: 10 },
+];
+export const NPC_SOCIAL_DURATION = 15;               // Seconds to socialize
+
+// NPC evaluation & departure
+export const NPC_EVALUATION_DURATION = 8;            // Seconds to evaluate settlement
+export const NPC_LEAVE_HAPPINESS_THRESHOLD = 20;     // Below: unhappy
+export const NPC_LEAVE_WARNING_DAYS = 2;             // In-game days before warning
+export const NPC_LEAVE_DEPARTURE_DAYS = 3;           // In-game days before leaving
 
 // ─── Mining Zone ────────────────────────────────────────────
 export const MINING_TASK_REGEN_INTERVAL = 10;        // Seconds between task regeneration scans
@@ -199,6 +256,35 @@ export const MAX_FARMERS_PER_ZONE = 2;               // Max NPCs farming one zon
 // ─── Stockpile ──────────────────────────────────────────────
 export const STOCKPILE_STACK_LIMIT = 64;             // Max quantity per slot
 export const STOCKPILE_RESERVATION_TIMEOUT = 300;    // Seconds before a reservation auto-releases
+
+// ─── Zone Designation ────────────────────────────────────────
+export const ZONE_MAX_COUNT = 10;
+export const ZONE_MAX_SIDE_VOXELS = 32;     // Max voxels per side (64 world units)
+export const ZONE_MIN_SIDE_VOXELS = 2;      // Min voxels per side (4 world units)
+
+// ─── E Key Interact ─────────────────────────────────────────
+export const USE_KEY_RANGE = 6;                     // World units (3 blocks) for proximity search
+export const USE_KEY_COOLDOWN = 300;                // ms between uses
+
+// ─── Wildlife ───────────────────────────────────────────────
+export const WILDLIFE_MAX_POPULATION = 25;        // Max animals alive at once
+export const WILDLIFE_SPAWN_INTERVAL = 5;         // Seconds between spawn attempts
+export const WILDLIFE_SPAWN_RANGE_MIN = 30;       // Min distance from player to spawn
+export const WILDLIFE_SPAWN_RANGE_MAX = 60;       // Max distance from player to spawn
+export const WILDLIFE_DESPAWN_RANGE = 80;         // Distance at which animals despawn
+export const WILDLIFE_WANDER_RADIUS = 12;         // How far animals wander from spawn
+export const WILDLIFE_WANDER_INTERVAL_MIN = 3;    // Min seconds between wander moves
+export const WILDLIFE_WANDER_INTERVAL_MAX = 10;
+export const WILDLIFE_FLY_HEIGHT_MIN = 8;         // Min altitude for flying animals
+export const WILDLIFE_FLY_HEIGHT_MAX = 20;        // Max altitude for flying animals
+
+// ─── Click-to-Move Navigation ──────────────────────────────────
+export const NAV_MAX_ITERATIONS = 2000;       // A* iteration safety cap
+export const NAV_MAX_STEP_UP = 1;             // Max voxel climb per step
+export const NAV_MAX_STEP_DOWN = 3;           // Max voxel drop per step
+export const NAV_PLAYER_HEIGHT_VOXELS = 2;    // Air clearance needed
+export const NAV_WAYPOINT_ARRIVAL = 1.5;      // World units to count as "arrived at waypoint"
+export const NAV_STUCK_TIMEOUT = 3.0;         // Seconds before canceling a stuck path
 
 // ─── Debug ───────────────────────────────────────────────────
 export const DEBUG_TIME_SCALES = [1, 2, 5, 10, 0]; // 0 = paused

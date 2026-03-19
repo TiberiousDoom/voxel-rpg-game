@@ -7,7 +7,7 @@ import { useKeyboard } from '../../hooks/useKeyboard';
 import { getTotalStats } from '../../utils/equipmentStats';
 import { SPELLS, executeSpell } from '../../data/spells';
 import { isTouchDevice } from '../../utils/deviceDetection';
-import { AUTO_JUMP_COOLDOWN_MS, AUTO_JUMP_DETECT_RANGE, AUTO_JUMP_IMPULSE, AUTO_JUMP_MIN_SPEED, JUMP_IMPULSE, JUMP_STAMINA_COST, JUMP_GROUNDED_THRESHOLD, JUMP_COOLDOWN_MS } from '../../data/tuning';
+import { AUTO_JUMP_COOLDOWN_MS, AUTO_JUMP_DETECT_RANGE, AUTO_JUMP_IMPULSE, AUTO_JUMP_MIN_SPEED, JUMP_IMPULSE, JUMP_STAMINA_COST, JUMP_GROUNDED_THRESHOLD, JUMP_COOLDOWN_MS, NAV_WAYPOINT_ARRIVAL, NAV_STUCK_TIMEOUT } from '../../data/tuning';
 import { isSolid as isBlockSolid } from '../../systems/chunks/blockTypes';
 
 const Player = () => {
@@ -19,10 +19,6 @@ const Player = () => {
   const equipment = useGameStore((state) => state.equipment);
   const cameraState = useGameStore((state) => state.camera);
   const updatePlayer = useGameStore((state) => state.updatePlayer);
-  const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
-  const consumeStamina = useGameStore((state) => state.consumeStamina);
-  const regenStamina = useGameStore((state) => state.regenStamina);
-  const regenMana = useGameStore((state) => state.regenMana);
 
   // Calculate total stats with equipment bonuses
   const totalStats = getTotalStats(player, equipment);
@@ -37,10 +33,22 @@ const Player = () => {
   const dodgeDirection = useRef(new THREE.Vector3());
   const dodgeTimer = useRef(0);
 
+  // E key use/interact state
+  const prevUseRef = useRef(false);
+
+  // Leg animation state
+  const leftLegRef = useRef();
+  const rightLegRef = useRef();
+  const walkPhaseRef = useRef(0);
+
   // Auto-jump state (mobile/touch devices)
   const isMobileDevice = useRef(isTouchDevice());
   const lastAutoJump = useRef(0);
   const lastJumpTime = useRef(0); // Cooldown to prevent hold-to-spam
+
+  // Stuck detection for navPath following
+  const stuckTimer = useRef(0);
+  const lastDistToWaypoint = useRef(Infinity);
 
   // Reusable Vector3 refs to avoid per-frame allocations (GC pressure reduction)
   const _velocity = useRef(new THREE.Vector3());
@@ -113,83 +121,121 @@ const Player = () => {
       isMoving = true;
     }
 
-    // Tap-to-move: If no keyboard input and we have a target, move towards it
-    if (!hasKeyboardInput && player.targetPosition) {
+    // Waypoint-following: If no keyboard input and we have a navPath, follow waypoints
+    if (!hasKeyboardInput && player.navPath && player.navPathIndex < player.navPath.length) {
+      const waypoint = player.navPath[player.navPathIndex];
+      const direction = _tempDir.current.set(
+        waypoint[0] - currentPos.x,
+        0,
+        waypoint[2] - currentPos.z
+      );
+      const dist = direction.length();
+
+      if (dist > NAV_WAYPOINT_ARRIVAL) {
+        direction.normalize();
+        movement.addScaledVector(direction, moveSpeed);
+        isMoving = true;
+
+        // Stuck detection: if distance hasn't decreased in NAV_STUCK_TIMEOUT, cancel
+        if (dist < lastDistToWaypoint.current - 0.05) {
+          stuckTimer.current = 0;
+          lastDistToWaypoint.current = dist;
+        } else {
+          stuckTimer.current += delta;
+          if (stuckTimer.current >= NAV_STUCK_TIMEOUT) {
+            useGameStore.getState().clearNavPath();
+            stuckTimer.current = 0;
+            lastDistToWaypoint.current = Infinity;
+          }
+        }
+      } else {
+        // Arrived at waypoint — advance or finish
+        stuckTimer.current = 0;
+        lastDistToWaypoint.current = Infinity;
+        if (player.navPathIndex < player.navPath.length - 1) {
+          useGameStore.getState().advanceNavPathIndex();
+        } else {
+          useGameStore.getState().clearNavPath();
+        }
+      }
+    } else if (!hasKeyboardInput && player.targetPosition) {
+      // Legacy fallback: direct move to targetPosition (no navPath)
       const direction = _tempDir.current.set(
         player.targetPosition[0] - currentPos.x,
         0,
         player.targetPosition[2] - currentPos.z
       );
-      const distance = direction.length();
+      const dist = direction.length();
 
-      if (distance > 0.5) {
-        // Still far from target, keep moving
+      if (dist > 0.5) {
         direction.normalize();
         movement.addScaledVector(direction, moveSpeed);
         isMoving = true;
       } else {
-        // Reached target, clear it
         useGameStore.getState().setPlayerTarget(null);
       }
     }
 
-    // If keyboard input is active, clear tap-to-move target
-    if (hasKeyboardInput && player.targetPosition) {
-      useGameStore.getState().setPlayerTarget(null);
+    // If keyboard input is active, clear both navPath and targetPosition
+    if (hasKeyboardInput && (player.targetPosition || player.navPath)) {
+      useGameStore.getState().clearNavPath();
+      stuckTimer.current = 0;
+      lastDistToWaypoint.current = Infinity;
     }
+
+    // ── Collect all player state updates for a single batched write ──
+    const batch = {};
 
     // Blocking
     const isBlocking = keys.block && player.stamina > 0;
-    if (isBlocking) {
-      // Use stamina while blocking
-      consumeStamina(delta * 15); // 15 stamina per second
-      updatePlayer({ isBlocking: true });
-    } else {
-      updatePlayer({ isBlocking: false });
-    }
+    batch.isBlocking = isBlocking;
 
-    // Sync sprint state to store for hunger system (only when changed)
+    // Sync sprint state to store for hunger system
     const sprintState = isSprintingNow && isMoving;
     if (sprintState !== player.isSprinting) {
-      updatePlayer({ isSprinting: sprintState });
+      batch.isSprinting = sprintState;
     }
 
-    // Stamina usage and regeneration
-    if (isSprintingNow && isMoving && !isBlocking) {
-      // Use stamina while sprinting and moving
-      consumeStamina(delta * 20); // 20 stamina per second
-    } else if (!isBlocking) {
-      // Regenerate stamina when not sprinting or blocking
-      regenStamina(delta * 30); // 30 stamina per second
+    // Stamina: consume or regenerate (read current from store for accuracy)
+    const curStamina = useGameStore.getState().player.stamina;
+    if (isBlocking) {
+      batch.stamina = Math.max(0, curStamina - delta * 15);
+    } else if (isSprintingNow && isMoving) {
+      batch.stamina = Math.max(0, curStamina - delta * 20);
+    } else {
+      batch.stamina = Math.min(player.maxStamina, curStamina + delta * 30);
     }
 
     // Mana regeneration
-    regenMana(delta * 10); // 10 mana per second
+    const curMana = useGameStore.getState().player.mana;
+    batch.mana = Math.min(player.maxMana, curMana + delta * 10);
 
     // Respawn invincibility countdown
     if (player.isInvincible && player.invincibilityTimer > 0) {
       const newTimer = player.invincibilityTimer - delta;
       if (newTimer <= 0) {
-        updatePlayer({ isInvincible: false, invincibilityTimer: 0 });
+        batch.isInvincible = false;
+        batch.invincibilityTimer = 0;
       } else {
-        updatePlayer({ invincibilityTimer: newTimer });
+        batch.invincibilityTimer = newTimer;
       }
     }
 
     // Cooldown timers
     if (player.potionCooldown > 0) {
-      updatePlayer({ potionCooldown: Math.max(0, player.potionCooldown - delta) });
+      batch.potionCooldown = Math.max(0, player.potionCooldown - delta);
     }
     if (player.comboTimer > 0) {
       const newComboTimer = player.comboTimer - delta;
       if (newComboTimer <= 0) {
-        updatePlayer({ comboTimer: 0, comboCount: 0 });
+        batch.comboTimer = 0;
+        batch.comboCount = 0;
       } else {
-        updatePlayer({ comboTimer: newComboTimer });
+        batch.comboTimer = newComboTimer;
       }
     }
 
-    // Update spell cooldowns
+    // Spell cooldowns (has internal early-return if nothing active)
     useGameStore.getState().updateSpellCooldowns(delta);
 
     // Apply movement with damping for smooth control
@@ -200,22 +246,20 @@ const Player = () => {
     if (isDodging) {
       dodgeTimer.current -= delta;
       if (dodgeTimer.current > 0) {
-        // Apply dodge velocity
         velocity.x = dodgeDirection.current.x * 20;
         velocity.z = dodgeDirection.current.z * 20;
-        // Maintain invincibility during dodge
         if (!player.isInvincible) {
-          updatePlayer({ isInvincible: true });
+          batch.isInvincible = true;
         }
       } else {
         setIsDodging(false);
-        // Remove invincibility after dodge
-        updatePlayer({ isInvincible: false });
+        batch.isInvincible = false;
       }
     }
 
-    // Auto-jump for mobile: detect 1-block obstacles ahead and jump over them
-    if (isMobileDevice.current && !isDodging && Math.abs(currentVel.y) < 0.1 && isMoving) {
+    // Auto-jump: detect 1-block obstacles ahead and jump over them
+    // Triggers on mobile (always) and desktop click-to-move (no keyboard to press Space)
+    if ((isMobileDevice.current || player.targetPosition || player.navPath) && !isDodging && Math.abs(currentVel.y) < 0.1 && isMoving) {
       const xzSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
       if (xzSpeed > AUTO_JUMP_MIN_SPEED) {
         const now = Date.now();
@@ -245,18 +289,18 @@ const Player = () => {
       const now = Date.now();
       if (now - lastJumpTime.current >= JUMP_COOLDOWN_MS) {
         // Check for double-tap dodge roll
-        if (now - lastSpacePress.current < 300 && player.stamina >= 30 && movement.length() > 0) {
+        if (now - lastSpacePress.current < 300 && batch.stamina >= 30 && movement.length() > 0) {
           // Double-tap detected - dodge roll!
-          consumeStamina(30);
+          batch.stamina = Math.max(0, batch.stamina - 30);
           setIsDodging(true);
           dodgeTimer.current = 0.3; // 0.3 second dodge duration
           dodgeDirection.current = movement.clone().normalize();
           lastSpacePress.current = 0; // Reset to prevent triple tap
           lastJumpTime.current = now;
-        } else if (player.stamina >= JUMP_STAMINA_COST) {
+        } else if (batch.stamina >= JUMP_STAMINA_COST) {
           // Single tap - normal jump
           velocity.y = JUMP_IMPULSE;
-          consumeStamina(JUMP_STAMINA_COST);
+          batch.stamina = Math.max(0, batch.stamina - JUMP_STAMINA_COST);
           lastSpacePress.current = now;
           lastJumpTime.current = now;
         }
@@ -266,9 +310,21 @@ const Player = () => {
     // Apply velocity
     body.setLinvel(velocity, true);
 
-    // Update player position in store
+    // Player position (included in batched write below)
     const newPos = [currentPos.x, currentPos.y, currentPos.z];
-    setPlayerPosition(newPos);
+
+    // Leg walk animation
+    const xzSpeed = Math.sqrt(currentVel.x * currentVel.x + currentVel.z * currentVel.z);
+    if (xzSpeed > 0.5) {
+      walkPhaseRef.current += delta * 10;
+      const swing = Math.sin(walkPhaseRef.current) * 0.6;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
+    } else {
+      walkPhaseRef.current = 0;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
+    }
 
     // Update camera based on mode (first-person or third-person)
     const targetCameraPos = _targetCameraPos.current;
@@ -328,6 +384,32 @@ const Player = () => {
 
       targetLookAt.set(currentPos.x, currentPos.y + 2, currentPos.z);
 
+      // Camera-terrain collision: pull camera in when obstructed
+      const cm = useGameStore.getState()._chunkManager;
+      if (cm) {
+        const headX = currentPos.x;
+        const headY = currentPos.y + 2;
+        const headZ = currentPos.z;
+        const steps = Math.ceil(distance / 2.0);
+        const sdx = (targetCameraPos.x - headX) / steps;
+        const sdy = (targetCameraPos.y - headY) / steps;
+        const sdz = (targetCameraPos.z - headZ) / steps;
+        let clipFraction = 1.0;
+        for (let i = 1; i <= steps; i++) {
+          const sx = headX + sdx * i;
+          const sy = headY + sdy * i;
+          const sz = headZ + sdz * i;
+          const block = cm.getBlock(sx, sy, sz);
+          if (isBlockSolid(block)) {
+            clipFraction = Math.max(0.1, (i - 1) / steps);
+            break;
+          }
+        }
+        if (clipFraction < 1.0) {
+          targetCameraPos.lerp(targetLookAt, 1.0 - clipFraction);
+        }
+      }
+
       // Smooth camera movement
       camera.position.lerp(targetCameraPos, 0.1);
       camera.lookAt(targetLookAt);
@@ -335,12 +417,14 @@ const Player = () => {
 
     // Calculate facing angle for player
     if (cameraState.firstPerson) {
-      // In first-person, body always faces camera direction
-      updatePlayer({ facingAngle: cameraState.yaw });
+      batch.facingAngle = cameraState.yaw;
     } else if (movement.length() > 0) {
-      const angle = Math.atan2(movement.x, movement.z);
-      updatePlayer({ facingAngle: angle });
+      batch.facingAngle = Math.atan2(movement.x, movement.z);
     }
+
+    // ── Single batched store write for all player state ──
+    batch.position = newPos;
+    updatePlayer(batch);
   });
 
   // Handle double-tap for mobile sprint
@@ -417,6 +501,12 @@ const Player = () => {
     if (keys.potion && store.inventory.potions > 0 && currentPlayer.potionCooldown <= 0) {
       store.usePotion();
     }
+
+    // E key use/interact (detect false→true transition)
+    if (keys.use && !prevUseRef.current) {
+      store.useBlock?.();
+    }
+    prevUseRef.current = !!keys.use;
   }, [keys]);
 
   // Capsule collider: halfHeight=0.8, radius=0.6 → total height = 2*0.8 + 2*0.6 = 2.8 units (~1.4 blocks)
@@ -434,11 +524,27 @@ const Player = () => {
     >
       <CapsuleCollider args={[0.8, 0.6]} position={[0, 1.4, 0]} friction={0} restitution={0} />
       <group rotation={[0, player.facingAngle, 0]}>
-        {/* Player body */}
-        <mesh position={[0, 1.0, 0]}>
-          <boxGeometry args={[1.2, 2.0, 0.8]} />
+        {/* Player body (torso) */}
+        <mesh position={[0, 1.35, 0]}>
+          <boxGeometry args={[1.2, 1.3, 0.8]} />
           <meshBasicMaterial color="#4169e1" />
         </mesh>
+
+        {/* Left leg */}
+        <group ref={leftLegRef} position={[-0.28, 0.45, 0]}>
+          <mesh>
+            <boxGeometry args={[0.35, 0.9, 0.45]} />
+            <meshBasicMaterial color="#2a4cb0" />
+          </mesh>
+        </group>
+
+        {/* Right leg */}
+        <group ref={rightLegRef} position={[0.28, 0.45, 0]}>
+          <mesh>
+            <boxGeometry args={[0.35, 0.9, 0.45]} />
+            <meshBasicMaterial color="#2a4cb0" />
+          </mesh>
+        </group>
 
         {/* Player head */}
         <mesh position={[0, 2.4, 0]}>
@@ -446,10 +552,10 @@ const Player = () => {
           <meshBasicMaterial color="#5a7fd6" />
         </mesh>
 
-        {/* Direction indicator (nose) */}
-        <mesh position={[0, 2.4, 0.55]} rotation={[Math.PI / 2, 0, 0]}>
-          <coneGeometry args={[0.15, 0.3, 4]} />
-          <meshBasicMaterial color="#ff6b6b" />
+        {/* Nose (small protruding box) */}
+        <mesh position={[0, 2.3, 0.5]}>
+          <boxGeometry args={[0.18, 0.15, 0.15]} />
+          <meshBasicMaterial color="#e8967a" />
         </mesh>
       </group>
 

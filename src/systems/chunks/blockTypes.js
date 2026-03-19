@@ -21,6 +21,11 @@ export const BlockTypes = {
   SNOW: 14,
   ICE: 15,
   BERRY_BUSH: 16,
+  CAMPFIRE: 17,
+  CORRUPTED_STONE: 18,
+  CORRUPTED_GRASS: 19,
+  DEAD_LEAVES: 20,
+  DEAD_WOOD: 21,
 };
 
 // Block properties
@@ -141,6 +146,41 @@ export const BlockProperties = {
     transparent: false,
     color: [0.2, 0.45, 0.15],
     hardness: 0.3,
+  },
+  [BlockTypes.CAMPFIRE]: {
+    name: 'Campfire',
+    solid: true,
+    transparent: false,
+    color: [0.9, 0.4, 0.1],
+    hardness: 0.5,
+  },
+  [BlockTypes.CORRUPTED_STONE]: {
+    name: 'Corrupted Stone',
+    solid: true,
+    transparent: false,
+    color: [0.12, 0.05, 0.15],
+    hardness: 2.0,
+  },
+  [BlockTypes.CORRUPTED_GRASS]: {
+    name: 'Corrupted Grass',
+    solid: true,
+    transparent: false,
+    color: [0.20, 0.30, 0.15],
+    hardness: 0.6,
+  },
+  [BlockTypes.DEAD_LEAVES]: {
+    name: 'Dead Leaves',
+    solid: true,
+    transparent: true,
+    color: [0.58, 0.42, 0.28],
+    hardness: 0.2,
+  },
+  [BlockTypes.DEAD_WOOD]: {
+    name: 'Dead Wood',
+    solid: true,
+    transparent: false,
+    color: [0.45, 0.43, 0.40],
+    hardness: 1.5,
   },
 };
 

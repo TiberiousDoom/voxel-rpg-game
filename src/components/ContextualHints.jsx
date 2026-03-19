@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useGameStore from '../stores/useGameStore';
+import { VOXEL_SIZE } from '../systems/chunks/coordinates';
+import { isUsableBlock } from '../data/blockUseActions';
 
 /**
  * ContextualHints - Shows context-sensitive control hints
@@ -116,6 +118,44 @@ const ContextualHints = () => {
       priority: 7,
       duration: 5000,
       showOnce: true,
+    },
+    {
+      id: 'use-key',
+      text: 'Press E to pick up items or harvest bushes',
+      condition: () => gameState === 'playing',
+      priority: 5,
+      delay: 30000,
+      duration: 5000,
+      showOnce: true,
+    },
+    {
+      id: 'berry-bush-nearby',
+      text: 'Press E to harvest berries',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        const cm = s._chunkManager;
+        if (!cm) return false;
+        const p = s.player.position;
+        const pvx = Math.floor(p[0] / VOXEL_SIZE);
+        const pvy = Math.floor(p[1] / VOXEL_SIZE);
+        const pvz = Math.floor(p[2] / VOXEL_SIZE);
+        for (let dy = -1; dy <= 2; dy++) {
+          for (let dz = -2; dz <= 2; dz++) {
+            for (let dx = -2; dx <= 2; dx++) {
+              const wx = (pvx + dx) * VOXEL_SIZE + VOXEL_SIZE / 2;
+              const wy = (pvy + dy) * VOXEL_SIZE + VOXEL_SIZE / 2;
+              const wz = (pvz + dz) * VOXEL_SIZE + VOXEL_SIZE / 2;
+              if (isUsableBlock(cm.getBlock(wx, wy, wz))) return true;
+            }
+          }
+        }
+        return false;
+      },
+      priority: 11,
+      duration: 4000,
+      showOnce: false,
+      cooldown: 30000,
     },
   ];
 

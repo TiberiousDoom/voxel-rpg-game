@@ -34,6 +34,11 @@ const BlockTypes = {
   SNOW: 14,
   ICE: 15,
   BERRY_BUSH: 16,
+  CAMPFIRE: 17,
+  CORRUPTED_STONE: 18,
+  CORRUPTED_GRASS: 19,
+  DEAD_LEAVES: 20,
+  DEAD_WOOD: 21,
 };
 
 // Block colors [r, g, b] in 0-1 range
@@ -55,6 +60,11 @@ const BlockColors = {
   [BlockTypes.SNOW]: [0.95, 0.95, 0.98],
   [BlockTypes.ICE]: [0.7, 0.85, 0.95],
   [BlockTypes.BERRY_BUSH]: [0.2, 0.45, 0.15],
+  [BlockTypes.CAMPFIRE]: [0.9, 0.4, 0.1],
+  [BlockTypes.CORRUPTED_STONE]: [0.12, 0.05, 0.15],
+  [BlockTypes.CORRUPTED_GRASS]: [0.20, 0.30, 0.15],
+  [BlockTypes.DEAD_LEAVES]: [0.58, 0.42, 0.28],
+  [BlockTypes.DEAD_WOOD]: [0.45, 0.43, 0.40],
 };
 
 // Transparent blocks
@@ -63,6 +73,7 @@ const TransparentBlocks = new Set([
   BlockTypes.WATER,
   BlockTypes.LEAVES,
   BlockTypes.ICE,
+  BlockTypes.DEAD_LEAVES,
 ]);
 
 // Face definitions
@@ -182,6 +193,178 @@ class SimplexNoise {
 }
 
 // ============================================================================
+// RIFT CORRUPTION
+// ============================================================================
+
+// Corruption constants (mirrored from tuning.js)
+const RIFT_DENSITY = 0.25;
+const RIFT_MIN_SPAWN_DISTANCE = 96;
+const RIFT_MIN_SEPARATION = 128;
+const RIFT_CHUNK_SIZE_WORLD = 32; // world units per chunk (16 blocks * 2 voxel size)
+const RIFT_GRID_RANGE = 8;
+
+// Corruption radii in blocks
+const CORRUPTION_RADIUS_FULL = 16;
+const CORRUPTION_RADIUS_HEAVY = 28;
+const CORRUPTION_RADIUS_LIGHT = 32;
+// Chunk early-rejection distance in world units (CORRUPTION_RADIUS_LIGHT * VOXEL_SIZE + chunk diagonal)
+const CORRUPTION_REJECT_DIST = 96;
+
+// mulberry32 PRNG — identical to RiftManager.js
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Cache rift positions per seed (only ever one seed in practice)
+let _cachedRiftSeed = null;
+let _cachedRiftPositions = null;
+
+function getRiftPositions(seed) {
+  if (_cachedRiftSeed === seed) return _cachedRiftPositions;
+
+  const rand = mulberry32(seed);
+  const candidates = [];
+
+  for (let cx = -RIFT_GRID_RANGE; cx <= RIFT_GRID_RANGE; cx++) {
+    for (let cz = -RIFT_GRID_RANGE; cz <= RIFT_GRID_RANGE; cz++) {
+      if (rand() > RIFT_DENSITY) continue;
+      const x = cx * RIFT_CHUNK_SIZE_WORLD + rand() * RIFT_CHUNK_SIZE_WORLD;
+      const z = cz * RIFT_CHUNK_SIZE_WORLD + rand() * RIFT_CHUNK_SIZE_WORLD;
+
+      // Check min distance from player spawn (0,0)
+      if (Math.sqrt(x * x + z * z) < RIFT_MIN_SPAWN_DISTANCE) continue;
+      candidates.push({ x, z });
+    }
+  }
+
+  // Filter by minimum separation
+  const accepted = [];
+  for (const c of candidates) {
+    let tooClose = false;
+    for (const a of accepted) {
+      const dx = c.x - a.x;
+      const dz = c.z - a.z;
+      if (Math.sqrt(dx * dx + dz * dz) < RIFT_MIN_SEPARATION) {
+        tooClose = true;
+        break;
+      }
+    }
+    if (!tooClose) accepted.push(c);
+  }
+
+  _cachedRiftSeed = seed;
+  _cachedRiftPositions = accepted;
+  return accepted;
+}
+
+function getRiftsNearChunk(riftPositions, chunkX, chunkZ) {
+  // Chunk center in world units
+  const centerX = chunkX * CHUNK_SIZE * VOXEL_SIZE + CHUNK_SIZE;
+  const centerZ = chunkZ * CHUNK_SIZE * VOXEL_SIZE + CHUNK_SIZE;
+  const nearby = [];
+  for (const rift of riftPositions) {
+    const dx = rift.x - centerX;
+    const dz = rift.z - centerZ;
+    if (Math.abs(dx) < CORRUPTION_REJECT_DIST && Math.abs(dz) < CORRUPTION_REJECT_DIST) {
+      nearby.push(rift);
+    }
+  }
+  return nearby;
+}
+
+// Deterministic hash for corruption probability (stable across chunk boundaries)
+function corruptionHash(wx, wz) {
+  let h = (wx * 374761393 + wz * 1274126177) | 0;
+  h = ((h ^ (h >> 13)) * 1103515245) | 0;
+  return (h & 0x7fffffff) / 0x7fffffff;
+}
+
+function applyCorruption(blocks, chunkX, chunkZ, nearbyRifts) {
+  if (nearbyRifts.length === 0) return;
+
+  for (let x = 0; x < CHUNK_SIZE; x++) {
+    for (let z = 0; z < CHUNK_SIZE; z++) {
+      // World position in blocks, then convert to world units for distance
+      const worldX = (chunkX * CHUNK_SIZE + x) * VOXEL_SIZE;
+      const worldZ = (chunkZ * CHUNK_SIZE + z) * VOXEL_SIZE;
+
+      // Find minimum distance to any rift (in blocks)
+      let minDist = Infinity;
+      for (const rift of nearbyRifts) {
+        const dx = worldX - rift.x;
+        const dz = worldZ - rift.z;
+        const distWorld = Math.sqrt(dx * dx + dz * dz);
+        const distBlocks = distWorld / VOXEL_SIZE;
+        if (distBlocks < minDist) minDist = distBlocks;
+      }
+
+      if (minDist > CORRUPTION_RADIUS_LIGHT) continue;
+
+      const wx = chunkX * CHUNK_SIZE + x;
+      const wz = chunkZ * CHUNK_SIZE + z;
+
+      // Z1: 0-16 blocks, 100% → CORRUPTED_STONE
+      if (minDist <= CORRUPTION_RADIUS_FULL) {
+        for (let y = 0; y < CHUNK_SIZE_Y; y++) {
+          const index = x + (z << 4) + (y << 8);
+          const block = blocks[index];
+          if (block === BlockTypes.GRASS || block === BlockTypes.DIRT ||
+              block === BlockTypes.SAND || block === BlockTypes.SNOW ||
+              block === BlockTypes.CLAY || block === BlockTypes.STONE) {
+            blocks[index] = BlockTypes.CORRUPTED_STONE;
+          } else if (block === BlockTypes.WOOD) {
+            blocks[index] = BlockTypes.DEAD_WOOD;
+          } else if (block === BlockTypes.LEAVES || block === BlockTypes.BERRY_BUSH) {
+            blocks[index] = BlockTypes.AIR;
+          }
+        }
+        continue;
+      }
+
+      // Z2: 17-28 blocks — 80% CORRUPTED_STONE / 20% CORRUPTED_GRASS, gray trunks, no leaves
+      if (minDist <= CORRUPTION_RADIUS_HEAVY) {
+        const roll2 = corruptionHash(wx, wz);
+        const toCorruptedStone = roll2 < 0.80;
+        for (let y = 0; y < CHUNK_SIZE_Y; y++) {
+          const index = x + (z << 4) + (y << 8);
+          const block = blocks[index];
+          if (block === BlockTypes.GRASS || block === BlockTypes.DIRT ||
+              block === BlockTypes.SAND || block === BlockTypes.SNOW ||
+              block === BlockTypes.CLAY || block === BlockTypes.STONE) {
+            blocks[index] = toCorruptedStone ? BlockTypes.CORRUPTED_STONE : BlockTypes.CORRUPTED_GRASS;
+          } else if (block === BlockTypes.WOOD) {
+            blocks[index] = BlockTypes.DEAD_WOOD;
+          } else if (block === BlockTypes.LEAVES || block === BlockTypes.BERRY_BUSH) {
+            blocks[index] = BlockTypes.AIR;
+          }
+        }
+      }
+
+      // Z3: 29-32 blocks — all leaves/bushes die, 50% ground → CORRUPTED_GRASS
+      if (minDist > CORRUPTION_RADIUS_HEAVY) {
+        const roll3 = corruptionHash(wx + 7919, wz + 31337);
+        for (let y = 0; y < CHUNK_SIZE_Y; y++) {
+          const index = x + (z << 4) + (y << 8);
+          const block = blocks[index];
+          if (block === BlockTypes.LEAVES || block === BlockTypes.BERRY_BUSH) {
+            blocks[index] = BlockTypes.DEAD_LEAVES;
+          } else if (roll3 < 0.50 && (block === BlockTypes.GRASS || block === BlockTypes.DIRT ||
+              block === BlockTypes.SAND || block === BlockTypes.SNOW)) {
+            blocks[index] = BlockTypes.CORRUPTED_GRASS;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
 // TERRAIN GENERATION
 // ============================================================================
 
@@ -265,6 +448,11 @@ function generateTerrain(params) {
     }
   }
 
+  // Rift corruption pass — runs after trees + bushes so dead trees emerge naturally
+  const riftPositions = getRiftPositions(seed);
+  const nearbyRifts = getRiftsNearChunk(riftPositions, chunkX, chunkZ);
+  applyCorruption(blocks, chunkX, chunkZ, nearbyRifts);
+
   return { blocks, chunkX, chunkZ };
 }
 
@@ -308,6 +496,7 @@ function buildChunkMesh(params) {
   const positions = new Float32Array(maxVertices * 3);
   const normals = new Float32Array(maxVertices * 3);
   const colors = new Float32Array(maxVertices * 3);
+  const emissive = new Float32Array(maxVertices);  // per-vertex emissive factor (0=none, 1=full glow)
   const indices = [];
   let vertexCount = 0;
 
@@ -343,7 +532,7 @@ function buildChunkMesh(params) {
 
   function isSolidForAO(x, y, z) {
     const b = getBlock(x, y, z);
-    return b !== BlockTypes.AIR && b !== BlockTypes.WATER && b !== BlockTypes.LEAVES && b !== BlockTypes.ICE;
+    return b !== BlockTypes.AIR && b !== BlockTypes.WATER && b !== BlockTypes.LEAVES && b !== BlockTypes.ICE && b !== BlockTypes.DEAD_LEAVES;
   }
 
   // AO neighbor offsets per face per vertex: [side1, side2, corner]
@@ -389,6 +578,88 @@ function buildChunkMesh(params) {
 
   const AO_BRIGHTNESS = [0.5, 0.65, 0.8, 1.0];
 
+  // Simple hash for per-block color variation (deterministic, no allocations)
+  function blockHash(x, y, z) {
+    let h = (x * 374761393 + y * 668265263 + z * 1274126177) | 0;
+    h = ((h ^ (h >> 13)) * 1103515245) | 0;
+    return (h & 0x7fffffff) / 0x7fffffff; // 0.0–1.0
+  }
+
+  // Pre-scan for campfire positions in chunk AND neighbor edges (for warm glow)
+  const campfirePositions = [];
+  const CAMPFIRE_GLOW_RADIUS = 5;
+  // Scan own chunk
+  for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+    for (let cz = 0; cz < CHUNK_SIZE; cz++) {
+      for (let cx = 0; cx < CHUNK_SIZE; cx++) {
+        if (blocks[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+          campfirePositions.push(cx, cy, cz);
+        }
+      }
+    }
+  }
+  // Scan neighbor chunk edges for campfires within glow radius of boundary
+  // Positions are stored in local-space coordinates (negative or >= CHUNK_SIZE)
+  const R = CAMPFIRE_GLOW_RADIUS;
+  if (neighborWest) {
+    for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+      for (let cz = 0; cz < CHUNK_SIZE; cz++) {
+        for (let cx = CHUNK_SIZE - R; cx < CHUNK_SIZE; cx++) {
+          if (neighborWest[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+            campfirePositions.push(cx - CHUNK_SIZE, cy, cz);
+          }
+        }
+      }
+    }
+  }
+  if (neighborEast) {
+    for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+      for (let cz = 0; cz < CHUNK_SIZE; cz++) {
+        for (let cx = 0; cx < R; cx++) {
+          if (neighborEast[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+            campfirePositions.push(cx + CHUNK_SIZE, cy, cz);
+          }
+        }
+      }
+    }
+  }
+  if (neighborSouth) {
+    for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+      for (let cz = CHUNK_SIZE - R; cz < CHUNK_SIZE; cz++) {
+        for (let cx = 0; cx < CHUNK_SIZE; cx++) {
+          if (neighborSouth[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+            campfirePositions.push(cx, cy, cz - CHUNK_SIZE);
+          }
+        }
+      }
+    }
+  }
+  if (neighborNorth) {
+    for (let cy = 0; cy < CHUNK_SIZE_Y; cy++) {
+      for (let cz = 0; cz < R; cz++) {
+        for (let cx = 0; cx < CHUNK_SIZE; cx++) {
+          if (neighborNorth[cx + (cz << 4) + (cy << 8)] === BlockTypes.CAMPFIRE) {
+            campfirePositions.push(cx, cy, cz + CHUNK_SIZE);
+          }
+        }
+      }
+    }
+  }
+
+  function getCampfireGlow(x, y, z) {
+    let glow = 0;
+    for (let i = 0; i < campfirePositions.length; i += 3) {
+      const dx = x - campfirePositions[i];
+      const dy = y - campfirePositions[i + 1];
+      const dz = z - campfirePositions[i + 2];
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist < CAMPFIRE_GLOW_RADIUS && dist > 0) {
+        glow = Math.max(glow, 1.0 - dist / CAMPFIRE_GLOW_RADIUS);
+      }
+    }
+    return glow;
+  }
+
   function addFace(x, y, z, face, blockType) {
     if (vertexCount + 4 > maxVertices) return;
 
@@ -399,6 +670,16 @@ function buildChunkMesh(params) {
     if (face === 'bottom') lightMod = 0.5;
     else if (face === 'north' || face === 'south') lightMod = 0.8;
     else if (face === 'east' || face === 'west') lightMod = 0.7;
+
+    // Height-based brightness: lower blocks are slightly darker, higher are brighter
+    // Range: ~0.88 at y=0 to ~1.08 at y=15 (subtle but visible at elevation changes)
+    const heightMod = 0.88 + (y / CHUNK_SIZE_Y) * 0.20;
+
+    // Per-block noise: ±4% brightness variation to break up uniform surfaces
+    const noiseMod = 0.96 + blockHash(x, y, z) * 0.08;
+
+    // Warm glow from nearby campfires
+    const campGlow = campfirePositions.length > 0 ? getCampfireGlow(x, y, z) : 0;
 
     const aoOffsets = AO_OFFSETS[face];
     const startVertex = vertexCount;
@@ -422,11 +703,42 @@ function buildChunkMesh(params) {
       const cn = isSolidForAO(x + offsets[2][0], y + offsets[2][1], z + offsets[2][2]);
       const ao = (s1 && s2) ? 0 : 3 - (s1 + s2 + cn);
       const aoMod = AO_BRIGHTNESS[ao];
-      const finalMod = lightMod * aoMod;
 
-      colors[idx] = color[0] * finalMod;
-      colors[idx + 1] = color[1] * finalMod;
-      colors[idx + 2] = color[2] * finalMod;
+      // Campfire blocks glow — skip darkening, boost brightness with flicker
+      if (blockType === BlockTypes.CAMPFIRE) {
+        const flicker = 0.9 + blockHash(x + i, y, z + i) * 0.2; // 0.9–1.1
+        colors[idx] = Math.min(1, 1.2 * flicker);       // bright yellow-white
+        colors[idx + 1] = Math.min(1, 0.7 * flicker);
+        colors[idx + 2] = Math.min(1, 0.2 * flicker);
+        emissive[vertexCount] = 1.0; // fully emissive — stays bright at night
+      } else if (blockType === BlockTypes.CORRUPTED_STONE) {
+        // Dark purple with vein variation — keeps AO/height darkening
+        const vein = blockHash(x + i, y, z + i) * 0.08;
+        const finalMod = lightMod * aoMod * heightMod;
+        colors[idx] = Math.min(1, (0.12 + vein) * finalMod);
+        colors[idx + 1] = Math.min(1, 0.05 * finalMod);
+        colors[idx + 2] = Math.min(1, (0.15 + vein) * finalMod);
+      } else if (blockType === BlockTypes.CORRUPTED_GRASS) {
+        const finalMod = lightMod * aoMod * heightMod * noiseMod;
+        colors[idx] = Math.min(1, 0.20 * finalMod);
+        colors[idx + 1] = Math.min(1, 0.30 * finalMod);
+        colors[idx + 2] = Math.min(1, 0.15 * finalMod);
+      } else {
+        const finalMod = lightMod * aoMod * heightMod * noiseMod;
+        let r = color[0] * finalMod;
+        let g = color[1] * finalMod;
+        let b = color[2] * finalMod;
+        // Blend warm campfire glow onto nearby blocks
+        if (campGlow > 0) {
+          r = r + campGlow * 0.6;
+          g = g + campGlow * 0.3;
+          b = b + campGlow * 0.05;
+          emissive[vertexCount] = campGlow * 0.7; // partial emissive for warm glow at night
+        }
+        colors[idx] = Math.min(1, r);
+        colors[idx + 1] = Math.min(1, g);
+        colors[idx + 2] = Math.min(1, b);
+      }
 
       vertexCount++;
     }
@@ -457,6 +769,7 @@ function buildChunkMesh(params) {
     positions: positions.slice(0, vertexCount * 3),
     normals: normals.slice(0, vertexCount * 3),
     colors: colors.slice(0, vertexCount * 3),
+    emissive: emissive.slice(0, vertexCount),
     indices: new Uint32Array(indices),
     vertexCount,
     faceCount: indices.length / 6,
@@ -529,6 +842,7 @@ function buildLODMesh(params) {
   const positions = new Float32Array(maxVertices * 3);
   const normals = new Float32Array(maxVertices * 3);
   const colors = new Float32Array(maxVertices * 3);
+  const emissive = new Float32Array(maxVertices);
   const indices = [];
   let vertexCount = 0;
 
@@ -550,7 +864,7 @@ function buildLODMesh(params) {
 
   function isSolidForAO(x, y, z) {
     const b = getBlock(x, y, z);
-    return b !== BlockTypes.AIR && b !== BlockTypes.WATER && b !== BlockTypes.LEAVES && b !== BlockTypes.ICE;
+    return b !== BlockTypes.AIR && b !== BlockTypes.WATER && b !== BlockTypes.LEAVES && b !== BlockTypes.ICE && b !== BlockTypes.DEAD_LEAVES;
   }
 
   const AO_OFFSETS_LOD = {
@@ -594,6 +908,12 @@ function buildLODMesh(params) {
 
   const AO_BRIGHTNESS_LOD = [0.5, 0.65, 0.8, 1.0];
 
+  function lodBlockHash(x, y, z) {
+    let h = (x * 374761393 + y * 668265263 + z * 1274126177) | 0;
+    h = ((h ^ (h >> 13)) * 1103515245) | 0;
+    return (h & 0x7fffffff) / 0x7fffffff;
+  }
+
   function addFace(x, y, z, face, blockType) {
     if (vertexCount + 4 > maxVertices) return;
     const faceData = FACES[face];
@@ -602,6 +922,9 @@ function buildLODMesh(params) {
     if (face === 'bottom') lightMod = 0.5;
     else if (face === 'north' || face === 'south') lightMod = 0.8;
     else if (face === 'east' || face === 'west') lightMod = 0.7;
+
+    const heightMod = 0.88 + (y / lodSizeY) * 0.20;
+    const noiseMod = 0.96 + lodBlockHash(x, y, z) * 0.08;
 
     const aoOffsets = AO_OFFSETS_LOD[face];
     const startVertex = vertexCount;
@@ -620,11 +943,30 @@ function buildLODMesh(params) {
       const s2 = isSolidForAO(x + offsets[1][0], y + offsets[1][1], z + offsets[1][2]);
       const cn = isSolidForAO(x + offsets[2][0], y + offsets[2][1], z + offsets[2][2]);
       const ao = (s1 && s2) ? 0 : 3 - (s1 + s2 + cn);
-      const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao];
 
-      colors[idx] = color[0] * finalMod;
-      colors[idx + 1] = color[1] * finalMod;
-      colors[idx + 2] = color[2] * finalMod;
+      if (blockType === BlockTypes.CAMPFIRE) {
+        const flicker = 0.9 + lodBlockHash(x + i, y, z + i) * 0.2;
+        colors[idx] = Math.min(1, 1.2 * flicker);
+        colors[idx + 1] = Math.min(1, 0.7 * flicker);
+        colors[idx + 2] = Math.min(1, 0.2 * flicker);
+        emissive[vertexCount] = 1.0;
+      } else if (blockType === BlockTypes.CORRUPTED_STONE) {
+        const vein = lodBlockHash(x + i, y, z + i) * 0.08;
+        const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao] * heightMod;
+        colors[idx] = Math.min(1, (0.12 + vein) * finalMod);
+        colors[idx + 1] = Math.min(1, 0.05 * finalMod);
+        colors[idx + 2] = Math.min(1, (0.15 + vein) * finalMod);
+      } else if (blockType === BlockTypes.CORRUPTED_GRASS) {
+        const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao] * heightMod * noiseMod;
+        colors[idx] = Math.min(1, 0.20 * finalMod);
+        colors[idx + 1] = Math.min(1, 0.30 * finalMod);
+        colors[idx + 2] = Math.min(1, 0.15 * finalMod);
+      } else {
+        const finalMod = lightMod * AO_BRIGHTNESS_LOD[ao] * heightMod * noiseMod;
+        colors[idx] = Math.min(1, color[0] * finalMod);
+        colors[idx + 1] = Math.min(1, color[1] * finalMod);
+        colors[idx + 2] = Math.min(1, color[2] * finalMod);
+      }
       vertexCount++;
     }
     indices.push(startVertex, startVertex + 1, startVertex + 2, startVertex, startVertex + 2, startVertex + 3);
@@ -649,6 +991,7 @@ function buildLODMesh(params) {
     positions: positions.slice(0, vertexCount * 3),
     normals: normals.slice(0, vertexCount * 3),
     colors: colors.slice(0, vertexCount * 3),
+    emissive: emissive.slice(0, vertexCount),
     indices: new Uint32Array(indices),
     vertexCount,
     faceCount: indices.length / 6,

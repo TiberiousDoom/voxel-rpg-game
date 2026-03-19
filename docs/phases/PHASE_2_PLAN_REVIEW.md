@@ -1,8 +1,10 @@
 # Phase 2 Plan Review & Critique
 
 **Reviewed:** February 9, 2026
+**Updated:** March 19, 2026
 **Document:** `docs/phases/PHASE_2_DETAILED_PLAN.md`
 **Method:** Cross-referenced plan against actual codebase (all 22+ referenced files verified)
+**Status:** All 22 review items resolved — plan is ready for implementation
 
 ---
 
@@ -16,196 +18,121 @@ That said, there are architectural misalignments, underspecified systems, intern
 
 ## Critical Issues
 
-### 1. Architecture Violation: `src/systems/settlement/` vs the Module Orchestrator Pattern
+### 1. ~~Architecture Violation: `src/systems/settlement/` vs the Module Orchestrator Pattern~~ ✅ RESOLVED
 
-**The problem:** All 9 new systems are placed in `src/systems/settlement/`, but the established architecture uses `src/modules/` with a `ModuleOrchestrator` that coordinates 25+ independent modules. The CLAUDE.md explicitly documents this:
+**The problem:** All 9 new systems were placed in `src/systems/settlement/`, but the established architecture uses `src/modules/` with a `ModuleOrchestrator` that coordinates 25+ independent modules.
 
-```
-React UI (GameContext) → useGameManager hook → GameManager → ModuleOrchestrator → Modules
-```
+**Resolution:** Plan updated to use `src/modules/settlement/` with a `SettlementModule.js` that registers with the ModuleOrchestrator. All new files now live under `src/modules/settlement/`. See "New Files Created" section and Lesson 7 in the detailed plan.
 
-The existing `src/systems/` directory contains standalone utilities (BossAI, SpatialGrid, SpawnManager) — not orchestrated game systems. Placing settlement systems there means they won't participate in the ModuleOrchestrator lifecycle, won't receive coordinated tick updates, and won't communicate through the established module messaging pattern.
+### 2. ~~No ModuleOrchestrator Integration Task~~ ✅ RESOLVED
 
-**Recommendation:** Create `src/modules/settlement/` instead, with a `SettlementModule.js` that registers with the ModuleOrchestrator. Individual managers (ZoneManager, StockpileManager, etc.) can be sub-components of this module. Add a task to CLAUDE.md's "Adding New Modules" section for wiring this up.
+**The problem:** The plan never mentioned registering new systems with the ModuleOrchestrator.
 
-### 2. No ModuleOrchestrator Integration Task
+**Resolution:** Section 2.0 "Settlement Module Foundation" added as the first task. It covers orchestrator registration, GameManager wiring, module lifecycle methods (initialize/update/serialize/deserialize), inter-module communication points, and sub-manager tick order. This is now the prerequisite for all other Phase 2 tasks.
 
-**The problem:** The plan never mentions registering new systems with the ModuleOrchestrator. There's no task for:
-- Adding the settlement module to the orchestrator's constructor
-- Wiring up in GameManager initialization
-- Defining the module's tick behavior and message handlers
-- Establishing inter-module communication (e.g., settlement ↔ resource-economy, settlement ↔ npc-system)
+### 3. ~~Dual Configuration Source of Truth~~ ✅ RESOLVED
 
-This is a documented requirement in CLAUDE.md under "Adding New Modules." Without it, the 9 new systems float in isolation from the game's core coordination layer.
+**The problem:** The boundary between `shared/config.js`, `data/tuning.js`, and `data/buildingBlueprints.js` was undefined.
 
-**Recommendation:** Add a "2.0 Settlement Module Foundation" task at the start of the plan that creates the module shell, registers it, and defines the integration points before any subsystem work begins.
+**Resolution:** Lesson 6 in the detailed plan now explicitly documents the three-source rule:
+- `src/shared/config.js` — structural constants (types, enums, dimensions, grid)
+- `src/data/tuning.js` — balance numbers (rates, thresholds, multipliers, decay values)
+- `src/data/buildingBlueprints.js` — block-level building definitions (voxel layouts for construction)
 
-### 3. Dual Configuration Source of Truth
+### 4. ~~NPC Population Cap Contradiction~~ ✅ RESOLVED
 
-**The problem:** The plan puts all constants in `src/data/tuning.js`, but CLAUDE.md states `src/shared/config.js` is the "single source of truth for game constants" — building types, tiers, grid configuration, and territory settings are all there. Phase 1 introduced `tuning.js` for balance constants specifically, but the boundary between "configuration" and "tuning" is fuzzy.
+**The problem:** Section 2.1.2 contained conflicting statements about whether NPCs need housing.
 
-Building blueprints (section 2.4.1) define building dimensions, costs, and types — these overlap directly with what's already in `shared/config.js` (BUILDING_TYPES, BUILDING_DIMENSIONS, BUILDING_TIERS). The plan also creates `src/data/buildingBlueprints.js` — a third location for building-related constants.
-
-**Recommendation:** Define a clear rule:
-- `shared/config.js` — structural constants (types, dimensions, grid)
-- `data/tuning.js` — balance numbers (rates, thresholds, multipliers)
-- `data/buildingBlueprints.js` — block-level building definitions (voxel layouts)
-
-Document this boundary explicitly in the plan.
-
-### 4. NPC Population Cap Contradiction
-
-**The problem:** Section 2.1.2 contains conflicting statements:
-- `NPC_BASE_POPULATION_CAP = 3` (without housing) — implies 3 NPCs can exist without housing
-- `max(3, housingCapacity)` — same implication
-- "If settlement has no available housing: NPC waits 1 in-game day, then leaves" — implies NPCs *need* housing
-- "Population capped by housing capacity" — implies housing is the limit
-
-Can the first 3 NPCs exist without housing or not? If yes, where do they sleep? If no, the `NPC_BASE_POPULATION_CAP = 3` constant is misleading.
-
-**Recommendation:** Pick one:
-- **Option A:** First NPC arrives without housing (sleeps by campfire, happiness penalty). Subsequent NPCs require housing. Cap = `max(1, housingCapacity)`.
-- **Option B:** No NPCs without housing. Campfire + shelter is the minimum trigger. Cap = `housingCapacity` strictly.
-
-Option A feels better for the "first NPC arrival" tutorial moment — the first settler is hardy enough to rough it, motivating the player to build shelter.
+**Resolution:** Plan adopted Option A. Section 2.1.2 now clearly states:
+- The very first NPC can join without housing (hardy pioneer — sleeps by campfire, -20 happiness)
+- All subsequent NPCs require available housing to join
+- Population cap: `max(1, housingCapacity)` — first settler is free, rest need beds
+- `NPC_FIRST_SETTLER_FREE = true` tuning constant added
+- Hard cap: 20 NPCs (`NPC_MAX_POPULATION_PHASE_2 = 20`)
 
 ---
 
 ## Significant Issues
 
-### 5. Overlapping AI Systems Without Clear Resolution
+### 5. ~~Overlapping AI Systems Without Clear Resolution~~ ✅ RESOLVED
 
-**The problem:** The plan creates `TaskAssignmentEngine.js` but three existing systems already handle NPC decision-making:
-- `AutonomousDecision.js` — priority-based action selection with EMERGENCY/CRITICAL/HIGH/MEDIUM/LOW priorities
-- `NPCBehaviorSystem.js` — behavior trees, daily schedules (SLEEP, WAKE_UP, EAT_BREAKFAST, WORK, BREAK, etc.), personality-driven behavior, long-term memory
-- `CompanionAISystem.js` — follow/gather/patrol/defend commands
+**The problem:** The plan creates `TaskAssignmentEngine.js` but three existing systems already handle NPC decision-making, with no defined authority when they disagree.
 
-The plan says to "integrate with TaskAssignmentEngine" in the modified files list but never specifies *how*. Which system is authoritative when they disagree? If `NPCBehaviorSystem` says it's WORK time but `TaskAssignmentEngine` scores a REST task highest, who wins?
+**Resolution:** Section 2.5 now defines a strict AI System Authority Hierarchy:
+1. `NPCBehaviorSystem.js` — owns the SCHEDULE (when to work, eat, sleep)
+2. `AutonomousDecision.js` — handles INTERRUPTS (critical needs, emergencies)
+3. `TaskAssignmentEngine.js` — resolves WHAT WORK to do (mine, haul, build) during work periods
+4. `CompanionAISystem.js` — overrides work assignment ONLY for player-commanded companions
 
-**Recommendation:** Define a clear authority hierarchy:
-1. `NPCBehaviorSystem` owns the *schedule* (when to work, eat, sleep)
-2. `AutonomousDecision` handles *interrupts* (critical needs, emergencies)
-3. `TaskAssignmentEngine` resolves *what work to do* during work periods
-4. `CompanionAISystem` applies only to player-commanded companions, not settlers
+Each system has clear ownership: schedule determines the phase, interrupts can override, work assignment only runs during work periods for idle NPCs, and companion commands only apply to explicitly commanded NPCs.
 
-Add an integration diagram showing how these systems hand off control.
+### 6. ~~Daily Schedule Duplication~~ ✅ RESOLVED
 
-### 6. Daily Schedule Duplication
+**The problem:** Section 2.6.2 created a parallel daily schedule system when `NPCBehaviorSystem.js` already has one.
 
-**The problem:** Section 2.6.2 creates a daily schedule system, but `NPCBehaviorSystem.js` already has one with activity types: SLEEP, WAKE_UP, EAT_BREAKFAST, WORK, BREAK, EAT_LUNCH, SOCIALIZE, EAT_DINNER, LEISURE, RETURN_HOME, SHELTER, FESTIVAL. The existing system even has personality-driven schedule modifications.
+**Resolution:** Section 2.6.2 now titled "NPC Daily Schedule (Extend Existing System)" explicitly states: "Do not create a parallel schedule — extend the existing one." The plan wires settlement WORK activities into the existing NPCBehaviorSystem schedule activities and maps world time ranges to existing activity types.
 
-The plan's schedule (Dawn/Morning/Midday/Afternoon/Evening/Night) overlaps almost entirely with the existing one. Building a second schedule system will cause conflicts.
+### 7. ~~NPCVoxelModel.js — Vertex Offset Animation Is Wrong Approach~~ ✅ RESOLVED
 
-**Recommendation:** Extend `NPCBehaviorSystem.js`'s existing schedule rather than creating a parallel one. The plan's section 2.6.2 should become "Wire settlement work into existing NPCBehaviorSystem daily schedule" — adding work types as schedule-eligible activities rather than reimplementing scheduling.
+**The problem:** The plan used vertex offsets with instanced meshes for NPC animation, which is technically problematic.
 
-### 7. NPCVoxelModel.js — Vertex Offset Animation Is Wrong Approach
+**Resolution:** Section 2.5.3 now uses grouped `Object3D` per NPC with per-limb instanced meshes (6 draw calls total for ALL NPCs: heads, torsos, left arms, right arms, left legs, right legs). Animations use instance matrix transforms (rotation/translation) per limb per frame — no custom shaders needed.
 
-**The problem:** The plan says NPC animations use "simple animations via vertex offset" with instanced mesh rendering. This is technically problematic:
-- Instanced meshes share geometry — you can't offset individual vertices per instance without custom shader work
-- Custom vertex shaders in React Three Fiber require `onBeforeCompile` hacks or raw `ShaderMaterial`, both of which are fragile
-- The ~40-voxel humanoid (head, body, arms, legs) needs *limb-level* animation, not vertex-level
+### 8. ~~Missing Web Worker Strategy for Pathfinding~~ ✅ RESOLVED
 
-**Recommendation:** Use grouped `Object3D` nodes per NPC with separate instanced meshes per limb type:
-- One `InstancedMesh` for all NPC heads (same geometry, different colors via instance attribute)
-- One for all torsos, one for all left arms, etc.
-- Animate by transforming the instance matrices (rotation/translation per limb per frame)
-- This gives you limb animation with instancing benefits and no custom shaders
+**The problem:** No task for moving pathfinding to a Web Worker despite targeting 8+ NPCs.
 
-Alternatively, accept simpler animation: just bob the whole NPC mesh up/down while moving, with a tool item appearing/disappearing for work states. This is much cheaper and still readable.
+**Resolution:** Section 2.5.4 "Pathfinding Web Worker (Conditional)" added with full implementation spec. Section 2.0.3 "Performance Baseline Measurement" added as a prerequisite to determine if the worker is needed. Trigger: implement if baseline shows <6ms headroom or pathfinding exceeds 2ms during testing. Includes async request/response pattern, stale path handling, and stagger limits.
 
-### 8. Missing Web Worker Strategy for Pathfinding
+### 9. ~~Farm System Is Underspecified~~ ✅ RESOLVED
 
-**The problem:** The 3D implementation plan (section on Performance Strategy) emphasizes Web Workers for pathfinding. Phase 2 targets 8+ NPCs each doing A* pathfinding, but the plan only mentions "stagger pathfinding across frames" in the risk table. There's no task for:
-- Moving PathfindingService to a Web Worker
-- Async pathfinding request/response pattern
-- Handling stale paths when world changes during computation
+**The problem:** No "Farming Zone Behavior" section analogous to mining zone behavior.
 
-The existing `PathfindingService.js` runs on the main thread. With 8 NPCs pathfinding simultaneously, A* on a 3D grid will easily blow the 2ms budget.
+**Resolution:** Section 2.2.4 "Farming Zone Behavior" added with full specification: farm lifecycle (EMPTY → PLANTED → GROWING → READY → HARVESTED → EMPTY), NPC task generation for planting/harvesting, growth timers, crop yields, unattended auto-collection at 25% rate, tuning constants, acceptance criteria, and test specs.
 
-**Recommendation:** Add a task in section 2.5 or an early foundation task to create a pathfinding worker. The existing `src/systems/workers/` directory already has worker infrastructure. This is critical for the 16ms frame budget.
+### 10. ~~Performance Budget Is Tight~~ ✅ RESOLVED
 
-### 9. Farm System Is Underspecified
+**The problem:** Performance budget left only 10ms for existing systems, with no measurement of actual headroom.
 
-**The problem:** FARMING is listed as a zone type, Farm Plot is a building, and open question 10 partially addresses farm behavior, but there's no "Farming Zone Behavior" section analogous to "Mining Zone Behavior" (2.2.3). What does a farming NPC actually do? What's the tick-by-tick behavior? How does planting/harvesting work? What crops exist?
-
-The open question answer ("Require NPC assignment for full production, produce at 25% rate unattended") isn't reflected in any implementation task.
-
-**Recommendation:** Either:
-- Add a "2.2.4 Farming Zone Behavior" section with the same level of detail as mining
-- Or explicitly scope farming out of Phase 2 and remove FARMING from the zone types list, deferring to Phase 3
-
-Half-specifying a system is worse than not including it — it'll get implemented inconsistently.
-
-### 10. Performance Budget Is Tight
-
-**The problem:** The individual system budgets sum to ~6ms:
-| System | Budget |
-|--------|--------|
-| Pathfinding (8 NPCs) | 2.0ms |
-| Task assignment | 1.0ms |
-| Stockpile rendering (4) | 0.5ms |
-| NPC voxel rendering (8) | 1.0ms |
-| Zone overlays (10) | 0.5ms |
-| Need simulation (8 NPCs) | 0.5ms |
-| Construction (3 sites) | 0.5ms |
-| **Subtotal** | **6.0ms** |
-
-This leaves 10ms for terrain rendering, React reconciliation, Three.js scene graph traversal, physics, existing module ticks, garbage collection, and browser overhead. Phase 0/1 systems already consume frame time. On mid-range hardware, this will be tight.
-
-**Recommendation:** Add a performance profiling task early (week 2-3) that measures the current frame budget *before* adding Phase 2 systems. Establish the actual headroom available. If it's less than 8ms, the pathfinding worker becomes non-negotiable rather than nice-to-have.
+**Resolution:** Section 2.0.3 "Performance Baseline Measurement" added as a Week 1 task. It measures current frame budget before adding Phase 2 systems, documents available headroom, and includes a go/no-go decision on the pathfinding worker (if headroom <6ms, the worker becomes mandatory). Results recorded in `docs/research/PERFORMANCE_BASELINE.md`.
 
 ---
 
 ## Moderate Issues
 
-### 11. Hauling Task Lifecycle Is Over-Engineered
+### 11. ~~Hauling Task Lifecycle Is Over-Engineered~~ ✅ RESOLVED
 
-The 7-state lifecycle (`PENDING → CLAIMED → TRAVELING_TO_PICKUP → PICKING_UP → TRAVELING_TO_DELIVERY → DELIVERING → COMPLETED`) adds complexity without corresponding gameplay benefit. `TRAVELING_TO_PICKUP` and `PICKING_UP` could be a single `PICKING_UP` state (NPC walks there, picks up, done). Same for delivery.
+**Resolution:** Section 2.3.2 now uses a simplified 4-state lifecycle: `PENDING → PICKING_UP → DELIVERING → COMPLETED`.
 
-**Recommendation:** Start with 4 states: `PENDING → ACTIVE → DELIVERING → COMPLETED`. Add granularity later if needed for debugging or UI display.
+### 12. ~~RESTRICTED Zone Has No Implementation~~ ✅ RESOLVED
 
-### 12. RESTRICTED Zone Has No Implementation
+**Resolution:** Section 2.2.1 now specifies RESTRICTED zone behavior: "RESTRICTED zones override all others — NPCs will not pathfind through or work in RESTRICTED zones (use cases: block off dangerous areas near rifts, reserve space for future building, prevent NPCs from entering player's personal area)." Zone rendering uses red at opacity 0.4 (slightly more visible than other zones).
 
-Listed as a zone type but there are no behavior rules, no NPC avoidance logic, no placement rationale, and no test cases. What is it for? When would a player use it?
+### 13. ~~Building Rotation Not In Implementation Tasks~~ ✅ RESOLVED
 
-**Recommendation:** Either specify it (likely: NPCs won't pathfind through or work in RESTRICTED zones, used to block off dangerous areas or reserve space for future building) or remove it from the initial zone type list.
+**Resolution:** Section 2.4.1 now includes: `rotatable: boolean` in blueprint data structure, R key to cycle rotation during placement, block offsets transformed by rotation matrix before validation, ghost preview updates for rotated orientation, acceptance criteria for rotation, and test specs for rotation transforms and rotated validation.
 
-### 13. Building Rotation Not In Implementation Tasks
+### 14. ~~Open Questions Should Be Resolved Before Implementation~~ ✅ RESOLVED
 
-Open question 4 says "Should blueprints be rotatable? Yes, 90° increments. Add to 2.4.1." But section 2.4.1 has no rotation task, no rotation in the blueprint data structure, no rotation in the validation rules, and no rotation in the acceptance criteria. The existing `shared/config.js` already defines rotation rules (0/90/180/270 degrees).
+**Resolution:** All 5 critical open questions resolved and integrated into the plan:
+- Q1 (carrying capacity): 1 stack per NPC, fixed for Phase 2 (Section 2.3.2)
+- Q4 (building rotation): 90° increments using existing config rotation rules (Section 2.4.1)
+- Q6 (NPC-player resource sharing): NPCs eat from stockpiles, player inventory separate (Section 2.6.1)
+- Q7 (max settlement size): Hard cap of 20 NPCs (Section 2.1.2)
+- Q10 (farm automation): NPC assignment for full production, 25% passive rate (Section 2.2.4)
+Remaining questions (Q2, Q3, Q5, Q8, Q9) deferred to implementation or Phase 3.
 
-**Recommendation:** Add rotation to the blueprint data structure and placement UI in section 2.4.1. The existing config already supports it — just wire it up.
+### 15. ~~Missing FORMULAS.md Update~~ ✅ RESOLVED
 
-### 14. Open Questions Should Be Resolved Before Implementation
+**Resolution:** Section 2.5.1 now includes task "Update `FORMULAS.md` with the task scoring formula and variety bonus." `docs/FORMULAS.md` is listed in "Modified Files."
 
-10 open questions are listed but several directly affect implementation design:
-- Q1 (carrying capacity) affects hauling task system design
-- Q4 (building rotation) affects blueprint system
-- Q6 (NPC-player resource sharing) affects stockpile system
-- Q7 (max settlement size) affects performance targets and testing
-- Q10 (farm automation) affects farming zone implementation
+### 16. ~~Stockpile Item Rendering Needs Its Own Hook~~ ✅ RESOLVED
 
-Starting implementation with these unresolved creates rework risk.
+**Resolution:** Section 2.3.1 now specifies "Visual: resource items rendered on stockpile ground via dedicated `src/rendering/useStockpileRenderer.js` hook (follows existing renderer pattern, uses instanced meshes per resource type)." File listed in "New Files Created."
 
-**Recommendation:** Resolve Q1, Q4, Q6, Q7, and Q10 before starting. The others (Q2, Q3, Q5, Q8, Q9) can wait.
+### 17. ~~"Variety Bonus" Mentioned Only in Risk Table~~ ✅ RESOLVED
 
-### 15. Missing FORMULAS.md Update
-
-`NPCAssignment.js` references `FORMULAS.md` for assignment priority formulas. The TaskAssignmentEngine introduces its own scoring formula (`score = (priority × 100) + (skillMatch × 50) - (distance × 1) - (personalityMismatch × 20)`) without referencing or updating FORMULAS.md. This creates a documentation divergence.
-
-**Recommendation:** Add a task to update FORMULAS.md with Phase 2 formulas.
-
-### 16. Stockpile Item Rendering Needs Its Own Hook
-
-The rendering architecture uses specialized hooks (`useVoxelRenderer`, `useTerrainRenderer`, `useNPCRenderer`, etc.). The plan mentions stockpile items as "instanced meshes" but doesn't specify where this rendering code lives. It shouldn't go in StockpileManager (logic/rendering separation). It needs its own `useStockpileRenderer.js` hook or integration into an existing renderer.
-
-**Recommendation:** Add `src/rendering/useStockpileRenderer.js` to the new files list and specify how it integrates with the rendering pipeline.
-
-### 17. "Variety Bonus" Mentioned Only in Risk Table
-
-The risk table identifies "Task assignment creates unfair specialization" and proposes a "variety bonus" for tasks an NPC hasn't done recently. This mitigation is important for the "NPCs feel autonomous" exit criterion but never appears in the TaskAssignmentEngine spec.
-
-**Recommendation:** Add the variety bonus to the scoring formula in section 2.5.1 or explicitly document it as a future tuning knob.
+**Resolution:** Section 2.5.1 scoring formula now includes `+ (varietyBonus × 15)` and describes: "NPCs get +15 score for task types they haven't done in the last 3 tasks (prevents over-specialization, keeps NPCs feeling dynamic)."
 
 ---
 
@@ -221,17 +148,17 @@ Not addressed: What happens if all stockpiles are full when a new NPC arrives? W
 
 Consider adding 2-3 weeks of buffer, or identifying what can be cut if time runs short (farming zones, building upgrades, and the NPC voxel model are the most self-contained features to defer).
 
-### 20. Zone Overlay Rendering Approach Unspecified
+### 20. ~~Zone Overlay Rendering Approach Unspecified~~ ✅ RESOLVED
 
-"Semi-transparent colored overlay on terrain" with "instanced rendering" is vague. Zone overlays are flat quads on the ground surface, not instanced voxels. Consider: simple `PlaneGeometry` meshes with transparent materials positioned at zone bounds, rendered in a dedicated `useZoneRenderer.js` hook.
+**Resolution:** Section 2.2.2 now specifies: "`PlaneGeometry` meshes with transparent `MeshBasicMaterial` positioned at zone bounds (not instanced voxels — zones are flat ground overlays)" rendered via dedicated `src/rendering/useZoneRenderer.js` hook. Color-coded per zone type with specified opacity values.
 
-### 21. Missing Consideration of Existing Store Architecture
+### 21. ~~Missing Consideration of Existing Store Architecture~~ ✅ RESOLVED
 
-The project already has multiple Zustand stores in `src/stores/`. The plan modifies `useGameStore.js` but doesn't specify the state shape changes. With 9 new systems needing state, consider whether a dedicated `useSettlementStore.js` would be cleaner than expanding the existing store.
+**Resolution:** Section 2.0.2 adds a dedicated `src/stores/useSettlementStore.js` with full state shape specification. Settlement module writes to this store via refs (not React render cycle), UI components read via hooks.
 
-### 22. Tutorial Hints Should Reference Phase 1 Hint System
+### 22. ~~Tutorial Hints Should Reference Phase 1 Hint System~~ ✅ RESOLVED
 
-Section 2.8.4 says "extend Phase 1 hint system" and `ContextualHints.jsx` exists with priority, cooldown, and show-once logic. Good. But the plan's hint triggers ("After first shelter built", "When NPC is idle and no zones exist") require new event hooks that aren't specified. Add tasks for emitting these events from the relevant systems.
+**Resolution:** Section 2.8.4 now specifies the exact event hooks needed for hint triggers: `ConstructionManager` emits `building:complete`, `ImmigrationManager` emits `npc:approaching`/`npc:joined`, `TaskAssignmentEngine` emits `npc:idle-no-zones`, `HousingManager` emits `housing:full`, `NPCNeedsTracker` emits `npc:unhappy`.
 
 ---
 
@@ -254,23 +181,25 @@ To be clear about the strengths — there is a lot to like in this plan:
 
 ## Summary of Recommendations
 
-### Must Fix Before Starting
-1. Move systems to `src/modules/settlement/` and add ModuleOrchestrator integration
-2. Resolve population cap contradiction (section 2.1.2)
-3. Define AI system authority hierarchy (TaskAssignment vs AutonomousDecision vs BehaviorSystem)
-4. Resolve open questions Q1, Q4, Q6, Q7, Q10
+### ~~Must Fix Before Starting~~ ✅ ALL RESOLVED
+1. ~~Move systems to `src/modules/settlement/` and add ModuleOrchestrator integration~~ ✅
+2. ~~Resolve population cap contradiction (section 2.1.2)~~ ✅
+3. ~~Define AI system authority hierarchy (TaskAssignment vs AutonomousDecision vs BehaviorSystem)~~ ✅
+4. ~~Resolve open questions Q1, Q4, Q6, Q7, Q10~~ ✅
 
-### Should Fix Before Starting
-5. Add pathfinding Web Worker task
-6. Specify NPC voxel model animation approach correctly (grouped meshes, not vertex offsets)
-7. Specify or defer farming zone behavior
-8. Add early performance profiling task
-9. Clarify config vs tuning vs blueprint data boundaries
+### ~~Should Fix Before Starting~~ ✅ ALL RESOLVED
+5. ~~Add pathfinding Web Worker task~~ ✅
+6. ~~Specify NPC voxel model animation approach correctly (grouped meshes, not vertex offsets)~~ ✅
+7. ~~Specify or defer farming zone behavior~~ ✅
+8. ~~Add early performance profiling task~~ ✅
+9. ~~Clarify config vs tuning vs blueprint data boundaries~~ ✅
 
-### Can Fix During Implementation
-10. Simplify hauling task lifecycle
-11. Specify RESTRICTED zone behavior
-12. Add building rotation to section 2.4.1
-13. Add stockpile renderer hook
-14. Add FORMULAS.md update task
-15. Add variety bonus to TaskAssignmentEngine spec
+### ~~Can Fix During Implementation~~ ✅ ALL RESOLVED
+10. ~~Simplify hauling task lifecycle~~ ✅
+11. ~~Specify RESTRICTED zone behavior~~ ✅
+12. ~~Add building rotation to section 2.4.1~~ ✅
+13. ~~Add stockpile renderer hook~~ ✅
+14. ~~Add FORMULAS.md update task~~ ✅
+15. ~~Add variety bonus to TaskAssignmentEngine spec~~ ✅
+
+**Status: All 22 review items resolved. The detailed plan is ready for implementation starting with Task 2.0.1 (SettlementModule).**

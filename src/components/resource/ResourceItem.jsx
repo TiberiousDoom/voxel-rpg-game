@@ -45,10 +45,11 @@ function ResourceItem({
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   // Animate value changes
-  const animatedValue = useResourceAnimation(amount, {
+  const rawAnimatedValue = useResourceAnimation(amount, {
     duration: 600,
     easing: 'easeOut'
   });
+  const animatedValue = rawAnimatedValue != null && !isNaN(rawAnimatedValue) ? rawAnimatedValue : amount;
 
   // Track resource trend
   const trend = useResourceTrend(amount, 1000);
@@ -64,8 +65,14 @@ function ResourceItem({
 
   // Format display value
   const formatNumber = (num) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    if (num >= 1000000) {
+      const val = num / 1000000;
+      return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      const val = num / 1000;
+      return `${val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)}K`;
+    }
     return Math.floor(num).toString();
   };
 

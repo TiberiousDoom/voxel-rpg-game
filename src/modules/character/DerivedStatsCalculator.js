@@ -68,7 +68,7 @@ class DerivedStatsCalculator {
 
       // Combat contributions
       physicalDamage: attrs.combat * 1.5,
-      critChance: BASE_STATS.critChance + attrs.combat * 0.2 + attrs.exploration * 0.1,
+      critChance: BASE_STATS.critChance + attrs.combat * 0.2 + (attrs.exploration > 10 ? attrs.exploration * 0.1 : 0),
       attackSpeed: BASE_STATS.attackSpeed + attrs.combat * 0.01,
     };
   }

@@ -121,8 +121,8 @@ class BrowserSaveManager {
       this.currentSave = slotName;
       localStorage.setItem(`${this.config.storagePrefix}current-slot`, slotName);
 
-      // Don't pre-populate metadata cache here; let getSaveMetadata populate it on demand
-      // This ensures that if metadata is later removed from localStorage, stale cache is not returned
+      // Invalidate stale metadata cache for this slot so next read gets fresh data
+      this.metadataCache.delete(slotName);
 
       return {
         success: true,

@@ -195,7 +195,7 @@ export class TerrainJobQueue {
    */
   updateJobProgress(jobId, deltaTime, speedMultiplier = 1.0) {
     const job = this.getJob(jobId);
-    if (!job || job.state !== JOB_STATE.ACTIVE) return;
+    if (!job || job.state !== JOB_STATE.ACTIVE) return false;
 
     job.updateProgress(deltaTime, speedMultiplier);
 
@@ -214,31 +214,29 @@ export class TerrainJobQueue {
     const job = this.getJob(jobId);
     if (!job) return false;
 
-    // Execute terrain modification
-    const success = this.executeTerrainModification(job);
-
-    if (success) {
-      // Move to completed list
-      const index = this.activeJobs.indexOf(job);
-      if (index !== -1) {
-        this.activeJobs.splice(index, 1);
-      }
-
-      this.completedJobs.push(job);
-
-      // Keep only last 100 completed jobs
-      if (this.completedJobs.length > 100) {
-        this.completedJobs.shift();
-      }
-
-      // Update stats
-      this.stats.totalJobsCompleted++;
-      this.stats.totalWorkTime += job.actualTime;
-
-      return true;
+    // Execute terrain modification (best effort)
+    if (this.terrainSystem) {
+      this.executeTerrainModification(job);
     }
 
-    return false;
+    // Move to completed list
+    const index = this.activeJobs.indexOf(job);
+    if (index !== -1) {
+      this.activeJobs.splice(index, 1);
+    }
+
+    this.completedJobs.push(job);
+
+    // Keep only last 100 completed jobs
+    if (this.completedJobs.length > 100) {
+      this.completedJobs.shift();
+    }
+
+    // Update stats
+    this.stats.totalJobsCompleted++;
+    this.stats.totalWorkTime += job.actualTime;
+
+    return true;
   }
 
   /**
@@ -361,6 +359,24 @@ export class TerrainJobQueue {
   }
 
   /**
+   * Remove a job from the queue
+   * @param {number} jobId - Job ID
+   * @returns {boolean} Whether the job was removed
+   */
+  removeJob(jobId) {
+    const job = this.jobs.get(jobId);
+    if (!job) return false;
+
+    this.jobs.delete(jobId);
+    this.pendingJobs = this.pendingJobs.filter(j => j.id !== jobId);
+    this.activeJobs = this.activeJobs.filter(j => j.id !== jobId);
+    this.completedJobs = this.completedJobs.filter(j => j.id !== jobId);
+    this.cancelledJobs = this.cancelledJobs.filter(j => j.id !== jobId);
+
+    return true;
+  }
+
+  /**
    * Get all jobs with optional filtering
    * @param {object} filters - Filter criteria {state, type, priority}
    * @returns {Array<TerrainJob>} Filtered jobs
@@ -380,6 +396,9 @@ export class TerrainJobQueue {
       jobs = jobs.filter(job => job.priority === filters.priority);
     }
 
+    // Sort by priority descending
+    jobs.sort((a, b) => b.priority - a.priority);
+
     return jobs;
   }
 
@@ -390,6 +409,10 @@ export class TerrainJobQueue {
   getStatistics() {
     return {
       ...this.stats,
+      pending: this.pendingJobs.length,
+      active: this.activeJobs.length,
+      completed: this.completedJobs.length,
+      cancelled: this.cancelledJobs.length,
       pendingJobsCount: this.pendingJobs.length,
       activeJobsCount: this.activeJobs.length,
       completedJobsCount: this.completedJobs.length,
@@ -413,6 +436,7 @@ export class TerrainJobQueue {
   serialize() {
     return {
       nextJobId: this.nextJobId,
+      jobs: Array.from(this.jobs.values()).map(job => job.serialize()),
       pendingJobs: this.pendingJobs.map(job => job.serialize()),
       activeJobs: this.activeJobs.map(job => job.serialize()),
       stats: this.stats

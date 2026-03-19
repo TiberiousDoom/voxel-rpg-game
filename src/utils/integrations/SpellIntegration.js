@@ -6,7 +6,6 @@
  * - Magic attribute affecting spell damage (+2% per point)
  * - Mana cost reduction (0.5% per point, capped at 40%)
  * - Cooldown reduction (0.5% per point, capped at 40%)
- * - Soft caps and diminishing returns
  */
 
 /**
@@ -19,16 +18,13 @@ export function calculateSpellDamage(spell, character) {
   if (!spell || !character) return 0;
 
   const baseDamage = spell.damage || 0;
-  const magic = character.attributes?.magic || 0;
+  const magic = Math.max(0, character.attributes?.magic || 0);
 
-  // Apply soft cap
-  const effectiveMagic = applySoftCap(magic, 50, 1.0, 0.5);
-
-  // 2% damage increase per magic point
-  const magicBonus = effectiveMagic * 0.02;
+  // 2% damage increase per magic point (no cap on damage scaling)
+  const magicBonus = magic * 0.02;
   const finalDamage = baseDamage * (1 + magicBonus);
 
-  return finalDamage;
+  return Math.round(finalDamage);
 }
 
 /**
@@ -41,13 +37,10 @@ export function calculateManaCost(spell, character) {
   if (!spell) return 0;
 
   const baseCost = spell.manaCost || 0;
-  const magic = character?.attributes?.magic || 0;
-
-  // Apply soft cap
-  const effectiveMagic = applySoftCap(magic, 50, 1.0, 0.5);
+  const magic = Math.max(0, character?.attributes?.magic || 0);
 
   // 0.5% mana cost reduction per point, capped at 40%
-  const reduction = Math.min(0.40, effectiveMagic * 0.005);
+  const reduction = Math.min(0.40, magic * 0.005);
   const finalCost = Math.ceil(baseCost * (1 - reduction));
 
   return Math.max(1, finalCost); // Minimum 1 mana
@@ -63,16 +56,14 @@ export function calculateCooldown(spell, character) {
   if (!spell) return 0;
 
   const baseCooldown = spell.cooldown || 0;
-  const magic = character?.attributes?.magic || 0;
-
-  // Apply soft cap
-  const effectiveMagic = applySoftCap(magic, 50, 1.0, 0.5);
+  const magic = Math.max(0, character?.attributes?.magic || 0);
 
   // 0.5% cooldown reduction per point, capped at 40%
-  const reduction = Math.min(0.40, effectiveMagic * 0.005);
+  const reduction = Math.min(0.40, magic * 0.005);
   const finalCooldown = baseCooldown * (1 - reduction);
 
-  return Math.max(0.5, finalCooldown); // Minimum 0.5s cooldown
+  // Round to 2 decimal places, minimum 0.1s
+  return Math.max(0.1, Math.round(finalCooldown * 100) / 100);
 }
 
 /**
@@ -84,13 +75,10 @@ export function calculateMaxMana(character) {
   if (!character) return 100;
 
   const baseMana = 100;
-  const magic = character.attributes?.magic || 0;
-
-  // Apply soft cap
-  const effectiveMagic = applySoftCap(magic, 50, 1.0, 0.5);
+  const magic = Math.max(0, character.attributes?.magic || 0);
 
   // 10 mana per magic point
-  const magicBonus = effectiveMagic * 10;
+  const magicBonus = magic * 10;
 
   return baseMana + magicBonus;
 }
@@ -104,13 +92,10 @@ export function calculateManaRegen(character) {
   if (!character) return 10;
 
   const baseRegen = 10;
-  const magic = character.attributes?.magic || 0;
-
-  // Apply soft cap
-  const effectiveMagic = applySoftCap(magic, 50, 1.0, 0.5);
+  const magic = Math.max(0, character.attributes?.magic || 0);
 
   // 0.5 mana/s per magic point
-  const magicBonus = effectiveMagic * 0.5;
+  const magicBonus = magic * 0.5;
 
   return baseRegen + magicBonus;
 }
@@ -123,10 +108,37 @@ export function calculateManaRegen(character) {
 export function getSpellPower(character) {
   if (!character) return 1.0;
 
-  const magic = character.attributes?.magic || 0;
-  const effectiveMagic = applySoftCap(magic, 50, 1.0, 0.5);
+  const magic = Math.max(0, character.attributes?.magic || 0);
 
-  return 1.0 + effectiveMagic * 0.02; // Same as damage scaling
+  return 1.0 + magic * 0.02; // Same as damage scaling
+}
+
+/**
+ * Get spell skill modifier from skill tree (MVP: returns 1.0)
+ * @param {object} _character - The character data
+ * @returns {number} Skill modifier multiplier
+ */
+export function getSpellSkillModifier(_character) {
+  return 1.0;
+}
+
+/**
+ * Calculate spell healing with Magic attribute scaling
+ * @param {object} spell - The spell data
+ * @param {object} character - The character data
+ * @returns {number} Final healing amount
+ */
+export function calculateSpellHealing(spell, character) {
+  if (!spell || !character) return 0;
+
+  const baseHealing = spell.healAmount || spell.damage || 0;
+  const magic = Math.max(0, character.attributes?.magic || 0);
+
+  // Same scaling as damage: 2% per magic point
+  const magicBonus = magic * 0.02;
+  const finalHealing = baseHealing * (1 + magicBonus);
+
+  return Math.round(finalHealing);
 }
 
 /**
@@ -241,6 +253,8 @@ export const SpellIntegration = {
   calculateMaxMana,
   calculateManaRegen,
   getSpellPower,
+  getSpellSkillModifier,
+  calculateSpellHealing,
   canCastSpell,
   applySpellEffects,
   getSoftCapInfo,

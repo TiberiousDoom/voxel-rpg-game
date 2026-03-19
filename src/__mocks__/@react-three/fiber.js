@@ -5,8 +5,8 @@
 import React from 'react';
 
 // Mock Canvas component
-export const Canvas = ({ children, ...props }) => (
-  <div data-testid="r3f-canvas" {...props}>
+export const Canvas = ({ children, shadows, ...props }) => (
+  <div data-testid="r3f-canvas" {...(shadows ? { shadows: '' } : {})} {...props}>
     {children}
   </div>
 );

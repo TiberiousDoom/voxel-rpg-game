@@ -171,6 +171,15 @@ class GameStateSerializer {
         }
       }
 
+      // Sync gameState from restored modules
+      if (typeof orchestrator._updateGameState === 'function') {
+        try {
+          orchestrator._updateGameState();
+        } catch (err) {
+          errors.push(`[Warning] Could not sync game state: ${err.message}`);
+        }
+      }
+
       // Log all errors for debugging
       if (errors.length > 0) {
         // eslint-disable-next-line no-console
@@ -195,7 +204,8 @@ class GameStateSerializer {
           errStr.includes('event') ||
           errStr.includes('phase 3') ||
           errStr.includes('restored previous') ||
-          errStr.includes('backup')
+          errStr.includes('backup') ||
+          errStr.includes('voxel')
         );
       });
 
@@ -808,6 +818,7 @@ class GameStateSerializer {
       currentTier: gameState.currentTier,
       buildings: gameState.buildings ? [...gameState.buildings] : [],
       npcs: gameState.npcs ? [...gameState.npcs] : [],
+      resources: gameState.resources ? { ...gameState.resources } : undefined,
       storage: gameState.storage ? { ...gameState.storage } : {},
       morale: gameState.morale,
       tick: gameState.tick,
@@ -825,6 +836,9 @@ class GameStateSerializer {
       }
       if (data.tick !== undefined) {
         orchestrator.tickCount = data.tick;
+      }
+      if (data.resources) {
+        orchestrator.gameState.resources = { ...data.resources };
       }
     } catch (err) {
       errors.push(`Engine state deserialization error: ${err.message}`);

@@ -302,6 +302,73 @@ export class Clock {
   }
 }
 
+// Mock Fog
+export class Fog {
+  constructor(color, near, far) {
+    this.color = typeof color === 'string' ? new Color(color) : new Color(color || 0);
+    this.near = near ?? 1;
+    this.far = far ?? 1000;
+    this.isFog = true;
+  }
+}
+
+// Mock BufferGeometry
+export class BufferGeometry {
+  constructor() {
+    this.attributes = {};
+    this.index = null;
+    this.type = 'BufferGeometry';
+  }
+  setAttribute(name, attribute) {
+    this.attributes[name] = attribute;
+    return this;
+  }
+  setIndex(index) {
+    this.index = index;
+    return this;
+  }
+  computeVertexNormals() {}
+  computeBoundingSphere() {}
+  dispose() {}
+}
+
+// Mock BufferAttribute
+export class BufferAttribute {
+  constructor(array, itemSize) {
+    this.array = array;
+    this.itemSize = itemSize;
+    this.needsUpdate = false;
+  }
+}
+
+// Mock MathUtils
+export const MathUtils = {
+  lerp: (start, end, alpha) => start + (end - start) * alpha,
+  clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+  degToRad: (degrees) => degrees * (Math.PI / 180),
+  radToDeg: (radians) => radians * (180 / Math.PI),
+  mapLinear: (x, a1, a2, b1, b2) => b1 + ((x - a1) * (b2 - b1)) / (a2 - a1),
+};
+
+// Mock LineBasicMaterial
+export class LineBasicMaterial {
+  constructor(params = {}) {
+    this.color = params.color ? new Color(params.color) : new Color();
+    this.type = 'LineBasicMaterial';
+  }
+  dispose() {}
+}
+
+// Mock LineSegments
+export class LineSegments extends Object3D {
+  constructor(geometry, material) {
+    super();
+    this.geometry = geometry;
+    this.material = material;
+    this.isLineSegments = true;
+  }
+}
+
 // Constants
 export const DoubleSide = 2;
 export const FrontSide = 0;
@@ -323,10 +390,16 @@ const THREE = {
   PlaneGeometry,
   ConeGeometry,
   EdgesGeometry,
+  BufferGeometry,
+  BufferAttribute,
   MeshStandardMaterial,
   MeshBasicMaterial,
+  LineBasicMaterial,
+  LineSegments,
   Raycaster,
   Clock,
+  Fog,
+  MathUtils,
   DoubleSide,
   FrontSide,
   BackSide,

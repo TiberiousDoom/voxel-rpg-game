@@ -8,19 +8,64 @@ import '../testSetup';
 
 // Mock the store
 jest.mock('../../../stores/useGameStore', () => {
+  const noop = () => {};
+  const createState = () => ({
+    projectiles: [],
+    targetMarkers: [],
+    damageNumbers: [],
+    xpOrbs: [],
+    lootDrops: [],
+    particleEffects: [],
+    enemies: [],
+    rifts: [],
+    player: {
+      position: { x: 0, y: 0, z: 0 },
+      health: 100, maxHealth: 100,
+      mana: 100, maxMana: 100,
+      stamina: 100, maxStamina: 100,
+      level: 1, xp: 0,
+    },
+    equipment: {},
+    camera: { firstPerson: false, distance: 20, angle: 0, pitch: 0.8 },
+    worldTime: { isNight: false, elapsed: 0, timeScale: 1, paused: false },
+    gameState: 'playing',
+    buildMode: false,
+    blockPlacementMode: false,
+    selectedBlockType: 1,
+    screenShake: null,
+    _chunkManager: null,
+    _blockClickActive: false,
+    removeDamageNumber: noop,
+    removeXPOrb: noop,
+    removeLootDrop: noop,
+    removeParticleEffect: noop,
+    removeTargetMarker: noop,
+    removeProjectile: noop,
+    removeRiftEnemy: noop,
+    setChunkManager: noop,
+    updatePlayer: noop,
+    setPlayerPosition: noop,
+    setPlayerTarget: noop,
+    consumeStamina: noop,
+    regenStamina: noop,
+    regenMana: noop,
+    updateCamera: noop,
+    updateWorldTime: noop,
+    updateSpellCooldowns: noop,
+    clearScreenShake: noop,
+    dealDamageToPlayer: noop,
+    addGold: noop,
+    addMaterial: noop,
+    addXP: noop,
+    addDamageNumber: noop,
+    addTargetMarker: noop,
+    setRifts: noop,
+  });
   const mockStore = jest.fn((selector) => {
-    const state = {
-      projectiles: [],
-      targetMarkers: [],
-      damageNumbers: [],
-      xpOrbs: [],
-      particleEffects: [],
-      removeDamageNumber: jest.fn(),
-      removeXPOrb: jest.fn(),
-      removeParticleEffect: jest.fn(),
-    };
+    const state = createState();
     return selector ? selector(state) : state;
   });
+  mockStore.getState = () => createState();
   return mockStore;
 });
 
@@ -34,7 +79,68 @@ const TestWrapper = ({ children }) => (
 
 describe('Experience Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Re-initialize mock after clearAllMocks (which strips jest.fn implementations)
+    const useGameStore = require('../../../stores/useGameStore');
+    if (useGameStore.mockImplementation) {
+      const noop = () => {};
+      const createState = () => ({
+        projectiles: [],
+        targetMarkers: [],
+        damageNumbers: [],
+        xpOrbs: [],
+        lootDrops: [],
+        particleEffects: [],
+        enemies: [],
+        rifts: [],
+        player: {
+          position: { x: 0, y: 0, z: 0 },
+          health: 100, maxHealth: 100,
+          mana: 100, maxMana: 100,
+          stamina: 100, maxStamina: 100,
+          level: 1, xp: 0,
+        },
+        equipment: {},
+        camera: { firstPerson: false, distance: 20, angle: 0, pitch: 0.8 },
+        worldTime: { isNight: false, elapsed: 0, timeScale: 1, paused: false },
+        gameState: 'playing',
+        buildMode: false,
+        blockPlacementMode: false,
+        selectedBlockType: 1,
+        screenShake: null,
+        _chunkManager: null,
+        _blockClickActive: false,
+        removeDamageNumber: noop,
+        removeXPOrb: noop,
+        removeLootDrop: noop,
+        removeParticleEffect: noop,
+        removeTargetMarker: noop,
+        removeProjectile: noop,
+        removeRiftEnemy: noop,
+        setChunkManager: noop,
+        updatePlayer: noop,
+        setPlayerPosition: noop,
+        setPlayerTarget: noop,
+        consumeStamina: noop,
+        regenStamina: noop,
+        regenMana: noop,
+        updateCamera: noop,
+        updateWorldTime: noop,
+        updateSpellCooldowns: noop,
+        clearScreenShake: noop,
+        dealDamageToPlayer: noop,
+        addGold: noop,
+        addMaterial: noop,
+        addXP: noop,
+        addDamageNumber: noop,
+        addTargetMarker: noop,
+        setRifts: noop,
+      });
+      useGameStore.mockImplementation((selector) => {
+        const state = createState();
+        return selector ? selector(state) : state;
+      });
+      useGameStore.getState = () => createState();
+    }
   });
 
   describe('Rendering', () => {
@@ -142,132 +248,124 @@ describe('Experience Component', () => {
   });
 
   describe('Dynamic Elements', () => {
-    test('renders projectiles from store', () => {
+    const setupDynamicStore = (overrides = {}) => {
       const useGameStore = require('../../../stores/useGameStore');
+      const noop = () => {};
+      const baseState = {
+        projectiles: [],
+        targetMarkers: [],
+        damageNumbers: [],
+        xpOrbs: [],
+        lootDrops: [],
+        particleEffects: [],
+        enemies: [],
+        rifts: [],
+        player: {
+          position: { x: 0, y: 0, z: 0 },
+          health: 100, maxHealth: 100,
+          mana: 100, maxMana: 100,
+          stamina: 100, maxStamina: 100,
+          level: 1, xp: 0,
+        },
+        equipment: {},
+        camera: { firstPerson: false, distance: 20, angle: 0, pitch: 0.8 },
+        worldTime: { isNight: false, elapsed: 0, timeScale: 1, paused: false },
+        gameState: 'playing',
+        buildMode: false,
+        blockPlacementMode: false,
+        selectedBlockType: 1,
+        screenShake: null,
+        _chunkManager: null,
+        _blockClickActive: false,
+        removeDamageNumber: noop,
+        removeXPOrb: noop,
+        removeLootDrop: noop,
+        removeParticleEffect: noop,
+        removeTargetMarker: noop,
+        removeProjectile: noop,
+        removeRiftEnemy: noop,
+        setChunkManager: noop,
+        updatePlayer: noop,
+        setPlayerPosition: noop,
+        setPlayerTarget: noop,
+        consumeStamina: noop,
+        regenStamina: noop,
+        regenMana: noop,
+        updateCamera: noop,
+        updateWorldTime: noop,
+        updateSpellCooldowns: noop,
+        clearScreenShake: noop,
+        dealDamageToPlayer: noop,
+        addGold: noop,
+        addMaterial: noop,
+        addXP: noop,
+        addDamageNumber: noop,
+        addTargetMarker: noop,
+        setRifts: noop,
+        ...overrides,
+      };
       useGameStore.mockImplementation((selector) => {
-        const state = {
-          projectiles: [
-            { id: 'proj1', position: [0, 0, 0], direction: [1, 0, 0], speed: 10 },
-          ],
-          targetMarkers: [],
-          damageNumbers: [],
-          xpOrbs: [],
-          particleEffects: [],
-          removeDamageNumber: jest.fn(),
-          removeXPOrb: jest.fn(),
-          removeParticleEffect: jest.fn(),
-        };
-        return selector ? selector(state) : state;
+        return selector ? selector(baseState) : baseState;
       });
+      useGameStore.getState = () => baseState;
+    };
 
+    test('renders projectiles from store', () => {
+      setupDynamicStore({
+        projectiles: [
+          { id: 'proj1', position: [0, 0, 0], direction: [1, 0, 0], speed: 10 },
+        ],
+      });
       const { container } = render(
-        <TestWrapper>
-          <Experience />
-        </TestWrapper>
+        <TestWrapper><Experience /></TestWrapper>
       );
       expect(container).toBeInTheDocument();
     });
 
     test('renders damage numbers from store', () => {
-      const useGameStore = require('../../../stores/useGameStore');
-      useGameStore.mockImplementation((selector) => {
-        const state = {
-          projectiles: [],
-          targetMarkers: [],
-          damageNumbers: [
-            { id: 'dmg1', position: [0, 2, 0], damage: 50 },
-          ],
-          xpOrbs: [],
-          particleEffects: [],
-          removeDamageNumber: jest.fn(),
-          removeXPOrb: jest.fn(),
-          removeParticleEffect: jest.fn(),
-        };
-        return selector ? selector(state) : state;
+      setupDynamicStore({
+        damageNumbers: [
+          { id: 'dmg1', position: [0, 2, 0], damage: 50 },
+        ],
       });
-
       const { container } = render(
-        <TestWrapper>
-          <Experience />
-        </TestWrapper>
+        <TestWrapper><Experience /></TestWrapper>
       );
       expect(container).toBeInTheDocument();
     });
 
     test('renders XP orbs from store', () => {
-      const useGameStore = require('../../../stores/useGameStore');
-      useGameStore.mockImplementation((selector) => {
-        const state = {
-          projectiles: [],
-          targetMarkers: [],
-          damageNumbers: [],
-          xpOrbs: [
-            { id: 'xp1', position: [5, 1, 5], xpValue: 25 },
-          ],
-          particleEffects: [],
-          removeDamageNumber: jest.fn(),
-          removeXPOrb: jest.fn(),
-          removeParticleEffect: jest.fn(),
-        };
-        return selector ? selector(state) : state;
+      setupDynamicStore({
+        xpOrbs: [
+          { id: 'xp1', position: [5, 1, 5], xpValue: 25 },
+        ],
       });
-
       const { container } = render(
-        <TestWrapper>
-          <Experience />
-        </TestWrapper>
+        <TestWrapper><Experience /></TestWrapper>
       );
       expect(container).toBeInTheDocument();
     });
 
     test('renders particle effects from store', () => {
-      const useGameStore = require('../../../stores/useGameStore');
-      useGameStore.mockImplementation((selector) => {
-        const state = {
-          projectiles: [],
-          targetMarkers: [],
-          damageNumbers: [],
-          xpOrbs: [],
-          particleEffects: [
-            { id: 'fx1', position: [0, 0, 0], type: 'explosion' },
-          ],
-          removeDamageNumber: jest.fn(),
-          removeXPOrb: jest.fn(),
-          removeParticleEffect: jest.fn(),
-        };
-        return selector ? selector(state) : state;
+      setupDynamicStore({
+        particleEffects: [
+          { id: 'fx1', position: [0, 0, 0], type: 'explosion' },
+        ],
       });
-
       const { container } = render(
-        <TestWrapper>
-          <Experience />
-        </TestWrapper>
+        <TestWrapper><Experience /></TestWrapper>
       );
       expect(container).toBeInTheDocument();
     });
 
     test('renders target markers from store', () => {
-      const useGameStore = require('../../../stores/useGameStore');
-      useGameStore.mockImplementation((selector) => {
-        const state = {
-          projectiles: [],
-          targetMarkers: [
-            { id: 'tm1', position: [10, 0, 10], color: '#00ff00' },
-          ],
-          damageNumbers: [],
-          xpOrbs: [],
-          particleEffects: [],
-          removeDamageNumber: jest.fn(),
-          removeXPOrb: jest.fn(),
-          removeParticleEffect: jest.fn(),
-        };
-        return selector ? selector(state) : state;
+      setupDynamicStore({
+        targetMarkers: [
+          { id: 'tm1', position: [10, 0, 10], color: '#00ff00' },
+        ],
       });
-
       const { container } = render(
-        <TestWrapper>
-          <Experience />
-        </TestWrapper>
+        <TestWrapper><Experience /></TestWrapper>
       );
       expect(container).toBeInTheDocument();
     });

@@ -219,7 +219,7 @@ export class NPCPositionInterpolator {
     const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
     // Stop interpolating if very close
-    if (distance < 0.01) {
+    if (distance < 0.05) {
       this.currentPosition = { ...this.targetPosition };
       this.isInterpolating = false;
       return this.currentPosition;
@@ -230,7 +230,7 @@ export class NPCPositionInterpolator {
     this.currentPosition.y = lerp(this.currentPosition.y, this.targetPosition.y, this.interpolationSpeed);
     this.currentPosition.z = lerp(this.currentPosition.z, this.targetPosition.z, this.interpolationSpeed);
 
-    return this.currentPosition;
+    return { ...this.currentPosition };
   }
 
   /**

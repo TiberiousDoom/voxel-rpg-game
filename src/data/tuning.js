@@ -183,5 +183,22 @@ export const IMMIGRATION_HOUSING_WAIT_DAYS = 2;            // In-game days NPC w
 export const NPC_FIRST_SETTLER_FREE = true;                // First NPC joins without housing (pioneer mechanic)
 export const NPC_MAX_POPULATION_PHASE_2 = 20;              // Hard population cap for Phase 2. Range: 10–30.
 
+// ─── Mining Zone ────────────────────────────────────────────
+export const MINING_TASK_REGEN_INTERVAL = 10;        // Seconds between task regeneration scans
+export const MINING_BASE_TIME_PER_BLOCK = 4;         // Seconds to mine one block (modified by skill)
+export const MINING_SKILL_BASE = 0.5;                // Minimum skill factor in speed calc
+
+// ─── Farming Zone ───────────────────────────────────────────
+export const FARM_GROW_TIME = 300;                   // Seconds per growth cycle. Range: 60–600.
+export const FARM_HARVEST_YIELD = 4;                 // Food units per tile per harvest
+export const FARM_PLANT_TIME = 2;                    // Seconds to plant one tile
+export const FARM_HARVEST_TIME = 2;                  // Seconds to harvest one tile
+export const FARM_UNATTENDED_RATE = 0.25;            // Passive auto-collection rate when no farmer assigned
+export const MAX_FARMERS_PER_ZONE = 2;               // Max NPCs farming one zone simultaneously
+
+// ─── Stockpile ──────────────────────────────────────────────
+export const STOCKPILE_STACK_LIMIT = 64;             // Max quantity per slot
+export const STOCKPILE_RESERVATION_TIMEOUT = 300;    // Seconds before a reservation auto-releases
+
 // ─── Debug ───────────────────────────────────────────────────
 export const DEBUG_TIME_SCALES = [1, 2, 5, 10, 0]; // 0 = paused

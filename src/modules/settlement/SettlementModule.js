@@ -23,6 +23,9 @@ import AttractivenessCalculator from './AttractivenessCalculator.js';
 import ImmigrationManager from './ImmigrationManager.js';
 import NPCIdentityGenerator from './NPCIdentityGenerator.js';
 import ZoneManager from './ZoneManager.js';
+import MiningZoneBehavior from './MiningZoneBehavior.js';
+import FarmingZoneBehavior from './FarmingZoneBehavior.js';
+import StockpileManager from './StockpileManager.js';
 
 class SettlementModule {
   /**
@@ -49,8 +52,10 @@ class SettlementModule {
     this.immigrationManager = null;
     this.identityGenerator = null;
     this.zoneManager = null;
-    // Future sub-managers (Phase 2 weeks 2-8):
-    // this.stockpileManager = null;
+    this.miningBehavior = null;
+    this.farmingBehavior = null;
+    this.stockpileManager = null;
+    // Future sub-managers (Phase 2 weeks 4-8):
     // this.haulingManager = null;
     // this.constructionManager = null;
     // this.blueprintManager = null;
@@ -105,6 +110,35 @@ class SettlementModule {
       settlementModule: this,
     });
 
+    this.miningBehavior = new MiningZoneBehavior({
+      zoneManager: this.zoneManager,
+      grid: this.grid,
+      settlementModule: this,
+    });
+
+    this.farmingBehavior = new FarmingZoneBehavior({
+      zoneManager: this.zoneManager,
+      settlementModule: this,
+    });
+
+    this.stockpileManager = new StockpileManager({
+      zoneManager: this.zoneManager,
+      storage: this.storage,
+      settlementModule: this,
+    });
+
+    // Wire zone events to sub-managers
+    this.on('zone:created', ({ zone }) => {
+      this.miningBehavior.onZoneCreated(zone);
+      this.farmingBehavior.onZoneCreated(zone);
+      this.stockpileManager.onZoneCreated(zone);
+    });
+    this.on('zone:deleted', ({ zone }) => {
+      this.miningBehavior.onZoneDeleted(zone);
+      this.farmingBehavior.onZoneDeleted(zone);
+      this.stockpileManager.onZoneDeleted(zone);
+    });
+
     this.initialized = true;
   }
 
@@ -145,8 +179,18 @@ class SettlementModule {
       const zoneResult = this.zoneManager.update(deltaSeconds, gameState);
       result.settlement.zones = zoneResult;
 
-      // Future steps (uncomment as sub-managers are implemented):
+      // ── Step 2b: Zone Behaviors ────────────────────────────
+      const miningResult = this.miningBehavior.update(deltaSeconds);
+      result.settlement.mining = miningResult;
+
+      const farmingResult = this.farmingBehavior.update(deltaSeconds);
+      result.settlement.farming = farmingResult;
+
       // ── Step 3: Stockpile ─────────────────────────────────
+      const stockpileResult = this.stockpileManager.update(deltaSeconds);
+      result.settlement.stockpiles = stockpileResult;
+
+      // Future steps (uncomment as sub-managers are implemented):
       // ── Step 4: Construction ──────────────────────────────
       // ── Step 5: Hauling ───────────────────────────────────
       // ── Step 6: Task Assignment ───────────────────────────
@@ -206,6 +250,9 @@ class SettlementModule {
       attractiveness: this.attractivenessCalculator ? this.attractivenessCalculator.getScore() : 0,
       identityGenerator: this.identityGenerator ? this.identityGenerator.serialize() : null,
       zones: this.zoneManager ? this.zoneManager.serialize() : null,
+      mining: this.miningBehavior ? this.miningBehavior.serialize() : null,
+      farming: this.farmingBehavior ? this.farmingBehavior.serialize() : null,
+      stockpiles: this.stockpileManager ? this.stockpileManager.serialize() : null,
     };
   }
 
@@ -228,6 +275,15 @@ class SettlementModule {
     if (state.zones && this.zoneManager) {
       this.zoneManager.deserialize(state.zones);
     }
+    if (state.mining && this.miningBehavior) {
+      this.miningBehavior.deserialize(state.mining);
+    }
+    if (state.farming && this.farmingBehavior) {
+      this.farmingBehavior.deserialize(state.farming);
+    }
+    if (state.stockpiles && this.stockpileManager) {
+      this.stockpileManager.deserialize(state.stockpiles);
+    }
   }
 
   // ── Statistics ──────────────────────────────────────────────
@@ -238,6 +294,9 @@ class SettlementModule {
       attractiveness: this.attractivenessCalculator ? this.attractivenessCalculator.getScore() : 0,
       immigration: this.immigrationManager ? this.immigrationManager.getStatistics() : null,
       zones: this.zoneManager ? { total: this.zoneManager.zones.size } : null,
+      mining: this.miningBehavior ? { totalTasks: this.miningBehavior.tasks.size } : null,
+      farming: this.farmingBehavior ? { totalTasks: this.farmingBehavior.tasks.size } : null,
+      stockpiles: this.stockpileManager ? { total: this.stockpileManager.stockpiles.size } : null,
       initialized: this.initialized,
     };
   }

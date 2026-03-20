@@ -225,25 +225,6 @@ export function getSoftCapInfo() {
 }
 
 /**
- * Apply soft cap to attribute value
- * @param {number} value - Attribute value
- * @param {number} threshold - Soft cap threshold
- * @param {number} fullEffect - Full effectiveness multiplier
- * @param {number} reducedEffect - Reduced effectiveness multiplier
- * @returns {number} Effective attribute value after soft cap
- */
-function applySoftCap(value, threshold, fullEffect, reducedEffect) {
-  if (value <= threshold) {
-    return value * fullEffect;
-  }
-
-  const baseValue = threshold * fullEffect;
-  const excessValue = (value - threshold) * reducedEffect;
-
-  return baseValue + excessValue;
-}
-
-/**
  * SpellIntegration object (for test compatibility)
  */
 export const SpellIntegration = {

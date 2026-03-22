@@ -58,16 +58,29 @@ export function BlockHotbar() {
   // Only show when build mode is active
   if (!buildMode) return null;
 
+  const exitBuildMode = () => useGameStore.getState().setBuildMode(false);
+
   return (
-    <div style={styles.container}>
-      {/* Top row: Mode toggle + Close button for mobile */}
+    <div style={{
+      ...styles.container,
+      ...(isMobile.current ? { bottom: '10px', maxWidth: '95vw' } : {}),
+    }}>
+      {/* Mobile: action row with mode toggle + exit */}
       {isMobile.current && (
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center',
+          width: '100%',
+          justifyContent: 'center',
+        }}>
           <button
             style={{
               ...styles.modeButton,
               backgroundColor: blockPlacementMode ? '#4a7c4a' : '#7c4a4a',
-              flex: 1,
+              minHeight: '44px',
+              minWidth: '100px',
+              fontSize: '15px',
             }}
             onClick={toggleBlockPlacementMode}
           >
@@ -77,28 +90,38 @@ export function BlockHotbar() {
             style={{
               ...styles.modeButton,
               backgroundColor: '#cc3333',
+              minHeight: '44px',
+              minWidth: '44px',
               padding: '8px 14px',
-              fontSize: '16px',
+              fontSize: '18px',
+              lineHeight: 1,
             }}
-            onClick={() => useGameStore.getState().setBuildMode(false)}
+            onClick={exitBuildMode}
             aria-label="Exit build mode"
           >
-            ✕
+            ✕ EXIT
           </button>
         </div>
       )}
 
       {/* Block slots */}
-      <div style={styles.slots}>
+      <div style={{
+        ...styles.slots,
+        ...(isMobile.current ? { overflowX: 'auto', maxWidth: '90vw' } : {}),
+      }}>
         {HOTBAR_BLOCKS.map((blockType, index) => {
           const props = BlockProperties[blockType];
           const isSelected = selectedBlockType === blockType;
+          const slotSize = isMobile.current ? '40px' : '48px';
 
           return (
             <button
               key={blockType}
               style={{
                 ...styles.slot,
+                width: slotSize,
+                height: slotSize,
+                minWidth: slotSize,
                 backgroundColor: rgbToCSS(props.color),
                 border: isSelected ? '3px solid #fff' : '2px solid #555',
                 transform: isSelected ? 'scale(1.1)' : 'scale(1)',
@@ -115,9 +138,7 @@ export function BlockHotbar() {
       {/* Instructions */}
       <div style={styles.instructions}>
         {isMobile.current ? (
-          <>
-            <span>Tap to {blockPlacementMode ? 'place' : 'mine'}</span>
-          </>
+          <span>Tap to {blockPlacementMode ? 'place' : 'mine'}</span>
         ) : (
           <>
             <span>Hold left-click to mine</span>

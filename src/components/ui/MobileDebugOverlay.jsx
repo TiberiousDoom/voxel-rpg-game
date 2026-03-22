@@ -11,7 +11,7 @@ import { isTouchDevice } from '../../utils/deviceDetection';
 const MobileDebugOverlay = () => {
   const [visible, setVisible] = useState(false);
   const [tick, setTick] = useState(0); // eslint-disable-line no-unused-vars
-  const fpsRef = useRef({ frames: 0, lastTime: performance.now(), fps: 0 });
+  const fpsRef = useRef({ frames: 0, lastTime: performance.now(), fps: 0, fpsMin: Infinity, fpsMax: 0 });
   const intervalRef = useRef(null);
 
   // Only show on touch devices
@@ -27,6 +27,10 @@ const MobileDebugOverlay = () => {
       fpsRef.current.frames++;
       if (now - fpsRef.current.lastTime >= 1000) {
         fpsRef.current.fps = fpsRef.current.frames;
+        if (fpsRef.current.frames > 0) {
+          if (fpsRef.current.frames < fpsRef.current.fpsMin) fpsRef.current.fpsMin = fpsRef.current.frames;
+          if (fpsRef.current.frames > fpsRef.current.fpsMax) fpsRef.current.fpsMax = fpsRef.current.frames;
+        }
         fpsRef.current.frames = 0;
         fpsRef.current.lastTime = now;
       }
@@ -51,6 +55,8 @@ const MobileDebugOverlay = () => {
   const state = useGameStore.getState();
   const ds = state._debugStats;
   const fps = fpsRef.current.fps;
+  const fpsMin = fpsRef.current.fpsMin === Infinity ? 0 : fpsRef.current.fpsMin;
+  const fpsMax = fpsRef.current.fpsMax;
   const chunkCount = state._chunkManager?.chunks?.size || 0;
   const enemyCount = state.enemies?.length || 0;
   const npcCount = state.settlement?.npcs?.length || 0;
@@ -97,6 +103,8 @@ const MobileDebugOverlay = () => {
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Performance</div>
             <Row label="FPS" value={fps} color={fpsColor} />
+            <Row label="FPS Min" value={fpsMin} color={fpsMin >= 55 ? '#51cf66' : fpsMin >= 30 ? '#ffc107' : '#ff6b6b'} />
+            <Row label="FPS Max" value={fpsMax} color="#51cf66" />
             <Row label="Draw Calls" value={ds.drawCalls} color={ds.drawCalls <= 300 ? '#51cf66' : '#ff6b6b'} />
             <Row label="Triangles" value={ds.triangles.toLocaleString()} />
             <Row label="Mesh Rebuild" value={`${ds.meshRebuildMs.toFixed(1)}ms`} />

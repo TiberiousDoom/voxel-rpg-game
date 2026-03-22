@@ -441,11 +441,11 @@ const GameUI = () => {
         </div>
       )}
 
-      {/* Bottom right - Quick access (shift up when block hotbar is visible) */}
+      {/* Bottom right - Quick access (hide inventory/crafting on mobile during build/zone mode) */}
       <div
         style={{
           position: 'absolute',
-          bottom: (buildMode || zoneMode) ? (isMobile ? '140px' : '110px') : (isMobile ? '10px' : '20px'),
+          bottom: (buildMode || zoneMode) ? (isMobile ? '150px' : '110px') : (isMobile ? '10px' : '20px'),
           right: isMobile ? '10px' : '20px',
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
@@ -454,6 +454,8 @@ const GameUI = () => {
           transition: 'bottom 0.2s ease',
         }}
       >
+        {/* Inventory - hide on mobile during build/zone mode to save space */}
+        {!(isMobile && (buildMode || zoneMode)) && (
         <div
           onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'i' }))}
           style={{
@@ -466,15 +468,18 @@ const GameUI = () => {
             alignItems: 'center',
             gap: '5px',
             border: '2px solid #4a5568',
-            minWidth: isMobile ? '56px' : 'auto',
-            minHeight: isMobile ? '56px' : 'auto',
+            minWidth: isMobile ? '48px' : 'auto',
+            minHeight: isMobile ? '48px' : 'auto',
             cursor: 'pointer',
             touchAction: 'manipulation',
           }}
         >
-          <Package size={isMobile ? 28 : 24} style={{ color: '#4dabf7' }} />
+          <Package size={isMobile ? 24 : 24} style={{ color: '#4dabf7' }} />
           {!isMobile && <span style={{ fontSize: '0.7rem' }}>Inventory [I]</span>}
         </div>
+        )}
+        {/* Crafting - hide on mobile during build/zone mode to save space */}
+        {!(isMobile && (buildMode || zoneMode)) && (
         <div
           onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c' }))}
           style={{
@@ -487,15 +492,16 @@ const GameUI = () => {
             alignItems: 'center',
             gap: '5px',
             border: '2px solid #4a5568',
-            minWidth: isMobile ? '56px' : 'auto',
-            minHeight: isMobile ? '56px' : 'auto',
+            minWidth: isMobile ? '48px' : 'auto',
+            minHeight: isMobile ? '48px' : 'auto',
             cursor: 'pointer',
             touchAction: 'manipulation',
           }}
         >
-          <Hammer size={isMobile ? 28 : 24} style={{ color: '#ffd700' }} />
+          <Hammer size={isMobile ? 24 : 24} style={{ color: '#ffd700' }} />
           {!isMobile && <span style={{ fontSize: '0.7rem' }}>Crafting [C]</span>}
         </div>
+        )}
         <div
           onClick={toggleBuildMode}
           style={{
@@ -508,13 +514,13 @@ const GameUI = () => {
             alignItems: 'center',
             gap: '5px',
             border: buildMode ? '2px solid #ffa500' : '2px solid #4a5568',
-            minWidth: isMobile ? '56px' : 'auto',
-            minHeight: isMobile ? '56px' : 'auto',
+            minWidth: isMobile ? '48px' : 'auto',
+            minHeight: isMobile ? '48px' : 'auto',
             cursor: 'pointer',
             touchAction: 'manipulation',
           }}
         >
-          <Pickaxe size={isMobile ? 28 : 24} style={{ color: buildMode ? '#fff' : '#ffa500' }} />
+          <Pickaxe size={isMobile ? 24 : 24} style={{ color: buildMode ? '#fff' : '#ffa500' }} />
           {!isMobile && <span style={{ fontSize: '0.7rem' }}>Build [Tab]</span>}
         </div>
         <div
@@ -537,13 +543,13 @@ const GameUI = () => {
             alignItems: 'center',
             gap: '5px',
             border: zoneMode ? '2px solid #ff8c00' : '2px solid #4a5568',
-            minWidth: isMobile ? '56px' : 'auto',
-            minHeight: isMobile ? '56px' : 'auto',
+            minWidth: isMobile ? '48px' : 'auto',
+            minHeight: isMobile ? '48px' : 'auto',
             cursor: 'pointer',
             touchAction: 'manipulation',
           }}
         >
-          <MapPin size={isMobile ? 28 : 24} style={{ color: zoneMode ? '#fff' : '#ff8c00' }} />
+          <MapPin size={isMobile ? 24 : 24} style={{ color: zoneMode ? '#fff' : '#ff8c00' }} />
           {!isMobile && <span style={{ fontSize: '0.7rem' }}>Zones [Z]</span>}
         </div>
       </div>

@@ -60,17 +60,32 @@ export function BlockHotbar() {
 
   return (
     <div style={styles.container}>
-      {/* Mode toggle button — mobile only (desktop uses left-click=mine, right-click=place) */}
+      {/* Top row: Mode toggle + Close button for mobile */}
       {isMobile.current && (
-        <button
-          style={{
-            ...styles.modeButton,
-            backgroundColor: blockPlacementMode ? '#4a7c4a' : '#7c4a4a',
-          }}
-          onClick={toggleBlockPlacementMode}
-        >
-          {blockPlacementMode ? 'Place' : 'Mine'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            style={{
+              ...styles.modeButton,
+              backgroundColor: blockPlacementMode ? '#4a7c4a' : '#7c4a4a',
+              flex: 1,
+            }}
+            onClick={toggleBlockPlacementMode}
+          >
+            {blockPlacementMode ? 'PLACE' : 'MINE'}
+          </button>
+          <button
+            style={{
+              ...styles.modeButton,
+              backgroundColor: '#cc3333',
+              padding: '8px 14px',
+              fontSize: '16px',
+            }}
+            onClick={() => useGameStore.getState().setBuildMode(false)}
+            aria-label="Exit build mode"
+          >
+            ✕
+          </button>
+        </div>
       )}
 
       {/* Block slots */}
@@ -102,8 +117,6 @@ export function BlockHotbar() {
         {isMobile.current ? (
           <>
             <span>Tap to {blockPlacementMode ? 'place' : 'mine'}</span>
-            <span style={styles.separator}>|</span>
-            <span>Tab to exit</span>
           </>
         ) : (
           <>

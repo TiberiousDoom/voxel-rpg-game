@@ -52,8 +52,8 @@ export default function ZoneHotbar() {
         minWidth: isMobile ? '260px' : '320px',
       }}
     >
-      {/* Zone type buttons */}
-      <div style={{ display: 'flex', gap: '8px' }}>
+      {/* Zone type buttons + close on mobile */}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         {ZONE_BUTTONS.map(({ type, label, icon }) => {
           const isDelete = type === DELETE_TYPE;
           const colors = isDelete ? { fill: '#cc3333', border: '#ff4444' } : ZONE_COLORS[type];
@@ -91,6 +91,31 @@ export default function ZoneHotbar() {
             </button>
           );
         })}
+        {/* Close button for mobile */}
+        {isMobile && (
+          <button
+            onClick={() => setZoneMode(false)}
+            aria-label="Exit zone mode"
+            style={{
+              background: '#cc3333',
+              color: '#fff',
+              border: '2px solid #ff4444',
+              borderRadius: '6px',
+              padding: '6px 12px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              touchAction: 'manipulation',
+              minHeight: '44px',
+              minWidth: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Zone count */}
@@ -109,7 +134,7 @@ export default function ZoneHotbar() {
         lineHeight: '1.4',
       }}>
         {isMobile
-          ? 'Tap two corners to place | Select Delete to remove zones'
+          ? 'Tap two corners to place zone'
           : 'Click & drag or click two corners | Right-click or Delete tool to remove | Z to exit'
         }
       </div>

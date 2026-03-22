@@ -133,19 +133,20 @@ const GameUI = () => {
         zIndex: 100,
       }}
     >
-      {/* Build mode badge (top-center) */}
+      {/* Build mode badge (top-center, pushed right on mobile to avoid stat panel) */}
       {buildMode && (
         <div
           style={{
             position: 'absolute',
             top: isMobile ? '10px' : '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: isMobile ? 'auto' : '50%',
+            right: isMobile ? '10px' : 'auto',
+            transform: isMobile ? 'none' : 'translateX(-50%)',
             background: 'rgba(255, 165, 0, 0.85)',
             color: '#fff',
-            padding: '6px 18px',
+            padding: isMobile ? '4px 12px' : '6px 18px',
             borderRadius: '6px',
-            fontSize: isMobile ? '0.85rem' : '1rem',
+            fontSize: isMobile ? '0.75rem' : '1rem',
             fontWeight: 'bold',
             letterSpacing: '2px',
             border: '2px solid #ffa500',
@@ -158,19 +159,20 @@ const GameUI = () => {
         </div>
       )}
 
-      {/* Zone mode badge (top-center) */}
+      {/* Zone mode badge (top-center, pushed right on mobile to avoid stat panel) */}
       {zoneMode && (
         <div
           style={{
             position: 'absolute',
             top: isMobile ? '10px' : '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: isMobile ? 'auto' : '50%',
+            right: isMobile ? '10px' : 'auto',
+            transform: isMobile ? 'none' : 'translateX(-50%)',
             background: 'rgba(255, 140, 0, 0.85)',
             color: '#fff',
-            padding: '6px 18px',
+            padding: isMobile ? '4px 12px' : '6px 18px',
             borderRadius: '6px',
-            fontSize: isMobile ? '0.85rem' : '1rem',
+            fontSize: isMobile ? '0.75rem' : '1rem',
             fontWeight: 'bold',
             letterSpacing: '2px',
             border: '2px solid #ff8c00',
@@ -187,14 +189,14 @@ const GameUI = () => {
       <div
         style={{
           position: 'absolute',
-          top: isMobile ? '10px' : '20px',
-          left: isMobile ? '10px' : '20px',
+          top: isMobile ? '8px' : '20px',
+          left: isMobile ? '8px' : '20px',
           background: 'rgba(0, 0, 0, 0.6)',
-          padding: isMobile ? '10px' : '15px',
+          padding: isMobile ? '8px' : '15px',
           borderRadius: '10px',
           color: 'white',
-          minWidth: isMobile ? '140px' : '250px',
-          maxWidth: isMobile ? '180px' : 'none',
+          minWidth: isMobile ? '130px' : '250px',
+          maxWidth: isMobile ? '160px' : 'none',
         }}
       >
         {/* Health bar */}
@@ -411,19 +413,20 @@ const GameUI = () => {
       </div>
       )}
 
-      {/* Mobile: Time + gold display (top right) */}
+      {/* Mobile: Time + gold display (top right, below mode badge if active) */}
       {isMobile && (
         <div
           style={{
             position: 'absolute',
-            top: '10px',
+            top: (buildMode || zoneMode) ? '42px' : '10px',
             right: '10px',
             background: 'rgba(0, 0, 0, 0.6)',
-            padding: '8px 12px',
+            padding: '6px 10px',
             borderRadius: '8px',
             color: 'white',
             fontFamily: 'monospace',
-            fontSize: '0.8rem',
+            fontSize: '0.75rem',
+            transition: 'top 0.2s ease',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -432,7 +435,7 @@ const GameUI = () => {
             </span>
             <span>Day {worldTime.dayNumber} {String(worldTime.hour).padStart(2, '0')}:{String(worldTime.minute).padStart(2, '0')}</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#ffd43b', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.7rem', color: '#ffd43b', marginTop: '2px' }}>
             {inventory.gold}g | {inventory.potions}pot
           </div>
         </div>
@@ -442,10 +445,11 @@ const GameUI = () => {
       <div
         style={{
           position: 'absolute',
-          bottom: (buildMode || zoneMode) ? (isMobile ? '100px' : '110px') : (isMobile ? '10px' : '20px'),
+          bottom: (buildMode || zoneMode) ? (isMobile ? '140px' : '110px') : (isMobile ? '10px' : '20px'),
           right: isMobile ? '10px' : '20px',
           display: 'flex',
-          gap: isMobile ? '8px' : '10px',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '6px' : '10px',
           pointerEvents: 'all',
           transition: 'bottom 0.2s ease',
         }}

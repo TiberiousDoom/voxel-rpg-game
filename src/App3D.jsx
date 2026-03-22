@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Stats } from '@react-three/drei';
 import Experience from './components/3d/Experience';
 import GameUI from './components/GameUI';
 import SpellWheel from './components/SpellWheel';
@@ -49,8 +48,6 @@ function App3D() {
         {/* Main 3D scene */}
         <Experience />
 
-        {/* Performance stats (FPS, MS, MB) */}
-        <Stats />
       </Canvas>
 
       {/* HTML UI overlay */}

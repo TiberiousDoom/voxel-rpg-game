@@ -441,12 +441,12 @@ const GameUI = () => {
         </div>
       )}
 
-      {/* Bottom right - Quick access (hide inventory/crafting on mobile during build/zone mode) */}
+      {/* Bottom left - Quick access (hide inventory/crafting on mobile during build/zone mode) */}
       <div
         style={{
           position: 'absolute',
           bottom: (buildMode || zoneMode) ? (isMobile ? '150px' : '110px') : (isMobile ? '10px' : '20px'),
-          right: isMobile ? '10px' : '20px',
+          left: isMobile ? '10px' : '20px',
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
           gap: isMobile ? '6px' : '10px',

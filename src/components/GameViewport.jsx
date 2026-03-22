@@ -266,6 +266,8 @@ function GameViewport({
     frameCount: 0,
     lastFpsUpdate: Date.now(),
     frameTimes: [],
+    fpsMin: Infinity,
+    fpsMax: 0,
     // Store current frame metrics without triggering state updates
     currentMetrics: {
       visibleBuildings: 0,
@@ -1985,9 +1987,17 @@ function GameViewport({
           const fps = Math.round(perfRef.current.frameCount / ((now - perfRef.current.lastFpsUpdate) / 1000));
           const avgFrameTime = perfRef.current.frameTimes.reduce((a, b) => a + b, 0) / perfRef.current.frameTimes.length;
 
+          // Track min/max FPS (ignore first few seconds for stabilization)
+          if (fps > 0) {
+            if (fps < perfRef.current.fpsMin) perfRef.current.fpsMin = fps;
+            if (fps > perfRef.current.fpsMax) perfRef.current.fpsMax = fps;
+          }
+
           // Update state only once per second (not every frame!)
           setPerfMetrics({
             fps,
+            fpsMin: perfRef.current.fpsMin === Infinity ? 0 : perfRef.current.fpsMin,
+            fpsMax: perfRef.current.fpsMax,
             frameTime: avgFrameTime.toFixed(2),
             isMobileDevice,
             canvasWidth: CANVAS_WIDTH,

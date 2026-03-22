@@ -216,6 +216,22 @@ const UnifiedDebugMenu = ({
                 }
               />
               <StatRow
+                label="FPS Min"
+                value={perfMetrics.fpsMin || 0}
+                color={
+                  perfMetrics.fpsMin < 30
+                    ? '#ff4444'
+                    : perfMetrics.fpsMin < 45
+                    ? '#ffaa00'
+                    : '#00ff00'
+                }
+              />
+              <StatRow
+                label="FPS Max"
+                value={perfMetrics.fpsMax || 0}
+                color="#00ff00"
+              />
+              <StatRow
                 label="Frame Time"
                 value={`${perfMetrics.frameTime || 0}ms`}
                 color={

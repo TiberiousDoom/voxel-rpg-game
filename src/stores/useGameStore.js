@@ -342,6 +342,8 @@ const useGameStore = create((rawSet, get, api) => {
   // Chunk manager reference (for auto-jump, etc.)
   _chunkManager: null,
   setChunkManager: (cm) => set({ _chunkManager: cm }),
+  _settlementModule: null,
+  setSettlementModule: (mod) => set({ _settlementModule: mod }),
 
   // Debug stats (mutable, written by Canvas-internal components, read by DebugOverlay)
   _debugStats: { drawCalls: 0, triangles: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },

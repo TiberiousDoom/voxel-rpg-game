@@ -17,6 +17,13 @@
 import {
   IMMIGRATION_CHECK_INTERVAL,
   ATTRACTIVENESS_CAMPFIRE_BONUS,
+  ATTRACT_RECALC_INTERVAL,
+  IMMIGRATION_THRESHOLD,
+  IMMIGRATION_THRESHOLD_PER_NPC,
+  IMMIGRATION_SPAWN_MIN_DIST,
+  IMMIGRATION_SPAWN_MAX_DIST,
+  IMMIGRATION_MAX_NPCS,
+  NPC_NEEDS_TICK_INTERVAL,
 } from '../../data/tuning.js';
 
 import AttractivenessCalculator from './AttractivenessCalculator.js';
@@ -26,6 +33,10 @@ import ZoneManager from './ZoneManager.js';
 import MiningZoneBehavior from './MiningZoneBehavior.js';
 import FarmingZoneBehavior from './FarmingZoneBehavior.js';
 import StockpileManager from './StockpileManager.js';
+import ChunkAttractivenessAdapter from './ChunkAttractivenessAdapter.js';
+import { scanForCampfire, getTerrainYAt } from './CampfireDetector.js';
+import { tickNPC } from './NPCStateMachine.js';
+import { generateNPCIdentity } from '../../data/npcIdentity.js';
 
 class SettlementModule {
   /**
@@ -68,6 +79,17 @@ class SettlementModule {
 
     // Event listeners
     this._eventListeners = new Map();
+
+    // ── Core tick state (used by tickSettlementCore, driven by bridge) ──
+    this.chunkAdapter = null;
+    this.chunkAttractiveness = null;
+    this.settlementCenter = null;
+    this._warnedNPCs = new Set();
+    this._npcIdCounter = 0;
+    this._campfireAccum = 0;
+    this._attractAccum = 0;
+    this._immigrationAccum = 0;
+    this._needsAccum = 0;
 
     this.initialized = false;
   }
@@ -139,7 +161,19 @@ class SettlementModule {
       this.stockpileManager.onZoneDeleted(zone);
     });
 
+    // Chunk-based attractiveness calculator (used by tickSettlementCore)
+    this.chunkAttractiveness = new ChunkAttractivenessAdapter();
+
     this.initialized = true;
+  }
+
+  /**
+   * Set the chunk adapter for campfire detection and chunk-based attractiveness.
+   * Called by SettlementBridge when chunkManager becomes available.
+   * @param {Object} adapter - { iterateChunks(), getBlock(), getRawChunkManager() }
+   */
+  setChunkAdapter(adapter) {
+    this.chunkAdapter = adapter;
   }
 
   /**
@@ -204,6 +238,153 @@ class SettlementModule {
     return result;
   }
 
+  // ── Core Settlement Tick (driven by SettlementBridge) ──────
+
+  /**
+   * Tick campfire detection, attractiveness, immigration, and NPC state machines.
+   * Called every frame by the bridge; internal accumulators gate actual work.
+   *
+   * This is SEPARATE from update() which handles zones/mining/farming/stockpiles
+   * via the ModuleOrchestrator.
+   *
+   * @param {number} deltaSeconds - Frame delta in seconds (from useFrame)
+   * @param {Object} storeSnapshot - { settlement, inventory, worldTimeElapsed }
+   * @returns {Object} Results for the bridge to sync back to the store
+   */
+  tickSettlementCore(deltaSeconds, storeSnapshot) {
+    if (!this.initialized || !this.chunkAdapter) {
+      return null;
+    }
+
+    const settlement = storeSnapshot.settlement;
+    const results = {
+      campfireCenter: null,
+      attractiveness: 0,
+      wallCount: 0,
+      attractivenessUpdated: false,
+      newNPC: null,
+      batchUpdates: {},
+      removeIds: [],
+      notifications: [],
+      foodConsumptions: [],
+      timestamps: {},
+    };
+
+    // ── Step 0: Campfire detection (every 5s, until center found) ──
+    if (!this.settlementCenter) {
+      this._campfireAccum += deltaSeconds;
+      if (this._campfireAccum >= 5) {
+        this._campfireAccum = 0;
+        const found = scanForCampfire(this.chunkAdapter);
+        if (found) {
+          this.settlementCenter = found;
+          results.campfireCenter = found;
+          return results; // Early return — matches original behavior
+        }
+      }
+      return results; // No center yet — skip everything else
+    }
+
+    const center = this.settlementCenter;
+
+    // ── Step 1: Attractiveness recalc ──
+    this._attractAccum += deltaSeconds;
+    if (this._attractAccum >= ATTRACT_RECALC_INTERVAL) {
+      this._attractAccum = 0;
+      this.chunkAttractiveness.recalculate(center, this.chunkAdapter, storeSnapshot);
+      results.attractiveness = this.chunkAttractiveness.getScore();
+      results.wallCount = this.chunkAttractiveness.getWallCount();
+      results.attractivenessUpdated = true;
+    }
+
+    // Use latest attractiveness (from this frame or previously cached)
+    const currentAttractiveness = results.attractivenessUpdated
+      ? results.attractiveness
+      : settlement.attractiveness;
+    const currentWallCount = results.attractivenessUpdated
+      ? results.wallCount
+      : (settlement.wallCount || 0);
+
+    // ── Step 2: Immigration check ──
+    this._immigrationAccum += deltaSeconds;
+    if (this._immigrationAccum >= IMMIGRATION_CHECK_INTERVAL) {
+      this._immigrationAccum = 0;
+      const npcCount = settlement.npcs.length;
+      const threshold = IMMIGRATION_THRESHOLD + npcCount * IMMIGRATION_THRESHOLD_PER_NPC;
+      const housingSlots = Math.floor(currentWallCount / 25);
+      const maxNPCs = Math.min(IMMIGRATION_MAX_NPCS, Math.max(3, housingSlots));
+
+      if (currentAttractiveness >= threshold && npcCount < maxNPCs) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = IMMIGRATION_SPAWN_MIN_DIST +
+          Math.random() * (IMMIGRATION_SPAWN_MAX_DIST - IMMIGRATION_SPAWN_MIN_DIST);
+        const spawnX = center[0] + Math.cos(angle) * dist;
+        const spawnZ = center[2] + Math.sin(angle) * dist;
+        const spawnY = getTerrainYAt(this.chunkAdapter, spawnX, spawnZ);
+
+        const seed = Date.now() ^ (++this._npcIdCounter * 2654435761);
+        const identity = generateNPCIdentity(seed);
+
+        results.newNPC = {
+          id: `npc_${Date.now()}_${this._npcIdCounter}`,
+          ...identity,
+          position: [spawnX, spawnY, spawnZ],
+          targetPosition: [...center],
+          facingAngle: 0,
+          state: 'APPROACHING',
+          stateTimer: 0,
+          hunger: 80,
+          rest: 80,
+          social: 80,
+          happiness: 65,
+          unhappyDays: 0,
+          dayCheckpoint: storeSnapshot.worldTimeElapsed,
+          currentJob: null,
+          arrivedAtSettlement: false,
+        };
+      }
+      results.timestamps.lastImmigrationCheck = Date.now();
+    }
+
+    // ── Step 3: NPC state machine tick ──
+    this._needsAccum += deltaSeconds;
+    if (this._needsAccum >= NPC_NEEDS_TICK_INTERVAL) {
+      const tickDelta = this._needsAccum;
+      this._needsAccum = 0;
+
+      const context = {
+        center,
+        attractiveness: currentAttractiveness,
+        npcs: settlement.npcs,
+        inventory: storeSnapshot.inventory,
+        worldTimeElapsed: storeSnapshot.worldTimeElapsed,
+        warnedNPCs: this._warnedNPCs,
+      };
+
+      for (const npc of settlement.npcs) {
+        const { updates, remove, notifications, consumeFood } = tickNPC(npc, tickDelta, context);
+
+        if (remove) {
+          results.removeIds.push(npc.id);
+        } else {
+          results.batchUpdates[npc.id] = updates;
+        }
+
+        if (notifications && notifications.length > 0) {
+          results.notifications.push(...notifications);
+        }
+
+        if (consumeFood) {
+          results.foodConsumptions.push(consumeFood);
+        }
+      }
+
+      results.timestamps.lastNeedsUpdate = Date.now();
+    }
+
+    return results;
+  }
+
   // ── Event System ────────────────────────────────────────────
 
   /**
@@ -253,6 +434,10 @@ class SettlementModule {
       mining: this.miningBehavior ? this.miningBehavior.serialize() : null,
       farming: this.farmingBehavior ? this.farmingBehavior.serialize() : null,
       stockpiles: this.stockpileManager ? this.stockpileManager.serialize() : null,
+      // Core tick state
+      settlementCenter: this.settlementCenter,
+      npcIdCounter: this._npcIdCounter,
+      warnedNPCs: Array.from(this._warnedNPCs),
     };
   }
 
@@ -283,6 +468,16 @@ class SettlementModule {
     }
     if (state.stockpiles && this.stockpileManager) {
       this.stockpileManager.deserialize(state.stockpiles);
+    }
+    // Core tick state
+    if (state.settlementCenter) {
+      this.settlementCenter = state.settlementCenter;
+    }
+    if (state.npcIdCounter != null) {
+      this._npcIdCounter = state.npcIdCounter;
+    }
+    if (state.warnedNPCs) {
+      this._warnedNPCs = new Set(state.warnedNPCs);
     }
   }
 

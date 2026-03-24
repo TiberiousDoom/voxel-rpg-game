@@ -277,6 +277,7 @@ export default class GameManager extends EventEmitter {
       territoryManager: territoryManager,
       npcNeedsTracker: npcNeedsTracker,
     });
+    useGameStore.getState().setSettlementModule(settlementModule);
 
     // Phase 10: Voxel Building System
     const voxelBuildingOrchestrator = new VoxelBuildingOrchestrator({

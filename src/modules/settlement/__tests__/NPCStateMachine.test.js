@@ -523,3 +523,43 @@ describe('getDistance2D', () => {
     expect(getDistance2D([5, 2, 10], [5, 99, 10])).toBeCloseTo(0, 5);
   });
 });
+
+// ── HAULING / BUILDING work states ──────────────────────────
+
+describe('Work states (HAULING/BUILDING)', () => {
+  test('stays in HAULING when needs are fine', () => {
+    const npc = makeNPC({ state: 'HAULING', hunger: 80, rest: 80, currentJob: 'haul_site1' });
+    const { updates } = tickNPC(npc, 2, makeContext());
+    expect(updates.state).toBeUndefined(); // stays in HAULING
+    expect(updates.currentJob).toBeUndefined();
+  });
+
+  test('stays in BUILDING when needs are fine', () => {
+    const npc = makeNPC({ state: 'BUILDING', hunger: 80, rest: 80, currentJob: 'build_site1' });
+    const { updates } = tickNPC(npc, 2, makeContext());
+    expect(updates.state).toBeUndefined();
+  });
+
+  test('interrupts HAULING to EATING when hunger critical and food available', () => {
+    const npc = makeNPC({ state: 'HAULING', hunger: 10, rest: 80, currentJob: 'haul_site1' });
+    const { updates, consumeFood } = tickNPC(npc, 2, makeContext());
+    expect(updates.state).toBe('EATING');
+    expect(updates.currentJob).toBeNull();
+    expect(consumeFood).toBeDefined();
+  });
+
+  test('interrupts BUILDING to SLEEPING when rest critical', () => {
+    const npc = makeNPC({ state: 'BUILDING', hunger: 80, rest: 10, currentJob: 'build_site1' });
+    const { updates } = tickNPC(npc, 2, makeContext());
+    expect(updates.state).toBe('SLEEPING');
+    expect(updates.currentJob).toBeNull();
+  });
+
+  test('interrupts to IDLE when hunger critical but no food', () => {
+    const npc = makeNPC({ state: 'HAULING', hunger: 10, rest: 80, currentJob: 'haul_site1' });
+    const ctx = makeContext({ inventory: { materials: {} } });
+    const { updates } = tickNPC(npc, 2, ctx);
+    expect(updates.state).toBe('IDLE');
+    expect(updates.currentJob).toBeNull();
+  });
+});

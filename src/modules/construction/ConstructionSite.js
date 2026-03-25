@@ -428,6 +428,33 @@ export class ConstructionSite {
   }
 
   /**
+   * Get all material needs for this site (used by HaulingManager).
+   * Returns one entry per block that needs materials and is unreserved.
+   * @returns {Array<{material: string, quantity: number, blockKey: string, siteId: string, position: object}>}
+   */
+  getMaterialNeeds() {
+    const needs = [];
+    for (const block of this.blocks.values()) {
+      if (block.needsMaterials() && !block.reservedByHauler) {
+        const mat = block.blueprintBlock.getRequiredMaterial
+          ? block.blueprintBlock.getRequiredMaterial()
+          : block.materialRequired;
+        const key = block.position
+          ? `${block.position.x},${block.position.y},${block.position.z}`
+          : null;
+        needs.push({
+          material: typeof mat === 'string' ? mat : (mat?.type || 'stone'),
+          quantity: 1,
+          blockKey: key,
+          siteId: this.id,
+          position: this.materialDropoff || this.position,
+        });
+      }
+    }
+    return needs;
+  }
+
+  /**
    * Reserve a block for material delivery
    * @param {string} npcId - Hauler NPC ID
    * @returns {{block: ConstructionBlock, material: object} | null}

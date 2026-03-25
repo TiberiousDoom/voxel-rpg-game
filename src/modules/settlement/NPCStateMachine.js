@@ -346,6 +346,42 @@ export function tickNPC(npc, tickDelta, context) {
       break;
     }
 
+    case 'HAULING':
+    case 'BUILDING': {
+      // NPC is working on a task. Task progress is managed externally by
+      // TaskAssignmentEngine / HaulingManager / ConstructionManager.
+      // State machine only handles critical need interrupts.
+      if (newHunger < NPC_HUNGER_CRITICAL) {
+        const mats = inventory?.materials;
+        let consumed = false;
+        if (mats) {
+          for (const src of NPC_FOOD_SOURCES) {
+            if ((mats[src.material] || 0) >= 1) {
+              consumeFood = { material: src.material, qty: 1 };
+              updates.state = 'EATING';
+              updates.stateTimer = 0;
+              updates.eatingRestore = src.restore;
+              updates.currentJob = null;
+              consumed = true;
+              break;
+            }
+          }
+        }
+        if (!consumed) {
+          // No food — revert to IDLE so NPC can warn
+          updates.state = 'IDLE';
+          updates.stateTimer = 0;
+          updates.currentJob = null;
+        }
+      } else if (newRest < NPC_REST_CRITICAL) {
+        updates.state = 'SLEEPING';
+        updates.stateTimer = 0;
+        updates.currentJob = null;
+      }
+      // Otherwise stay in work state — task manages sub-state externally
+      break;
+    }
+
     default:
       break;
   }

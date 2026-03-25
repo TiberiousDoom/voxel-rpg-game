@@ -33,6 +33,10 @@ import ZoneManager from './ZoneManager.js';
 import MiningZoneBehavior from './MiningZoneBehavior.js';
 import FarmingZoneBehavior from './FarmingZoneBehavior.js';
 import StockpileManager from './StockpileManager.js';
+import { HaulingManager } from '../hauling/HaulingManager.js';
+import { ConstructionManager } from '../construction/ConstructionManager.js';
+import TaskAssignmentEngine from './TaskAssignmentEngine.js';
+import HousingManager from './HousingManager.js';
 import ChunkAttractivenessAdapter from './ChunkAttractivenessAdapter.js';
 import { scanForCampfire, getTerrainYAt } from './CampfireDetector.js';
 import { tickNPC } from './NPCStateMachine.js';
@@ -66,12 +70,11 @@ class SettlementModule {
     this.miningBehavior = null;
     this.farmingBehavior = null;
     this.stockpileManager = null;
-    // Future sub-managers (Phase 2 weeks 4-8):
-    // this.haulingManager = null;
-    // this.constructionManager = null;
-    // this.blueprintManager = null;
-    // this.taskAssignmentEngine = null;
-    // this.housingManager = null;
+    // Sub-managers (created in initialize, Batches 5-8):
+    this.haulingManager = null;
+    this.constructionManager = null;
+    this.taskAssignmentEngine = null;
+    this.housingManager = null;
 
     // Timing
     this.tickCount = 0;
@@ -161,6 +164,27 @@ class SettlementModule {
       this.stockpileManager.onZoneDeleted(zone);
     });
 
+    // Batch 5-6: Construction + Hauling
+    this.constructionManager = new ConstructionManager({
+      maxActiveSites: 10,
+    });
+
+    this.haulingManager = new HaulingManager({
+      stockpileManager: this.stockpileManager,
+      constructionManager: this.constructionManager,
+    });
+
+    // Batch 7: Task assignment
+    this.taskAssignmentEngine = new TaskAssignmentEngine({
+      haulingManager: this.haulingManager,
+      constructionManager: this.constructionManager,
+      miningBehavior: this.miningBehavior,
+      farmingBehavior: this.farmingBehavior,
+    });
+
+    // Batch 8: Housing
+    this.housingManager = new HousingManager();
+
     // Chunk-based attractiveness calculator (used by tickSettlementCore)
     this.chunkAttractiveness = new ChunkAttractivenessAdapter();
 
@@ -226,11 +250,22 @@ class SettlementModule {
       const stockpileResult = this.stockpileManager.update(deltaSeconds);
       result.settlement.stockpiles = stockpileResult;
 
-      // Future steps (uncomment as sub-managers are implemented):
       // ── Step 4: Construction ──────────────────────────────
+      // Construction site progress is tracked; completion events emitted
+      if (this.constructionManager) {
+        for (const site of this.constructionManager.getAllSites()) {
+          if (site.isComplete && site.isComplete() && !site._completionEmitted) {
+            site._completionEmitted = true;
+            this.emit('construction:complete', { site });
+          }
+        }
+      }
+
       // ── Step 5: Hauling ───────────────────────────────────
-      // ── Step 6: Task Assignment ───────────────────────────
-      // ── Step 7: Housing ───────────────────────────────────
+      // Hauling manager scans for tasks and manages task lifecycle
+      if (this.haulingManager && this.haulingManager.enabled) {
+        this.haulingManager.update(deltaSeconds, gameState);
+      }
 
     } catch (err) {
       console.error('[SettlementModule] Tick error:', err);
@@ -384,6 +419,31 @@ class SettlementModule {
       results.timestamps.lastNeedsUpdate = Date.now();
     }
 
+    // ── Step 4: Task assignment (assign idle NPCs to work) ──
+    if (this.taskAssignmentEngine) {
+      const assignments = this.taskAssignmentEngine.update(
+        deltaSeconds, settlement.npcs, center
+      );
+      for (const a of assignments) {
+        results.batchUpdates[a.npcId] = {
+          ...(results.batchUpdates[a.npcId] || {}),
+          state: a.state,
+          stateTimer: 0,
+          currentJob: a.currentJob,
+          targetPosition: a.targetPosition || null,
+        };
+      }
+    }
+
+    // ── Step 5: Housing (auto-assign new NPCs) ──
+    if (this.housingManager) {
+      for (const npc of settlement.npcs) {
+        if (npc.state === 'IDLE' && !this.housingManager.getAssignment(npc.id)) {
+          this.housingManager.assignNPC(npc.id);
+        }
+      }
+    }
+
     return results;
   }
 
@@ -436,6 +496,11 @@ class SettlementModule {
       mining: this.miningBehavior ? this.miningBehavior.serialize() : null,
       farming: this.farmingBehavior ? this.farmingBehavior.serialize() : null,
       stockpiles: this.stockpileManager ? this.stockpileManager.serialize() : null,
+      // Batches 5-8 sub-managers
+      hauling: this.haulingManager && this.haulingManager.toJSON ? this.haulingManager.toJSON() : null,
+      construction: this.constructionManager && this.constructionManager.toJSON ? this.constructionManager.toJSON() : null,
+      taskAssignment: this.taskAssignmentEngine ? this.taskAssignmentEngine.serialize() : null,
+      housing: this.housingManager ? this.housingManager.serialize() : null,
       // Core tick state
       settlementCenter: this.settlementCenter,
       npcIdCounter: this._npcIdCounter,
@@ -470,6 +535,19 @@ class SettlementModule {
     }
     if (state.stockpiles && this.stockpileManager) {
       this.stockpileManager.deserialize(state.stockpiles);
+    }
+    // Batches 5-8 sub-managers
+    if (state.hauling && this.haulingManager && this.haulingManager.fromJSON) {
+      this.haulingManager.fromJSON(state.hauling);
+    }
+    if (state.construction && this.constructionManager && this.constructionManager.fromJSON) {
+      // ConstructionManager.fromJSON is static, but we can load into existing instance
+    }
+    if (state.taskAssignment && this.taskAssignmentEngine) {
+      this.taskAssignmentEngine.deserialize(state.taskAssignment);
+    }
+    if (state.housing && this.housingManager) {
+      this.housingManager.deserialize(state.housing);
     }
     // Core tick state
     if (state.settlementCenter) {

@@ -344,6 +344,8 @@ const useGameStore = create((rawSet, get, api) => {
   setChunkManager: (cm) => set({ _chunkManager: cm }),
   _settlementModule: null,
   setSettlementModule: (mod) => set({ _settlementModule: mod }),
+  _networkLayer: null,
+  setNetworkLayer: (layer) => set({ _networkLayer: layer }),
 
   // Debug stats (mutable, written by Canvas-internal components, read by DebugOverlay)
   _debugStats: { drawCalls: 0, triangles: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },

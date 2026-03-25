@@ -25,6 +25,7 @@ const headGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
 const hairGeo = new THREE.BoxGeometry(0.62, 0.15, 0.62);
 const bodyGeo = new THREE.BoxGeometry(0.7, 0.9, 0.5);
 const legGeo = new THREE.BoxGeometry(0.25, 0.6, 0.25);
+const armGeo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
 const indicatorGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
 const statusGeo = new THREE.SphereGeometry(0.12, 6, 6);
 
@@ -36,6 +37,8 @@ const STATUS_COLORS = {
   EATING: '#ffcc00',
   SLEEPING: '#8844cc',
   WORKING: '#4488ff',
+  HAULING: '#4488ff',
+  BUILDING: '#ff8844',
   EVALUATING: '#00ccff',
   SOCIALIZING: '#ff88ff',
   LEAVING: '#ff4444',
@@ -58,7 +61,10 @@ const SettlerNPC = React.memo(({ npcData }) => {
   const groupRef = useRef();
   const leftLegRef = useRef();
   const rightLegRef = useRef();
+  const leftArmRef = useRef();
+  const rightArmRef = useRef();
   const walkPhase = useRef(0);
+  const workPhase = useRef(0);
   const lastTerrainCheck = useRef(0);
   const terrainY = useRef(npcData.position[1]);
   const evalRotation = useRef(0);
@@ -192,7 +198,7 @@ const SettlerNPC = React.memo(({ npcData }) => {
       evalRotation.current = 0;
     }
 
-    // Walk animation
+    // Walk animation (legs)
     if (moving) {
       walkPhase.current += delta * 8;
       const swing = Math.sin(walkPhase.current) * 0.5;
@@ -202,6 +208,30 @@ const SettlerNPC = React.memo(({ npcData }) => {
       walkPhase.current = 0;
       if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
       if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
+    }
+
+    // Arm animation (work swing when HAULING/BUILDING, gentle walk swing otherwise)
+    const isWorking = npc.state === 'HAULING' || npc.state === 'BUILDING';
+    if (isWorking) {
+      workPhase.current += delta * 6;
+      const swing = Math.sin(workPhase.current) * 0.8;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = swing;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.3;
+    } else if (moving) {
+      const armSwing = Math.sin(walkPhase.current) * 0.3;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = armSwing;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -armSwing;
+    } else {
+      workPhase.current = 0;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = 0;
+    }
+
+    // Sleeping visual — lay NPC on side
+    if (npc.state === 'SLEEPING' && groupRef.current) {
+      groupRef.current.rotation.z = Math.PI / 2;
+    } else if (groupRef.current && npc.state !== 'EVALUATING') {
+      groupRef.current.rotation.z = 0;
     }
 
     // Update status color
@@ -225,6 +255,14 @@ const SettlerNPC = React.memo(({ npcData }) => {
         <mesh geometry={hairGeo} material={materials.hair} position={[0, 2.45, 0]} />
         {/* Body */}
         <mesh geometry={bodyGeo} material={materials.clothing} position={[0, 1.35, 0]} />
+        {/* Left arm */}
+        <group ref={leftArmRef} position={[-0.45, 1.55, 0]}>
+          <mesh geometry={armGeo} material={materials.clothingAlt} position={[0, -0.25, 0]} />
+        </group>
+        {/* Right arm */}
+        <group ref={rightArmRef} position={[0.45, 1.55, 0]}>
+          <mesh geometry={armGeo} material={materials.clothingAlt} position={[0, -0.25, 0]} />
+        </group>
         {/* Left leg */}
         <group ref={leftLegRef} position={[-0.18, 0.6, 0]}>
           <mesh geometry={legGeo} material={materials.clothingAlt} position={[0, 0, 0]} />

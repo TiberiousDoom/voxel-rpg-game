@@ -53,6 +53,7 @@ import SettlementModule from './modules/settlement/SettlementModule';
 import { VoxelBuildingOrchestrator } from './modules/voxel-building';
 // Store for AI system wiring
 import useGameStore from './stores/useGameStore';
+import { LocalNetworkLayer } from './core/NetworkLayer';
 
 /**
  * GameManager - Main game controller
@@ -278,6 +279,10 @@ export default class GameManager extends EventEmitter {
       npcNeedsTracker: npcNeedsTracker,
     });
     useGameStore.getState().setSettlementModule(settlementModule);
+
+    // Network layer abstraction (single-player = local authority)
+    const networkLayer = new LocalNetworkLayer();
+    useGameStore.getState().setNetworkLayer(networkLayer);
 
     // Phase 10: Voxel Building System
     const voxelBuildingOrchestrator = new VoxelBuildingOrchestrator({

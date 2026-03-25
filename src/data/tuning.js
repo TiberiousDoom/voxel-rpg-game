@@ -123,6 +123,14 @@ export const RIFT_REINFORCEMENT_INTERVAL = 15;      // Seconds between reinforce
 export const RIFT_REINFORCEMENT_COUNT_BASE = 2;     // Base enemies per reinforcement wave
 export const RIFT_REINFORCEMENT_ESCALATION = 1;     // Extra enemies per wave as corruption shrinks
 export const RIFT_VOID_SHARD_DROP_CHANCE = 0.3;     // Chance per corrupted block to drop void shard
+
+// ─── Melee Combat ──────────────────────────────────────────
+export const MELEE_RANGE = 3.5;                     // World units — max hit distance
+export const MELEE_CONE_ANGLE = 60;                  // Degrees — attack cone half-angle
+export const MELEE_COOLDOWN = 0.5;                   // Seconds between melee swings
+export const MELEE_BASE_DAMAGE = 5;                  // Bare-hands damage
+export const MELEE_KNOCKBACK = 6;                    // Knockback impulse on hit
+
 export const RIFT_NOCTURNAL_SPEED_MULT = 1.25; // Night monster speed multiplier
 
 // Monster aggro ranges (world units)

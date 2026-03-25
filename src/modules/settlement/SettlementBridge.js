@@ -11,6 +11,7 @@ class SettlementBridge {
   constructor(settlementModule) {
     this._module = settlementModule;
     this._chunkAdapter = null;
+    this._zoneSeedDone = false;
   }
 
   /**
@@ -24,6 +25,32 @@ class SettlementBridge {
       getRawChunkManager: () => chunkManager,
     };
     this._module.setChunkAdapter(this._chunkAdapter);
+
+    // Seed zones from store into module (for existing saves)
+    this._seedZonesToModule();
+  }
+
+  /**
+   * One-time seed of existing store zones into the module's ZoneManager.
+   * Called when chunkAdapter becomes available (game is ready).
+   */
+  _seedZonesToModule() {
+    if (this._zoneSeedDone) return;
+    this._zoneSeedDone = true;
+
+    const store = useGameStore.getState();
+    const zoneManager = this._module.zoneManager;
+    if (!zoneManager || !store.zones) return;
+
+    for (const zone of store.zones) {
+      // Skip if already in module (e.g., from deserialization)
+      if (zoneManager.getZone(zone.id)) continue;
+
+      zoneManager.createZone({
+        type: zone.type,
+        bounds: zone.bounds,
+      });
+    }
   }
 
   /**

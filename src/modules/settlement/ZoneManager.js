@@ -4,8 +4,8 @@
  * Players designate rectangular areas for specific purposes (mining, stockpile,
  * farming, building, restricted). Zones tell NPCs *where* to work.
  *
- * Zone data shape:
- *   { id, type, bounds: {min: {x,y,z}, max: {x,y,z}}, priority: 1-5, active: boolean, label: string }
+ * Zone data shape (2D ground-plane):
+ *   { id, type, bounds: {minX, minZ, maxX, maxZ}, priority: 1-5, active: boolean, label: string }
  *
  * Overlap rules:
  *   - STOCKPILE zones cannot overlap other STOCKPILE zones
@@ -53,7 +53,7 @@ class ZoneManager {
    * Create a new zone.
    * @param {Object} params
    * @param {string} params.type - One of ZONE_TYPES
-   * @param {Object} params.bounds - { min: {x,y,z}, max: {x,y,z} }
+   * @param {Object} params.bounds - { minX, minZ, maxX, maxZ } (2D ground plane)
    * @param {number} [params.priority=3] - Priority 1 (low) to 5 (high)
    * @param {string} [params.label] - Optional display label
    * @returns {{ success: boolean, zone?: Object, error?: string }}
@@ -65,22 +65,17 @@ class ZoneManager {
     }
 
     // Validate bounds
-    if (!bounds || !bounds.min || !bounds.max) {
-      return { success: false, error: 'Bounds must have min and max with x, y, z' };
+    if (!bounds || bounds.minX == null || bounds.minZ == null ||
+        bounds.maxX == null || bounds.maxZ == null) {
+      return { success: false, error: 'Bounds must have minX, minZ, maxX, maxZ' };
     }
 
-    // Normalize bounds so min < max on each axis
+    // Normalize bounds so min < max
     const normalizedBounds = {
-      min: {
-        x: Math.min(bounds.min.x, bounds.max.x),
-        y: Math.min(bounds.min.y, bounds.max.y),
-        z: Math.min(bounds.min.z, bounds.max.z),
-      },
-      max: {
-        x: Math.max(bounds.min.x, bounds.max.x),
-        y: Math.max(bounds.min.y, bounds.max.y),
-        z: Math.max(bounds.min.z, bounds.max.z),
-      },
+      minX: Math.min(bounds.minX, bounds.maxX),
+      minZ: Math.min(bounds.minZ, bounds.maxZ),
+      maxX: Math.max(bounds.minX, bounds.maxX),
+      maxZ: Math.max(bounds.minZ, bounds.maxZ),
     };
 
     // Validate priority
@@ -200,19 +195,18 @@ class ZoneManager {
   }
 
   /**
-   * Find all active zones containing a world position.
+   * Find all active zones containing a world position (2D check).
    * @param {number} x
-   * @param {number} y
    * @param {number} z
    * @param {string} [type] - Optional type filter
    * @returns {Object[]} Matching zones, sorted by priority (highest first)
    */
-  getZonesAtPosition(x, y, z, type) {
+  getZonesAtPosition(x, z, type) {
     const result = [];
     for (const zone of this.zones.values()) {
       if (!zone.active) continue;
       if (type && zone.type !== type) continue;
-      if (this._containsPoint(zone.bounds, x, y, z)) {
+      if (this._containsPoint(zone.bounds, x, z)) {
         result.push(zone);
       }
     }
@@ -223,15 +217,14 @@ class ZoneManager {
   /**
    * Check if a position is inside a RESTRICTED zone.
    * @param {number} x
-   * @param {number} y
    * @param {number} z
    * @returns {boolean}
    */
-  isRestricted(x, y, z) {
+  isRestricted(x, z) {
     for (const zone of this.zones.values()) {
       if (!zone.active) continue;
       if (zone.type !== ZONE_TYPES.RESTRICTED) continue;
-      if (this._containsPoint(zone.bounds, x, y, z)) {
+      if (this._containsPoint(zone.bounds, x, z)) {
         return true;
       }
     }
@@ -318,24 +311,22 @@ class ZoneManager {
   }
 
   /**
-   * AABB overlap test for two 3D bounding boxes.
+   * AABB overlap test for two 2D bounding boxes.
    */
   _boundsOverlap(a, b) {
     return (
-      a.min.x < b.max.x && a.max.x > b.min.x &&
-      a.min.y < b.max.y && a.max.y > b.min.y &&
-      a.min.z < b.max.z && a.max.z > b.min.z
+      a.minX < b.maxX && a.maxX > b.minX &&
+      a.minZ < b.maxZ && a.maxZ > b.minZ
     );
   }
 
   /**
-   * Check if point (x,y,z) is inside bounds (inclusive min, exclusive max).
+   * Check if point (x, z) is inside bounds (inclusive min, exclusive max).
    */
-  _containsPoint(bounds, x, y, z) {
+  _containsPoint(bounds, x, z) {
     return (
-      x >= bounds.min.x && x < bounds.max.x &&
-      y >= bounds.min.y && y < bounds.max.y &&
-      z >= bounds.min.z && z < bounds.max.z
+      x >= bounds.minX && x < bounds.maxX &&
+      z >= bounds.minZ && z < bounds.maxZ
     );
   }
 }

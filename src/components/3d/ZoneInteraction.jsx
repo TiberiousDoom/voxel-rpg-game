@@ -144,20 +144,52 @@ export default function ZoneInteraction({ chunkManager }) {
       return;
     }
 
-    const zone = createZone({
-      type: store.zoneTypeToPlace,
-      minX, minZ, maxX, maxZ,
-    });
+    // Route zone creation through the settlement module
+    const module = store._settlementModule;
+    if (module && module.zoneManager) {
+      const result = module.zoneManager.createZone({
+        type: store.zoneTypeToPlace,
+        bounds: { minX, minZ, maxX, maxZ },
+      });
+      if (!result.success) {
+        store.addPickupText(result.error || 'Zone creation failed', '#ff4444');
+        store.clearZoneDrag();
+        setPreviewEnd(null);
+        return;
+      }
 
-    store.addZone(zone);
+      // Also add to the store for rendering (ZoneOverlay reads from store)
+      const storeZone = createZone({
+        type: store.zoneTypeToPlace,
+        minX, minZ, maxX, maxZ,
+      });
+      // Use the module-assigned ID so store and module stay in sync
+      storeZone.id = result.zone.id;
+      store.addZone(storeZone);
 
-    // Scan for mining tasks if MINING zone
-    if (zone.type === 'MINING' && chunkManager) {
-      const miningTasks = scanMiningZone(zone.bounds, chunkManager);
-      store.updateZone(zone.id, { miningTasks });
-      store.addPickupText(`Mining Zone created (${miningTasks.length} blocks)`, '#ff8c00');
+      // Scan for mining tasks if MINING zone
+      if (storeZone.type === 'MINING' && chunkManager) {
+        const miningTasks = scanMiningZone(storeZone.bounds, chunkManager);
+        store.updateZone(storeZone.id, { miningTasks });
+        store.addPickupText(`Mining Zone created (${miningTasks.length} blocks)`, '#ff8c00');
+      } else {
+        store.addPickupText(`${storeZone.type} Zone created`, '#4488ff');
+      }
     } else {
-      store.addPickupText(`${zone.type} Zone created`, '#4488ff');
+      // Fallback: direct store creation (module not yet initialized)
+      const zone = createZone({
+        type: store.zoneTypeToPlace,
+        minX, minZ, maxX, maxZ,
+      });
+      store.addZone(zone);
+
+      if (zone.type === 'MINING' && chunkManager) {
+        const miningTasks = scanMiningZone(zone.bounds, chunkManager);
+        store.updateZone(zone.id, { miningTasks });
+        store.addPickupText(`Mining Zone created (${miningTasks.length} blocks)`, '#ff8c00');
+      } else {
+        store.addPickupText(`${zone.type} Zone created`, '#4488ff');
+      }
     }
 
     store.clearZoneDrag();
@@ -198,8 +230,13 @@ export default function ZoneInteraction({ chunkManager }) {
         if (pos) {
           const zone = findZoneAtPoint(pos[0], pos[1]);
           if (zone) {
-            useGameStore.getState().removeZone(zone.id);
-            useGameStore.getState().addPickupText('Zone removed', '#ff4444');
+            const st = useGameStore.getState();
+            const mod = st._settlementModule;
+            if (mod && mod.zoneManager) {
+              mod.zoneManager.deleteZone(zone.id);
+            }
+            st.removeZone(zone.id);
+            st.addPickupText('Zone removed', '#ff4444');
           }
         }
         return;
@@ -217,6 +254,10 @@ export default function ZoneInteraction({ chunkManager }) {
       if (store.zoneTypeToPlace === '__DELETE__') {
         const zone = findZoneAtPoint(pos[0], pos[1]);
         if (zone) {
+          const mod = store._settlementModule;
+          if (mod && mod.zoneManager) {
+            mod.zoneManager.deleteZone(zone.id);
+          }
           store.removeZone(zone.id);
           store.addPickupText('Zone removed', '#ff4444');
         }

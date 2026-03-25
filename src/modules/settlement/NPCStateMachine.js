@@ -59,6 +59,17 @@ export function getPersonalityHappinessBonus(personality) {
 }
 
 /**
+ * 2D distance between two [x,y,z] positions (ignoring Y).
+ * Returns Infinity if either position is missing.
+ */
+export function getDistance2D(pos, target) {
+  if (!pos || !target) return Infinity;
+  const dx = pos[0] - target[0];
+  const dz = pos[2] - target[2];
+  return Math.sqrt(dx * dx + dz * dz);
+}
+
+/**
  * Tick a single NPC's needs and state machine (pure function).
  *
  * @param {Object} npc - Flat NPC object from store.settlement.npcs
@@ -76,9 +87,25 @@ export function tickNPC(npc, tickDelta, context) {
   const { center, attractiveness, npcs, inventory, worldTimeElapsed, warnedNPCs } = context;
   const notifications = [];
 
-  // ── APPROACHING — tick timer; if stuck for 60s, force to LEAVING ──
+  // ── APPROACHING — check arrival or timeout ──
   if (npc.state === 'APPROACHING') {
     const timer = (npc.stateTimer || 0) + tickDelta;
+    const dist = getDistance2D(npc.position, npc.targetPosition);
+
+    // Arrived at settlement
+    if (dist < 1.5) {
+      return {
+        updates: {
+          state: 'EVALUATING',
+          stateTimer: 0,
+          targetPosition: null,
+          arrivedAtSettlement: true,
+        },
+        notifications,
+      };
+    }
+
+    // Stuck timeout
     if (timer > 60) {
       return {
         updates: {
@@ -96,10 +123,13 @@ export function tickNPC(npc, tickDelta, context) {
     return { updates: { stateTimer: timer }, notifications };
   }
 
-  // ── LEAVING — tick timer; if stuck for 30s, force-remove ──
+  // ── LEAVING — check reached edge or timeout ──
   if (npc.state === 'LEAVING') {
     const timer = (npc.stateTimer || 0) + tickDelta;
-    if (timer > 30) {
+    const dist = getDistance2D(npc.position, npc.targetPosition);
+
+    // Reached edge or stuck timeout
+    if (dist < 3 || timer > 30) {
       return { updates: {}, remove: true, notifications };
     }
     return { updates: { stateTimer: timer }, notifications };
@@ -306,13 +336,15 @@ export function tickNPC(npc, tickDelta, context) {
       }
       break;
 
-    case 'WANDERING':
-      if (!npc.targetPosition || timer > 15) {
+    case 'WANDERING': {
+      const wanderDist = getDistance2D(npc.position, npc.targetPosition);
+      if (!npc.targetPosition || wanderDist < 1.5 || timer > 15) {
         updates.state = 'IDLE';
         updates.stateTimer = 0;
         updates.targetPosition = null;
       }
       break;
+    }
 
     default:
       break;

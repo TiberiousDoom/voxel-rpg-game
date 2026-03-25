@@ -1,8 +1,17 @@
-export const ZoneType = { MINING: 'MINING', STOCKPILE: 'STOCKPILE' };
+export const ZoneType = {
+  MINING: 'MINING',
+  STOCKPILE: 'STOCKPILE',
+  FARMING: 'FARMING',
+  BUILDING: 'BUILDING',
+  RESTRICTED: 'RESTRICTED',
+};
 
 export const ZONE_COLORS = {
-  MINING:    { fill: '#ff8c00', border: '#ff6600', opacity: 0.25 },
-  STOCKPILE: { fill: '#4488ff', border: '#2266dd', opacity: 0.25 },
+  MINING:     { fill: '#ff8c00', border: '#ff6600', opacity: 0.25 },
+  STOCKPILE:  { fill: '#4488ff', border: '#2266dd', opacity: 0.25 },
+  FARMING:    { fill: '#44cc44', border: '#228822', opacity: 0.25 },
+  BUILDING:   { fill: '#cc8833', border: '#aa6622', opacity: 0.25 },
+  RESTRICTED: { fill: '#cc3333', border: '#aa2222', opacity: 0.25 },
 };
 
 let _zoneIdCounter = 0;

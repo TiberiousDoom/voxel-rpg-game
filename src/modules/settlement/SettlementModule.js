@@ -201,13 +201,15 @@ class SettlementModule {
     };
 
     try {
-      // ── Step 1: Immigration ──────────────────────────────
-      // Recalculate attractiveness and check for new arrivals
+      // ── Step 1: Immigration (LEGACY — handled by tickSettlementCore) ──
+      // Attractiveness recalc via orchestrator still runs for non-chunk callers
       this.attractivenessCalculator.recalculate(gameState);
       result.settlement.attractiveness = this.attractivenessCalculator.getScore();
 
-      const immigrationResult = this.immigrationManager.update(deltaSeconds, gameState);
-      result.settlement.immigration = immigrationResult;
+      // ImmigrationManager is skipped here — live immigration is handled by
+      // tickSettlementCore() which creates flat NPC objects in the Zustand store.
+      // Keeping the manager instantiated for its statistics/serialization.
+      result.settlement.immigration = null;
 
       // ── Step 2: Zone ──────────────────────────────────────
       const zoneResult = this.zoneManager.update(deltaSeconds, gameState);

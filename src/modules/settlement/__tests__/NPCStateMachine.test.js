@@ -9,6 +9,7 @@ import {
   getWanderRadiusMult,
   getSocialDecayMult,
   getPersonalityHappinessBonus,
+  getDistance2D,
 } from '../NPCStateMachine';
 
 // ── Helper: build a default NPC and context ───────────────────
@@ -152,14 +153,23 @@ describe('Happiness formula', () => {
 // ── APPROACHING state ────────────────────────────────────────
 
 describe('APPROACHING state', () => {
-  test('increments stateTimer', () => {
-    const npc = makeNPC({ state: 'APPROACHING', stateTimer: 10 });
+  test('increments stateTimer when far from target', () => {
+    const npc = makeNPC({ state: 'APPROACHING', stateTimer: 10, position: [100, 2, 100], targetPosition: [50, 2, 50] });
     const { updates } = tickNPC(npc, 2, makeContext());
     expect(updates.stateTimer).toBe(12);
   });
 
-  test('transitions to LEAVING after 60s', () => {
-    const npc = makeNPC({ state: 'APPROACHING', stateTimer: 59 });
+  test('transitions to EVALUATING on arrival (dist < 1.5)', () => {
+    const npc = makeNPC({ state: 'APPROACHING', stateTimer: 5, position: [50.5, 2, 50.5], targetPosition: [50, 2, 50] });
+    const { updates } = tickNPC(npc, 2, makeContext());
+    expect(updates.state).toBe('EVALUATING');
+    expect(updates.stateTimer).toBe(0);
+    expect(updates.targetPosition).toBeNull();
+    expect(updates.arrivedAtSettlement).toBe(true);
+  });
+
+  test('transitions to LEAVING after 60s stuck', () => {
+    const npc = makeNPC({ state: 'APPROACHING', stateTimer: 59, position: [100, 2, 100], targetPosition: [50, 2, 50] });
     const { updates } = tickNPC(npc, 2, makeContext());
     expect(updates.state).toBe('LEAVING');
     expect(updates.stateTimer).toBe(0);
@@ -167,29 +177,43 @@ describe('APPROACHING state', () => {
   });
 
   test('does not decay needs while APPROACHING', () => {
-    const npc = makeNPC({ state: 'APPROACHING', hunger: 80 });
+    const npc = makeNPC({ state: 'APPROACHING', hunger: 80, position: [100, 2, 100], targetPosition: [50, 2, 50] });
     const { updates } = tickNPC(npc, 2, makeContext());
     expect(updates.hunger).toBeUndefined();
+  });
+
+  test('handles null position gracefully (treats as not arrived)', () => {
+    const npc = makeNPC({ state: 'APPROACHING', stateTimer: 5, position: null, targetPosition: [50, 2, 50] });
+    const { updates } = tickNPC(npc, 2, makeContext());
+    // Should not transition to EVALUATING (Infinity distance)
+    expect(updates.state).toBeUndefined();
+    expect(updates.stateTimer).toBe(7);
   });
 });
 
 // ── LEAVING state ────────────────────────────────────────────
 
 describe('LEAVING state', () => {
-  test('increments stateTimer', () => {
-    const npc = makeNPC({ state: 'LEAVING', stateTimer: 10 });
+  test('increments stateTimer when far from target', () => {
+    const npc = makeNPC({ state: 'LEAVING', stateTimer: 10, position: [50, 2, 50], targetPosition: [200, 2, 200] });
     const { updates } = tickNPC(npc, 2, makeContext());
     expect(updates.stateTimer).toBe(12);
   });
 
-  test('returns remove: true after 30s', () => {
-    const npc = makeNPC({ state: 'LEAVING', stateTimer: 29 });
+  test('returns remove: true after 30s timeout', () => {
+    const npc = makeNPC({ state: 'LEAVING', stateTimer: 29, position: [50, 2, 50], targetPosition: [200, 2, 200] });
     const result = tickNPC(npc, 2, makeContext());
     expect(result.remove).toBe(true);
   });
 
-  test('does not return remove before 30s', () => {
-    const npc = makeNPC({ state: 'LEAVING', stateTimer: 10 });
+  test('returns remove: true when NPC reaches edge (dist < 3)', () => {
+    const npc = makeNPC({ state: 'LEAVING', stateTimer: 5, position: [200, 2, 200], targetPosition: [201, 2, 201] });
+    const result = tickNPC(npc, 2, makeContext());
+    expect(result.remove).toBe(true);
+  });
+
+  test('does not return remove when far and before 30s', () => {
+    const npc = makeNPC({ state: 'LEAVING', stateTimer: 10, position: [50, 2, 50], targetPosition: [200, 2, 200] });
     const result = tickNPC(npc, 2, makeContext());
     expect(result.remove).toBeUndefined();
   });
@@ -375,7 +399,7 @@ describe('SOCIALIZING → IDLE', () => {
 
 describe('WANDERING → IDLE', () => {
   test('transitions to IDLE after 15s', () => {
-    const npc = makeNPC({ state: 'WANDERING', stateTimer: 14, targetPosition: [60, 2, 60] });
+    const npc = makeNPC({ state: 'WANDERING', stateTimer: 14, position: [50, 2, 50], targetPosition: [60, 2, 60] });
     const { updates } = tickNPC(npc, 2, makeContext());
     expect(updates.state).toBe('IDLE');
     expect(updates.stateTimer).toBe(0);
@@ -386,6 +410,13 @@ describe('WANDERING → IDLE', () => {
     const npc = makeNPC({ state: 'WANDERING', stateTimer: 2, targetPosition: null });
     const { updates } = tickNPC(npc, 2, makeContext());
     expect(updates.state).toBe('IDLE');
+  });
+
+  test('transitions to IDLE on arrival at target (dist < 1.5)', () => {
+    const npc = makeNPC({ state: 'WANDERING', stateTimer: 3, position: [60, 2, 60], targetPosition: [60.5, 2, 60.5] });
+    const { updates } = tickNPC(npc, 2, makeContext());
+    expect(updates.state).toBe('IDLE');
+    expect(updates.targetPosition).toBeNull();
   });
 });
 
@@ -472,5 +503,23 @@ describe('Unhappy day tracking', () => {
     const ctx = makeContext({ worldTimeElapsed: 500 }); // < DAY_LENGTH_SECONDS
     const { updates } = tickNPC(npc, 2, ctx);
     expect(updates.unhappyDays).toBeUndefined();
+  });
+});
+
+// ── getDistance2D helper ─────────────────────────────────────
+
+describe('getDistance2D', () => {
+  test('calculates 2D distance ignoring Y', () => {
+    expect(getDistance2D([0, 0, 0], [3, 99, 4])).toBeCloseTo(5, 5);
+  });
+
+  test('returns Infinity for null positions', () => {
+    expect(getDistance2D(null, [0, 0, 0])).toBe(Infinity);
+    expect(getDistance2D([0, 0, 0], null)).toBe(Infinity);
+    expect(getDistance2D(null, null)).toBe(Infinity);
+  });
+
+  test('returns 0 for same position', () => {
+    expect(getDistance2D([5, 2, 10], [5, 99, 10])).toBeCloseTo(0, 5);
   });
 });

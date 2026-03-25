@@ -1,6 +1,15 @@
 /**
  * ImmigrationManager.js - NPC arrival system for settlement
  *
+ * LEGACY: This manager is called by SettlementModule.update() (orchestrator path)
+ * but does NOT drive the live 3D game's immigration. The live immigration logic
+ * is in SettlementModule.tickSettlementCore() which creates flat NPC objects
+ * directly into useGameStore.settlement.npcs.
+ *
+ * Future: Either remove this class or merge its ApproachingNPC state machine
+ * into tickSettlementCore for the richer evaluation/housing-wait behavior.
+ *
+ * Original description:
  * NPCs arrive based on settlement attractiveness score.
  * Each immigration check runs every IMMIGRATION_CHECK_INTERVAL seconds.
  * Successful checks spawn an NPC at the world edge who walks toward the settlement.

@@ -1336,6 +1336,9 @@ const useGameStore = create((rawSet, get, api) => {
   removeZone: (zoneId) => set((state) => ({
     zones: state.zones.filter(z => z.id !== zoneId),
   })),
+  syncZones: (moduleZones) => set({
+    zones: Array.isArray(moduleZones) ? moduleZones : Array.from(moduleZones.values()),
+  }),
   updateZone: (zoneId, updates) => set((state) => ({
     zones: state.zones.map(z => z.id === zoneId ? { ...z, ...updates } : z),
   })),

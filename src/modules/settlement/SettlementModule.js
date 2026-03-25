@@ -121,9 +121,12 @@ class SettlementModule {
       }
     }
 
+    // LEGACY: ImmigrationManager is kept for serialization compatibility but
+    // no longer drives live immigration (handled by tickSettlementCore).
+    // npcManager is null to prevent it from spawning class-instance NPCs.
     this.immigrationManager = new ImmigrationManager({
       attractivenessCalculator: this.attractivenessCalculator,
-      npcManager: this.npcManager,
+      npcManager: null,
       townManager: this.townManager,
       storage: this.storage,
       settlementModule: this,

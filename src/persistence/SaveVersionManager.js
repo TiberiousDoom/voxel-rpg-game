@@ -17,7 +17,8 @@
 const SAVE_VERSION = {
   V1: 1, // Original save format (no character system)
   V2: 2, // Character system with attributes and skills
-  CURRENT: 2,
+  V3: 3, // Settlement system unification
+  CURRENT: 3,
 };
 
 const POINTS_PER_LEVEL = {
@@ -105,7 +106,10 @@ class SaveVersionManager {
       migratedData = this.migrateV1ToV2(migratedData);
     }
 
-    // Future migrations would go here (v2 → v3, etc.)
+    // Migrate v2 → v3
+    if (this.detectVersion(migratedData) === SAVE_VERSION.V2) {
+      migratedData = this.migrateV2ToV3(migratedData);
+    }
 
     return migratedData;
   }
@@ -141,6 +145,41 @@ class SaveVersionManager {
     }
 
     return v2Save;
+  }
+
+  /**
+   * Migrate v2 save to v3 (add settlement system)
+   * @param {object} v2Save - The v2 save data
+   * @returns {object} v3 save data
+   */
+  static migrateV2ToV3(v2Save) {
+    console.log('[SaveVersionManager] Migrating v2 → v3: Adding settlement system');
+
+    const v3Save = {
+      ...v2Save,
+      version: SAVE_VERSION.V3,
+      settlement: v2Save.settlement || {
+        tickCount: 0,
+        elapsedTime: 0,
+        immigration: null,
+        attractiveness: 0,
+        identityGenerator: null,
+        zones: null,
+        mining: null,
+        farming: null,
+        stockpiles: null,
+        hauling: null,
+        construction: null,
+        taskAssignment: null,
+        housing: null,
+        settlementCenter: null,
+        npcIdCounter: 0,
+        warnedNPCs: [],
+      },
+    };
+
+    console.log('[SaveVersionManager] Settlement data initialized with defaults');
+    return v3Save;
   }
 
   /**
@@ -309,6 +348,8 @@ class SaveVersionManager {
         return 'v1.0 (Original)';
       case SAVE_VERSION.V2:
         return 'v2.0 (Character System)';
+      case SAVE_VERSION.V3:
+        return 'v3.0 (Settlement System)';
       default:
         return `v${version} (Unknown)`;
     }
@@ -325,6 +366,8 @@ class SaveVersionManager {
         return 'Original save format without character system';
       case SAVE_VERSION.V2:
         return 'Save format with character attributes and skill trees';
+      case SAVE_VERSION.V3:
+        return 'Save format with unified settlement system';
       default:
         return 'Unknown save format version';
     }
@@ -398,8 +441,8 @@ class SaveVersionManager {
       };
     }
 
-    // Ensure character data for v2
-    if (repaired.version === SAVE_VERSION.V2 && !repaired.character) {
+    // Ensure character data for v2+
+    if (repaired.version >= SAVE_VERSION.V2 && !repaired.character) {
       console.warn('[SaveVersionManager] Missing character data in v2 save - initializing');
       repaired.character = getDefaultCharacterData();
       const points = this.calculateRetroactivePoints(repaired.player.level || 1);

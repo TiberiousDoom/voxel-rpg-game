@@ -52,14 +52,18 @@ class StockpileManager {
    * Initialize stockpile slots for a zone.
    */
   _initializeStockpile(zone) {
-    const { min, max } = zone.bounds;
+    const b = zone.bounds;
 
-    // Slots are on the ground plane
+    // Support both 2D bounds (minX/minZ/maxX/maxZ) and 3D bounds (min/max objects)
+    const minX = b.minX != null ? b.minX : (b.min ? b.min.x : 0);
+    const minZ = b.minZ != null ? b.minZ : (b.min ? b.min.z : 0);
+    const maxX = b.maxX != null ? b.maxX : (b.max ? b.max.x : 0);
+    const maxZ = b.maxZ != null ? b.maxZ : (b.max ? b.max.z : 0);
+    const y = b.min ? Math.floor(b.min.y) : 0;
+
     const slots = [];
-    const y = Math.floor(min.y);
-
-    for (let x = Math.floor(min.x); x < Math.ceil(max.x); x++) {
-      for (let z = Math.floor(min.z); z < Math.ceil(max.z); z++) {
+    for (let x = Math.floor(minX); x < Math.ceil(maxX); x++) {
+      for (let z = Math.floor(minZ); z < Math.ceil(maxZ); z++) {
         slots.push({
           position: { x, y, z },
           resourceType: null,
@@ -308,9 +312,10 @@ class StockpileManager {
       const zone = this.zoneManager.getZone(stockpileId);
       if (!zone || !zone.active) continue;
 
+      const zb = zone.bounds;
       const center = {
-        x: (zone.bounds.min.x + zone.bounds.max.x) / 2,
-        z: (zone.bounds.min.z + zone.bounds.max.z) / 2,
+        x: (zb.minX != null ? (zb.minX + zb.maxX) / 2 : (zb.min.x + zb.max.x) / 2),
+        z: (zb.minZ != null ? (zb.minZ + zb.maxZ) / 2 : (zb.min.z + zb.max.z) / 2),
       };
 
       const dx = position.x - center.x;
@@ -347,9 +352,10 @@ class StockpileManager {
       const zone = this.zoneManager.getZone(stockpileId);
       if (!zone || !zone.active) continue;
 
+      const zb = zone.bounds;
       const center = {
-        x: (zone.bounds.min.x + zone.bounds.max.x) / 2,
-        z: (zone.bounds.min.z + zone.bounds.max.z) / 2,
+        x: (zb.minX != null ? (zb.minX + zb.maxX) / 2 : (zb.min.x + zb.max.x) / 2),
+        z: (zb.minZ != null ? (zb.minZ + zb.maxZ) / 2 : (zb.min.z + zb.max.z) / 2),
       };
 
       const dx = position.x - center.x;
@@ -419,6 +425,107 @@ class StockpileManager {
     if (!stockpile) return { success: false, error: 'Stockpile not found' };
     stockpile.filter = resourceType;
     return { success: true };
+  }
+
+  // ── HaulingManager adapter methods ───────────────────────
+
+  /**
+   * Get a stockpile wrapper by ID (adapter for HaulingManager).
+   * Returns an object with the methods HaulingManager/HaulTask expect.
+   *
+   * @param {string} stockpileId
+   * @returns {Object|null}
+   */
+  getStockpile(stockpileId) {
+    const stockpile = this.stockpiles.get(stockpileId);
+    if (!stockpile) return null;
+
+    const self = this;
+    return {
+      id: stockpileId,
+      zoneId: stockpile.zoneId,
+      slots: stockpile.slots,
+      filter: stockpile.filter,
+
+      /**
+       * Reserve a slot for pickup by an NPC.
+       * @param {string} resourceType
+       * @param {string} npcId
+       * @param {number} quantity
+       * @returns {{ success: boolean, slotIndex?: number }}
+       */
+      reserveForPickup(resourceType, npcId, quantity) {
+        for (let i = 0; i < stockpile.slots.length; i++) {
+          const slot = stockpile.slots[i];
+          if (!slot.reserved && slot.resourceType === resourceType && slot.quantity >= quantity) {
+            return self.reserve(stockpileId, i, npcId);
+          }
+        }
+        return { success: false, error: 'No suitable slot' };
+      },
+
+      /**
+       * Release all reservations held by an NPC.
+       * @param {string} npcId
+       */
+      releaseAllReservations(npcId) {
+        for (let i = 0; i < stockpile.slots.length; i++) {
+          if (stockpile.slots[i].reservedBy === npcId) {
+            self.release(stockpileId, i);
+          }
+        }
+      },
+
+      /**
+       * Withdraw from this stockpile (adapter for HaulTask).
+       * HaulTask calls withdraw(x, y, quantity, npcId) but StockpileManager
+       * uses withdraw(stockpileId, resourceType, quantity).
+       *
+       * @param {number} _x - Unused (position-based, we use slot matching)
+       * @param {number} _y - Unused
+       * @param {number} quantity
+       * @param {string} npcId
+       * @returns {{ success: boolean, withdrawn?: number }}
+       */
+      withdraw(_x, _y, quantity, npcId) {
+        // Find the slot reserved by this NPC and withdraw from it
+        for (let i = 0; i < stockpile.slots.length; i++) {
+          const slot = stockpile.slots[i];
+          if (slot.reservedBy === npcId && slot.resourceType) {
+            const result = self.withdraw(stockpileId, slot.resourceType, quantity);
+            // Release the reservation after withdrawal
+            self.release(stockpileId, i);
+            return result;
+          }
+        }
+        return { success: false, error: 'No reserved slot for this NPC' };
+      },
+    };
+  }
+
+  /**
+   * Find the nearest stockpile with a specific resource (adapter for HaulingManager).
+   * HaulingManager calls findNearestResource(resourceType, position, quantity).
+   *
+   * @param {string} resourceType
+   * @param {Object} position - { x, y, z } or [x, y, z]
+   * @param {number} quantity
+   * @returns {{ stockpile: Object, slot: null, position: Object }|null}
+   */
+  findNearestResource(resourceType, position, quantity = 1) {
+    const pos = Array.isArray(position)
+      ? { x: position[0], y: position[1], z: position[2] }
+      : position;
+
+    const result = this.findNearestWithResource(pos, resourceType, quantity);
+    if (!result) return null;
+
+    const wrapper = this.getStockpile(result.stockpileId);
+    return {
+      stockpile: wrapper,
+      slot: null,
+      position: pos,
+    };
   }
 
   // ── Tick ──────────────────────────────────────────────────

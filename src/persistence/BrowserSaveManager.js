@@ -13,6 +13,7 @@
 
 import GameStateSerializer from './GameStateSerializer';
 import SaveValidator from './SaveValidator';
+import { SaveVersionManager } from './SaveVersionManager';
 
 class BrowserSaveManager {
   /**
@@ -204,6 +205,16 @@ class BrowserSaveManager {
           message: `Save validation failed: ${validation.errors.join(', ')}`,
           errors: validation.errors
         };
+      }
+
+      // Migrate save data to current version if needed
+      if (SaveVersionManager.needsMigration(saveData)) {
+        const migration = SaveVersionManager.safeMigrate(saveData);
+        if (migration.success) {
+          saveData = migration.data;
+        } else {
+          console.warn('[BrowserSaveManager] Migration failed, loading as-is:', migration.errors);
+        }
       }
 
       // Deserialize into modules

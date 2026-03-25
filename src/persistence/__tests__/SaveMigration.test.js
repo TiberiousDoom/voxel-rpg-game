@@ -48,16 +48,17 @@ describe('Save Migration Tests', () => {
     });
 
     test('Returns current version for already migrated save', () => {
-      const v2Save = {
-        version: 2,
+      const currentSave = {
+        version: SAVE_VERSION.CURRENT,
         player: {},
-        character: {}
+        character: {},
+        settlement: {},
       };
 
-      const migrated = SaveVersionManager.migrate(v2Save);
+      const migrated = SaveVersionManager.migrate(currentSave);
 
-      expect(migrated).toBe(v2Save); // Should return same object
-      expect(migrated.version).toBe(2);
+      expect(migrated).toBe(currentSave); // Should return same object
+      expect(migrated.version).toBe(SAVE_VERSION.CURRENT);
     });
   });
 
@@ -87,21 +88,24 @@ describe('Save Migration Tests', () => {
         npcs: []
       };
 
-      const v2Save = SaveVersionManager.migrate(v1Save);
+      const migrated = SaveVersionManager.migrate(v1Save);
 
-      // Should have version field
-      expect(v2Save.version).toBe(2);
+      // Should have current version (full migration chain v1→v2→v3)
+      expect(migrated.version).toBe(SAVE_VERSION.CURRENT);
 
       // Should preserve original data
-      expect(v2Save.player.level).toBe(10);
-      expect(v2Save.player.position).toEqual([0, 2, 0]);
-      expect(v2Save.equipment).toEqual(v1Save.equipment);
-      expect(v2Save.inventory).toEqual(v1Save.inventory);
+      expect(migrated.player.level).toBe(10);
+      expect(migrated.player.position).toEqual([0, 2, 0]);
+      expect(migrated.equipment).toEqual(v1Save.equipment);
+      expect(migrated.inventory).toEqual(v1Save.inventory);
 
-      // Should add character data
-      expect(v2Save.character).toBeDefined();
-      expect(v2Save.character.attributes).toBeDefined();
-      expect(v2Save.character.skills).toBeDefined();
+      // Should add character data (from v1→v2)
+      expect(migrated.character).toBeDefined();
+      expect(migrated.character.attributes).toBeDefined();
+      expect(migrated.character.skills).toBeDefined();
+
+      // Should add settlement data (from v2→v3)
+      expect(migrated.settlement).toBeDefined();
     });
 
     test('Awards retroactive attribute points based on level', () => {
@@ -260,7 +264,7 @@ describe('Save Migration Tests', () => {
       const result = SaveVersionManager.safeMigrate(v1Save);
 
       expect(result.success).toBe(true);
-      expect(result.data.version).toBe(2);
+      expect(result.data.version).toBe(SAVE_VERSION.CURRENT);
       expect(result.data.character).toBeDefined();
     });
   });
@@ -314,7 +318,7 @@ describe('Save Migration Tests', () => {
       const result = SaveVersionManager.safeMigrate(v1Save);
 
       expect(result.success).toBe(true);
-      expect(result.data.version).toBe(2);
+      expect(result.data.version).toBe(SAVE_VERSION.CURRENT);
       expect(result.data.character).toBeDefined();
       expect(result.errors).toEqual([]);
     });
@@ -494,7 +498,7 @@ describe('Save Migration Tests', () => {
       const migrated = SaveVersionManager.migrate(emptySave);
 
       // Should create valid v2 save with defaults
-      expect(migrated.version).toBe(2);
+      expect(migrated.version).toBe(SAVE_VERSION.CURRENT);
       expect(migrated.character).toBeDefined();
     });
 
@@ -586,11 +590,11 @@ describe('Save Migration Tests', () => {
 
       // When BrowserSaveManager saves, it should add version
       const savedData = {
-        version: 2, // Should be added
+        version: SAVE_VERSION.CURRENT,
         ...gameState
       };
 
-      expect(savedData.version).toBe(2);
+      expect(savedData.version).toBe(SAVE_VERSION.CURRENT);
     });
 
     test('BrowserSaveManager validates before saving', () => {
@@ -615,7 +619,7 @@ describe('Save Migration Tests', () => {
       const loaded = SaveVersionManager.migrate(v1Save);
 
       // Should be migrated to v2
-      expect(loaded.version).toBe(2);
+      expect(loaded.version).toBe(SAVE_VERSION.CURRENT);
       expect(loaded.character).toBeDefined();
     });
   });

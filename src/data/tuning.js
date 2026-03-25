@@ -240,6 +240,16 @@ export const NPC_LEAVE_HAPPINESS_THRESHOLD = 20;     // Below: unhappy
 export const NPC_LEAVE_WARNING_DAYS = 2;             // In-game days before warning
 export const NPC_LEAVE_DEPARTURE_DAYS = 3;           // In-game days before leaving
 
+// ─── Construction ──────────────────────────────────────────
+export const BUILD_TIME_PER_BLOCK = 3;               // Seconds per block (modified by skill)
+export const BUILDER_SKILL_BASE = 0.5;                // Minimum skill factor in speed calc
+export const MAX_BUILDERS_PER_SITE = 3;               // Max concurrent builders per site
+
+// ─── Housing ───────────────────────────────────────────────
+export const HOUSING_HOMELESS_HAPPINESS_PENALTY = -20; // Happiness penalty for homeless NPCs
+export const HOUSING_SHELTER_CAPACITY = 1;             // Beds per shelter
+export const HOUSING_HOUSE_CAPACITY = 2;               // Beds per house
+
 // ─── Mining Zone ────────────────────────────────────────────
 export const MINING_TASK_REGEN_INTERVAL = 10;        // Seconds between task regeneration scans
 export const MINING_BASE_TIME_PER_BLOCK = 4;         // Seconds to mine one block (modified by skill)

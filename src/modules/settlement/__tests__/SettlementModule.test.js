@@ -90,10 +90,9 @@ describe('SettlementModule', () => {
       expect(result.settlement.attractiveness).toBeGreaterThan(0);
     });
 
-    test('should return immigration result', () => {
+    test('should return null immigration (legacy, handled by tickSettlementCore)', () => {
       const result = module.update(16, { buildings: [] });
-      expect(result.settlement.immigration).toBeDefined();
-      expect(result.settlement.immigration.checked).toBeDefined();
+      expect(result.settlement.immigration).toBeNull();
     });
 
     test('should catch and report errors', () => {

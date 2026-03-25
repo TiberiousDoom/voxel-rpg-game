@@ -87,7 +87,10 @@ class GameStateSerializer {
       featureUnlock: orchestrator.featureUnlock ? this._serializeFeatureUnlock(orchestrator.featureUnlock) : null,
 
       // Phase 10: Voxel Building System
-      voxelBuilding: orchestrator.voxelBuildingOrchestrator ? this._serializeVoxelBuilding(orchestrator.voxelBuildingOrchestrator) : null
+      voxelBuilding: orchestrator.voxelBuildingOrchestrator ? this._serializeVoxelBuilding(orchestrator.voxelBuildingOrchestrator) : null,
+
+      // Phase 2: Settlement System (unified)
+      settlement: orchestrator.settlementModule ? orchestrator.settlementModule.serialize() : null
     };
 
     return state;
@@ -152,6 +155,15 @@ class GameStateSerializer {
       // Phase 10: Voxel Building System
       if (data.voxelBuilding && orchestrator.voxelBuildingOrchestrator) {
         this._deserializeVoxelBuilding(data.voxelBuilding, orchestrator.voxelBuildingOrchestrator, errors);
+      }
+
+      // Phase 2: Settlement System (unified)
+      if (data.settlement && orchestrator.settlementModule) {
+        try {
+          orchestrator.settlementModule.deserialize(data.settlement);
+        } catch (err) {
+          errors.push(`Settlement deserialization error: ${err.message}`);
+        }
       }
 
       // Validate consistency

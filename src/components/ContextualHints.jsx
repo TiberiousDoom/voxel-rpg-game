@@ -157,6 +157,60 @@ const ContextualHints = () => {
       showOnce: false,
       cooldown: 30000,
     },
+    // ── Settlement hints ──────────────────────────────────
+    {
+      id: 'campfire-hint',
+      text: 'Place a CAMPFIRE to attract settlers to your location!',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        return !s.settlement.settlementCenter;
+      },
+      priority: 12,
+      delay: 60000,
+      duration: 6000,
+      showOnce: true,
+    },
+    {
+      id: 'housing-needed',
+      text: 'NPCs need housing! Build a HOUSE to provide shelter.',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        const mod = s._settlementModule;
+        if (!mod || !mod.housingManager) return false;
+        return s.settlement.npcs.length > 1 &&
+          mod.housingManager.getTotalCapacity() < s.settlement.npcs.length;
+      },
+      priority: 13,
+      duration: 5000,
+      showOnce: false,
+      cooldown: 120000,
+    },
+    {
+      id: 'npc-hungry',
+      text: 'A settler is hungry! Ensure your food supply.',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        return s.settlement.npcs.some(n => n.hunger < 30 && n.state !== 'EATING');
+      },
+      priority: 14,
+      duration: 5000,
+      showOnce: false,
+      cooldown: 60000,
+    },
+    {
+      id: 'settlement-growing',
+      text: 'Your settlement is growing! More settlers will arrive as it improves.',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        return useGameStore.getState().settlement.npcs.length >= 3;
+      },
+      priority: 15,
+      duration: 5000,
+      showOnce: true,
+    },
   ];
 
   // Keep ref in sync with state

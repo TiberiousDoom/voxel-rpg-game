@@ -342,6 +342,8 @@ const useGameStore = create((rawSet, get, api) => {
   // Chunk manager reference (for auto-jump, etc.)
   _chunkManager: null,
   setChunkManager: (cm) => set({ _chunkManager: cm }),
+  _settlementModule: null,
+  setSettlementModule: (mod) => set({ _settlementModule: mod }),
 
   // Debug stats (mutable, written by Canvas-internal components, read by DebugOverlay)
   _debugStats: { drawCalls: 0, triangles: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },
@@ -1334,6 +1336,9 @@ const useGameStore = create((rawSet, get, api) => {
   removeZone: (zoneId) => set((state) => ({
     zones: state.zones.filter(z => z.id !== zoneId),
   })),
+  syncZones: (moduleZones) => set({
+    zones: Array.isArray(moduleZones) ? moduleZones : Array.from(moduleZones.values()),
+  }),
   updateZone: (zoneId, updates) => set((state) => ({
     zones: state.zones.map(z => z.id === zoneId ? { ...z, ...updates } : z),
   })),

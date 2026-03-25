@@ -109,16 +109,9 @@ const SettlerNPC = React.memo(({ npcData }) => {
 
     let moving = false;
 
-    // LEAVING NPC that reached edge → remove
-    if (npc.state === 'LEAVING' && npc.targetPosition) {
-      _targetVec.set(npc.targetPosition[0], 0, npc.targetPosition[2]);
-      _currentVec.set(pos.x, 0, pos.z);
-      const dist = _currentVec.distanceTo(_targetVec);
-      if (dist < 3) {
-        store.removeSettlementNPC(npc.id);
-        return;
-      }
-    }
+    // State transitions (APPROACHING→EVALUATING, WANDERING→IDLE, LEAVING→remove)
+    // are handled by NPCStateMachine.tickNPC() in the module layer.
+    // This component only handles movement, rendering, and position writes.
 
     if (npc.targetPosition) {
       // Move toward target
@@ -126,25 +119,7 @@ const SettlerNPC = React.memo(({ npcData }) => {
       _currentVec.set(pos.x, 0, pos.z);
       const dist = _currentVec.distanceTo(_targetVec);
 
-      if (dist < 1.5) {
-        // Arrived at target
-        if (npc.state === 'APPROACHING') {
-          // Transition to EVALUATING instead of IDLE
-          store.updateSettlementNPC(npc.id, {
-            targetPosition: null,
-            arrivedAtSettlement: true,
-            state: 'EVALUATING',
-            stateTimer: 0,
-          });
-        } else {
-          store.updateSettlementNPC(npc.id, {
-            targetPosition: null,
-            arrivedAtSettlement: true,
-            state: npc.state === 'WANDERING' || npc.state === 'SOCIALIZING' ? 'IDLE' : npc.state,
-            stateTimer: npc.state === 'WANDERING' ? 0 : npc.stateTimer,
-          });
-        }
-      } else {
+      if (dist > 0.5) {
         const speed = npc.state === 'APPROACHING' || npc.state === 'LEAVING'
           ? NPC_APPROACH_SPEED : NPC_WALK_SPEED;
         _dirVec.subVectors(_targetVec, _currentVec).normalize();

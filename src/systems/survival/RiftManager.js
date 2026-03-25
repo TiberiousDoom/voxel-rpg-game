@@ -18,7 +18,28 @@ import {
   RIFT_ACTIVE_RANGE,
   RIFT_NOCTURNAL_DAMAGE_MULT,
   RIFT_NOCTURNAL_SPEED_MULT,
+  RIFT_CLOSE_RANGE,
+  RIFT_ANCHOR_HEALTH,
+  RIFT_ANCHOR_ENEMY_DAMAGE,
+  RIFT_CORRUPTION_FADE_SPEED,
+  RIFT_FADE_PROXIMITY_RANGE,
+  RIFT_FADE_MIN_SPEED_MULT,
+  RIFT_WOUNDED_SPAWN_MULT,
+  RIFT_CHAIN_REACTION_RANGE,
+  RIFT_CHAIN_SPAWN_BOOST,
+  RIFT_REINFORCEMENT_INTERVAL,
+  RIFT_NPC_DEFENDER_SPEED_BONUS,
+  RIFT_REINFORCEMENT_COUNT_BASE,
+  RIFT_REINFORCEMENT_ESCALATION,
 } from '../../data/tuning';
+
+// Rift states
+export const RiftState = {
+  ACTIVE: 'ACTIVE',
+  CLOSING: 'CLOSING',
+  WOUNDED: 'WOUNDED',
+  CLOSED: 'CLOSED',
+};
 
 // Simple seeded PRNG (mulberry32)
 function mulberry32(seed) {
@@ -117,6 +138,11 @@ export class RiftManager {
       lastSpawnTime: 0,
       isDormant: false,
       dormantUntil: 0,
+      // Rift closing state
+      state: RiftState.ACTIVE,
+      anchorHealth: 0,
+      corruptionProgress: 1.0, // 1.0 = full corruption, 0.0 = purified
+      lastReinforcementTime: 0,
     }));
   }
 
@@ -132,6 +158,12 @@ export class RiftManager {
     const spawnRequests = [];
 
     for (const rift of this.rifts) {
+      // Skip closed rifts permanently
+      if (rift.state === RiftState.CLOSED) continue;
+
+      // Skip CLOSING rifts (no normal spawns while closing)
+      if (rift.state === RiftState.CLOSING) continue;
+
       // Skip dormant rifts
       if (rift.isDormant && now < rift.dormantUntil) continue;
       if (rift.isDormant) rift.isDormant = false;
@@ -161,6 +193,16 @@ export class RiftManager {
 
       // Check pop cap
       if (rift.spawnedMonsterIds.length >= popCap) continue;
+
+      // WOUNDED rifts spawn slower
+      if (rift.state === RiftState.WOUNDED) {
+        interval /= RIFT_WOUNDED_SPAWN_MULT; // Double the interval (slower spawns)
+      }
+
+      // Chain reaction boost from nearby closing rift
+      if (rift._chainBoost && rift._chainBoost > 1) {
+        interval /= rift._chainBoost; // Faster spawns
+      }
 
       // Check spawn interval
       if (now - rift.lastSpawnTime < interval) continue;
@@ -210,15 +252,224 @@ export class RiftManager {
     return spawnRequests;
   }
 
+  // ── Rift Closing System ────────────────────────────────────
+
+  /**
+   * Begin closing a rift. Called when player presses E near an empty rift.
+   * Places a purification anchor and starts corruption fade.
+   * @param {string} riftId
+   * @param {number} now - worldTime.elapsed
+   */
+  beginClosing(riftId, now) {
+    const rift = this.rifts.find(r => r.id === riftId);
+    if (!rift || rift.state !== RiftState.ACTIVE) return false;
+    if (rift.spawnedMonsterIds.length > 0) return false;
+
+    rift.state = RiftState.CLOSING;
+    rift.anchorHealth = RIFT_ANCHOR_HEALTH;
+    rift.lastReinforcementTime = now;
+
+    // Chain reaction: boost nearby active rifts
+    for (const other of this.rifts) {
+      if (other.id === riftId || other.state !== RiftState.ACTIVE) continue;
+      const dx = other.x - rift.x;
+      const dz = other.z - rift.z;
+      if (Math.sqrt(dx * dx + dz * dz) < RIFT_CHAIN_REACTION_RANGE) {
+        other._chainBoost = RIFT_CHAIN_SPAWN_BOOST;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Resume closing a wounded rift (player presses E again after anchor destroyed).
+   * @param {string} riftId
+   * @param {number} now
+   */
+  resumeClosing(riftId, now) {
+    const rift = this.rifts.find(r => r.id === riftId);
+    if (!rift || rift.state !== RiftState.WOUNDED) return false;
+    if (rift.spawnedMonsterIds.length > 0) return false;
+
+    rift.state = RiftState.CLOSING;
+    rift.anchorHealth = RIFT_ANCHOR_HEALTH;
+    rift.lastReinforcementTime = now;
+    return true;
+  }
+
+  /**
+   * Damage the anchor of a closing rift (called when enemy reaches anchor).
+   * If anchor health reaches 0, rift enters WOUNDED state.
+   * @param {string} riftId
+   * @param {number} damage
+   * @returns {{ destroyed: boolean }}
+   */
+  damageAnchor(riftId, damage = RIFT_ANCHOR_ENEMY_DAMAGE) {
+    const rift = this.rifts.find(r => r.id === riftId);
+    if (!rift || rift.state !== RiftState.CLOSING) return { destroyed: false };
+
+    rift.anchorHealth = Math.max(0, rift.anchorHealth - damage);
+    if (rift.anchorHealth <= 0) {
+      rift.state = RiftState.WOUNDED;
+      rift.anchorHealth = 0;
+      return { destroyed: true };
+    }
+    return { destroyed: false };
+  }
+
+  /**
+   * Mark a rift as permanently closed (called when corruption fully fades).
+   * @param {string} riftId
+   */
+  closeRift(riftId) {
+    const rift = this.rifts.find(r => r.id === riftId);
+    if (!rift) return;
+    rift.state = RiftState.CLOSED;
+    rift.corruptionProgress = 0;
+    rift.spawnedMonsterIds = [];
+  }
+
+  /**
+   * Tick corruption fade for a closing rift.
+   * @param {Object} rift
+   * @param {number} delta - seconds
+   * @param {number[]} playerPos
+   * @param {number} npcDefenderCount - NPCs near the rift
+   * @returns {number} New corruptionProgress (0.0 = fully purified)
+   */
+  tickCorruptionFade(rift, delta, playerPos, npcDefenderCount = 0) {
+    if (rift.state !== RiftState.CLOSING) return rift.corruptionProgress;
+
+    const dx = rift.x - playerPos[0];
+    const dz = rift.z - playerPos[2];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    // Proximity-based speed: full speed within range, minimum speed beyond
+    const proximityMult = dist < RIFT_FADE_PROXIMITY_RANGE
+      ? 1.0
+      : RIFT_FADE_MIN_SPEED_MULT;
+
+    const npcBonus = npcDefenderCount * RIFT_NPC_DEFENDER_SPEED_BONUS;
+    const fadeSpeed = RIFT_CORRUPTION_FADE_SPEED * (proximityMult + npcBonus);
+
+    rift.corruptionProgress = Math.max(0, rift.corruptionProgress - fadeSpeed * delta);
+    return rift.corruptionProgress;
+  }
+
+  /**
+   * Get reinforcement spawn requests from nearby active rifts for a closing rift.
+   * Escalates enemy types as corruption shrinks.
+   * @param {Object} closingRift
+   * @param {number} now
+   * @returns {Array<{ riftId, position, monsterType, monsterData, targetPosition }>}
+   */
+  getReinforcementSpawns(closingRift, now) {
+    if (closingRift.state !== RiftState.CLOSING) return [];
+    if (now - closingRift.lastReinforcementTime < RIFT_REINFORCEMENT_INTERVAL) return [];
+
+    closingRift.lastReinforcementTime = now;
+    const spawns = [];
+
+    // Find nearby active rifts to send reinforcements from
+    const sources = this.rifts.filter(r => {
+      if (r.id === closingRift.id) return false;
+      if (r.state === RiftState.CLOSED) return false;
+      const dx = r.x - closingRift.x;
+      const dz = r.z - closingRift.z;
+      return Math.sqrt(dx * dx + dz * dz) < RIFT_CHAIN_REACTION_RANGE;
+    });
+
+    if (sources.length === 0) return [];
+
+    // Determine escalation tier based on corruption progress
+    const progress = closingRift.corruptionProgress;
+    let tierTypes;
+    if (progress > 0.6) {
+      tierTypes = ['slime', 'goblin']; // scouts
+    } else if (progress > 0.3) {
+      tierTypes = ['skeleton', 'goblin']; // soldiers
+    } else {
+      tierTypes = ['shadow', 'skeleton']; // elites
+    }
+
+    // Calculate wave size (escalates as corruption shrinks)
+    const escalation = Math.floor((1 - progress) * RIFT_REINFORCEMENT_ESCALATION);
+    const waveSize = RIFT_REINFORCEMENT_COUNT_BASE + escalation;
+
+    // Pick a random source rift
+    const source = sources[Math.floor(Math.random() * sources.length)];
+    const rand = mulberry32(this.seed * 37 + Math.floor(now * 100));
+
+    for (let i = 0; i < waveSize; i++) {
+      const typeKey = tierTypes[Math.floor(rand() * tierTypes.length)];
+      const template = MONSTER_TYPES[typeKey];
+      if (!template) continue;
+
+      // Spawn near the source rift
+      const angle = rand() * Math.PI * 2;
+      const radius = rand() * RIFT_SPAWN_RADIUS;
+      const spawnX = source.x + Math.cos(angle) * radius;
+      const spawnZ = source.z + Math.sin(angle) * radius;
+
+      // Elites get +50% health/damage
+      const isElite = progress < 0.3;
+      const healthMult = isElite ? 1.5 : 1.0;
+      const damageMult = isElite ? 1.5 : 1.0;
+
+      const monsterId = `rift-reinforce-${this.nextMonsterId++}`;
+      source.spawnedMonsterIds.push(monsterId);
+
+      spawns.push({
+        riftId: source.id,
+        position: [spawnX, 12, spawnZ],
+        monsterType: typeKey,
+        monsterData: {
+          id: monsterId,
+          type: typeKey,
+          name: isElite ? `Elite ${template.name}` : template.name,
+          health: Math.round(template.health * healthMult),
+          maxHealth: Math.round(template.health * healthMult),
+          damage: Math.round(template.damage * damageMult),
+          speed: template.speed,
+          color: template.color,
+          xp: Math.round(template.xp * (isElite ? 2 : 1)),
+          isNocturnal: false,
+        },
+        // Reinforcements target the anchor, not the player
+        targetPosition: [closingRift.x, 0, closingRift.z],
+        sourceRiftId: source.id,
+      });
+    }
+
+    return spawns;
+  }
+
+  /**
+   * Get all rifts currently being closed.
+   * @returns {Object[]}
+   */
+  getClosingRifts() {
+    return this.rifts.filter(r => r.state === RiftState.CLOSING);
+  }
+
   /**
    * Get rift positions for rendering (nearest N to player).
    */
   getNearestRifts(playerPos, maxCount = 3) {
     return this.rifts
+      .filter(r => r.state !== RiftState.CLOSED)
       .map((r) => {
         const dx = r.x - playerPos[0];
         const dz = r.z - playerPos[2];
-        return { ...r, distance: Math.sqrt(dx * dx + dz * dz) };
+        return {
+          id: r.id, x: r.x, z: r.z,
+          state: r.state,
+          corruptionProgress: r.corruptionProgress,
+          anchorHealth: r.anchorHealth,
+          spawnedMonsterCount: r.spawnedMonsterIds.length,
+          distance: Math.sqrt(dx * dx + dz * dz),
+        };
       })
       .sort((a, b) => a.distance - b.distance)
       .slice(0, maxCount);

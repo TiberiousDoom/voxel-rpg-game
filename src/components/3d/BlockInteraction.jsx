@@ -624,6 +624,37 @@ export function BlockInteraction({ chunkManager }) {
     const store = useGameStore.getState();
     const playerPos = store.player.position;
 
+    // Check for rift interaction (E key near rift)
+    const riftManager = store._riftManager;
+    if (riftManager) {
+      for (const rift of riftManager.rifts) {
+        if (rift.state === 'CLOSED') continue;
+        if (rift.state !== 'ACTIVE' && rift.state !== 'WOUNDED') continue;
+        if (rift.spawnedMonsterIds.length > 0) continue;
+
+        const rdx = playerPos[0] - rift.x;
+        const rdz = playerPos[2] - rift.z;
+        const rdist = Math.sqrt(rdx * rdx + rdz * rdz);
+
+        if (rdist < 8) { // RIFT_CLOSE_RANGE
+          const worldNow = store.worldTime.elapsed;
+          if (rift.state === 'ACTIVE') {
+            if (riftManager.beginClosing(rift.id, worldNow)) {
+              store.addPickupText('Rift closing begun! Defend the anchor!', '#aa44ff');
+              useBlockCooldown.current = now;
+              return true;
+            }
+          } else if (rift.state === 'WOUNDED') {
+            if (riftManager.resumeClosing(rift.id, worldNow)) {
+              store.addPickupText('Resuming rift purification!', '#aa44ff');
+              useBlockCooldown.current = now;
+              return true;
+            }
+          }
+        }
+      }
+    }
+
     // In first-person with a target block: use it if usable
     if (firstPerson && targetBlock) {
       const bx = Math.floor(targetBlock.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;

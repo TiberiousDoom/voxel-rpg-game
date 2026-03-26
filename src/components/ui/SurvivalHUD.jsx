@@ -7,14 +7,18 @@
 
 import React from 'react';
 import useGameStore from '../../stores/useGameStore';
+import { isTouchDevice } from '../../utils/deviceDetection';
+
+const isMobile = typeof window !== 'undefined' && (window.innerWidth <= 768 || isTouchDevice());
 
 const containerStyle = {
   position: 'fixed',
-  top: 12,
-  left: 12,
+  top: isMobile ? 'max(8px, env(safe-area-inset-top, 8px))' : 12,
+  left: isMobile ? '50%' : 12,
+  transform: isMobile ? 'translateX(-50%)' : 'none',
   display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
+  flexDirection: isMobile ? 'row' : 'column',
+  gap: isMobile ? 8 : 4,
   pointerEvents: 'none',
   zIndex: 900,
   userSelect: 'none',
@@ -37,7 +41,7 @@ const labelStyle = {
 };
 
 const barOuterStyle = {
-  width: 120,
+  width: isMobile ? 70 : 120,
   height: 10,
   backgroundColor: 'rgba(0, 0, 0, 0.5)',
   borderRadius: 3,

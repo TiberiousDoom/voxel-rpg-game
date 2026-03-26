@@ -15,10 +15,14 @@ const GAP = 6;
 
 const containerStyle = {
   position: 'fixed',
-  bottom: `max(160px, calc(140px + env(safe-area-inset-bottom, 0px)))`,
-  right: `max(12px, env(safe-area-inset-right, 0px))`,
+  // Stack vertically on the right edge, starting well above the SpellWheel button
+  // SpellWheel is at bottom ~80px, 56px tall → top at ~136px
+  // We start at 150px to leave clear gap
+  bottom: `max(150px, calc(130px + env(safe-area-inset-bottom, 0px)))`,
+  right: `max(8px, env(safe-area-inset-right, 0px))`,
   display: 'flex',
   flexDirection: 'column',
+  alignItems: 'flex-end',
   gap: GAP,
   zIndex: 950,
   pointerEvents: 'auto',
@@ -92,14 +96,10 @@ const MobileActionButtons = () => {
 
   return (
     <div style={containerStyle}>
-      <div style={{ display: 'flex', gap: GAP }}>
-        <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleJump(); }} onClick={handleJump} aria-label="Jump">⬆</button>
-        <button style={sprintActive ? activeStyle : buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleSprint(); }} onClick={handleSprint} aria-label="Sprint">🏃</button>
-      </div>
-      <div style={{ display: 'flex', gap: GAP }}>
-        <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleInteract(); }} onClick={handleInteract} aria-label="Interact">E</button>
-        <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleDodge(); }} onClick={handleDodge} aria-label="Dodge">💨</button>
-      </div>
+      <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleJump(); }} onClick={handleJump} aria-label="Jump">⬆</button>
+      <button style={sprintActive ? activeStyle : buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleSprint(); }} onClick={handleSprint} aria-label="Sprint">🏃</button>
+      <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleInteract(); }} onClick={handleInteract} aria-label="Interact">E</button>
+      <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleDodge(); }} onClick={handleDodge} aria-label="Dodge">💨</button>
     </div>
   );
 };

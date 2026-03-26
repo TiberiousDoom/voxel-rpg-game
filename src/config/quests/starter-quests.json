@@ -3,6 +3,7 @@
     "id": "quest_starter_001",
     "title": "First Steps",
     "description": "Welcome to your settlement! Get familiar with the basics by exploring your surroundings and defeating a few slimes.",
+    "flavorText": "The land here is wild and untamed. Strange creatures ooze from the rifts that scar the landscape. Best to learn how to defend yourself early.",
     "type": "KILL",
     "category": "MAIN",
     "levelRequirement": 1,

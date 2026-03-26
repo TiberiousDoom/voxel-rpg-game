@@ -16,6 +16,8 @@ import { BLOCK_USE_ACTIONS } from '../../data/blockUseActions';
 import { HARVEST_SPEED_BARE_HANDS, USE_KEY_RANGE, USE_KEY_COOLDOWN } from '../../data/tuning';
 import { getSpellById, executeSpell } from '../../data/spells';
 import { performMeleeAttack, MELEE_COOLDOWN } from '../../data/meleeAttack';
+import { audioManager } from '../../utils/AudioManager';
+import { getQuestManager } from '../../systems/QuestManager';
 import { isTouchDevice } from '../../utils/deviceDetection';
 
 // Maximum reach distance for block interaction
@@ -559,6 +561,12 @@ export function BlockInteraction({ chunkManager }) {
       drops.forEach((drop) => {
         store.addMaterial(drop.material, drop.amount);
         store.addPickupText(`+${drop.amount} ${drop.material}`, '#44ff44');
+      });
+
+      // Audio + quest tracking for mining
+      audioManager.play('lootDrop');
+      drops.forEach((drop) => {
+        try { getQuestManager().emit('itemCollected', drop.material); } catch (_) { /* quest system not ready */ }
       });
     }
 

@@ -12,7 +12,7 @@ import useGameStore from '../../stores/useGameStore';
 const containerStyle = {
   position: 'fixed',
   left: `max(12px, env(safe-area-inset-left, 0px))`,
-  top: 70,
+  bottom: 200,
   display: 'flex',
   flexDirection: 'column',
   gap: 8,

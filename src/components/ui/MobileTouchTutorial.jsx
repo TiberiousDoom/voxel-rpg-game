@@ -73,8 +73,8 @@ const dismissStyle = {
 };
 
 const TIPS = [
-  { icon: '👆', text: 'Tap ground to move (or cast spell if ready)' },
-  { icon: '⚔️', text: 'Tap enemies to attack' },
+  { icon: '👆', text: 'Tap to move' },
+  { icon: '⚔️', text: 'Double-tap enemies to attack' },
   { icon: '🔄', text: 'Drag to rotate camera' },
   { icon: '🔍', text: 'Pinch to zoom in/out' },
   { icon: '⛏️', text: 'Long-press blocks to mine' },

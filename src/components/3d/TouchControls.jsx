@@ -40,9 +40,10 @@ const TouchControls = () => {
       const longPressAt = Number(gl.domElement.dataset.longPressAt || '0');
       if (Date.now() - longPressAt < 500) return;
 
-      // Prevent duplicate events (mobile fires both touchstart and click)
+      // Double-tap detection for attack
       const now = Date.now();
-      if (now - lastTapTime < 300) return; // Ignore if within 300ms of last tap
+      const timeSinceLastTap = now - lastTapTime;
+      const isDoubleTap = timeSinceLastTap > 50 && timeSinceLastTap < 350;
       lastTapTime = now;
 
       // Get normalized device coordinates
@@ -107,11 +108,10 @@ const TouchControls = () => {
           return result.success;
         };
 
-        if (enemyHit && enemyData?.takeDamage) {
-          // Attack enemy — try spell first, melee fallback
+        if (enemyHit && enemyData?.takeDamage && isDoubleTap) {
+          // Double-tap on enemy — attack (spell or melee)
           const spellFired = tryCastSpellAt(enemyHit.point);
           if (!spellFired) {
-            // Melee fallback
             const meleeStore = useGameStore.getState();
             const meleeCooldown = meleeStore.getSpellCooldown('__melee__');
             if (!meleeCooldown || meleeCooldown <= 0) {
@@ -147,21 +147,15 @@ const TouchControls = () => {
         if (useGameStore.getState().zoneMode) return;
 
         if (groundHit) {
-          // On mobile: prioritize movement. Only cast spell if tapping near self.
           const goalPos = [groundHit.point.x, groundHit.point.y, groundHit.point.z];
           const clickStore = useGameStore.getState();
           const playerPos = clickStore.player.position;
 
-          // Distance from player to tap point
-          const tapDx = goalPos[0] - playerPos[0];
-          const tapDz = goalPos[2] - playerPos[2];
-          const tapDist = Math.sqrt(tapDx * tapDx + tapDz * tapDz);
-
-          if (tapDist < 5) {
-            // Tap near self — cast spell at feet (AOE, self-buff, etc.)
+          if (isDoubleTap) {
+            // Double-tap on ground — cast spell at location
             tryCastSpellAt(groundHit.point);
           } else {
-            // Tap far away — move to location with pathfinding
+            // Single tap — always move to location
             const cm = clickStore._chunkManager;
 
             if (cm) {

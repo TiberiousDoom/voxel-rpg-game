@@ -861,7 +861,7 @@ export function BlockInteraction({ chunkManager }) {
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [gl, mineBlock, placeBlock, selectedBlockType, firstPerson, checkEnemyFromCamera, chunkManager, raycastForBlock]);
+  }, [gl, camera, mineBlock, placeBlock, selectedBlockType, firstPerson, checkEnemyFromCamera, chunkManager, raycastForBlock]);
 
   // Desktop third-person: left-click to mine, right-click to place
   // Uses a store flag (_blockClickActive) to coordinate with TouchControls

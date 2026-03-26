@@ -5,14 +5,14 @@
  * corruption fade, reinforcement waves, and provides rift state for rendering.
  */
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import useGameStore from '../../stores/useGameStore';
 import { RiftManager, RiftState } from '../../systems/survival/RiftManager';
 import CorruptionManager from '../../systems/survival/CorruptionManager';
 import { VOXEL_SIZE, CHUNK_SIZE_Y } from '../../systems/chunks/coordinates';
 import { isSolid } from '../../systems/chunks/blockTypes';
-import { RIFT_CLOSE_RANGE } from '../../data/tuning';
+
 
 /**
  * Find the terrain surface Y for spawning at a given world (x, z).
@@ -67,33 +67,6 @@ const RiftController = ({ chunkManager }) => {
         state._riftManager = null;
       }
     };
-  }, []);
-
-  // E-key rift interaction handler
-  const handleRiftInteraction = useCallback((rm, playerPos, now) => {
-    for (const rift of rm.rifts) {
-      if (rift.state === RiftState.CLOSED) continue;
-
-      const dx = rift.x - playerPos[0];
-      const dz = rift.z - playerPos[2];
-      const dist = Math.sqrt(dx * dx + dz * dz);
-
-      if (dist > RIFT_CLOSE_RANGE) continue;
-      if (rift.spawnedMonsterIds.length > 0) continue;
-
-      if (rift.state === RiftState.ACTIVE) {
-        if (rm.beginClosing(rift.id, now)) {
-          useGameStore.getState().addPickupText('Rift closing begun! Defend the anchor!', '#aa44ff');
-          return true;
-        }
-      } else if (rift.state === RiftState.WOUNDED) {
-        if (rm.resumeClosing(rift.id, now)) {
-          useGameStore.getState().addPickupText('Resuming rift purification!', '#aa44ff');
-          return true;
-        }
-      }
-    }
-    return false;
   }, []);
 
   useFrame(() => {

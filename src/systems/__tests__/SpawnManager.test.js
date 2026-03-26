@@ -12,12 +12,12 @@
  */
 
 // Mock the Monster entity
-jest.mock('../../entities/Monster', () => ({
-  Monster: jest.fn()
+vi.mock('../../entities/Monster', () => ({
+  Monster: vi.fn()
 }));
 
 // Mock the spawn zones configuration
-jest.mock('../../config/monsters/spawn-zones.json', () => ({
+vi.mock('../../config/monsters/spawn-zones.json', () => ({ default: {
   TEST_ZONE_1: {
     name: 'Test Zone 1',
     position: { x: 50, z: 50 },
@@ -68,10 +68,10 @@ jest.mock('../../config/monsters/spawn-zones.json', () => ({
     eliteSpawnChance: 0,
     enabled: false
   }
-}));
+} }));
 
 // Mock monster modifiers
-jest.mock('../../config/monsters/monster-modifiers.json', () => ({
+vi.mock('../../config/monsters/monster-modifiers.json', () => ({ default: {
   ELITE: {
     name: 'Elite',
     healthMultiplier: 1.5,
@@ -85,7 +85,7 @@ jest.mock('../../config/monsters/monster-modifiers.json', () => ({
     name: 'Armored',
     defenseBonus: 10
   }
-}));
+} }));
 
 import { SpawnManager } from '../SpawnManager';
 import { Monster } from '../../entities/Monster';
@@ -95,7 +95,7 @@ describe('SpawnManager', () => {
 
   beforeEach(() => {
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Set up Monster mock implementation
     Monster.mockImplementation((type, position, options) => ({
@@ -113,7 +113,7 @@ describe('SpawnManager', () => {
     spawnManager = new SpawnManager();
 
     // Mock Math.random for predictable tests
-    jest.spyOn(Math, 'random');
+    vi.spyOn(Math, 'random');
   });
 
   afterEach(() => {

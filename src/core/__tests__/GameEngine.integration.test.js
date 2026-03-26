@@ -61,7 +61,7 @@ describe('GameEngine Integration Tests', () => {
   let perfNowSpy;
 
   beforeEach(() => {
-    perfNowSpy = jest.spyOn(performance, 'now').mockImplementation(() => Date.now());
+    perfNowSpy = vi.spyOn(performance, 'now').mockImplementation(() => Date.now());
 
     // Initialize all modules in dependency order
     grid = new GridManager(100, 100);

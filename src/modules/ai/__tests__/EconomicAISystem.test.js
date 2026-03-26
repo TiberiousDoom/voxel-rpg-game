@@ -697,20 +697,20 @@ describe('EconomicAISystem', () => {
     });
 
     test('should add listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       economy.addListener(listener);
       expect(economy.listeners).toContain(listener);
     });
 
     test('should remove listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       economy.addListener(listener);
       economy.removeListener(listener);
       expect(economy.listeners).not.toContain(listener);
     });
 
     test('should emit purchase event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       economy.addListener(listener);
       economy.buyFromMerchant(merchant.id, 'bread', 5, { gold: 1000 });
 
@@ -722,7 +722,7 @@ describe('EconomicAISystem', () => {
     });
 
     test('should emit sale event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       economy.addListener(listener);
       economy.sellToMerchant(merchant.id, 'bread', 5);
 

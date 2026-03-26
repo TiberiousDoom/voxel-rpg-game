@@ -7,18 +7,18 @@ import { render, screen, act } from '@testing-library/react';
 import '../testSetup';
 
 // Mock the store
-jest.mock('../../../stores/useGameStore', () => {
-  return jest.fn((selector) => {
+vi.mock('../../../stores/useGameStore', () => {
+  return vi.fn((selector) => {
     const state = {
       player: {
         position: [0, 2, 0],
         health: 100,
         maxHealth: 100,
       },
-      dealDamageToPlayer: jest.fn(),
-      addDamageNumber: jest.fn(),
-      removeEnemy: jest.fn(),
-      handleMonsterDeath: jest.fn(),
+      dealDamageToPlayer: vi.fn(),
+      addDamageNumber: vi.fn(),
+      removeEnemy: vi.fn(),
+      handleMonsterDeath: vi.fn(),
     };
     return selector ? selector(state) : state;
   });
@@ -38,12 +38,12 @@ describe('Enemy Component', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('Rendering', () => {
@@ -191,7 +191,7 @@ describe('Enemy Component', () => {
 
       // Fast forward attack cooldown
       act(() => {
-        jest.advanceTimersByTime(1500);
+        vi.advanceTimersByTime(1500);
       });
 
       expect(useGameStore).toHaveBeenCalled();
@@ -208,11 +208,11 @@ describe('Enemy Component', () => {
 
       // Multiple time advances
       act(() => {
-        jest.advanceTimersByTime(500);
+        vi.advanceTimersByTime(500);
       });
 
       act(() => {
-        jest.advanceTimersByTime(500);
+        vi.advanceTimersByTime(500);
       });
 
       expect(useGameStore).toHaveBeenCalled();

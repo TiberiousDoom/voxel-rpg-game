@@ -123,7 +123,7 @@ describe('Event', () => {
   describe('callbacks', () => {
     it('should call onStart callback', () => {
       const event = new Event();
-      const callback = jest.fn();
+      const callback = vi.fn();
       event.setOnStartCallback(callback);
 
       event.start({});
@@ -132,7 +132,7 @@ describe('Event', () => {
 
     it('should call onTick callback', () => {
       const event = new Event({ duration: 10 });
-      const callback = jest.fn();
+      const callback = vi.fn();
       event.setOnTickCallback(callback);
 
       event.start({});
@@ -142,7 +142,7 @@ describe('Event', () => {
 
     it('should call onEnd callback', () => {
       const event = new Event();
-      const callback = jest.fn();
+      const callback = vi.fn();
       event.setOnEndCallback(callback);
 
       event.start({});
@@ -403,7 +403,7 @@ describe('EventSystem', () => {
   describe('event listeners', () => {
     it('should not call listeners via queueEvent (callbacks lost on copy)', () => {
       const system = new EventSystem();
-      const listener = jest.fn();
+      const listener = vi.fn();
       system.addEventListener('onEventStart', listener);
 
       const event = new Event({ name: 'Test Event', duration: 60 });
@@ -417,7 +417,7 @@ describe('EventSystem', () => {
 
     it('should remove listeners', () => {
       const system = new EventSystem();
-      const listener = jest.fn();
+      const listener = vi.fn();
       system.addEventListener('onEventStart', listener);
       system.removeEventListener('onEventStart', listener);
 

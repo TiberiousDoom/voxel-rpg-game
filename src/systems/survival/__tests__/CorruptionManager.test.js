@@ -5,7 +5,7 @@
 import CorruptionManager from '../CorruptionManager';
 
 // Mock block types
-jest.mock('../../chunks/blockTypes', () => ({
+vi.mock('../../chunks/blockTypes', () => ({
   BlockTypes: {
     AIR: 0, STONE: 1, GRASS: 3,
     CORRUPTED_STONE: 18, CORRUPTED_GRASS: 19,
@@ -16,11 +16,11 @@ jest.mock('../../chunks/blockTypes', () => ({
   isCorrupted: (b) => b >= 18 && b <= 21,
 }));
 
-jest.mock('../../chunks/coordinates', () => ({
+vi.mock('../../chunks/coordinates', () => ({
   VOXEL_SIZE: 2,
 }));
 
-jest.mock('../../../data/tuning', () => ({
+vi.mock('../../../data/tuning', () => ({
   CORRUPTION_RADIUS_LIGHT: 32,
   RIFT_VOID_SHARD_DROP_CHANCE: 0.5, // High for testing
 }));
@@ -36,7 +36,7 @@ function makeChunkManager() {
 
 function makeRiftManager() {
   return {
-    tickCorruptionFade: jest.fn((rift, delta, playerPos, npcCount) => {
+    tickCorruptionFade: vi.fn((rift, delta, playerPos, npcCount) => {
       // Simulate fade
       rift.corruptionProgress = Math.max(0, rift.corruptionProgress - 0.1);
       return rift.corruptionProgress;
@@ -89,7 +89,7 @@ describe('CorruptionManager', () => {
   test('reports fullyPurified when corruptionProgress reaches 0', () => {
     const chunkMgr = makeChunkManager();
     const rm = {
-      tickCorruptionFade: jest.fn((rift) => {
+      tickCorruptionFade: vi.fn((rift) => {
         rift.corruptionProgress = 0;
         return 0;
       }),

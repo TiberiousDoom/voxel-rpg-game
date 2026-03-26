@@ -14,21 +14,22 @@
 import MonsterAI from '../MonsterAI';
 
 // Mock Zustand store
-jest.mock('../../stores/useGameStore', () => ({
+vi.mock('../../stores/useGameStore', () => ({
   __esModule: true,
   default: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       player: {
         health: 100,
         maxHealth: 100,
         position: [0, 1, 0]
       },
-      dealDamageToPlayer: jest.fn((damage) => {
-        const state = require('../../stores/useGameStore').default.getState();
+      dealDamageToPlayer: vi.fn((damage) => {
+        const mod = require('../../stores/useGameStore');
+        const state = (mod.default || mod).getState();
         state.player.health = Math.max(0, state.player.health - damage);
       })
     })),
-    setState: jest.fn()
+    setState: vi.fn()
   }
 }));
 
@@ -39,7 +40,7 @@ describe('MonsterAI System', () => {
 
   beforeEach(() => {
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Create AI instance
     monsterAI = new MonsterAI();
@@ -404,7 +405,7 @@ describe('MonsterAI System', () => {
   describe('Combat Behavior', () => {
     test('should deal damage when attacking', () => {
       const useGameStore = require('../../stores/useGameStore').default;
-      const mockDealDamage = jest.fn();
+      const mockDealDamage = vi.fn();
 
       useGameStore.getState.mockReturnValue({
         player: {

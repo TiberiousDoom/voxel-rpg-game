@@ -17,22 +17,22 @@ const createMockGameState = () => ({
     { id: 'b5', type: 'CASTLE', state: 'COMPLETED', position: { x: 20, y: 20, z: 0 }, health: 100 }
   ],
   gridManager: {
-    removeBuilding: jest.fn()
+    removeBuilding: vi.fn()
   },
   storageManager: {
-    getResource: jest.fn(() => 100),
-    removeResource: jest.fn(),
-    addResource: jest.fn()
+    getResource: vi.fn(() => 100),
+    removeResource: vi.fn(),
+    addResource: vi.fn()
   },
   townManager: {
-    addMorale: jest.fn()
+    addMorale: vi.fn()
   },
   npcAssignments: {
-    getNPCsInBuilding: jest.fn(() => []),
-    unassignNPC: jest.fn()
+    getNPCsInBuilding: vi.fn(() => []),
+    unassignNPC: vi.fn()
   },
   buildingConfig: {
-    getBuilding: jest.fn((type) => ({
+    getBuilding: vi.fn((type) => ({
       type,
       cost: { wood: 10, stone: 5 }
     }))
@@ -75,7 +75,7 @@ describe('WildfireEvent', () => {
 
     // Mock random to always trigger destruction
     const originalRandom = Math.random;
-    Math.random = jest.fn(() => 0.01); // Low value to trigger destruction
+    Math.random = vi.fn(() => 0.01); // Low value to trigger destruction
 
     // Simulate ticks
     for (let i = 0; i < 10; i++) {
@@ -244,7 +244,7 @@ describe('EarthquakeEvent', () => {
 
     // Mock random to return consistent value
     const originalRandom = Math.random;
-    Math.random = jest.fn(() => 0.5); // Mid-range value
+    Math.random = vi.fn(() => 0.5); // Mid-range value
 
     earthquake.start(gameState);
 

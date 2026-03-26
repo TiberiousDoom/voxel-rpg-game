@@ -69,8 +69,8 @@ const createPlayerStoreState = () => ({
   updateCamera: () => {},
 });
 
-jest.mock('../../../stores/useGameStore', () => {
-  const mockStore = jest.fn((selector) => {
+vi.mock('../../../stores/useGameStore', () => {
+  const mockStore = vi.fn((selector) => {
     const state = createPlayerStoreState();
     return selector ? selector(state) : state;
   });

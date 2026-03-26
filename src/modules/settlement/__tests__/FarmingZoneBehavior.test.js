@@ -19,9 +19,9 @@ describe('FarmingZoneBehavior', () => {
   };
 
   beforeEach(() => {
-    mockSettlementModule = { emit: jest.fn() };
+    mockSettlementModule = { emit: vi.fn() };
     mockZoneManager = {
-      getZone: jest.fn((id) => (id === 'zone_1' ? farmZone : null)),
+      getZone: vi.fn((id) => (id === 'zone_1' ? farmZone : null)),
     };
 
     farming = new FarmingZoneBehavior({

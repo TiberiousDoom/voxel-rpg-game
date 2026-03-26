@@ -137,7 +137,7 @@ describe('IdleTaskManager', () => {
       // Mock Date.now for time control
       originalDateNow = Date.now;
       let mockTime = 1000000;
-      Date.now = jest.fn(() => mockTime);
+      Date.now = vi.fn(() => mockTime);
 
       idleTaskManager.assignTask(mockNPC);
     });
@@ -155,7 +155,7 @@ describe('IdleTaskManager', () => {
       expect(initialProgress).toBe(0); // Just started
 
       // Advance time
-      Date.now = jest.fn(() => currentTime + task.duration / 2);
+      Date.now = vi.fn(() => currentTime + task.duration / 2);
       const midProgress = task.getProgress(Date.now());
       expect(midProgress).toBeGreaterThan(0);
       expect(midProgress).toBeLessThan(100);
@@ -166,7 +166,7 @@ describe('IdleTaskManager', () => {
       const startTime = Date.now();
 
       // Advance time past task duration
-      Date.now = jest.fn(() => startTime + task.duration + 100);
+      Date.now = vi.fn(() => startTime + task.duration + 100);
       const completed = idleTaskManager.updateTasks();
 
       expect(completed.length).toBe(1);
@@ -179,7 +179,7 @@ describe('IdleTaskManager', () => {
       const startTime = Date.now();
 
       // Advance time but not past duration
-      Date.now = jest.fn(() => startTime + task.duration / 2);
+      Date.now = vi.fn(() => startTime + task.duration / 2);
       const completed = idleTaskManager.updateTasks();
 
       expect(completed.length).toBe(0);
@@ -203,7 +203,7 @@ describe('IdleTaskManager', () => {
       const startTime = Date.now();
 
       // Advance far past duration
-      Date.now = jest.fn(() => startTime + 100000); // 100 seconds
+      Date.now = vi.fn(() => startTime + 100000); // 100 seconds
 
       const completed = idleTaskManager.updateTasks();
       expect(completed.length).toBe(1);
@@ -215,7 +215,7 @@ describe('IdleTaskManager', () => {
       const startTime = Date.now();
 
       // Advance past duration
-      Date.now = jest.fn(() => startTime + task.duration + 100);
+      Date.now = vi.fn(() => startTime + task.duration + 100);
       const completed = idleTaskManager.updateTasks();
 
       expect(completed[0].task.rewards).toBeDefined();
@@ -229,7 +229,7 @@ describe('IdleTaskManager', () => {
       const startTime = Date.now();
 
       // Advance past duration
-      Date.now = jest.fn(() => startTime + task.duration + 100);
+      Date.now = vi.fn(() => startTime + task.duration + 100);
       idleTaskManager.updateTasks();
 
       expect(idleTaskManager.stats.tasksCompleted[taskType]).toBe(initialCount + 1);
@@ -256,7 +256,7 @@ describe('IdleTaskManager', () => {
     test('should complete tasks independently', () => {
       const originalDateNow = Date.now;
       let mockTime = 1000000;
-      Date.now = jest.fn(() => mockTime);
+      Date.now = vi.fn(() => mockTime);
 
       const npc1 = { ...mockNPC, id: 1 };
       const npc2 = { ...mockNPC, id: 2 };
@@ -267,7 +267,7 @@ describe('IdleTaskManager', () => {
       const task1 = idleTaskManager.activeTasks.get(1);
 
       // Advance time past task1 duration
-      Date.now = jest.fn(() => mockTime + task1.duration + 100);
+      Date.now = vi.fn(() => mockTime + task1.duration + 100);
       const completed = idleTaskManager.updateTasks();
 
       // Task1 should be completed
@@ -295,7 +295,7 @@ describe('IdleTaskManager', () => {
     test('should track tasks completed by type', () => {
       const originalDateNow = Date.now;
       let mockTime = 1000000;
-      Date.now = jest.fn(() => mockTime);
+      Date.now = vi.fn(() => mockTime);
 
       mockNPC.fatigued = true;
       idleTaskManager.assignTask(mockNPC);
@@ -303,7 +303,7 @@ describe('IdleTaskManager', () => {
       const task = idleTaskManager.activeTasks.get(mockNPC.id);
 
       // Advance time past duration
-      Date.now = jest.fn(() => mockTime + task.duration + 100);
+      Date.now = vi.fn(() => mockTime + task.duration + 100);
       idleTaskManager.updateTasks();
 
       const stats = idleTaskManager.getStatistics();
@@ -315,13 +315,13 @@ describe('IdleTaskManager', () => {
     test('should calculate average task duration', () => {
       const originalDateNow = Date.now;
       let mockTime = 1000000;
-      Date.now = jest.fn(() => mockTime);
+      Date.now = vi.fn(() => mockTime);
 
       idleTaskManager.assignTask(mockNPC);
       const task = idleTaskManager.activeTasks.get(mockNPC.id);
 
       // Advance time past duration
-      Date.now = jest.fn(() => mockTime + task.duration + 100);
+      Date.now = vi.fn(() => mockTime + task.duration + 100);
       idleTaskManager.updateTasks();
 
       const stats = idleTaskManager.getStatistics();

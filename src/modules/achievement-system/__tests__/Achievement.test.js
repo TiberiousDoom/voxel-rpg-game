@@ -425,7 +425,7 @@ describe('Achievement', () => {
         condition: { type: 'UNKNOWN_TYPE', target: 10 }
       });
 
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation();
 
       achievement.updateProgress(10);
 

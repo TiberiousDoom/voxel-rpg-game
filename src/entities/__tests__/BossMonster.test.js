@@ -117,7 +117,7 @@ describe('BossMonster', () => {
 
     it('should emit damage event', () => {
       const boss = new BossMonster('BROOD_MOTHER', { x: 0, y: 0 });
-      const damageHandler = jest.fn();
+      const damageHandler = vi.fn();
       boss.on('damage', damageHandler);
 
       boss.takeDamage(50);
@@ -156,7 +156,7 @@ describe('BossMonster', () => {
   describe('phase transitions', () => {
     it('should transition to phase 1 at 60% health', () => {
       const boss = new BossMonster('BROOD_MOTHER', { x: 0, y: 0 });
-      const phaseHandler = jest.fn();
+      const phaseHandler = vi.fn();
       boss.on('phase:transition', phaseHandler);
 
       // Deal enough damage to go below 60% (300/500)
@@ -202,7 +202,7 @@ describe('BossMonster', () => {
 
     it('should not transition to same phase twice', () => {
       const boss = new BossMonster('BROOD_MOTHER', { x: 0, y: 0 });
-      const phaseHandler = jest.fn();
+      const phaseHandler = vi.fn();
       boss.on('phase:transition', phaseHandler);
 
       // First hit below 60%
@@ -259,7 +259,7 @@ describe('BossMonster', () => {
 
     it('should emit ability:used event', () => {
       const boss = new BossMonster('BROOD_MOTHER', { x: 0, y: 0 });
-      const abilityHandler = jest.fn();
+      const abilityHandler = vi.fn();
       boss.on('ability:used', abilityHandler);
 
       boss.useAbility('VENOM_SPIT');
@@ -314,7 +314,7 @@ describe('BossMonster', () => {
     it('should emit heal event', () => {
       const boss = new BossMonster('BROOD_MOTHER', { x: 0, y: 0 });
       boss.health = 300;
-      const healHandler = jest.fn();
+      const healHandler = vi.fn();
       boss.on('heal', healHandler);
 
       boss.heal(50);
@@ -334,7 +334,7 @@ describe('BossMonster', () => {
       const boss = new BossMonster('BROOD_MOTHER', { x: 0, y: 0 }, {
         enrageTime: 1000 // 1 second for testing
       });
-      const enrageHandler = jest.fn();
+      const enrageHandler = vi.fn();
       boss.on('enrage', enrageHandler);
 
       boss.update(500);
@@ -397,7 +397,7 @@ describe('BossMonster', () => {
   describe('death', () => {
     it('should emit death event with rewards', () => {
       const boss = new BossMonster('BROOD_MOTHER', { x: 0, y: 0 });
-      const deathHandler = jest.fn();
+      const deathHandler = vi.fn();
       boss.on('death', deathHandler);
 
       boss.takeDamage(10000);

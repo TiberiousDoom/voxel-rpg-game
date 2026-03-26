@@ -18,7 +18,7 @@ describe('LootGenerator', () => {
 
   beforeEach(() => {
     generator = new LootGenerator();
-    jest.spyOn(Math, 'random');
+    vi.spyOn(Math, 'random');
   });
 
   afterEach(() => {

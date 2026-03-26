@@ -18,6 +18,7 @@ import {
   MELEE_KNOCKBACK,
 } from './tuning';
 import { audioManager } from '../utils/AudioManager';
+import { getSpellById } from './spells';
 
 // Convert degrees to radians once
 const CONE_HALF_ANGLE_RAD = (MELEE_CONE_ANGLE * Math.PI) / 180;
@@ -100,7 +101,6 @@ export function getMeleeDamage(store) {
  * @returns {boolean}
  */
 export function canCastSpell(store) {
-  const { getSpellById } = require('./spells');
   const spell = getSpellById(store.activeSpellId);
   if (!spell) return false;
   if (store.player.mana < spell.manaCost) return false;

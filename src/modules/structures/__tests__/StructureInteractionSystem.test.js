@@ -43,7 +43,7 @@ describe('StructureInteractionSystem', () => {
     structureGenerator = new MockStructureGenerator();
     interactionSystem = new StructureInteractionSystem(structureGenerator);
     mockPlayer = createMockPlayer();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Constructor', () => {
@@ -154,7 +154,7 @@ describe('StructureInteractionSystem', () => {
     });
 
     it('should call onStructureDiscovered callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       interactionSystem.on('onStructureDiscovered', callback);
 
       const structure = structureGenerator.addMockStructure('temple1', 'temple');
@@ -326,7 +326,7 @@ describe('StructureInteractionSystem', () => {
     });
 
     it('should call onChestOpened callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       interactionSystem.on('onChestOpened', callback);
 
       interactionSystem.openChest(chestId, mockPlayer);
@@ -337,7 +337,7 @@ describe('StructureInteractionSystem', () => {
     });
 
     it('should call onLootCollected callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       interactionSystem.on('onLootCollected', callback);
 
       interactionSystem.openChest(chestId, mockPlayer);
@@ -397,7 +397,7 @@ describe('StructureInteractionSystem', () => {
     });
 
     it('should call onStructureCleared callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       interactionSystem.on('onStructureCleared', callback);
 
       structureGenerator.addMockStructure('temple1', 'temple', { x: 0, z: 0 });
@@ -649,14 +649,14 @@ describe('StructureInteractionSystem', () => {
 
   describe('Event Callbacks', () => {
     it('should register callbacks', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       interactionSystem.on('onStructureDiscovered', callback);
 
       expect(interactionSystem.callbacks.onStructureDiscovered).toBe(callback);
     });
 
     it('should not register invalid callback events', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       interactionSystem.on('invalidEvent', callback);
 
       expect(interactionSystem.callbacks.invalidEvent).toBeUndefined();
@@ -703,7 +703,7 @@ describe('StructureInteractionSystem', () => {
       mockPlayer.position = { x: chest.position.x, z: chest.position.z };
 
       // Mock loot system to return empty array
-      interactionSystem.lootSystem.generateLoot = jest.fn().mockReturnValue([]);
+      interactionSystem.lootSystem.generateLoot = vi.fn().mockReturnValue([]);
 
       const result = interactionSystem.openChest(chestId, mockPlayer);
       expect(result.success).toBe(true);

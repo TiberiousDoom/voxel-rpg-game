@@ -13,12 +13,12 @@ import { useResourceAnimation, useResourceTrend } from '../useResourceAnimation'
 
 describe('useResourceAnimation Hook', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 
   describe('Basic Functionality', () => {
@@ -40,7 +40,7 @@ describe('useResourceAnimation Hook', () => {
 
       // Advance timers to complete animation
       act(() => {
-        jest.advanceTimersByTime(600); // Default duration
+        vi.advanceTimersByTime(600); // Default duration
       });
 
       await waitFor(() => {
@@ -57,7 +57,7 @@ describe('useResourceAnimation Hook', () => {
       rerender({ target: 100 });
 
       act(() => {
-        jest.advanceTimersByTime(600);
+        vi.advanceTimersByTime(600);
       });
 
       await waitFor(() => {
@@ -79,7 +79,7 @@ describe('useResourceAnimation Hook', () => {
       // The animation restarts its timer each time displayValue changes (effect
       // dependency), so progress may be slower than a straightforward interpolation.
       act(() => {
-        jest.advanceTimersByTime(500);
+        vi.advanceTimersByTime(500);
       });
 
       // Value should have moved from 100 toward 200
@@ -88,7 +88,7 @@ describe('useResourceAnimation Hook', () => {
 
       // After full duration plus extra time, should converge to target
       act(() => {
-        jest.advanceTimersByTime(2000);
+        vi.advanceTimersByTime(2000);
       });
 
       await waitFor(() => {
@@ -108,7 +108,7 @@ describe('useResourceAnimation Hook', () => {
       // Due to effect restarts when displayValue changes, the midpoint
       // value may differ from a simple 50% interpolation.
       act(() => {
-        jest.advanceTimersByTime(50);
+        vi.advanceTimersByTime(50);
       });
 
       // Value should have moved from 0 toward 100
@@ -140,7 +140,7 @@ describe('useResourceAnimation Hook', () => {
 
       // Complete animation
       act(() => {
-        jest.advanceTimersByTime(600);
+        vi.advanceTimersByTime(600);
       });
 
       // Should animate to final target
@@ -160,7 +160,7 @@ describe('useResourceAnimation Hook', () => {
       rerender({ target: 0 });
 
       act(() => {
-        jest.advanceTimersByTime(600);
+        vi.advanceTimersByTime(600);
       });
 
       await waitFor(() => {
@@ -189,7 +189,7 @@ describe('useResourceAnimation Hook', () => {
       rerender({ target: -50 });
 
       act(() => {
-        jest.advanceTimersByTime(600);
+        vi.advanceTimersByTime(600);
       });
 
       await waitFor(() => {
@@ -201,12 +201,12 @@ describe('useResourceAnimation Hook', () => {
 
 describe('useResourceTrend Hook', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 
   describe('Basic Functionality', () => {
@@ -223,7 +223,7 @@ describe('useResourceTrend Hook', () => {
 
       // Wait for first sample
       act(() => {
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       });
 
       // Increase value
@@ -231,7 +231,7 @@ describe('useResourceTrend Hook', () => {
 
       // Wait for next sample
       act(() => {
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       });
 
       await waitFor(() => {
@@ -246,13 +246,13 @@ describe('useResourceTrend Hook', () => {
       );
 
       act(() => {
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       });
 
       rerender({ value: 90 });
 
       act(() => {
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
       });
 
       await waitFor(() => {
@@ -273,13 +273,13 @@ describe('useResourceTrend Hook', () => {
 
       // Advance by custom interval
       act(() => {
-        jest.advanceTimersByTime(500);
+        vi.advanceTimersByTime(500);
       });
 
       rerender({ value: 105 });
 
       act(() => {
-        jest.advanceTimersByTime(500);
+        vi.advanceTimersByTime(500);
       });
 
       // Trend should update faster with shorter interval

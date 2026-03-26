@@ -11,12 +11,12 @@ describe('ModeManager', () => {
     unifiedState = new UnifiedGameState();
 
     mockEngine = {
-      pause: jest.fn(),
-      resume: jest.fn()
+      pause: vi.fn(),
+      resume: vi.fn()
     };
 
     mockOrchestrator = {
-      getGameState: jest.fn(() => ({
+      getGameState: vi.fn(() => ({
         buildings: [],
         npcs: [],
         tick: 100
@@ -37,14 +37,14 @@ describe('ModeManager', () => {
 
   describe('handler registration', () => {
     test('registers cleanup handler', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       modeManager.registerCleanupHandler('settlement', handler);
 
       expect(modeManager.cleanupHandlers.get('settlement')).toBe(handler);
     });
 
     test('registers init handler', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       modeManager.registerInitHandler('expedition', handler);
 
       expect(modeManager.initHandlers.get('expedition')).toBe(handler);
@@ -191,7 +191,7 @@ describe('ModeManager', () => {
 
   describe('cleanup and init handlers', () => {
     test('calls cleanup handler for current mode', async () => {
-      const cleanupHandler = jest.fn();
+      const cleanupHandler = vi.fn();
       modeManager.registerCleanupHandler('settlement', cleanupHandler);
 
       await modeManager.switchMode('expedition', {
@@ -203,7 +203,7 @@ describe('ModeManager', () => {
     });
 
     test('calls init handler for new mode', async () => {
-      const initHandler = jest.fn();
+      const initHandler = vi.fn();
       modeManager.registerInitHandler('expedition', initHandler);
 
       await modeManager.switchMode('expedition', {
@@ -230,7 +230,7 @@ describe('ModeManager', () => {
 
   describe('error handling', () => {
     test('resumes engine on error', async () => {
-      const errorHandler = jest.fn(() => {
+      const errorHandler = vi.fn(() => {
         throw new Error('Init failed');
       });
       modeManager.registerInitHandler('expedition', errorHandler);

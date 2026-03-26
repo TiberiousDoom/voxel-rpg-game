@@ -6,11 +6,11 @@ import { BossAI, BOSS_AI_STATES } from '../BossAI.js';
 import { BossMonster } from '../../entities/BossMonster.js';
 
 // Mock the game store
-jest.mock('../../stores/useGameStore.js', () => ({
+vi.mock('../../stores/useGameStore.js', () => ({
   __esModule: true,
   default: {
     getState: () => ({
-      dealDamageToPlayer: jest.fn()
+      dealDamageToPlayer: vi.fn()
     })
   }
 }));
@@ -102,7 +102,7 @@ describe('BossAI', () => {
 
     it('should emit aggro event when engaging', () => {
       boss.aiState = BOSS_AI_STATES.IDLE;
-      const aggroHandler = jest.fn();
+      const aggroHandler = vi.fn();
       boss.on('aggro', aggroHandler);
 
       bossAI.update(boss, gameState, 100);
@@ -170,7 +170,7 @@ describe('BossAI', () => {
     });
 
     it('should perform attack when cooldown ready', () => {
-      const attackHandler = jest.fn();
+      const attackHandler = vi.fn();
       boss.on('attack', attackHandler);
 
       bossAI.update(boss, gameState, 2000); // Enough time for attack
@@ -207,7 +207,7 @@ describe('BossAI', () => {
     });
 
     it('should execute ability when cast complete', () => {
-      const abilityHandler = jest.fn();
+      const abilityHandler = vi.fn();
       boss.on('ability:executed', abilityHandler);
 
       bossAI.update(boss, gameState, 1100); // Complete cast
@@ -271,7 +271,7 @@ describe('BossAI', () => {
     it('should try to use abilities during ATTACK state', () => {
       // Make sure VENOM_SPIT is off cooldown
       boss.abilityCooldowns.clear();
-      const abilityHandler = jest.fn();
+      const abilityHandler = vi.fn();
       boss.on('ability:used', abilityHandler);
 
       // Run multiple updates to give chance for ability use
@@ -304,7 +304,7 @@ describe('BossAI', () => {
 
   describe('summon creation', () => {
     it('should create summons around boss', () => {
-      const summonHandler = jest.fn();
+      const summonHandler = vi.fn();
       boss.on('summon:created', summonHandler);
 
       bossAI._createSummons(boss, {

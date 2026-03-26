@@ -10,13 +10,13 @@ describe('DungeonCombatEngine', () => {
 
   beforeEach(() => {
     mockInventory = {
-      addEquipment: jest.fn(),
-      removeItem: jest.fn()
+      addEquipment: vi.fn(),
+      removeItem: vi.fn()
     };
 
     mockNPCManager = {
       npcs: new Map(),
-      getNPC: jest.fn((id) => mockNPCManager.npcs.get(id))
+      getNPC: vi.fn((id) => mockNPCManager.npcs.get(id))
     };
 
     skillSystem = new NPCSkillSystem();

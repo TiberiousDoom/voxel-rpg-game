@@ -162,8 +162,8 @@ describe('GatheringManager', () => {
 
   beforeEach(() => {
     mockVoxelWorld = {
-      getBlock: jest.fn((x, y, z) => BlockType.STONE),
-      setBlock: jest.fn(() => true)
+      getBlock: vi.fn((x, y, z) => BlockType.STONE),
+      setBlock: vi.fn(() => true)
     };
 
     manager = new GatheringManager({

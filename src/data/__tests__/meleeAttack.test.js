@@ -4,7 +4,7 @@
 
 import { performMeleeAttack, getMeleeDamage } from '../meleeAttack';
 
-jest.mock('../tuning', () => ({
+vi.mock('../tuning', () => ({
   MELEE_RANGE: 3.5,
   MELEE_CONE_ANGLE: 60,
   MELEE_COOLDOWN: 0.5,
@@ -14,7 +14,7 @@ jest.mock('../tuning', () => ({
 
 function makeStore(overrides = {}) {
   return {
-    attackMonster: jest.fn(),
+    attackMonster: vi.fn(),
     equipment: { weapon: null },
     ...overrides,
   };

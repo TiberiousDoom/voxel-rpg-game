@@ -250,7 +250,7 @@ describe('ContextHelp', () => {
 
   describe('Event Listeners', () => {
     test('should notify listeners when tip triggered', () => {
-      const mockListener = jest.fn();
+      const mockListener = vi.fn();
       contextHelp.onTipTriggered(mockListener);
 
       const gameState = { buildingPlacementFailed: true };
@@ -260,7 +260,7 @@ describe('ContextHelp', () => {
     });
 
     test('should remove listeners', () => {
-      const mockListener = jest.fn();
+      const mockListener = vi.fn();
       contextHelp.onTipTriggered(mockListener);
       contextHelp.removeTipTriggeredListener(mockListener);
 
@@ -271,7 +271,7 @@ describe('ContextHelp', () => {
     });
 
     test('should handle listener errors gracefully', () => {
-      const errorListener = jest.fn(() => {
+      const errorListener = vi.fn(() => {
         throw new Error('Test error');
       });
 

@@ -10,9 +10,9 @@ describe('ExpeditionManager', () => {
     // Mock NPCManager
     npcManager = {
       npcs: new Map(),
-      getNPC: jest.fn((id) => npcManager.npcs.get(id)),
-      awardCombatXP: jest.fn(),
-      checkVeteranStatus: jest.fn()
+      getNPC: vi.fn((id) => npcManager.npcs.get(id)),
+      awardCombatXP: vi.fn(),
+      checkVeteranStatus: vi.fn()
     };
 
     // Create test NPCs
@@ -56,8 +56,8 @@ describe('ExpeditionManager', () => {
         leader: 'npc1',
         formation: 'balanced'
       },
-      getParty: jest.fn(() => partyManager.currentParty),
-      validateParty: jest.fn(() => ({ valid: true, errors: [] }))
+      getParty: vi.fn(() => partyManager.currentParty),
+      validateParty: vi.fn(() => ({ valid: true, errors: [] }))
     };
 
     expeditionManager = new ExpeditionManager(partyManager, npcManager);
@@ -118,7 +118,7 @@ describe('ExpeditionManager', () => {
     });
 
     test('emits expedition:started event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       expeditionManager.on('expedition:started', listener);
 
       expeditionManager.startExpedition({ difficulty: 1 });
@@ -147,7 +147,7 @@ describe('ExpeditionManager', () => {
     });
 
     test('emits expedition:updated event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       expeditionManager.on('expedition:updated', listener);
 
       expeditionManager.updateExpedition({ currentFloor: 2 });
@@ -231,7 +231,7 @@ describe('ExpeditionManager', () => {
     });
 
     test('emits expedition:completed event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       expeditionManager.on('expedition:completed', listener);
 
       expeditionManager.completeExpedition({ totalXP: 150 });
@@ -302,7 +302,7 @@ describe('ExpeditionManager', () => {
     });
 
     test('emits expedition:failed event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       expeditionManager.on('expedition:failed', listener);
 
       expeditionManager.failExpedition({});
@@ -364,7 +364,7 @@ describe('ExpeditionManager', () => {
     });
 
     test('emits expedition:abandoned event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       expeditionManager.on('expedition:abandoned', listener);
 
       expeditionManager.abandonExpedition();

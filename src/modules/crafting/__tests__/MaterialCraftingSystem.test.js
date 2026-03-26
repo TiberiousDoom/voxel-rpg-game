@@ -475,7 +475,7 @@ describe('MaterialCraftingSystem', () => {
       });
       const system = new MaterialCraftingSystem(store);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       system.on('onCraftStart', callback);
 
       system.craftItem('ironSword');
@@ -494,7 +494,7 @@ describe('MaterialCraftingSystem', () => {
       });
       const system = new MaterialCraftingSystem(store);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       system.on('onCraftComplete', callback);
 
       system.craftItem('ironSword');
@@ -513,7 +513,7 @@ describe('MaterialCraftingSystem', () => {
       });
       const system = new MaterialCraftingSystem(store);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       system.on('onCraftFailed', callback);
 
       system.craftItem('ironSword');
@@ -529,7 +529,7 @@ describe('MaterialCraftingSystem', () => {
       const store = createMockStore();
       const system = new MaterialCraftingSystem(store);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       system.on('onCraftFailed', callback);
 
       system.craftItem('invalidRecipe');

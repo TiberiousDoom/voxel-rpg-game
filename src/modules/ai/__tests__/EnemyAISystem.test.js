@@ -13,29 +13,29 @@ import {
 } from '../EnemyAISystem.js';
 
 // Mock dependencies
-jest.mock('../PathfindingSystem.js', () => ({
-  PathfindingSystem: jest.fn().mockImplementation(() => ({
-    findPath: jest.fn(() => ({
+vi.mock('../PathfindingSystem.js', () => ({
+  PathfindingSystem: vi.fn().mockImplementation(() => ({
+    findPath: vi.fn(() => ({
       success: true,
       path: [{ x: 100, z: 100 }, { x: 200, z: 200 }]
     }))
   })),
-  distance: jest.fn((a, b) => Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2)),
-  normalize: jest.fn((v) => {
+  distance: vi.fn((a, b) => Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2)),
+  normalize: vi.fn((v) => {
     const len = Math.sqrt(v.x * v.x + v.z * v.z);
     return len === 0 ? { x: 0, z: 0 } : { x: v.x / len, z: v.z / len };
   })
 }));
 
-jest.mock('../PerceptionSystem.js', () => ({
-  PerceptionSystem: jest.fn().mockImplementation(() => ({
-    setWeather: jest.fn(),
-    setNightMode: jest.fn(),
-    update: jest.fn()
+vi.mock('../PerceptionSystem.js', () => ({
+  PerceptionSystem: vi.fn().mockImplementation(() => ({
+    setWeather: vi.fn(),
+    setNightMode: vi.fn(),
+    update: vi.fn()
   }))
 }));
 
-jest.mock('../BehaviorTree.js', () => {
+vi.mock('../BehaviorTree.js', () => {
   const NodeStatus = {
     SUCCESS: 'SUCCESS',
     FAILURE: 'FAILURE',
@@ -68,9 +68,9 @@ jest.mock('../BehaviorTree.js', () => {
   return {
     BehaviorTree: MockBehaviorTree,
     BehaviorTreeBuilder,
-    Selector: jest.fn(),
-    Sequence: jest.fn(),
-    Action: jest.fn(),
+    Selector: vi.fn(),
+    Sequence: vi.fn(),
+    Action: vi.fn(),
     Blackboard,
     NodeStatus
   };
@@ -83,9 +83,9 @@ describe('EnemyAISystem', () => {
   beforeEach(() => {
     // Create mock perception system to inject
     mockPerceptionSystem = {
-      setWeather: jest.fn(),
-      setNightMode: jest.fn(),
-      update: jest.fn()
+      setWeather: vi.fn(),
+      setNightMode: vi.fn(),
+      update: vi.fn()
     };
 
     // Inject mock via options
@@ -95,7 +95,7 @@ describe('EnemyAISystem', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================
@@ -558,20 +558,20 @@ describe('EnemyAISystem', () => {
 
   describe('Event Listeners', () => {
     test('should add listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       enemyAI.addListener(listener);
       expect(enemyAI.listeners).toContain(listener);
     });
 
     test('should remove listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       enemyAI.addListener(listener);
       enemyAI.removeListener(listener);
       expect(enemyAI.listeners).not.toContain(listener);
     });
 
     test('should emit enemyDamaged event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       enemyAI.addListener(listener);
       enemyAI.registerEnemy({ id: 'enemy1', health: 100 });
       enemyAI.dealDamage('enemy1', 30, 'player');
@@ -584,7 +584,7 @@ describe('EnemyAISystem', () => {
     });
 
     test('should emit enemyDied event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       enemyAI.addListener(listener);
       enemyAI.registerEnemy({ id: 'enemy1', health: 50 });
       enemyAI.dealDamage('enemy1', 100, 'player');
@@ -596,7 +596,7 @@ describe('EnemyAISystem', () => {
     });
 
     test('should handle listener errors', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
       const errorListener = () => { throw new Error('Test'); };
       enemyAI.addListener(errorListener);
       enemyAI.registerEnemy({ id: 'enemy1', health: 100 });

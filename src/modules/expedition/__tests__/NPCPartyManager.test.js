@@ -83,7 +83,7 @@ describe('NPCPartyManager', () => {
 
     // Mock NPC manager
     mockNPCManager = {
-      getNPC: jest.fn((id) => mockNPCs[id] || null)
+      getNPC: vi.fn((id) => mockNPCs[id] || null)
     };
 
     partyManager = new NPCPartyManager(mockNPCManager);

@@ -27,15 +27,15 @@ describe('MiningZoneBehavior', () => {
 
   beforeEach(() => {
     mockGrid = makeGrid();
-    mockSettlementModule = { emit: jest.fn() };
+    mockSettlementModule = { emit: vi.fn() };
     mockZoneManager = {
-      getZone: jest.fn((id) => ({
+      getZone: vi.fn((id) => ({
         id,
         type: ZONE_TYPES.MINING,
         active: true,
         bounds: { min: { x: 0, y: 0, z: 0 }, max: { x: 3, y: 1, z: 3 } },
       })),
-      getActiveZonesByType: jest.fn(() => []),
+      getActiveZonesByType: vi.fn(() => []),
     };
 
     mining = new MiningZoneBehavior({

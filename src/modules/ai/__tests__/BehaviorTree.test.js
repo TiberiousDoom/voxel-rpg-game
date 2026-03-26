@@ -514,7 +514,7 @@ describe('BehaviorTree System', () => {
     });
 
     test('should handle errors gracefully', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
       const action = new Action('TestAction', () => {
         throw new Error('Test error');
       });
@@ -559,7 +559,7 @@ describe('BehaviorTree System', () => {
     });
 
     test('should handle errors gracefully', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
       const check = new ConditionCheck('TestCheck', () => {
         throw new Error('Test error');
       });

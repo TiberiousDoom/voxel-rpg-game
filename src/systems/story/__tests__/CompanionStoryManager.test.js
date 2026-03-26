@@ -2,11 +2,13 @@
  * CompanionStoryManager.test.js — Tests for companion discovery and bond milestones.
  */
 
-jest.mock('../../../config/dialogue/companion-dialogue.json', () => ({
-  discovery: { speaker: 'Wounded Mage', text: 'Help me...' },
-  bond_30: { speaker: 'Aria', text: 'Feeling stronger.' },
-  bond_50: { speaker: 'Aria', text: 'Learn Frost Nova.' },
-  bond_80: { speaker: 'Aria', text: 'The rifts were opened.' },
+vi.mock('../../../config/dialogue/companion-dialogue.json', () => ({
+  default: {
+    discovery: { speaker: 'Wounded Mage', text: 'Help me...' },
+    bond_30: { speaker: 'Aria', text: 'Feeling stronger.' },
+    bond_50: { speaker: 'Aria', text: 'Learn Frost Nova.' },
+    bond_80: { speaker: 'Aria', text: 'The rifts were opened.' },
+  },
 }));
 
 import CompanionStoryManager from '../CompanionStoryManager';
@@ -15,9 +17,9 @@ function makeStore(overrides = {}) {
   return {
     inventory: { materials: { berry: 5, meat: 3 } },
     companion: { active: false, bondLevel: 0 },
-    setCompanionState: jest.fn(),
-    removeMaterial: jest.fn(),
-    unlockSpell: jest.fn(),
+    setCompanionState: vi.fn(),
+    removeMaterial: vi.fn(),
+    unlockSpell: vi.fn(),
     ...overrides,
   };
 }

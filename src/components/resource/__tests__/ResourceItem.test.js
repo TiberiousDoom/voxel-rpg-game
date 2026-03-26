@@ -17,9 +17,9 @@ import '@testing-library/jest-dom';
 import ResourceItem from '../ResourceItem';
 
 // Mock the animation hook
-jest.mock('../../../hooks/useResourceAnimation', () => ({
-  useResourceAnimation: jest.fn((value) => value),
-  useResourceTrend: jest.fn(() => 0)
+vi.mock('../../../hooks/useResourceAnimation', () => ({
+  useResourceAnimation: vi.fn((value) => value),
+  useResourceTrend: vi.fn(() => 0)
 }));
 
 describe('ResourceItem Component', () => {
@@ -36,7 +36,7 @@ describe('ResourceItem Component', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     // Re-apply mock implementations after clearAllMocks wipes them
     const { useResourceAnimation, useResourceTrend } = require('../../../hooks/useResourceAnimation');
     useResourceAnimation.mockImplementation((value) => value);

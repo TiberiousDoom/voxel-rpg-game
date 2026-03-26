@@ -20,19 +20,19 @@ describe('ImmigrationManager', () => {
 
   beforeEach(() => {
     mockAttractiveness = {
-      getScore: jest.fn().mockReturnValue(0),
+      getScore: vi.fn().mockReturnValue(0),
     };
     mockNpcManager = {
-      getStatistics: jest.fn().mockReturnValue({ alive: 0, total: 0 }),
+      getStatistics: vi.fn().mockReturnValue({ alive: 0, total: 0 }),
       npcs: new Map(),
-      spawnNPC: jest.fn().mockReturnValue({ id: 'settler_1', name: 'Test Settler' }),
+      spawnNPC: vi.fn().mockReturnValue({ id: 'settler_1', name: 'Test Settler' }),
     };
     mockTownManager = {
-      calculateHousingCapacity: jest.fn().mockReturnValue(0),
-      getTownCenter: jest.fn().mockReturnValue({ x: 50, y: 0, z: 50 }),
+      calculateHousingCapacity: vi.fn().mockReturnValue(0),
+      getTownCenter: vi.fn().mockReturnValue({ x: 50, y: 0, z: 50 }),
     };
     mockSettlementModule = {
-      emit: jest.fn(),
+      emit: vi.fn(),
     };
 
     manager = new ImmigrationManager({
@@ -105,7 +105,7 @@ describe('ImmigrationManager', () => {
       mockAttractiveness.getScore.mockReturnValue(IMMIGRATION_MIN_ATTRACTIVENESS - 1);
 
       // Use many attempts to verify no spawns happen
-      jest.spyOn(Math, 'random').mockReturnValue(0); // Always succeed roll
+      vi.spyOn(Math, 'random').mockReturnValue(0); // Always succeed roll
 
       manager.update(IMMIGRATION_CHECK_INTERVAL, {});
 
@@ -118,7 +118,7 @@ describe('ImmigrationManager', () => {
       mockAttractiveness.getScore.mockReturnValue(10000);
 
       // Set random just above max chance — should not pass
-      jest.spyOn(Math, 'random').mockReturnValue(IMMIGRATION_MAX_CHANCE + 0.01);
+      vi.spyOn(Math, 'random').mockReturnValue(IMMIGRATION_MAX_CHANCE + 0.01);
 
       manager.update(IMMIGRATION_CHECK_INTERVAL, {});
       expect(manager.getStatistics().checksSucceeded).toBe(0);
@@ -130,7 +130,7 @@ describe('ImmigrationManager', () => {
       mockAttractiveness.getScore.mockReturnValue(100);
 
       // Guarantee roll succeeds
-      jest.spyOn(Math, 'random').mockReturnValue(0);
+      vi.spyOn(Math, 'random').mockReturnValue(0);
 
       manager.update(IMMIGRATION_CHECK_INTERVAL, {});
       expect(manager.getStatistics().checksSucceeded).toBe(1);
@@ -145,7 +145,7 @@ describe('ImmigrationManager', () => {
       mockTownManager.calculateHousingCapacity.mockReturnValue(0);
 
       // Guarantee roll succeeds
-      jest.spyOn(Math, 'random').mockReturnValue(0);
+      vi.spyOn(Math, 'random').mockReturnValue(0);
 
       // Trigger immigration check and spawn
       manager.update(IMMIGRATION_CHECK_INTERVAL, {});
@@ -158,7 +158,7 @@ describe('ImmigrationManager', () => {
   describe('Approaching NPC lifecycle', () => {
     beforeEach(() => {
       mockAttractiveness.getScore.mockReturnValue(100);
-      jest.spyOn(Math, 'random').mockReturnValue(0); // Guarantee success
+      vi.spyOn(Math, 'random').mockReturnValue(0); // Guarantee success
     });
 
     afterEach(() => {
@@ -215,7 +215,7 @@ describe('ImmigrationManager', () => {
   describe('Serialization', () => {
     test('should serialize and deserialize state', () => {
       mockAttractiveness.getScore.mockReturnValue(100);
-      jest.spyOn(Math, 'random').mockReturnValue(0);
+      vi.spyOn(Math, 'random').mockReturnValue(0);
 
       // Create some state
       manager.update(IMMIGRATION_CHECK_INTERVAL, {});

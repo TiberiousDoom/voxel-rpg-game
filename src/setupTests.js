@@ -1,8 +1,5 @@
-// jest-dom adds custom jest matchers for asserting on DOM nodes.
-// allows you to do things like:
-// expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom';
+// Vitest test setup — custom matchers, polyfills, and global mocks
+import '@testing-library/jest-dom/vitest';
 
 // Enable Immer MapSet plugin for Zustand stores
 import { enableMapSet } from 'immer';
@@ -10,6 +7,12 @@ import { enableMapSet } from 'immer';
 import 'fake-indexeddb/auto';
 
 enableMapSet();
+
+// Alias jest → vi for backwards compatibility with existing test files
+// (vitest globals mode provides vi.fn, vi.mock, etc. but not jest.fn)
+if (typeof globalThis.jest === 'undefined' && typeof globalThis.vi !== 'undefined') {
+  globalThis.jest = globalThis.vi;
+}
 
 // Mock requestAnimationFrame and cancelAnimationFrame
 global.requestAnimationFrame = (callback) => {
@@ -31,14 +34,14 @@ if (!global.performance.now) {
 
 // Mock TextEncoder and TextDecoder for Node.js environment
 if (typeof global.TextEncoder === 'undefined') {
-  const { TextEncoder, TextDecoder } = require('util');
+  const { TextEncoder, TextDecoder } = await import('node:util');
   global.TextEncoder = TextEncoder;
   global.TextDecoder = TextDecoder;
 }
 
 // Mock crypto.subtle for Web Crypto API in Node.js
 if (typeof global.crypto === 'undefined') {
-  const { webcrypto } = require('crypto');
+  const { webcrypto } = await import('node:crypto');
   global.crypto = webcrypto;
 }
 
@@ -47,8 +50,7 @@ const originalWarn = console.warn;
 const originalError = console.error;
 
 beforeAll(() => {
-  console.warn = jest.fn((...args) => {
-    // Only show warnings that aren't expected
+  console.warn = vi.fn((...args) => {
     const message = args[0];
     if (typeof message === 'string') {
       if (message.includes('Warning: ReactDOM.render')) return;
@@ -57,8 +59,7 @@ beforeAll(() => {
     originalWarn(...args);
   });
 
-  console.error = jest.fn((...args) => {
-    // Only show errors that aren't expected
+  console.error = vi.fn((...args) => {
     const message = args[0];
     if (typeof message === 'string') {
       if (message.includes('Warning: ReactDOM.render')) return;
@@ -74,42 +75,42 @@ afterAll(() => {
 });
 
 // Mock HTMLCanvasElement.getContext for JSDOM (which returns null for '2d').
-// This must be in beforeEach so it survives jest.clearAllMocks() in afterEach.
+// This must be in beforeEach so it survives vi.clearAllMocks() in afterEach.
 beforeEach(() => {
-  HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+  HTMLCanvasElement.prototype.getContext = vi.fn(function () {
     return {
-      fillRect: jest.fn(),
-      clearRect: jest.fn(),
-      getImageData: jest.fn(() => ({ data: [] })),
-      putImageData: jest.fn(),
-      createImageData: jest.fn(),
-      setTransform: jest.fn(),
-      drawImage: jest.fn(),
-      save: jest.fn(),
-      fillText: jest.fn(),
-      restore: jest.fn(),
-      beginPath: jest.fn(),
-      moveTo: jest.fn(),
-      lineTo: jest.fn(),
-      closePath: jest.fn(),
-      stroke: jest.fn(),
-      translate: jest.fn(),
-      scale: jest.fn(),
-      rotate: jest.fn(),
-      arc: jest.fn(),
-      fill: jest.fn(),
-      measureText: jest.fn(() => ({ width: 0 })),
-      transform: jest.fn(),
-      rect: jest.fn(),
-      clip: jest.fn(),
-      strokeRect: jest.fn(),
-      createLinearGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
-      createRadialGradient: jest.fn(() => ({ addColorStop: jest.fn() })),
-      createPattern: jest.fn(),
-      ellipse: jest.fn(),
-      quadraticCurveTo: jest.fn(),
-      bezierCurveTo: jest.fn(),
-      isPointInPath: jest.fn(),
+      fillRect: vi.fn(),
+      clearRect: vi.fn(),
+      getImageData: vi.fn(() => ({ data: [] })),
+      putImageData: vi.fn(),
+      createImageData: vi.fn(),
+      setTransform: vi.fn(),
+      drawImage: vi.fn(),
+      save: vi.fn(),
+      fillText: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      closePath: vi.fn(),
+      stroke: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      rotate: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      measureText: vi.fn(() => ({ width: 0 })),
+      transform: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
+      strokeRect: vi.fn(),
+      createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+      createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+      createPattern: vi.fn(),
+      ellipse: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      bezierCurveTo: vi.fn(),
+      isPointInPath: vi.fn(),
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 1,
@@ -132,6 +133,6 @@ beforeEach(() => {
 
 // Clean up after each test
 afterEach(() => {
-  jest.clearAllMocks();
-  jest.clearAllTimers();
+  vi.clearAllMocks();
+  vi.clearAllTimers();
 });

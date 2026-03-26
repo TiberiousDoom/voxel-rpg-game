@@ -42,24 +42,24 @@ describe('NPCListView', () => {
 
   const defaultProps = {
     npcs: mockNPCs,
-    onNPCClick: jest.fn(),
+    onNPCClick: vi.fn(),
     selectedNPC: null,
     sortBy: 'name',
     sortOrder: 'asc',
-    onSort: jest.fn(),
+    onSort: vi.fn(),
     currentPage: 1,
     totalPages: 1,
-    onPageChange: jest.fn(),
-    onPrevPage: jest.fn(),
-    onNextPage: jest.fn(),
+    onPageChange: vi.fn(),
+    onPrevPage: vi.fn(),
+    onNextPage: vi.fn(),
     buildings: mockBuildings,
     selectedNPCs: [],
-    onNPCSelect: jest.fn(),
+    onNPCSelect: vi.fn(),
     batchMode: false,
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders NPC table with correct headers', () => {
@@ -95,7 +95,7 @@ describe('NPCListView', () => {
   });
 
   test('calls onNPCClick when row is clicked', () => {
-    const onNPCClick = jest.fn();
+    const onNPCClick = vi.fn();
     render(<NPCListView {...defaultProps} onNPCClick={onNPCClick} />);
 
     const aliceRow = screen.getByText('Alice').closest('tr');
@@ -105,7 +105,7 @@ describe('NPCListView', () => {
   });
 
   test('calls onSort when header is clicked', () => {
-    const onSort = jest.fn();
+    const onSort = vi.fn();
     render(<NPCListView {...defaultProps} onSort={onSort} />);
 
     const nameHeader = screen.getByText(/Name/i);
@@ -150,7 +150,7 @@ describe('NPCListView', () => {
   });
 
   test('calls onPrevPage when prev button is clicked', () => {
-    const onPrevPage = jest.fn();
+    const onPrevPage = vi.fn();
     render(
       <NPCListView
         {...defaultProps}
@@ -167,7 +167,7 @@ describe('NPCListView', () => {
   });
 
   test('calls onNextPage when next button is clicked', () => {
-    const onNextPage = jest.fn();
+    const onNextPage = vi.fn();
     render(
       <NPCListView
         {...defaultProps}
@@ -205,7 +205,7 @@ describe('NPCListView', () => {
   });
 
   test('calls onNPCSelect when checkbox is clicked in batch mode', () => {
-    const onNPCSelect = jest.fn();
+    const onNPCSelect = vi.fn();
     render(
       <NPCListView {...defaultProps} batchMode={true} onNPCSelect={onNPCSelect} />
     );

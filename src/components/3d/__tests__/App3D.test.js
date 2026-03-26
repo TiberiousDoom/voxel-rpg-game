@@ -11,7 +11,7 @@ import App3D from '../../../App3D';
 
 describe('App3D Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Rendering', () => {

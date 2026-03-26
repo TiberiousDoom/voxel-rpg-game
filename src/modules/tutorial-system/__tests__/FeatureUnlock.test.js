@@ -255,7 +255,7 @@ describe('FeatureUnlock', () => {
 
   describe('Event Listeners', () => {
     test('should notify listeners on feature unlock', () => {
-      const mockListener = jest.fn();
+      const mockListener = vi.fn();
       featureUnlock.onFeatureUnlock(mockListener);
 
       featureUnlock.unlockFeature('building-campfire');
@@ -266,7 +266,7 @@ describe('FeatureUnlock', () => {
     });
 
     test('should remove listeners', () => {
-      const mockListener = jest.fn();
+      const mockListener = vi.fn();
       featureUnlock.onFeatureUnlock(mockListener);
       featureUnlock.removeFeatureUnlockListener(mockListener);
 
@@ -276,7 +276,7 @@ describe('FeatureUnlock', () => {
     });
 
     test('should handle listener errors gracefully', () => {
-      const errorListener = jest.fn(() => {
+      const errorListener = vi.fn(() => {
         throw new Error('Test error');
       });
 

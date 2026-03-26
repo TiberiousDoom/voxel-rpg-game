@@ -172,7 +172,7 @@ describe('DungeonRoom', () => {
     it('should use custom monster factory', () => {
       const room = new DungeonRoom({ type: ROOM_TYPES.CHAMBER });
       const monsterTypes = ['SPIDER'];
-      const createMonster = jest.fn((type, position, options) => ({
+      const createMonster = vi.fn((type, position, options) => ({
         id: `custom_${Date.now()}`,
         type,
         position,

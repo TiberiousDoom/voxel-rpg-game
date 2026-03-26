@@ -12,7 +12,7 @@ import {
 } from '../NPCBehaviorSystem.js';
 
 // Mock dependencies
-jest.mock('../BehaviorTree.js', () => {
+vi.mock('../BehaviorTree.js', () => {
   const NodeStatus = { SUCCESS: 'SUCCESS', FAILURE: 'FAILURE', RUNNING: 'RUNNING' };
 
   class MockBehaviorTree {
@@ -48,16 +48,16 @@ jest.mock('../BehaviorTree.js', () => {
   };
 });
 
-jest.mock('../PathfindingSystem.js', () => {
+vi.mock('../PathfindingSystem.js', () => {
   const mockInstance = {
-    findPath: jest.fn(() => ({
+    findPath: vi.fn(() => ({
       success: true,
       path: [{ x: 100, z: 100 }, { x: 200, z: 200 }]
     }))
   };
   return {
-    PathfindingSystem: jest.fn(() => mockInstance),
-    distance: jest.fn((a, b) => Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2))
+    PathfindingSystem: vi.fn(() => mockInstance),
+    distance: vi.fn((a, b) => Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2))
   };
 });
 
@@ -69,7 +69,7 @@ describe('NPCBehaviorSystem', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================
@@ -312,20 +312,20 @@ describe('NPCBehaviorSystem', () => {
 
   describe('Event Listeners', () => {
     test('should add listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       npcBehavior.addListener(listener);
       expect(npcBehavior.listeners).toContain(listener);
     });
 
     test('should remove listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       npcBehavior.addListener(listener);
       npcBehavior.removeListener(listener);
       expect(npcBehavior.listeners).not.toContain(listener);
     });
 
     test('should emit memoryCreated event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       npcBehavior.addListener(listener);
 
       npcBehavior.registerNPC({ id: 'npc1', name: 'NPC1' });

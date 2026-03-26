@@ -11,24 +11,24 @@ import {
 } from '../WildlifeAISystem.js';
 
 // Mock dependencies
-jest.mock('../PathfindingSystem.js', () => {
+vi.mock('../PathfindingSystem.js', () => {
   const mockInstance = {
-    findPath: jest.fn(() => ({
+    findPath: vi.fn(() => ({
       success: true,
       path: [{ x: 100, z: 100 }, { x: 200, z: 200 }]
     }))
   };
   return {
-    PathfindingSystem: jest.fn(() => mockInstance),
-    distance: jest.fn((a, b) => Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2)),
-    normalize: jest.fn((v) => {
+    PathfindingSystem: vi.fn(() => mockInstance),
+    distance: vi.fn((a, b) => Math.sqrt((b.x - a.x) ** 2 + (b.z - a.z) ** 2)),
+    normalize: vi.fn((v) => {
       const len = Math.sqrt(v.x * v.x + v.z * v.z);
       return len === 0 ? { x: 0, z: 0 } : { x: v.x / len, z: v.z / len };
     })
   };
 });
 
-jest.mock('../BehaviorTree.js', () => {
+vi.mock('../BehaviorTree.js', () => {
   const NodeStatus = {
     SUCCESS: 'SUCCESS',
     FAILURE: 'FAILURE',
@@ -72,7 +72,7 @@ describe('WildlifeAISystem', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================
@@ -337,13 +337,13 @@ describe('WildlifeAISystem', () => {
 
   describe('Event Listeners', () => {
     test('should add listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       wildlifeAI.addListener(listener);
       expect(wildlifeAI.listeners).toContain(listener);
     });
 
     test('should emit animalDied event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       wildlifeAI.addListener(listener);
 
       wildlifeAI.registerAnimal({

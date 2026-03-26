@@ -142,7 +142,7 @@ describe('PathfindingSystem', () => {
 
     test('should handle terrain object with getTerrainAt', () => {
       const mockTerrain = {
-        getTerrainAt: jest.fn((x, z) => 'GRASS')
+        getTerrainAt: vi.fn((x, z) => 'GRASS')
       };
 
       pathfinding.setTerrainData(mockTerrain, 1024, 1024);

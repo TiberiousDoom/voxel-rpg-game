@@ -19,19 +19,19 @@ describe('LootDropManager', () => {
     manager = new LootDropManager();
 
     // Mock the lootTable.generateLoot method
-    manager.lootTable.generateLoot = jest.fn((monster) => ({
+    manager.lootTable.generateLoot = vi.fn((monster) => ({
       gold: 50,
       items: [
         new Item({ name: 'Test Sword', type: 'WEAPON', stats: { damage: 30 } })
       ]
     }));
 
-    jest.clearAllTimers();
-    jest.useFakeTimers();
+    vi.clearAllTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('Monster Loot Creation', () => {
@@ -126,7 +126,7 @@ describe('LootDropManager', () => {
 
       expect(drop.canPickup).toBe(false);
 
-      jest.advanceTimersByTime(150);
+      vi.advanceTimersByTime(150);
 
       expect(drop.canPickup).toBe(true);
     });
@@ -141,7 +141,7 @@ describe('LootDropManager', () => {
 
       expect(drop.isExpired()).toBe(false);
 
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       expect(drop.isExpired()).toBe(true);
     });
@@ -156,7 +156,7 @@ describe('LootDropManager', () => {
       });
 
       // Enable pickup
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
 
       // In range
       expect(drop.isInPickupRange({ x: 11, z: 11 })).toBe(true);
@@ -178,7 +178,7 @@ describe('LootDropManager', () => {
       expect(drop.isInPickupRange({ x: 10, z: 10 })).toBe(false);
 
       // After delay
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
       expect(drop.isInPickupRange({ x: 10, z: 10 })).toBe(true);
     });
 
@@ -216,7 +216,7 @@ describe('LootDropManager', () => {
       manager.createMonsterLoot(monster);
 
       // Enable pickup
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       const playerPos = { x: 10, z: 10 };
       const pickedUp = manager.update(playerPos);
@@ -233,9 +233,9 @@ describe('LootDropManager', () => {
       };
 
       manager.createMonsterLoot(monster);
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
-      const onPickup = jest.fn();
+      const onPickup = vi.fn();
       const playerPos = { x: 15, z: 15 };
 
       manager.update(playerPos, onPickup);
@@ -255,7 +255,7 @@ describe('LootDropManager', () => {
       const initialCount = manager.getAllDrops().length;
 
       // Advance past expiration time (60 seconds default)
-      jest.advanceTimersByTime(61000);
+      vi.advanceTimersByTime(61000);
 
       const playerPos = { x: 100, z: 100 }; // Far away
       manager.update(playerPos);
@@ -273,7 +273,7 @@ describe('LootDropManager', () => {
       };
 
       manager.createMonsterLoot(monster);
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       const playerPos = { x: 100, z: 100 }; // Far away
       const pickedUp = manager.update(playerPos);
@@ -404,7 +404,7 @@ describe('LootDropManager', () => {
       });
 
       // Advance to near expiration (default 60s, expiringSoon = < 10s)
-      jest.advanceTimersByTime(55000);
+      vi.advanceTimersByTime(55000);
 
       const stats = manager.getStats();
 
@@ -452,7 +452,7 @@ describe('LootDropManager', () => {
   describe('Edge Cases', () => {
     test('should handle monster with no loot', () => {
       // Mock to return no loot
-      manager.lootTable.generateLoot = jest.fn(() => ({
+      manager.lootTable.generateLoot = vi.fn(() => ({
         gold: 0,
         items: []
       }));
@@ -477,7 +477,7 @@ describe('LootDropManager', () => {
         position: { x: 10, z: 10 }
       });
 
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       const playerPos = { x: 100, z: 100 };
 
@@ -498,7 +498,7 @@ describe('LootDropManager', () => {
         position: { x: 10, z: 10 }
       });
 
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       const playerPos = { x: 10, z: 10 };
       const pickedUp = manager.update(playerPos);

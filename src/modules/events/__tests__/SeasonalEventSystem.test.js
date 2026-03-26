@@ -30,7 +30,7 @@ describe('SeasonalEventSystem', () => {
   beforeEach(() => {
     seasonalSystem = new MockSeasonalSystem();
     eventSystem = new SeasonalEventSystem(seasonalSystem);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Constructor', () => {
@@ -142,7 +142,7 @@ describe('SeasonalEventSystem', () => {
 
   describe('Event Callbacks', () => {
     it('should call onEventStart callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       eventSystem.on('onEventStart', callback);
 
       eventSystem.startEvent('spring_growth_festival');
@@ -153,7 +153,7 @@ describe('SeasonalEventSystem', () => {
     });
 
     it('should call onEventEnd callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       eventSystem.on('onEventEnd', callback);
 
       eventSystem.startEvent('spring_growth_festival');
@@ -164,7 +164,7 @@ describe('SeasonalEventSystem', () => {
     });
 
     it('should call onEventReward callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       eventSystem.on('onEventReward', callback);
 
       eventSystem.startEvent('spring_growth_festival');
@@ -407,7 +407,7 @@ describe('SeasonalEventSystem', () => {
     });
 
     it('should check for new events after interval', () => {
-      const mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0); // Always succeed probability
+      const mathRandomSpy = vi.spyOn(Math, 'random').mockReturnValue(0); // Always succeed probability
 
       seasonalSystem.setCurrentSeason(SeasonType.SPRING);
       eventSystem.update(86400001); // Just past check interval
@@ -423,7 +423,7 @@ describe('SeasonalEventSystem', () => {
     });
 
     it('should not exceed max active events', () => {
-      const mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+      const mathRandomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
 
       eventSystem.startEvent('spring_growth_festival');
       eventSystem.startEvent('spring_flower_bloom');
@@ -817,7 +817,7 @@ describe('SeasonalEventSystem', () => {
     });
 
     it('should handle complex multi-event scenario', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       eventSystem.on('onEventStart', callback);
 
       // Start multiple events

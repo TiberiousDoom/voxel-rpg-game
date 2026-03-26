@@ -12,26 +12,26 @@ describe('NPCRenderer', () => {
   beforeEach(() => {
     // Create mock canvas context
     mockCtx = {
-      save: jest.fn(),
-      restore: jest.fn(),
-      translate: jest.fn(),
-      scale: jest.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 0,
       font: '',
       textAlign: '',
       textBaseline: '',
-      beginPath: jest.fn(),
-      arc: jest.fn(),
-      fill: jest.fn(),
-      stroke: jest.fn(),
-      fillRect: jest.fn(),
-      strokeRect: jest.fn(),
-      fillText: jest.fn(),
-      moveTo: jest.fn(),
-      lineTo: jest.fn(),
-      setLineDash: jest.fn()
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      fillText: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      setLineDash: vi.fn()
     };
 
     renderer = new NPCRenderer({

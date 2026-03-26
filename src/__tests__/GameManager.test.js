@@ -11,7 +11,7 @@ describe('GameManager', () => {
 
   beforeEach(() => {
     gameManager = new GameManager();
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   afterEach(async () => {
@@ -114,8 +114,8 @@ describe('GameManager', () => {
       // Would need to be set up as a top-level mock
       // Force an error by mocking a failing dependency
       const originalGridManager = require('../modules/foundation/GridManager').default;
-      jest.mock('../modules/foundation/GridManager', () => {
-        return jest.fn().mockImplementation(() => {
+      vi.mock('../modules/foundation/GridManager', () => {
+        return vi.fn().mockImplementation(() => {
           throw new Error('Initialization failed');
         });
       });
@@ -230,7 +230,7 @@ describe('GameManager', () => {
 
   describe('Event System', () => {
     test('registers event listeners', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       gameManager.on('test:event', callback);
 
       gameManager._emit('test:event', { data: 'test' });
@@ -240,7 +240,7 @@ describe('GameManager', () => {
     });
 
     test('removes event listeners', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       gameManager.on('test:event', callback);
       gameManager.off('test:event', callback);
 
@@ -250,8 +250,8 @@ describe('GameManager', () => {
     });
 
     test('supports multiple listeners for same event', () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
 
       gameManager.on('test:event', callback1);
       gameManager.on('test:event', callback2);
@@ -263,10 +263,10 @@ describe('GameManager', () => {
     });
 
     test('handles errors in event callbacks gracefully', () => {
-      const errorCallback = jest.fn(() => {
+      const errorCallback = vi.fn(() => {
         throw new Error('Callback error');
       });
-      const normalCallback = jest.fn();
+      const normalCallback = vi.fn();
 
       gameManager.on('test:event', errorCallback);
       gameManager.on('test:event', normalCallback);
@@ -282,8 +282,8 @@ describe('GameManager', () => {
     });
 
     test('removes specific listener only', () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
 
       gameManager.on('test:event', callback1);
       gameManager.on('test:event', callback2);
@@ -371,7 +371,7 @@ describe('GameManager', () => {
 
       // Force an error by making engine.start throw
       const originalStart = gameManager.engine.start;
-      gameManager.engine.start = jest.fn().mockRejectedValue(new Error('Start failed'));
+      gameManager.engine.start = vi.fn().mockRejectedValue(new Error('Start failed'));
 
       const result = await gameManager.startGame();
 
@@ -388,7 +388,7 @@ describe('GameManager', () => {
 
       // Force an error
       const originalStop = gameManager.engine.stop;
-      gameManager.engine.stop = jest.fn().mockRejectedValue(new Error('Stop failed'));
+      gameManager.engine.stop = vi.fn().mockRejectedValue(new Error('Stop failed'));
 
       const result = await gameManager.stopGame();
 
@@ -410,7 +410,7 @@ describe('GameManager', () => {
 
       // Mock to cause error
       const GridManager = require('../modules/foundation/GridManager').default;
-      jest.spyOn(GridManager.prototype, 'constructor').mockImplementation(() => {
+      vi.spyOn(GridManager.prototype, 'constructor').mockImplementation(() => {
         throw new Error('Test error');
       });
 
@@ -435,7 +435,7 @@ describe('GameManager', () => {
     });
 
     test('removes all event listeners', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       gameManager.on('test:event', callback);
 
       gameManager.off('test:event', callback);

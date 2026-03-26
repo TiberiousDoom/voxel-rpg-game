@@ -270,7 +270,7 @@ describe('ActiveSkillSystem', () => {
 
   describe('Event System', () => {
     test('fires onBuffStart event', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       activeSkillSystem.on('onBuffStart', callback);
 
       skillTreeSystem.allocateSkill(character, 'settlement', 'rallyCry');
@@ -285,7 +285,7 @@ describe('ActiveSkillSystem', () => {
     });
 
     test('fires onBuffEnd event when buff expires', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       activeSkillSystem.on('onBuffEnd', callback);
 
       skillTreeSystem.allocateSkill(character, 'settlement', 'rallyCry');
@@ -303,7 +303,7 @@ describe('ActiveSkillSystem', () => {
     });
 
     test('fires onCooldownStart event', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       activeSkillSystem.on('onCooldownStart', callback);
 
       skillTreeSystem.allocateSkill(character, 'settlement', 'rallyCry');
@@ -319,7 +319,7 @@ describe('ActiveSkillSystem', () => {
     });
 
     test('fires onCooldownEnd event when cooldown expires', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       activeSkillSystem.on('onCooldownEnd', callback);
 
       skillTreeSystem.allocateSkill(character, 'settlement', 'rallyCry');
@@ -337,7 +337,7 @@ describe('ActiveSkillSystem', () => {
     });
 
     test('can remove event listener', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       activeSkillSystem.on('onBuffStart', callback);
       activeSkillSystem.off('onBuffStart', callback);
 

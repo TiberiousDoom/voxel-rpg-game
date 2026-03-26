@@ -17,6 +17,7 @@ import {
   MELEE_BASE_DAMAGE,
   MELEE_KNOCKBACK,
 } from './tuning';
+import { audioManager } from '../utils/AudioManager';
 
 // Convert degrees to radians once
 const CONE_HALF_ANGLE_RAD = (MELEE_CONE_ANGLE * Math.PI) / 180;
@@ -69,6 +70,10 @@ export function performMeleeAttack(store, playerPos, facingAngle, enemies) {
     // Hit! Use store.attackMonster which handles damage calc, crits, numbers, loot
     store.attackMonster(enemy.id);
     enemiesHit++;
+  }
+
+  if (enemiesHit > 0) {
+    audioManager.play('playerAttack');
   }
 
   return { hit: enemiesHit > 0, enemiesHit };

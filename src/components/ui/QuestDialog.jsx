@@ -211,6 +211,11 @@ function QuestDialog({ npc, availableQuests = [], activeQuests = [], onAccept, o
 
         <div className="quest-description">
           <p>{selectedQuest.description}</p>
+          {selectedQuest.flavorText && (
+            <p style={{ fontStyle: 'italic', color: '#aaa', fontSize: '0.85em', marginTop: '8px' }}>
+              {selectedQuest.flavorText}
+            </p>
+          )}
         </div>
 
         {selectedQuest.objectives?.length > 0 && (

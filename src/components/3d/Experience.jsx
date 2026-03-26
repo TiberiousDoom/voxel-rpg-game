@@ -28,6 +28,7 @@ import ZoneOverlay from './ZoneOverlay';
 import ZoneInteraction from './ZoneInteraction';
 import Companion from './Companion';
 import CompanionController from './CompanionController';
+import WeatherEffects from './WeatherEffects';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
@@ -110,9 +111,23 @@ const RiftVisualWithTerrainY = React.memo(({ rift, chunkManager, isNight }) => {
 function DebugStatsTick() {
   const { gl } = useThree();
   const frameCount = useRef(0);
+  const lastFpsTime = useRef(performance.now());
+  const fpsFrames = useRef(0);
 
   useFrame(() => {
     frameCount.current++;
+    fpsFrames.current++;
+
+    // FPS calculation every 500ms
+    const now = performance.now();
+    const elapsed = now - lastFpsTime.current;
+    if (elapsed >= 500) {
+      const stats = useGameStore.getState()._debugStats;
+      stats.fps = Math.round((fpsFrames.current / elapsed) * 1000);
+      fpsFrames.current = 0;
+      lastFpsTime.current = now;
+    }
+
     if (frameCount.current % 30 !== 0) return;
     const stats = useGameStore.getState()._debugStats;
     stats.drawCalls = gl.info.render.calls;
@@ -226,6 +241,9 @@ const Experience = () => {
           <RiftVisualWithTerrainY key={rift.id} rift={rift} chunkManager={chunkManager} isNight={isNight} />
         ))
       }
+
+      {/* Weather particles (rain, snow, fog) */}
+      <WeatherEffects />
 
       {/* Physics world */}
       <Physics gravity={[0, -20, 0]}>

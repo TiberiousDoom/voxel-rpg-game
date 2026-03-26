@@ -87,6 +87,7 @@ const DebugOverlay = () => {
       </Section>
 
       <Section title="Performance">
+        <PerfRow label="FPS" value={ds.fps || 0} limit={30} unit="" />
         <PerfRow label="Draw Calls" value={ds.drawCalls} limit={300} unit="" />
         <PerfRow label="Triangles" value={ds.triangles} limit={500000} unit="" />
         <PerfRow label="Mesh Rebuild" value={ds.meshRebuildMs.toFixed(1)} limit={16} unit="ms" />

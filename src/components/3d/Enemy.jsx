@@ -1,6 +1,8 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
+import { audioManager } from '../../utils/AudioManager';
+import { getQuestManager } from '../../systems/QuestManager';
 // NOTE: Billboard and Text from drei removed - they caused WebGL shader errors
 // that corrupted the rendering pipeline, preventing terrain chunks from drawing.
 import * as THREE from 'three';
@@ -224,6 +226,10 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
         type: 'explosion',
         count: 15,
       });
+
+      // Audio + quest tracking
+      audioManager.play('enemyDeath');
+      try { getQuestManager().emit('monsterKilled', mType); } catch (_) { /* quest system not ready */ }
 
       // Remove from rift enemy list after death animation
       if (monsterData?.id) {

@@ -26,6 +26,8 @@ import WildlifeAnimal from './WildlifeAnimal';
 import PathVisualization from './PathVisualization';
 import ZoneOverlay from './ZoneOverlay';
 import ZoneInteraction from './ZoneInteraction';
+import Companion from './Companion';
+import CompanionController from './CompanionController';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
@@ -90,7 +92,15 @@ const RiftVisualWithTerrainY = React.memo(({ rift, chunkManager, isNight }) => {
   // Don't render until we have a valid Y (avoids underground flicker)
   if (y === null) return null;
 
-  return <RiftVisual x={rift.x} y={y} z={rift.z} isNight={isNight} />;
+  return (
+    <RiftVisual
+      x={rift.x} y={y} z={rift.z}
+      isNight={isNight}
+      state={rift.state}
+      corruptionProgress={rift.corruptionProgress}
+      anchorHealth={rift.anchorHealth}
+    />
+  );
 });
 
 /**
@@ -200,6 +210,9 @@ const Experience = () => {
       {/* Rift controller — manages spawning logic */}
       <RiftController chunkManager={isReady ? chunkManager : null} />
 
+      {/* Companion controller — syncs CompanionAISystem to store */}
+      <CompanionController />
+
       {/* Rift visuals — render nearest rifts with terrain-aligned Y */}
       {isReady && chunkManager && rifts
         .map((rift) => {
@@ -234,6 +247,9 @@ const Experience = () => {
         {settlementNPCs.map((npc) => (
           <SettlerNPC key={npc.id} npcData={npc} />
         ))}
+
+        {/* Player companion */}
+        <Companion />
 
         {/* Ambient wildlife */}
         {wildlife.map((animal) => (

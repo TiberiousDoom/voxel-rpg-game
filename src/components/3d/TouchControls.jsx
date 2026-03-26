@@ -3,6 +3,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { getSpellById, executeSpell } from '../../data/spells';
+import { performMeleeAttack, MELEE_COOLDOWN } from '../../data/meleeAttack';
 import { findPath } from '../../utils/playerPathfinder';
 
 /**
@@ -107,8 +108,21 @@ const TouchControls = () => {
         };
 
         if (enemyHit && enemyData?.takeDamage) {
-          // Attack enemy — cast spell at the enemy hit point
-          tryCastSpellAt(enemyHit.point);
+          // Attack enemy — try spell first, melee fallback
+          const spellFired = tryCastSpellAt(enemyHit.point);
+          if (!spellFired) {
+            // Melee fallback
+            const meleeStore = useGameStore.getState();
+            const meleeCooldown = meleeStore.getSpellCooldown('__melee__');
+            if (!meleeCooldown || meleeCooldown <= 0) {
+              const pp = meleeStore.player.position;
+              const ex = enemyHit.point.x;
+              const ez = enemyHit.point.z;
+              const facingAngle = Math.atan2(ex - pp[0], ez - pp[2]);
+              performMeleeAttack(meleeStore, pp, facingAngle, meleeStore.enemies);
+              meleeStore.setSpellCooldown('__melee__', MELEE_COOLDOWN);
+            }
+          }
 
           // Add red attack marker at enemy center (elevated)
           useGameStore.getState().addTargetMarker({

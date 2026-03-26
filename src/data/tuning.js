@@ -107,6 +107,30 @@ export const CORRUPTION_RADIUS_HEAVY = 28;     // Z2: 80% corrupted stone, 20% c
 export const CORRUPTION_RADIUS_LIGHT = 32;     // Z3: 50% → corrupted grass (starts at Z2 boundary)
 
 export const RIFT_NOCTURNAL_DAMAGE_MULT = 1.5; // Night monster damage multiplier
+
+// ─── Rift Closing ──────────────────────────────────────────
+export const RIFT_CLOSE_RANGE = 8;                // World units — must be within to press E
+export const RIFT_ANCHOR_HEALTH = 100;             // Anchor HP (enemies attack it)
+export const RIFT_ANCHOR_ENEMY_DAMAGE = 10;        // Damage per enemy hit on anchor
+export const RIFT_CORRUPTION_FADE_SPEED = 0.02;    // Per second at max proximity (1.0→0.0 over ~50s)
+export const RIFT_FADE_PROXIMITY_RANGE = 32;       // Player must be within this for full fade speed
+export const RIFT_FADE_MIN_SPEED_MULT = 0.05;      // Fade speed multiplier when player far away
+export const RIFT_NPC_DEFENDER_SPEED_BONUS = 0.5;   // Extra fade speed per NPC defender nearby
+export const RIFT_WOUNDED_SPAWN_MULT = 0.5;         // Wounded rifts spawn at 50% rate
+export const RIFT_CHAIN_REACTION_RANGE = 200;       // Nearby rifts react when one enters CLOSING
+export const RIFT_CHAIN_SPAWN_BOOST = 1.5;          // 50% spawn rate increase for chain reaction
+export const RIFT_REINFORCEMENT_INTERVAL = 15;      // Seconds between reinforcement waves
+export const RIFT_REINFORCEMENT_COUNT_BASE = 2;     // Base enemies per reinforcement wave
+export const RIFT_REINFORCEMENT_ESCALATION = 1;     // Extra enemies per wave as corruption shrinks
+export const RIFT_VOID_SHARD_DROP_CHANCE = 0.3;     // Chance per corrupted block to drop void shard
+
+// ─── Melee Combat ──────────────────────────────────────────
+export const MELEE_RANGE = 3.5;                     // World units — max hit distance
+export const MELEE_CONE_ANGLE = 60;                  // Degrees — attack cone half-angle
+export const MELEE_COOLDOWN = 0.5;                   // Seconds between melee swings
+export const MELEE_BASE_DAMAGE = 5;                  // Bare-hands damage
+export const MELEE_KNOCKBACK = 6;                    // Knockback impulse on hit
+
 export const RIFT_NOCTURNAL_SPEED_MULT = 1.25; // Night monster speed multiplier
 
 // Monster aggro ranges (world units)

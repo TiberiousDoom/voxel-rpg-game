@@ -211,6 +211,67 @@ const ContextualHints = () => {
       duration: 5000,
       showOnce: true,
     },
+    // ── Rift closing hints ────────────────────────────────
+    {
+      id: 'rift-closable',
+      text: 'Press E near an empty rift to begin closing it!',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        const rm = s._riftManager;
+        if (!rm) return false;
+        const pp = s.player.position;
+        return rm.rifts.some(r =>
+          r.state === 'ACTIVE' &&
+          r.spawnedMonsterIds.length === 0 &&
+          Math.sqrt((r.x - pp[0]) ** 2 + (r.z - pp[2]) ** 2) < 16
+        );
+      },
+      priority: 10,
+      duration: 5000,
+      showOnce: true,
+    },
+    {
+      id: 'rift-closing-defend',
+      text: 'Stay near the rift to speed up purification. Defend the anchor!',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        const rm = s._riftManager;
+        if (!rm) return false;
+        return rm.rifts.some(r => r.state === 'CLOSING');
+      },
+      priority: 9,
+      duration: 6000,
+      showOnce: true,
+    },
+    // ── Companion hints ───────────────────────────────────
+    {
+      id: 'companion-nearby',
+      text: 'You sense someone nearby... investigate the rift to the north.',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        // Show when companion story manager would trigger discovery
+        return !s.companion.active && s.settlement.settlementCenter;
+      },
+      priority: 11,
+      delay: 120000,
+      duration: 6000,
+      showOnce: true,
+    },
+    {
+      id: 'companion-bonding',
+      text: 'Your companion looks stronger today. Stay close to deepen your bond.',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        return s.companion.active && s.companion.bondLevel >= 25 && s.companion.bondLevel < 50;
+      },
+      priority: 14,
+      duration: 5000,
+      showOnce: true,
+    },
   ];
 
   // Keep ref in sync with state

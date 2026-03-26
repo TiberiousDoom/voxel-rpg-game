@@ -28,6 +28,18 @@ export const BlockTypes = {
   DEAD_WOOD: 21,
 };
 
+// Reverse mapping: corrupted block → original block (for purification)
+export const CORRUPTION_REVERSE = {
+  [BlockTypes.CORRUPTED_STONE]: BlockTypes.STONE,
+  [BlockTypes.CORRUPTED_GRASS]: BlockTypes.GRASS,
+  [BlockTypes.DEAD_LEAVES]: BlockTypes.LEAVES,
+  [BlockTypes.DEAD_WOOD]: BlockTypes.WOOD,
+};
+
+export function isCorrupted(blockType) {
+  return blockType in CORRUPTION_REVERSE;
+}
+
 // Block properties
 export const BlockProperties = {
   [BlockTypes.AIR]: {

@@ -15,6 +15,7 @@ import { calculateDrops } from '../../data/blockDrops';
 import { BLOCK_USE_ACTIONS } from '../../data/blockUseActions';
 import { HARVEST_SPEED_BARE_HANDS, USE_KEY_RANGE, USE_KEY_COOLDOWN } from '../../data/tuning';
 import { getSpellById, executeSpell } from '../../data/spells';
+import { performMeleeAttack, MELEE_COOLDOWN } from '../../data/meleeAttack';
 import { isTouchDevice } from '../../utils/deviceDetection';
 
 // Maximum reach distance for block interaction
@@ -624,6 +625,37 @@ export function BlockInteraction({ chunkManager }) {
     const store = useGameStore.getState();
     const playerPos = store.player.position;
 
+    // Check for rift interaction (E key near rift)
+    const riftManager = store._riftManager;
+    if (riftManager) {
+      for (const rift of riftManager.rifts) {
+        if (rift.state === 'CLOSED') continue;
+        if (rift.state !== 'ACTIVE' && rift.state !== 'WOUNDED') continue;
+        if (rift.spawnedMonsterIds.length > 0) continue;
+
+        const rdx = playerPos[0] - rift.x;
+        const rdz = playerPos[2] - rift.z;
+        const rdist = Math.sqrt(rdx * rdx + rdz * rdz);
+
+        if (rdist < 8) { // RIFT_CLOSE_RANGE
+          const worldNow = store.worldTime.elapsed;
+          if (rift.state === 'ACTIVE') {
+            if (riftManager.beginClosing(rift.id, worldNow)) {
+              store.addPickupText('Rift closing begun! Defend the anchor!', '#aa44ff');
+              useBlockCooldown.current = now;
+              return true;
+            }
+          } else if (rift.state === 'WOUNDED') {
+            if (riftManager.resumeClosing(rift.id, worldNow)) {
+              store.addPickupText('Resuming rift purification!', '#aa44ff');
+              useBlockCooldown.current = now;
+              return true;
+            }
+          }
+        }
+      }
+    }
+
     // In first-person with a target block: use it if usable
     if (firstPerson && targetBlock) {
       const bx = Math.floor(targetBlock.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
@@ -738,18 +770,30 @@ export function BlockInteraction({ chunkManager }) {
           // Left click: check for enemy FIRST (works outside build mode), then mine block
           const enemy = checkEnemyFromCamera();
           if (enemy) {
-            // Attack enemy using the active spell (respects spell wheel selection)
+            // Try spell first, then fall back to melee
             const spell = getSpellById(store.activeSpellId);
-            if (!spell) return;
-            if (store.player.mana < spell.manaCost) return;
-            const cooldown = store.getSpellCooldown(spell.id);
-            if (cooldown > 0) return;
+            let spellFired = false;
+            if (spell && store.player.mana >= spell.manaCost) {
+              const cooldown = store.getSpellCooldown(spell.id);
+              if (cooldown <= 0) {
+                const result = executeSpell(spell, store.player, store);
+                if (result.success) {
+                  store.setSpellCooldown(spell.id, spell.cooldown);
+                  spellFired = true;
+                }
+              }
+            }
 
-            // In first-person, facingAngle is already camera.yaw and pitch
-            // is read from camera — so just use store.player directly
-            const result = executeSpell(spell, store.player, store);
-            if (result.success) {
-              store.setSpellCooldown(spell.id, spell.cooldown);
+            // Melee fallback: if spell didn't fire, swing melee
+            if (!spellFired) {
+              const meleeCooldown = store.getSpellCooldown('__melee__');
+              if (!meleeCooldown || meleeCooldown <= 0) {
+                // Get facing angle from camera direction
+                camera.getWorldDirection(rayDirection.current);
+                const facingAngle = Math.atan2(rayDirection.current.x, rayDirection.current.z);
+                performMeleeAttack(store, store.player.position, facingAngle, store.enemies);
+                store.setSpellCooldown('__melee__', MELEE_COOLDOWN);
+              }
             }
           } else if (store.buildMode) {
             // Start progressive mining (hold to break) — requires build mode

@@ -2,104 +2,54 @@
  * SurvivalHUD.jsx — Unified survival stats display
  *
  * Shows health, stamina, hunger bars + shelter status.
- * Positioned top-left. Compact, readable, doesn't obstruct gameplay.
+ * Desktop: top-left column layout.
+ * Mobile: top-center row layout with smaller bars.
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import useGameStore from '../../stores/useGameStore';
 import { isTouchDevice } from '../../utils/deviceDetection';
 
-const isMobile = typeof window !== 'undefined' && (window.innerWidth <= 768 || isTouchDevice());
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== 'undefined' && (window.innerWidth <= 768 || isTouchDevice())
+  );
+  useEffect(() => {
+    const check = () => setMobile(window.innerWidth <= 768 || isTouchDevice());
+    window.addEventListener('resize', check);
+    // Re-check after mount (touch detection may not be ready at module load)
+    check();
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return mobile;
+}
 
-const containerStyle = {
-  position: 'fixed',
-  top: isMobile ? 'max(8px, env(safe-area-inset-top, 8px))' : 12,
-  left: isMobile ? '50%' : 12,
-  transform: isMobile ? 'translateX(-50%)' : 'none',
-  display: 'flex',
-  flexDirection: isMobile ? 'row' : 'column',
-  gap: isMobile ? 8 : 4,
-  pointerEvents: 'none',
-  zIndex: 900,
-  userSelect: 'none',
-};
-
-const barContainerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  height: 18,
-};
-
-const labelStyle = {
-  fontFamily: 'monospace',
-  fontSize: 11,
-  color: 'white',
-  textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-  width: 14,
-  textAlign: 'center',
-};
-
-const barOuterStyle = {
-  width: isMobile ? 70 : 120,
-  height: 10,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  borderRadius: 3,
-  overflow: 'hidden',
-  border: '1px solid rgba(255,255,255,0.15)',
-};
-
-const shelterBadgeStyle = {
-  fontFamily: 'monospace',
-  fontSize: 10,
-  color: 'white',
-  backgroundColor: 'rgba(0, 100, 0, 0.6)',
-  padding: '2px 6px',
-  borderRadius: 3,
-  marginTop: 2,
-  textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-};
-
-const exposedBadgeStyle = {
-  ...shelterBadgeStyle,
-  backgroundColor: 'rgba(180, 0, 0, 0.5)',
-};
-
-function StatBar({ label, value, max, color, flashThreshold }) {
+function StatBar({ label, value, max, color, flashThreshold, barWidth }) {
   const percent = Math.max(0, Math.min(100, (value / max) * 100));
   const isLow = flashThreshold && value < flashThreshold;
 
   return (
-    <div style={barContainerStyle}>
-      <span style={labelStyle}>{label}</span>
-      <div style={barOuterStyle}>
-        <div
-          style={{
-            width: `${percent}%`,
-            height: '100%',
-            backgroundColor: color,
-            borderRadius: 2,
-            transition: 'width 0.3s ease',
-            opacity: isLow ? (Math.sin(Date.now() / 200) > 0 ? 1 : 0.5) : 1,
-          }}
-        />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 16 }}>
+      <span style={{
+        fontFamily: 'monospace', fontSize: 11, color: 'white',
+        textShadow: '1px 1px 2px rgba(0,0,0,0.8)', width: 14, textAlign: 'center',
+      }}>{label}</span>
+      <div style={{
+        width: barWidth, height: 8, backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)',
+      }}>
+        <div style={{
+          width: `${percent}%`, height: '100%', backgroundColor: color,
+          borderRadius: 2, transition: 'width 0.3s ease',
+          opacity: isLow ? (Math.sin(Date.now() / 200) > 0 ? 1 : 0.5) : 1,
+        }} />
       </div>
-      <span
-        style={{
-          fontFamily: 'monospace',
-          fontSize: 10,
-          color: isLow ? '#ff6666' : 'rgba(255,255,255,0.7)',
-          textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-          width: 30,
-        }}
-      >
-        {Math.ceil(value)}
-      </span>
     </div>
   );
 }
 
 const SurvivalHUD = () => {
+  const isMobile = useIsMobile();
   const health = useGameStore((s) => s.player.health);
   const maxHealth = useGameStore((s) => s.player.maxHealth);
   const stamina = useGameStore((s) => s.player.stamina);
@@ -109,22 +59,36 @@ const SurvivalHUD = () => {
   const shelterTier = useGameStore((s) => s.shelter.tier);
   const isNight = useGameStore((s) => s.worldTime.isNight);
 
-  return (
-    <div style={containerStyle}>
-      <StatBar label="\u2665" value={health} max={maxHealth} color="#cc3333" flashThreshold={25} />
-      <StatBar label="\u26A1" value={stamina} max={maxStamina} color="#ccaa33" />
-      <StatBar label="\u2615" value={hunger} max={hungerMax} color="#cc7733" flashThreshold={20} />
+  const barWidth = isMobile ? 55 : 120;
 
-      {/* Shelter indicator — only show at night or when sheltered */}
-      {(isNight || shelterTier !== 'exposed') && (
-        <div
-          style={
-            shelterTier === 'exposed' ? exposedBadgeStyle : shelterBadgeStyle
-          }
-        >
-          {shelterTier === 'full' && '\u2302 Sheltered'}
-          {shelterTier === 'partial' && '\u2302 Partial Shelter'}
-          {shelterTier === 'exposed' && '\u26A0 Exposed'}
+  return (
+    <div style={{
+      position: 'fixed',
+      top: isMobile ? 8 : 12,
+      left: isMobile ? '50%' : 12,
+      transform: isMobile ? 'translateX(-50%)' : 'none',
+      display: 'flex',
+      flexDirection: isMobile ? 'row' : 'column',
+      gap: isMobile ? 6 : 4,
+      pointerEvents: 'none',
+      zIndex: 900,
+      userSelect: 'none',
+      paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
+    }}>
+      <StatBar label="♥" value={health} max={maxHealth} color="#cc3333" flashThreshold={25} barWidth={barWidth} />
+      <StatBar label="⚡" value={stamina} max={maxStamina} color="#ccaa33" barWidth={barWidth} />
+      <StatBar label="☕" value={hunger} max={hungerMax} color="#cc7733" flashThreshold={20} barWidth={barWidth} />
+
+      {!isMobile && (isNight || shelterTier !== 'exposed') && (
+        <div style={{
+          fontFamily: 'monospace', fontSize: 10, color: 'white',
+          backgroundColor: shelterTier === 'exposed' ? 'rgba(180,0,0,0.5)' : 'rgba(0,100,0,0.6)',
+          padding: '2px 6px', borderRadius: 3, marginTop: 2,
+          textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+        }}>
+          {shelterTier === 'full' && '⌂ Sheltered'}
+          {shelterTier === 'partial' && '⌂ Partial'}
+          {shelterTier === 'exposed' && '⚠ Exposed'}
         </div>
       )}
     </div>

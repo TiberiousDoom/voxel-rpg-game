@@ -16,6 +16,7 @@ import MobileDebugOverlay from './components/ui/MobileDebugOverlay';
 import PickupTextOverlay from './components/ui/PickupTextOverlay';
 import PauseMenu from './components/PauseMenu';
 import DeathScreen from './components/DeathScreen';
+import DialogueUI from './components/ui/DialogueUI';
 import useGameStore from './stores/useGameStore';
 
 /**
@@ -25,6 +26,8 @@ function App3D() {
   const playerHealth = useGameStore((state) => state.player.health);
   const gameState = useGameStore((state) => state.gameState);
   const lastDamageSource = useGameStore((state) => state.lastDamageSource);
+  const dialogueActive = useGameStore((state) => state.dialogue.active);
+  const dialogueTree = useGameStore((state) => state.dialogue.tree);
 
   const handleRespawn = useCallback(() => {
     useGameStore.getState().respawnPlayer();
@@ -91,6 +94,20 @@ function App3D() {
 
       {/* Pause menu (F10 to toggle) */}
       <PauseMenu />
+
+      {/* Companion dialogue overlay */}
+      {dialogueActive && (
+        <DialogueUI
+          dialogueTree={dialogueTree}
+          onAction={(action) => {
+            // Handle dialogue actions (help_companion, etc.)
+            if (window.handleDialogueAction) {
+              window.handleDialogueAction(action);
+            }
+          }}
+          onClose={() => useGameStore.getState().closeDialogue()}
+        />
+      )}
 
       {/* Death screen overlay */}
       {isDead && (

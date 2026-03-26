@@ -363,6 +363,11 @@ const useGameStore = create((rawSet, get, api) => {
     companion: { ...state.companion, ...updates },
   })),
 
+  // Dialogue state (for companion conversations)
+  dialogue: { active: false, tree: null },
+  openDialogue: (tree) => set({ dialogue: { active: true, tree } }),
+  closeDialogue: () => set({ dialogue: { active: false, tree: null } }),
+
   // Unlocked spells (companion teaches new ones at bond milestones)
   unlockedSpells: ['fireball', 'lightning', 'iceShard', 'heal', 'shield', 'haste'],
   unlockSpell: (spellId) => set((state) => ({

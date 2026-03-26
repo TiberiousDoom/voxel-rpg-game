@@ -10,15 +10,15 @@ import { isTouchDevice } from '../../utils/deviceDetection';
 import { setVirtualKey } from '../../hooks/useKeyboard';
 import useGameStore from '../../stores/useGameStore';
 
-const BUTTON_SIZE = 48;
-const GAP = 8;
+const BUTTON_SIZE = 44;
+const GAP = 6;
 
 const containerStyle = {
   position: 'fixed',
-  bottom: `max(100px, calc(80px + env(safe-area-inset-bottom, 0px)))`,
+  bottom: `max(160px, calc(140px + env(safe-area-inset-bottom, 0px)))`,
   right: `max(12px, env(safe-area-inset-right, 0px))`,
-  display: 'grid',
-  gridTemplateColumns: `${BUTTON_SIZE}px ${BUTTON_SIZE}px`,
+  display: 'flex',
+  flexDirection: 'column',
   gap: GAP,
   zIndex: 950,
   pointerEvents: 'auto',
@@ -92,41 +92,14 @@ const MobileActionButtons = () => {
 
   return (
     <div style={containerStyle}>
-      {/* Row 1: Jump + Sprint */}
-      <button
-        style={buttonStyle}
-        onTouchStart={(e) => { e.preventDefault(); handleJump(); }}
-        onClick={handleJump}
-        aria-label="Jump"
-      >
-        ⬆
-      </button>
-      <button
-        style={sprintActive ? activeStyle : buttonStyle}
-        onTouchStart={(e) => { e.preventDefault(); handleSprint(); }}
-        onClick={handleSprint}
-        aria-label="Sprint"
-      >
-        🏃
-      </button>
-
-      {/* Row 2: Interact + Dodge */}
-      <button
-        style={buttonStyle}
-        onTouchStart={(e) => { e.preventDefault(); handleInteract(); }}
-        onClick={handleInteract}
-        aria-label="Interact"
-      >
-        E
-      </button>
-      <button
-        style={buttonStyle}
-        onTouchStart={(e) => { e.preventDefault(); handleDodge(); }}
-        onClick={handleDodge}
-        aria-label="Dodge"
-      >
-        💨
-      </button>
+      <div style={{ display: 'flex', gap: GAP }}>
+        <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleJump(); }} onClick={handleJump} aria-label="Jump">⬆</button>
+        <button style={sprintActive ? activeStyle : buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleSprint(); }} onClick={handleSprint} aria-label="Sprint">🏃</button>
+      </div>
+      <div style={{ display: 'flex', gap: GAP }}>
+        <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleInteract(); }} onClick={handleInteract} aria-label="Interact">E</button>
+        <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleDodge(); }} onClick={handleDodge} aria-label="Dodge">💨</button>
+      </div>
     </div>
   );
 };

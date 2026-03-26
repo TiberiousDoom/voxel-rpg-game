@@ -7,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 import '../testSetup';
 
 // Mock the store
-jest.mock('../../../stores/useGameStore', () => {
+vi.mock('../../../stores/useGameStore', () => {
   const noop = () => {};
   const createState = () => ({
     projectiles: [],
@@ -61,7 +61,7 @@ jest.mock('../../../stores/useGameStore', () => {
     addTargetMarker: noop,
     setRifts: noop,
   });
-  const mockStore = jest.fn((selector) => {
+  const mockStore = vi.fn((selector) => {
     const state = createState();
     return selector ? selector(state) : state;
   });
@@ -79,7 +79,7 @@ const TestWrapper = ({ children }) => (
 
 describe('Experience Component', () => {
   beforeEach(() => {
-    // Re-initialize mock after clearAllMocks (which strips jest.fn implementations)
+    // Re-initialize mock after clearAllMocks (which strips vi.fn implementations)
     const useGameStore = require('../../../stores/useGameStore');
     if (useGameStore.mockImplementation) {
       const noop = () => {};

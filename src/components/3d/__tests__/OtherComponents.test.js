@@ -7,7 +7,7 @@ import { render, screen, act } from '@testing-library/react';
 import '../testSetup';
 
 // Mock the store
-jest.mock('../../../stores/useGameStore', () => {
+vi.mock('../../../stores/useGameStore', () => {
   const noop = () => {};
   const createState = () => ({
     player: {
@@ -59,7 +59,7 @@ jest.mock('../../../stores/useGameStore', () => {
     dealDamageToPlayer: noop,
     removeRiftEnemy: noop,
   });
-  const mockStore = jest.fn((selector) => {
+  const mockStore = vi.fn((selector) => {
     const state = createState();
     return selector ? selector(state) : state;
   });
@@ -159,12 +159,12 @@ describe('Projectile Component', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('renders without crashing', () => {
@@ -206,7 +206,7 @@ describe('Projectile Component', () => {
     );
 
     act(() => {
-      jest.advanceTimersByTime(4000); // More than 3 second lifetime
+      vi.advanceTimersByTime(4000); // More than 3 second lifetime
     });
 
     expect(useGameStore).toHaveBeenCalled();
@@ -239,16 +239,16 @@ describe('ParticleEffect Component', () => {
     id: 'fx1',
     position: [0, 0, 0],
     type: 'explosion',
-    onComplete: jest.fn(),
+    onComplete: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('renders without crashing', () => {
@@ -289,7 +289,7 @@ describe('ParticleEffect Component', () => {
   });
 
   test('calls onComplete after effect finishes', () => {
-    const onComplete = jest.fn();
+    const onComplete = vi.fn();
 
     render(
       <TestWrapper>
@@ -298,7 +298,7 @@ describe('ParticleEffect Component', () => {
     );
 
     act(() => {
-      jest.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(2000);
     });
 
     // onComplete should be called after effect duration
@@ -314,16 +314,16 @@ describe('DamageNumber Component', () => {
     id: 'dmg1',
     position: [0, 2, 0],
     damage: 50,
-    onComplete: jest.fn(),
+    onComplete: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('renders without crashing', () => {
@@ -353,14 +353,14 @@ describe('DamageNumber Component', () => {
     );
 
     act(() => {
-      jest.advanceTimersByTime(500);
+      vi.advanceTimersByTime(500);
     });
 
     expect(container).toBeInTheDocument();
   });
 
   test('fades out after duration', () => {
-    const onComplete = jest.fn();
+    const onComplete = vi.fn();
 
     render(
       <TestWrapper>
@@ -369,7 +369,7 @@ describe('DamageNumber Component', () => {
     );
 
     act(() => {
-      jest.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(2000);
     });
 
     // Should call onComplete after fade
@@ -395,11 +395,11 @@ describe('XPOrb Component', () => {
     id: 'xp1',
     position: [5, 1, 5],
     xpValue: 25,
-    onCollect: jest.fn(),
+    onCollect: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders without crashing', () => {
@@ -461,12 +461,12 @@ describe('TargetMarker Component', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('renders without crashing', () => {
@@ -505,7 +505,7 @@ describe('TargetMarker Component', () => {
     );
 
     act(() => {
-      jest.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(1500);
     });
 
     expect(container).toBeInTheDocument();
@@ -517,7 +517,7 @@ describe('TargetMarker Component', () => {
 // ============================================
 describe('TouchControls Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders without crashing', () => {
@@ -554,7 +554,7 @@ describe('TouchControls Component', () => {
 // ============================================
 describe('CameraRotateControls Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders without crashing', () => {

@@ -13,14 +13,14 @@ describe('SharedResourceManager', () => {
 
     mockStorage = {
       storage: { gold: 100, wood: 50 },
-      addResource: jest.fn((resource, amount) => {
+      addResource: vi.fn((resource, amount) => {
         mockStorage.storage[resource] = (mockStorage.storage[resource] || 0) + amount;
       }),
-      removeResource: jest.fn((resource, amount) => {
+      removeResource: vi.fn((resource, amount) => {
         mockStorage.storage[resource] -= amount;
       }),
-      getResource: jest.fn((resource) => mockStorage.storage[resource] || 0),
-      getStorage: jest.fn(() => ({ ...mockStorage.storage }))
+      getResource: vi.fn((resource) => mockStorage.storage[resource] || 0),
+      getStorage: vi.fn(() => ({ ...mockStorage.storage }))
     };
 
     manager = new SharedResourceManager(mockStorage, unifiedState);

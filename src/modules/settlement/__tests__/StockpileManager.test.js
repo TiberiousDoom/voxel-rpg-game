@@ -20,13 +20,13 @@ describe('StockpileManager', () => {
   };
 
   beforeEach(() => {
-    mockSettlementModule = { emit: jest.fn() };
+    mockSettlementModule = { emit: vi.fn() };
     mockStorage = {
-      addResource: jest.fn(),
-      removeResource: jest.fn(),
+      addResource: vi.fn(),
+      removeResource: vi.fn(),
     };
     mockZoneManager = {
-      getZone: jest.fn((id) => (id === 'zone_1' ? stockpileZone : null)),
+      getZone: vi.fn((id) => (id === 'zone_1' ? stockpileZone : null)),
     };
 
     stockpile = new StockpileManager({

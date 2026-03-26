@@ -130,8 +130,8 @@ const SpellWheel = () => {
           onClick={toggleSpellWheel}
           style={{
             position: 'fixed',
-            bottom: '80px',
-            right: '20px',
+            bottom: 'max(80px, calc(60px + env(safe-area-inset-bottom, 0px)))',
+            right: 'max(20px, env(safe-area-inset-right, 0px))',
             width: '56px',
             height: '56px',
             borderRadius: '50%',

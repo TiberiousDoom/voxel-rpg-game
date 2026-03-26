@@ -11,20 +11,20 @@ describe('SettlementModule', () => {
   beforeEach(() => {
     mockDeps = {
       npcManager: {
-        getStatistics: jest.fn().mockReturnValue({ alive: 0, total: 0 }),
+        getStatistics: vi.fn().mockReturnValue({ alive: 0, total: 0 }),
         npcs: new Map(),
-        spawnNPC: jest.fn().mockReturnValue({ id: 'npc_1', name: 'Test' }),
+        spawnNPC: vi.fn().mockReturnValue({ id: 'npc_1', name: 'Test' }),
       },
       storage: {
-        getResource: jest.fn().mockReturnValue(0),
+        getResource: vi.fn().mockReturnValue(0),
       },
       townManager: {
-        calculateHousingCapacity: jest.fn().mockReturnValue(0),
-        getTownCenter: jest.fn().mockReturnValue({ x: 50, y: 0, z: 50 }),
+        calculateHousingCapacity: vi.fn().mockReturnValue(0),
+        getTownCenter: vi.fn().mockReturnValue({ x: 50, y: 0, z: 50 }),
       },
       grid: {},
       buildingConfig: {
-        getConfig: jest.fn().mockReturnValue({ tier: 'SURVIVAL' }),
+        getConfig: vi.fn().mockReturnValue({ tier: 'SURVIVAL' }),
       },
       territoryManager: {},
     };
@@ -108,7 +108,7 @@ describe('SettlementModule', () => {
 
   describe('Event system', () => {
     test('should emit events to listeners', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       module.on('test:event', listener);
 
       module.emit('test:event', { foo: 'bar' });
@@ -117,8 +117,8 @@ describe('SettlementModule', () => {
     });
 
     test('should support multiple listeners for same event', () => {
-      const listener1 = jest.fn();
-      const listener2 = jest.fn();
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
       module.on('test', listener1);
       module.on('test', listener2);
 
@@ -134,7 +134,7 @@ describe('SettlementModule', () => {
 
     test('should catch listener errors without breaking', () => {
       module.on('test', () => { throw new Error('bad listener'); });
-      module.on('test', jest.fn());
+      module.on('test', vi.fn());
 
       // Should not throw
       expect(() => module.emit('test', {})).not.toThrow();

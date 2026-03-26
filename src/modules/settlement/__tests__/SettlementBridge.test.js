@@ -15,16 +15,16 @@ const mockStoreState = {
   },
   inventory: { materials: { meat: 5 } },
   worldTime: { elapsed: 100 },
-  setSettlementCenter: jest.fn(),
-  updateSettlementAttractiveness: jest.fn(),
-  updateSettlementTimestamps: jest.fn(),
-  addSettlementNPC: jest.fn(),
-  removeMaterial: jest.fn(),
-  batchUpdateSettlementNPCs: jest.fn(),
-  removeSettlementNPC: jest.fn(),
+  setSettlementCenter: vi.fn(),
+  updateSettlementAttractiveness: vi.fn(),
+  updateSettlementTimestamps: vi.fn(),
+  addSettlementNPC: vi.fn(),
+  removeMaterial: vi.fn(),
+  batchUpdateSettlementNPCs: vi.fn(),
+  removeSettlementNPC: vi.fn(),
 };
 
-jest.mock('../../../stores/useGameStore', () => ({
+vi.mock('../../../stores/useGameStore', () => ({
   __esModule: true,
   default: {
     getState: () => mockStoreState,
@@ -36,9 +36,9 @@ describe('SettlementBridge', () => {
   let mockModule;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockModule = {
-      setChunkAdapter: jest.fn(),
+      setChunkAdapter: vi.fn(),
     };
     bridge = new SettlementBridge(mockModule);
   });
@@ -47,7 +47,7 @@ describe('SettlementBridge', () => {
     test('creates adapter and passes to module', () => {
       const mockChunkManager = {
         chunks: new Map([['0,0', { blocks: new Uint8Array(10) }]]),
-        getBlock: jest.fn(),
+        getBlock: vi.fn(),
       };
       bridge.setChunkAdapter(mockChunkManager);
       expect(mockModule.setChunkAdapter).toHaveBeenCalledTimes(1);
@@ -146,7 +146,7 @@ describe('SettlementBridge', () => {
 
     test('dispatches notifications', () => {
       const origAddNotification = window.addNotification;
-      window.addNotification = jest.fn();
+      window.addNotification = vi.fn();
 
       bridge.syncToStore({
         campfireCenter: null,

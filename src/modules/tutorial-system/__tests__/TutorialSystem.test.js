@@ -166,7 +166,7 @@ describe('TutorialSystem', () => {
 
   describe('Event Listeners', () => {
     test('should notify UI update listeners', () => {
-      const mockListener = jest.fn();
+      const mockListener = vi.fn();
       tutorialSystem.onUIUpdate(mockListener);
 
       tutorialSystem.start();
@@ -177,7 +177,7 @@ describe('TutorialSystem', () => {
     });
 
     test('should remove UI update listeners', () => {
-      const mockListener = jest.fn();
+      const mockListener = vi.fn();
       tutorialSystem.onUIUpdate(mockListener);
       tutorialSystem.removeUIUpdateListener(mockListener);
 
@@ -187,7 +187,7 @@ describe('TutorialSystem', () => {
     });
 
     test('should handle listener errors gracefully', () => {
-      const errorListener = jest.fn(() => {
+      const errorListener = vi.fn(() => {
         throw new Error('Test error');
       });
 

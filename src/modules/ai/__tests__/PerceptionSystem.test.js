@@ -705,14 +705,14 @@ describe('PerceptionSystem', () => {
 
   describe('Event Listeners', () => {
     test('should add listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       perception.addListener(listener);
 
       expect(perception.listeners).toContain(listener);
     });
 
     test('should remove listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       perception.addListener(listener);
       perception.removeListener(listener);
 
@@ -720,7 +720,7 @@ describe('PerceptionSystem', () => {
     });
 
     test('should emit SAW_ENTITY event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       perception.addListener(listener);
 
       const perceiver = { id: 'npc1', position: { x: 100, z: 100 } };
@@ -737,7 +737,7 @@ describe('PerceptionSystem', () => {
     });
 
     test('should emit HEARD_SOUND event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       perception.addListener(listener);
 
       const perceiver = { id: 'npc1', position: { x: 100, z: 100 } };
@@ -756,7 +756,7 @@ describe('PerceptionSystem', () => {
     });
 
     test('should handle listener errors gracefully', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
       const errorListener = () => { throw new Error('Test error'); };
       perception.addListener(errorListener);
 

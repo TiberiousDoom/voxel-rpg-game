@@ -17,18 +17,18 @@ describe('BuildingRenderer', () => {
 
     // Create mock canvas context
     mockCtx = {
-      save: jest.fn(),
-      restore: jest.fn(),
-      fillRect: jest.fn(),
-      strokeRect: jest.fn(),
-      beginPath: jest.fn(),
-      moveTo: jest.fn(),
-      lineTo: jest.fn(),
-      arc: jest.fn(),
-      fill: jest.fn(),
-      stroke: jest.fn(),
-      fillText: jest.fn(),
-      setLineDash: jest.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      fillRect: vi.fn(),
+      strokeRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      fillText: vi.fn(),
+      setLineDash: vi.fn(),
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 1,
@@ -203,7 +203,7 @@ describe('BuildingRenderer', () => {
     const mockCanvasPos = { x: 0, y: 0 };
 
     test('draws crack patterns for damaged buildings', () => {
-      renderer.drawCracks = jest.fn();
+      renderer.drawCracks = vi.fn();
       renderer.renderBuilding(mockCtx, mockBuilding, mockCanvasPos);
 
       // Overlay should be drawn

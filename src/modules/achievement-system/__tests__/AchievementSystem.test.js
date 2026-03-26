@@ -69,8 +69,8 @@ describe('AchievementSystem', () => {
       npcs: [],
       currentTier: 'SURVIVAL',
       storage: {
-        getResource: jest.fn((type) => 0),
-        getTotalResources: jest.fn(() => 0),
+        getResource: vi.fn((type) => 0),
+        getTotalResources: vi.fn(() => 0),
         capacity: 1000
       },
       npcManager: {

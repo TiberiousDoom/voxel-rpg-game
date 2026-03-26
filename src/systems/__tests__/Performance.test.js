@@ -12,18 +12,18 @@ import { MonsterAI } from '../MonsterAI';
 import { Monster } from '../../entities/Monster';
 
 // Mock Zustand store
-jest.mock('../../stores/useGameStore', () => ({
+vi.mock('../../stores/useGameStore', () => ({
   __esModule: true,
   default: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       player: {
         health: 100,
         maxHealth: 100,
         position: [50, 1, 50]
       },
-      dealDamageToPlayer: jest.fn()
+      dealDamageToPlayer: vi.fn()
     })),
-    setState: jest.fn()
+    setState: vi.fn()
   }
 }));
 

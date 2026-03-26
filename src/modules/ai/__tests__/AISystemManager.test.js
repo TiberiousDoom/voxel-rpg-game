@@ -416,14 +416,14 @@ describe('AISystemManager', () => {
 
   describe('Event Listeners', () => {
     test('should add listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       aiManager.addListener(listener);
 
       expect(aiManager.listeners).toContain(listener);
     });
 
     test('should remove listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       aiManager.addListener(listener);
       aiManager.removeListener(listener);
 
@@ -485,7 +485,7 @@ describe('AISystemManager', () => {
     test('should dispose properly', () => {
       aiManager.registerNPC({ id: 'n1', position: { x: 0, z: 0 } });
       aiManager.registerMonster({ id: 'm1', type: 'SLIME', position: { x: 0, z: 0 } });
-      aiManager.addListener(jest.fn());
+      aiManager.addListener(vi.fn());
 
       aiManager.dispose();
 

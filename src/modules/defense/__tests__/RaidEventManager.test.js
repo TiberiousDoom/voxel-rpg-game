@@ -9,7 +9,7 @@ describe('RaidEventManager', () => {
   beforeEach(() => {
     mockNPCManager = {
       npcs: new Map(),
-      getAllNPCs: jest.fn(() => Array.from(mockNPCManager.npcs.values()))
+      getAllNPCs: vi.fn(() => Array.from(mockNPCManager.npcs.values()))
     };
 
     // Add mock NPCs
@@ -41,7 +41,7 @@ describe('RaidEventManager', () => {
     });
 
     test('emits raid:scheduled event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       raidManager.on('raid:scheduled', listener);
 
       raidManager.scheduleNextRaid();
@@ -117,7 +117,7 @@ describe('RaidEventManager', () => {
     });
 
     test('emits raid:started event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       raidManager.on('raid:started', listener);
 
       raidManager.startRaid();
@@ -182,7 +182,7 @@ describe('RaidEventManager', () => {
     });
 
     test('emits raid:waveSpawned event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       raidManager.on('raid:waveSpawned', listener);
 
       raidManager.spawnNextWave();
@@ -258,7 +258,7 @@ describe('RaidEventManager', () => {
     });
 
     test('emits raid:completed event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       raidManager.on('raid:completed', listener);
 
       raidManager.completeRaid();
@@ -318,7 +318,7 @@ describe('RaidEventManager', () => {
     });
 
     test('emits raid:failed event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       raidManager.on('raid:failed', listener);
 
       raidManager.failRaid();

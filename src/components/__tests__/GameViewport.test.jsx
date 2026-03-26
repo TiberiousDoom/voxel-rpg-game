@@ -82,7 +82,7 @@ describe('GameViewport Component', () => {
 
   describe('Mouse Interaction', () => {
     test('calls onPlaceBuilding when canvas clicked with selection', () => {
-      const onPlaceBuilding = jest.fn();
+      const onPlaceBuilding = vi.fn();
 
       render(
         <GameViewport
@@ -103,7 +103,7 @@ describe('GameViewport Component', () => {
     });
 
     test('does not call onPlaceBuilding without selection', () => {
-      const onPlaceBuilding = jest.fn();
+      const onPlaceBuilding = vi.fn();
 
       render(
         <GameViewport
@@ -124,7 +124,7 @@ describe('GameViewport Component', () => {
     });
 
     test('calls onSelectTile on canvas click', () => {
-      const onSelectTile = jest.fn();
+      const onSelectTile = vi.fn();
 
       render(
         <GameViewport

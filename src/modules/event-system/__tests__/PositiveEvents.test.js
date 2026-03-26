@@ -17,29 +17,29 @@ const createMockGameState = () => ({
     { id: 'b2', type: 'HOUSE', state: 'COMPLETED', position: { x: 5, y: 0, z: 0 } }
   ],
   storageManager: {
-    getResource: jest.fn((type) => {
+    getResource: vi.fn((type) => {
       if (type === 'wood') return 100;
       if (type === 'food') return 50;
       return 0;
     }),
-    addResource: jest.fn(),
-    removeResource: jest.fn()
+    addResource: vi.fn(),
+    removeResource: vi.fn()
   },
   townManager: {
-    addMorale: jest.fn(),
-    getHousingCapacity: jest.fn(() => 10),
-    updatePopulation: jest.fn()
+    addMorale: vi.fn(),
+    getHousingCapacity: vi.fn(() => 10),
+    updatePopulation: vi.fn()
   },
   npcManager: {
     npcs: new Map([[1, { id: 1, name: 'Worker' }]]),
-    spawnNPC: jest.fn((data) => ({
+    spawnNPC: vi.fn((data) => ({
       id: 2,
       name: data.name || 'NPC',
       position: data.position
     }))
   },
   territoryManager: {
-    getAllTerritories: jest.fn(() => [{
+    getAllTerritories: vi.fn(() => [{
       center: { x: 50, y: 0, z: 50 }
     }])
   },
@@ -298,7 +298,7 @@ describe('WandererJoinsEvent', () => {
     const gameState = createMockGameState();
 
     // Set housing capacity to current population
-    gameState.townManager.getHousingCapacity = jest.fn(() => 1);
+    gameState.townManager.getHousingCapacity = vi.fn(() => 1);
     gameState.npcManager.npcs = new Map([[1, { id: 1 }]]);
 
     wanderer.start(gameState);

@@ -22,9 +22,9 @@ describe('BatchActions', () => {
           npcs: mockNPCs
         }
       },
-      assignNPC: jest.fn().mockReturnValue({ success: true }),
-      unassignNPC: jest.fn().mockReturnValue({ success: true }),
-      autoAssignNPCs: jest.fn().mockReturnValue({ success: true, assigned: 2 })
+      assignNPC: vi.fn().mockReturnValue({ success: true }),
+      unassignNPC: vi.fn().mockReturnValue({ success: true }),
+      autoAssignNPCs: vi.fn().mockReturnValue({ success: true, assigned: 2 })
     };
 
     batchActions = new BatchActions(mockGameManager);
@@ -59,7 +59,7 @@ describe('BatchActions', () => {
     });
 
     it('should trigger onSelectionChange callback', () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
       batchActions.on('onSelectionChange', callback);
 
       batchActions.selectNPC('npc1');

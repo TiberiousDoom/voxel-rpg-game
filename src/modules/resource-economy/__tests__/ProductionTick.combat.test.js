@@ -10,7 +10,7 @@ describe('ProductionTick - Combat Bonuses', () => {
   beforeEach(() => {
     // Mock building config
     mockBuildingConfig = {
-      getConfig: jest.fn((type) => ({
+      getConfig: vi.fn((type) => ({
         production: { gold: 10 },
         workSlots: 2
       }))
@@ -18,17 +18,17 @@ describe('ProductionTick - Combat Bonuses', () => {
 
     // Mock building effect (no aura bonuses)
     mockBuildingEffect = {
-      getProductionBonusAt: jest.fn(() => 1.0)
+      getProductionBonusAt: vi.fn(() => 1.0)
     };
 
     // Mock storage manager
     mockStorageManager = {
       storage: {},
-      addResource: jest.fn((resource, amount) => {
+      addResource: vi.fn((resource, amount) => {
         mockStorageManager.storage[resource] = (mockStorageManager.storage[resource] || 0) + amount;
       }),
-      checkAndHandleOverflow: jest.fn(() => ({ overflowed: false })),
-      getStatus: jest.fn(() => ({}))
+      checkAndHandleOverflow: vi.fn(() => ({ overflowed: false })),
+      getStatus: vi.fn(() => ({}))
     };
 
     productionTick = new ProductionTick(mockBuildingConfig, mockBuildingEffect, mockStorageManager);
@@ -148,7 +148,7 @@ describe('ProductionTick - Combat Bonuses', () => {
       };
 
       const npcAssignments = {
-        getNPCsInBuilding: jest.fn(() => ['npc1', 'npc2'])
+        getNPCsInBuilding: vi.fn(() => ['npc1', 'npc2'])
       };
 
       const npcManager = {
@@ -198,7 +198,7 @@ describe('ProductionTick - Combat Bonuses', () => {
       };
 
       const npcAssignments = {
-        getNPCsInBuilding: jest.fn(() => ['npc1'])
+        getNPCsInBuilding: vi.fn(() => ['npc1'])
       };
 
       const npcManager = {
@@ -239,7 +239,7 @@ describe('ProductionTick - Combat Bonuses', () => {
       };
 
       const npcAssignments = {
-        getNPCsInBuilding: jest.fn(() => ['npc1'])
+        getNPCsInBuilding: vi.fn(() => ['npc1'])
       };
 
       const npcManager = {
@@ -281,7 +281,7 @@ describe('ProductionTick - Combat Bonuses', () => {
       };
 
       const npcAssignments = {
-        getNPCsInBuilding: jest.fn(() => ['npc1'])
+        getNPCsInBuilding: vi.fn(() => ['npc1'])
       };
 
       const npcManager = {

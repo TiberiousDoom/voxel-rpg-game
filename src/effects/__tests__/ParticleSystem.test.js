@@ -13,24 +13,24 @@ describe('ParticleSystem', () => {
 
   beforeEach(() => {
     // Mock Date.now BEFORE creating ParticleSystem so lastUpdate uses mocked value
-    jest.spyOn(Date, 'now').mockReturnValue(1000);
+    vi.spyOn(Date, 'now').mockReturnValue(1000);
 
     particleSystem = new ParticleSystem();
 
     // Mock canvas context
     mockCtx = {
-      save: jest.fn(),
-      restore: jest.fn(),
-      beginPath: jest.fn(),
-      arc: jest.fn(),
-      fill: jest.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
       fillStyle: '',
       globalAlpha: 1
     };
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Constructor', () => {
@@ -162,30 +162,30 @@ describe('ParticleSystem', () => {
 
   describe('createResourceParticles', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     test('creates resource particles over time', () => {
       particleSystem.createResourceParticles(0, 0, 100, 100, 'GOLD');
 
       // First particle has delay=0, need to advance fake timers to fire setTimeout(..., 0)
-      jest.advanceTimersByTime(0);
+      vi.advanceTimersByTime(0);
 
       // Initially should have 1 particle
       expect(particleSystem.particles.length).toBe(1);
 
       // Advance time and check for more particles
-      jest.advanceTimersByTime(100);
+      vi.advanceTimersByTime(100);
       expect(particleSystem.particles.length).toBeGreaterThan(1);
     });
 
     test('uses correct color for resource type', () => {
       particleSystem.createResourceParticles(0, 0, 100, 100, 'GOLD');
-      jest.advanceTimersByTime(0);
+      vi.advanceTimersByTime(0);
 
       const particle = particleSystem.particles[0];
       expect(particle.color).toBe('#FFD700');
@@ -194,11 +194,11 @@ describe('ParticleSystem', () => {
 
   describe('createAchievementEffect', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     test('creates multi-layered burst effect', () => {
@@ -208,7 +208,7 @@ describe('ParticleSystem', () => {
       expect(particleSystem.particles.length).toBeGreaterThan(0);
 
       // Advance timers to trigger delayed bursts
-      jest.advanceTimersByTime(250);
+      vi.advanceTimersByTime(250);
 
       // Should have more particles from delayed bursts
       expect(particleSystem.particles.length).toBeGreaterThan(30);

@@ -6,7 +6,7 @@ import { DungeonIntegration } from '../DungeonIntegration';
 import useDungeonStore, { DUNGEON_STATES } from '../../stores/useDungeonStore';
 
 // Mock the game store
-jest.mock('../../stores/useGameStore', () => ({
+vi.mock('../../stores/useGameStore', () => ({
   __esModule: true,
   default: {
     getState: () => ({
@@ -16,7 +16,7 @@ jest.mock('../../stores/useGameStore', () => ({
         maxHealth: 100,
         damage: 10
       },
-      addXP: jest.fn()
+      addXP: vi.fn()
     })
   }
 }));
@@ -43,7 +43,7 @@ describe('DungeonIntegration', () => {
     });
 
     it('should accept quest manager', () => {
-      const mockQuestManager = { onDungeonEntered: jest.fn() };
+      const mockQuestManager = { onDungeonEntered: vi.fn() };
       const di = new DungeonIntegration({ questManager: mockQuestManager });
       expect(di.questManager).toBe(mockQuestManager);
     });
@@ -90,7 +90,7 @@ describe('DungeonIntegration', () => {
     });
 
     it('should notify quest manager', () => {
-      const mockQuestManager = { onDungeonEntered: jest.fn() };
+      const mockQuestManager = { onDungeonEntered: vi.fn() };
       integration.questManager = mockQuestManager;
 
       integration.startDungeon('CAVE', 1);
@@ -99,7 +99,7 @@ describe('DungeonIntegration', () => {
     });
 
     it('should emit dungeonStarted event', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       integration.on('dungeonStarted', handler);
 
       integration.startDungeon('CAVE', 1);
@@ -156,7 +156,7 @@ describe('DungeonIntegration', () => {
     });
 
     it('should emit bossFightStarted event', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       integration.on('bossFightStarted', handler);
 
       const rooms = useDungeonStore.getState().rooms;
@@ -189,7 +189,7 @@ describe('DungeonIntegration', () => {
     });
 
     it('should notify quest manager on success', () => {
-      const mockQuestManager = { onDungeonCleared: jest.fn() };
+      const mockQuestManager = { onDungeonCleared: vi.fn() };
       integration.questManager = mockQuestManager;
 
       integration.endDungeon(true);
@@ -198,7 +198,7 @@ describe('DungeonIntegration', () => {
     });
 
     it('should notify quest manager on failure', () => {
-      const mockQuestManager = { onDungeonFailed: jest.fn() };
+      const mockQuestManager = { onDungeonFailed: vi.fn() };
       integration.questManager = mockQuestManager;
 
       integration.endDungeon(false);
@@ -207,7 +207,7 @@ describe('DungeonIntegration', () => {
     });
 
     it('should emit dungeonEnded event', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       integration.on('dungeonEnded', handler);
 
       integration.endDungeon(true);
@@ -264,7 +264,7 @@ describe('DungeonIntegration', () => {
 
   describe('event listeners', () => {
     it('should add and trigger event listeners', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       integration.on('testEvent', handler);
 
       integration._emit('testEvent', { data: 'test' });
@@ -273,7 +273,7 @@ describe('DungeonIntegration', () => {
     });
 
     it('should remove event listeners', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       integration.on('testEvent', handler);
       integration.off('testEvent', handler);
 

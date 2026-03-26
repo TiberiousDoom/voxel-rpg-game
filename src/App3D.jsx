@@ -17,6 +17,9 @@ import PickupTextOverlay from './components/ui/PickupTextOverlay';
 import PauseMenu from './components/PauseMenu';
 import DeathScreen from './components/DeathScreen';
 import DialogueUI from './components/ui/DialogueUI';
+import MobileActionButtons from './components/ui/MobileActionButtons';
+import MobileQuickActions from './components/ui/MobileQuickActions';
+import MobileTouchTutorial from './components/ui/MobileTouchTutorial';
 import useGameStore from './stores/useGameStore';
 
 /**
@@ -88,6 +91,13 @@ function App3D() {
 
       {/* Mobile debug overlay (touch button to toggle) */}
       <MobileDebugOverlay />
+
+      {/* Mobile on-screen controls */}
+      <MobileActionButtons />
+      <MobileQuickActions />
+
+      {/* Mobile touch tutorial (shows once on first mobile play) */}
+      <MobileTouchTutorial />
 
       {/* QA Test Tracker (backtick key to toggle) */}
       <TestTracker />

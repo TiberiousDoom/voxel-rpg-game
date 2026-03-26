@@ -14,24 +14,24 @@ describe('AutoSaveManager', () => {
   beforeEach(() => {
     // Mock game manager
     mockGameManager = {
-      saveGame: jest.fn().mockResolvedValue({ success: true })
+      saveGame: vi.fn().mockResolvedValue({ success: true })
     };
 
     // Mock callbacks
-    onSaveStartMock = jest.fn();
-    onSaveSuccessMock = jest.fn();
-    onSaveErrorMock = jest.fn();
+    onSaveStartMock = vi.fn();
+    onSaveSuccessMock = vi.fn();
+    onSaveErrorMock = vi.fn();
 
     // Clear all timers
-    jest.clearAllTimers();
-    jest.useFakeTimers();
+    vi.clearAllTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     if (autoSaveManager) {
       autoSaveManager.destroy();
     }
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('Constructor', () => {

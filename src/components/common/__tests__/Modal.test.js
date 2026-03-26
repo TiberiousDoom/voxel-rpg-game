@@ -18,13 +18,13 @@ import Modal from '../Modal';
 describe('Modal Component', () => {
   const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     title: 'Test Modal',
     children: <div>Modal Content</div>
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Rendering', () => {
@@ -65,7 +65,7 @@ describe('Modal Component', () => {
 
   describe('Close Functionality', () => {
     it('should call onClose when close button is clicked', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Modal {...defaultProps} onClose={onClose} />);
 
       const closeButton = screen.getByLabelText('Close modal');
@@ -75,7 +75,7 @@ describe('Modal Component', () => {
     });
 
     it('should call onClose when ESC key is pressed', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Modal {...defaultProps} onClose={onClose} closeOnEsc={true} />);
 
       fireEvent.keyDown(document, { key: 'Escape' });
@@ -84,7 +84,7 @@ describe('Modal Component', () => {
     });
 
     it('should not call onClose when ESC is pressed if closeOnEsc is false', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Modal {...defaultProps} onClose={onClose} closeOnEsc={false} />);
 
       fireEvent.keyDown(document, { key: 'Escape' });
@@ -93,7 +93,7 @@ describe('Modal Component', () => {
     });
 
     it('should call onClose when backdrop is clicked', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Modal {...defaultProps} onClose={onClose} closeOnBackdropClick={true} />);
 
       const backdrop = screen.getByRole('presentation');
@@ -103,7 +103,7 @@ describe('Modal Component', () => {
     });
 
     it('should not call onClose when backdrop is clicked if closeOnBackdropClick is false', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Modal {...defaultProps} onClose={onClose} closeOnBackdropClick={false} />);
 
       const backdrop = screen.getByRole('presentation');
@@ -113,7 +113,7 @@ describe('Modal Component', () => {
     });
 
     it('should not close when modal content is clicked', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Modal {...defaultProps} onClose={onClose} />);
 
       const modalContent = screen.getByRole('dialog');

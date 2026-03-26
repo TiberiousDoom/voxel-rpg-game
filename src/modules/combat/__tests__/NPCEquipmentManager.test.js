@@ -10,11 +10,11 @@ describe('NPCEquipmentManager', () => {
     // Mock shared inventory
     mockInventory = {
       equipment: [],
-      addEquipment: jest.fn((item) => {
+      addEquipment: vi.fn((item) => {
         mockInventory.equipment.push(item);
         return item.id;
       }),
-      removeItem: jest.fn((category, itemId) => {
+      removeItem: vi.fn((category, itemId) => {
         const index = mockInventory.equipment.findIndex(i => i.id === itemId);
         if (index >= 0) {
           mockInventory.equipment.splice(index, 1);

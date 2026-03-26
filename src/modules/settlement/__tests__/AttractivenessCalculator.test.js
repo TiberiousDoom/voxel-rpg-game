@@ -25,13 +25,13 @@ describe('AttractivenessCalculator', () => {
 
   beforeEach(() => {
     mockStorage = {
-      getResource: jest.fn().mockReturnValue(0),
+      getResource: vi.fn().mockReturnValue(0),
     };
     mockTownManager = {
-      calculateHousingCapacity: jest.fn().mockReturnValue(0),
+      calculateHousingCapacity: vi.fn().mockReturnValue(0),
     };
     mockNpcManager = {
-      getStatistics: jest.fn().mockReturnValue({ alive: 0, total: 0 }),
+      getStatistics: vi.fn().mockReturnValue({ alive: 0, total: 0 }),
       npcs: new Map(),
     };
 

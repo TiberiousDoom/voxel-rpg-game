@@ -18,83 +18,83 @@ import DefenseCombatEngine from '../../modules/defense/DefenseCombatEngine';
 const createMockModules = () => {
   return {
     grid: {
-      getAllBuildings: jest.fn(() => []),
-      placeBuilding: jest.fn(() => ({ success: true })),
-      getBuilding: jest.fn(() => null),
-      removeBuilding: jest.fn()
+      getAllBuildings: vi.fn(() => []),
+      placeBuilding: vi.fn(() => ({ success: true })),
+      getBuilding: vi.fn(() => null),
+      removeBuilding: vi.fn()
     },
     spatial: {
-      addBuilding: jest.fn(),
-      removeBuilding: jest.fn()
+      addBuilding: vi.fn(),
+      removeBuilding: vi.fn()
     },
     buildingConfig: {
-      getConfig: jest.fn((type) => ({
+      getConfig: vi.fn((type) => ({
         type,
         cost: { wood: 10, stone: 5 },
         effects: {}
       }))
     },
     tierProgression: {
-      canAdvanceToTier: jest.fn(() => ({ canAdvance: false })),
-      getRequirementsForTier: jest.fn(() => ({}))
+      canAdvanceToTier: vi.fn(() => ({ canAdvance: false })),
+      getRequirementsForTier: vi.fn(() => ({}))
     },
     buildingEffect: {
-      registerBuildingEffects: jest.fn(() => []),
-      unregisterBuildingEffects: jest.fn()
+      registerBuildingEffects: vi.fn(() => []),
+      unregisterBuildingEffects: vi.fn()
     },
     productionTick: {
-      executeTick: jest.fn(() => ({
+      executeTick: vi.fn(() => ({
         production: { food: 10, wood: 5 }
       }))
     },
     storage: {
-      getStorage: jest.fn(() => ({ food: 100, wood: 50, stone: 30, gold: 20 })),
-      getResource: jest.fn((resource) => 100),
-      addResource: jest.fn(),
-      removeResource: jest.fn(),
-      checkAndHandleOverflow: jest.fn(() => ({ overflowed: false })),
-      getStatus: jest.fn(() => ({ percentFull: 50 }))
+      getStorage: vi.fn(() => ({ food: 100, wood: 50, stone: 30, gold: 20 })),
+      getResource: vi.fn((resource) => 100),
+      addResource: vi.fn(),
+      removeResource: vi.fn(),
+      checkAndHandleOverflow: vi.fn(() => ({ overflowed: false })),
+      getStatus: vi.fn(() => ({ percentFull: 50 }))
     },
     consumption: {
-      executeConsumptionTick: jest.fn(() => ({ foodConsumed: 5, starvationOccurred: false })),
-      registerNPC: jest.fn(),
-      setNPCWorking: jest.fn(),
-      getAliveCount: jest.fn(() => 5),
-      getAliveNPCs: jest.fn(() => []),
-      updateHappiness: jest.fn()
+      executeConsumptionTick: vi.fn(() => ({ foodConsumed: 5, starvationOccurred: false })),
+      registerNPC: vi.fn(),
+      setNPCWorking: vi.fn(),
+      getAliveCount: vi.fn(() => 5),
+      getAliveNPCs: vi.fn(() => []),
+      updateHappiness: vi.fn()
     },
     morale: {
-      calculateTownMorale: jest.fn(),
-      getCurrentMorale: jest.fn(() => 75),
-      getMoraleState: jest.fn(() => 'content'),
-      getMoraleMultiplier: jest.fn(() => 1.0)
+      calculateTownMorale: vi.fn(),
+      getCurrentMorale: vi.fn(() => 75),
+      getMoraleState: vi.fn(() => 'content'),
+      getMoraleMultiplier: vi.fn(() => 1.0)
     },
     territoryManager: {
-      getAllTerritories: jest.fn(() => []),
-      findTerritoryForBuilding: jest.fn(() => null),
-      addBuildingToTerritory: jest.fn(),
-      removeBuildingFromTerritory: jest.fn(),
-      isPositionInAnyTerritory: jest.fn(() => true)
+      getAllTerritories: vi.fn(() => []),
+      findTerritoryForBuilding: vi.fn(() => null),
+      addBuildingToTerritory: vi.fn(),
+      removeBuildingFromTerritory: vi.fn(),
+      isPositionInAnyTerritory: vi.fn(() => true)
     },
     townManager: {
-      calculateHousingCapacity: jest.fn(() => 10),
-      getStatistics: jest.fn(() => ({ population: 5 })),
-      getMaxPopulation: jest.fn(() => 100),
-      spawnNPC: jest.fn(() => true),
-      updateNPCHappiness: jest.fn()
+      calculateHousingCapacity: vi.fn(() => 10),
+      getStatistics: vi.fn(() => ({ population: 5 })),
+      getMaxPopulation: vi.fn(() => 100),
+      spawnNPC: vi.fn(() => true),
+      updateNPCHappiness: vi.fn()
     },
     npcManager: null, // Will be created separately
     npcAssignment: {
-      registerBuilding: jest.fn(),
-      unregisterBuilding: jest.fn(),
-      assignNPC: jest.fn(() => true),
-      unassignNPC: jest.fn(() => true),
-      assignNPCToBuilding: jest.fn(() => ({ success: true })),
-      getAssignment: jest.fn(() => null),
-      getNPCsInBuilding: jest.fn(() => []),
-      getStatistics: jest.fn(() => ({ byBuilding: [] })),
-      getBuildingsWithAvailableSlots: jest.fn(() => []),
-      isAssigned: jest.fn(() => false)
+      registerBuilding: vi.fn(),
+      unregisterBuilding: vi.fn(),
+      assignNPC: vi.fn(() => true),
+      unassignNPC: vi.fn(() => true),
+      assignNPCToBuilding: vi.fn(() => ({ success: true })),
+      getAssignment: vi.fn(() => null),
+      getNPCsInBuilding: vi.fn(() => []),
+      getStatistics: vi.fn(() => ({ byBuilding: [] })),
+      getBuildingsWithAvailableSlots: vi.fn(() => []),
+      isAssigned: vi.fn(() => false)
     }
   };
 };
@@ -131,11 +131,11 @@ describe('Phase 5: Hybrid Game Integration', () => {
 
     // Create mock party manager (minimal setup)
     const mockPartyManager = {
-      validateParty: jest.fn(() => ({ valid: true })),
-      getPartyMembers: jest.fn(() => []),
-      getParty: jest.fn(() => ({ members: [] })),
-      addPartyMember: jest.fn(),
-      removePartyMember: jest.fn()
+      validateParty: vi.fn(() => ({ valid: true })),
+      getPartyMembers: vi.fn(() => []),
+      getParty: vi.fn(() => ({ members: [] })),
+      addPartyMember: vi.fn(),
+      removePartyMember: vi.fn()
     };
 
     // Create expedition systems
@@ -295,7 +295,7 @@ describe('Phase 5: Hybrid Game Integration', () => {
       }
 
       // Update mock party manager for this test
-      expeditionManager.partyManager.getParty = jest.fn(() => ({
+      expeditionManager.partyManager.getParty = vi.fn(() => ({
         members: partyIds.map(id => ({ npcId: id }))
       }));
 

@@ -149,13 +149,13 @@ describe('QuestAISystem', () => {
 
   describe('Event Listeners', () => {
     test('should add listener', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       questAI.addListener(listener);
       expect(questAI.listeners).toContain(listener);
     });
 
     test('should emit questAccepted event', () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       questAI.addListener(listener);
 
       questAI.addQuest({ id: 'q1', title: 'Test', type: QuestType.KILL });

@@ -11,14 +11,14 @@ describe('NPCManager', () => {
 
   beforeEach(() => {
     mockTownManager = {
-      getMaxPopulation: jest.fn().mockReturnValue(100),
-      getCurrentTown: jest.fn().mockReturnValue({ name: 'TestTown' }),
-      spawnNPC: jest.fn(),
-      updateNPCHappiness: jest.fn(),
-      killNPC: jest.fn(),
-      removeNPC: jest.fn(),
-      assignNPC: jest.fn(),
-      unassignNPC: jest.fn()
+      getMaxPopulation: vi.fn().mockReturnValue(100),
+      getCurrentTown: vi.fn().mockReturnValue({ name: 'TestTown' }),
+      spawnNPC: vi.fn(),
+      updateNPCHappiness: vi.fn(),
+      killNPC: vi.fn(),
+      removeNPC: vi.fn(),
+      assignNPC: vi.fn(),
+      unassignNPC: vi.fn()
     };
 
     npcManager = new NPCManager(mockTownManager);

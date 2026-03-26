@@ -24,17 +24,17 @@ describe('Notification Component', () => {
     type: 'info',
     message: 'Test message',
     duration: 0,
-    onClose: jest.fn()
+    onClose: vi.fn()
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 
   describe('Rendering', () => {
@@ -71,7 +71,7 @@ describe('Notification Component', () => {
 
   describe('Close Functionality', () => {
     it('should call onClose when close button is clicked', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Notification {...defaultProps} onClose={onClose} />);
 
       const closeButton = screen.getByLabelText('Close notification');
@@ -83,11 +83,11 @@ describe('Notification Component', () => {
 
   describe('Auto-dismiss', () => {
     it('should auto-dismiss after duration', async () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Notification {...defaultProps} duration={3000} onClose={onClose} />);
 
       act(() => {
-        jest.advanceTimersByTime(3000);
+        vi.advanceTimersByTime(3000);
       });
 
       await waitFor(() => {
@@ -96,11 +96,11 @@ describe('Notification Component', () => {
     });
 
     it('should not auto-dismiss when duration is 0', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(<Notification {...defaultProps} duration={0} onClose={onClose} />);
 
       act(() => {
-        jest.advanceTimersByTime(5000);
+        vi.advanceTimersByTime(5000);
       });
 
       expect(onClose).not.toHaveBeenCalled();
@@ -126,12 +126,12 @@ describe('Toast Container', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Rendering', () => {
     it('should render multiple notifications', () => {
-      render(<Toast notifications={notifications} onClose={jest.fn()} />);
+      render(<Toast notifications={notifications} onClose={vi.fn()} />);
 
       expect(screen.getByText('Success message')).toBeInTheDocument();
       expect(screen.getByText('Error message')).toBeInTheDocument();
@@ -139,17 +139,17 @@ describe('Toast Container', () => {
     });
 
     it('should not render when notifications array is empty', () => {
-      const { container } = render(<Toast notifications={[]} onClose={jest.fn()} />);
+      const { container } = render(<Toast notifications={[]} onClose={vi.fn()} />);
       expect(container.firstChild).toBeNull();
     });
 
     it('should apply correct position classes', () => {
       const { rerender } = render(
-        <Toast notifications={notifications} onClose={jest.fn()} position="top-right" />
+        <Toast notifications={notifications} onClose={vi.fn()} position="top-right" />
       );
       expect(document.querySelector('.toast-top-right')).toBeInTheDocument();
 
-      rerender(<Toast notifications={notifications} onClose={jest.fn()} position="bottom-left" />);
+      rerender(<Toast notifications={notifications} onClose={vi.fn()} position="bottom-left" />);
       expect(document.querySelector('.toast-bottom-left')).toBeInTheDocument();
     });
 
@@ -161,7 +161,7 @@ describe('Toast Container', () => {
         duration: 0
       }));
 
-      render(<Toast notifications={manyNotifications} onClose={jest.fn()} maxNotifications={5} />);
+      render(<Toast notifications={manyNotifications} onClose={vi.fn()} maxNotifications={5} />);
 
       // Should only show last 5
       expect(screen.queryByText('Message 0')).not.toBeInTheDocument();
@@ -174,7 +174,7 @@ describe('Toast Container', () => {
 
 describe('useToast Hook', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should initialize with empty notifications', () => {

@@ -24,11 +24,11 @@ describe('Loot System Integration', () => {
     lootTable = new LootTable();
     lootDropManager = new LootDropManager();
     equipmentManager = new EquipmentManager();
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('Complete Loot Flow', () => {
@@ -54,7 +54,7 @@ describe('Loot System Integration', () => {
       });
 
       // 4. Wait for pickup delay
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       // 5. Player approaches and picks up loot
       const playerPos = { x: 10, z: 10 };
@@ -180,7 +180,7 @@ describe('Loot System Integration', () => {
       expect(lootDropManager.getAllDrops().length).toBe(allDrops.length);
 
       // Advance time and pick up
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       const playerPos = { x: 5, z: 5 };
       const pickedUp = lootDropManager.update(playerPos);
@@ -206,7 +206,7 @@ describe('Loot System Integration', () => {
       monster.takeDamage(monster.health);
 
       const drops = lootDropManager.createMonsterLoot(monster);
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       const playerPos = { x: 10, z: 10 };
       const pickedUpItems = [];
@@ -248,7 +248,7 @@ describe('Loot System Integration', () => {
       expect(lootDropManager.getAllDrops().length).toBe(initialCount);
 
       // Advance past expiration time (60 seconds)
-      jest.advanceTimersByTime(61000);
+      vi.advanceTimersByTime(61000);
 
       // Update with player far away
       lootDropManager.update({ x: 100, z: 100 });
@@ -286,7 +286,7 @@ describe('Loot System Integration', () => {
       const monster = new Monster('SLIME', { x: 0, z: 0 });
 
       // Force empty loot
-      lootDropManager.lootTable.generateLoot = jest.fn(() => ({
+      lootDropManager.lootTable.generateLoot = vi.fn(() => ({
         gold: 0,
         items: []
       }));
@@ -325,7 +325,7 @@ describe('Loot System Integration', () => {
       const drops = lootDropManager.createMonsterLoot(monster);
 
       // Loot should remain on ground if not picked up
-      jest.advanceTimersByTime(1100);
+      vi.advanceTimersByTime(1100);
 
       // Player doesn't approach
       lootDropManager.update({ x: 100, z: 100 });

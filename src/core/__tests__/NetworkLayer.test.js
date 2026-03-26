@@ -7,11 +7,11 @@ import { NetworkLayer, LocalNetworkLayer } from '../NetworkLayer';
 // Mock useGameStore
 const mockState = {
   gameState: 'playing',
-  testAction: jest.fn(),
+  testAction: vi.fn(),
 };
 
 let subscribeCallback = null;
-jest.mock('../../stores/useGameStore', () => ({
+vi.mock('../../stores/useGameStore', () => ({
   __esModule: true,
   default: {
     getState: () => mockState,
@@ -52,7 +52,7 @@ describe('LocalNetworkLayer', () => {
   let layer;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     subscribeCallback = null;
     layer = new LocalNetworkLayer();
   });
@@ -87,7 +87,7 @@ describe('LocalNetworkLayer', () => {
   });
 
   test('onStateUpdate subscribes to store changes', () => {
-    const listener = jest.fn();
+    const listener = vi.fn();
     layer.onStateUpdate(listener);
 
     // Simulate store change
@@ -98,7 +98,7 @@ describe('LocalNetworkLayer', () => {
   });
 
   test('onStateUpdate unsubscribe removes listener', () => {
-    const listener = jest.fn();
+    const listener = vi.fn();
     const unsub = layer.onStateUpdate(listener);
     unsub();
 
@@ -107,8 +107,8 @@ describe('LocalNetworkLayer', () => {
   });
 
   test('disconnect cleans up all listeners', () => {
-    const listener1 = jest.fn();
-    const listener2 = jest.fn();
+    const listener1 = vi.fn();
+    const listener2 = vi.fn();
     layer.onStateUpdate(listener1);
     layer.onStateUpdate(listener2);
 

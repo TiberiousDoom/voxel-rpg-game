@@ -5,12 +5,12 @@
 import { scanForCampfire, getTerrainYAt } from '../CampfireDetector';
 
 // Mock blockTypes module
-jest.mock('../../../systems/chunks/blockTypes', () => ({
+vi.mock('../../../systems/chunks/blockTypes', () => ({
   BlockTypes: { CAMPFIRE: 42, STONE: 1, AIR: 0 },
   isSolid: (block) => block === 1, // only STONE is solid
 }));
 
-jest.mock('../../../systems/chunks/coordinates', () => ({
+vi.mock('../../../systems/chunks/coordinates', () => ({
   CHUNK_SIZE: 16,
   CHUNK_SIZE_Y: 64,
   VOXEL_SIZE: 2,

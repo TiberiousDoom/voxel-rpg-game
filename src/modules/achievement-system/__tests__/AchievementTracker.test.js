@@ -26,11 +26,11 @@ describe('AchievementTracker', () => {
       ],
       currentTier: 'VILLAGE',
       storage: {
-        getResource: jest.fn((type) => {
+        getResource: vi.fn((type) => {
           const resources = { food: 100, wood: 50, stone: 30, gold: 10, essence: 5, crystals: 2 };
           return resources[type] || 0;
         }),
-        getTotalResources: jest.fn(() => 197),
+        getTotalResources: vi.fn(() => 197),
         capacity: 1000
       },
       npcManager: {
@@ -87,7 +87,7 @@ describe('AchievementTracker', () => {
       tracker.updateResourceTotals(mockGameState);
 
       // Increase resources
-      mockGameState.storage.getResource = jest.fn((type) => {
+      mockGameState.storage.getResource = vi.fn((type) => {
         const resources = { food: 150, wood: 70 };
         return resources[type] || 0;
       });
@@ -103,7 +103,7 @@ describe('AchievementTracker', () => {
       tracker.updateResourceTotals(mockGameState);
 
       // Decrease resources (consumption)
-      mockGameState.storage.getResource = jest.fn((type) => {
+      mockGameState.storage.getResource = vi.fn((type) => {
         const resources = { food: 50 }; // Decreased from 100
         return resources[type] || 0;
       });
@@ -134,21 +134,21 @@ describe('AchievementTracker', () => {
       expect(tracker.resourceTotals.food).toBe(100);
 
       // Cycle 2: 100 -> 150
-      mockGameState.storage.getResource = jest.fn((type) => {
+      mockGameState.storage.getResource = vi.fn((type) => {
         return type === 'food' ? 150 : 0;
       });
       tracker.updateResourceTotals(mockGameState);
       expect(tracker.resourceTotals.food).toBe(150);
 
       // Cycle 3: 150 -> 120 (decrease - shouldn't affect total)
-      mockGameState.storage.getResource = jest.fn((type) => {
+      mockGameState.storage.getResource = vi.fn((type) => {
         return type === 'food' ? 120 : 0;
       });
       tracker.updateResourceTotals(mockGameState);
       expect(tracker.resourceTotals.food).toBe(150); // Unchanged
 
       // Cycle 4: 120 -> 200 (increase by 80)
-      mockGameState.storage.getResource = jest.fn((type) => {
+      mockGameState.storage.getResource = vi.fn((type) => {
         return type === 'food' ? 200 : 0;
       });
       tracker.updateResourceTotals(mockGameState);
@@ -345,7 +345,7 @@ describe('AchievementTracker', () => {
     });
 
     test('should detect storage full', () => {
-      mockGameState.storage.getTotalResources = jest.fn(() => 1000);
+      mockGameState.storage.getTotalResources = vi.fn(() => 1000);
 
       const achievement = new Achievement({
         id: 'test',
@@ -655,7 +655,7 @@ describe('AchievementTracker', () => {
         condition: { type: 'UNKNOWN_TYPE', target: 10 }
       });
 
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation();
 
       const value = tracker.extractConditionValue(achievement, mockGameState);
 

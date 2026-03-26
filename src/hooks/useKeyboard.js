@@ -40,6 +40,15 @@ const TOGGLE_KEYS = {
 const _keys = {};
 
 /**
+ * Set a virtual key state from on-screen buttons (mobile action buttons).
+ * @param {string} action - Key action name (e.g., 'jump', 'run', 'use')
+ * @param {boolean} pressed - Whether the key is currently pressed
+ */
+export function setVirtualKey(action, pressed) {
+  _keys[action] = pressed;
+}
+
+/**
  * Hook for handling keyboard input in 3D game.
  * Returns a mutable ref whose .current is updated synchronously on key events.
  * Read it inside useFrame for zero-latency input.

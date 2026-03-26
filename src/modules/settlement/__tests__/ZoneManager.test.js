@@ -15,7 +15,7 @@ describe('ZoneManager', () => {
 
   beforeEach(() => {
     mockSettlementModule = {
-      emit: jest.fn(),
+      emit: vi.fn(),
     };
     zoneManager = new ZoneManager({
       grid: {},

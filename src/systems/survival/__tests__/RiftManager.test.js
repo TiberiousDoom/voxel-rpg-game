@@ -5,7 +5,7 @@
 import { RiftManager, RiftState } from '../RiftManager';
 
 // Mock tuning imports
-jest.mock('../../../data/tuning', () => ({
+vi.mock('../../../data/tuning', () => ({
   RIFT_DENSITY: 0.25,
   RIFT_MIN_SPAWN_DISTANCE: 96,
   RIFT_MIN_SEPARATION: 128,

@@ -15,7 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import useGameManager from '../useGameManager';
 
 // Mock GameManager - must be defined inline in jest.mock to avoid TDZ issues
-jest.mock('../../GameManager', () => {
+vi.mock('../../GameManager', () => {
   return class MockGameManager {
     constructor() {
       this.isRunning = false;
@@ -27,12 +27,12 @@ jest.mock('../../GameManager', () => {
           buildings: [],
           npcs: []
         },
-        getStatistics: jest.fn().mockReturnValue({
+        getStatistics: vi.fn().mockReturnValue({
           aliveCount: 0,
           totalSpawned: 0
         }),
         storage: {
-          getStorage: jest.fn().mockReturnValue({
+          getStorage: vi.fn().mockReturnValue({
             food: 100,
             wood: 50,
             stone: 50,
@@ -42,11 +42,11 @@ jest.mock('../../GameManager', () => {
           })
         },
         morale: {
-          getCurrentMorale: jest.fn().mockReturnValue(0),
-          getMoraleState: jest.fn().mockReturnValue('NEUTRAL')
+          getCurrentMorale: vi.fn().mockReturnValue(0),
+          getMoraleState: vi.fn().mockReturnValue('NEUTRAL')
         },
         npcManager: {
-          getStatistics: jest.fn().mockReturnValue({
+          getStatistics: vi.fn().mockReturnValue({
             aliveCount: 0,
             totalSpawned: 0
           })
@@ -125,13 +125,13 @@ jest.mock('../../GameManager', () => {
   };
 });
 
-jest.mock('../../persistence/BrowserSaveManager', () => {
-  return jest.fn().mockImplementation(() => ({}));
+vi.mock('../../persistence/BrowserSaveManager', () => {
+  return vi.fn().mockImplementation(() => ({}));
 });
 
 describe('useGameManager Hook', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ============================================
@@ -277,7 +277,7 @@ describe('useGameManager Hook', () => {
         expect(result.current.isReady).toBe(true);
       });
 
-      const startGameSpy = jest.spyOn(result.current.gameManager, 'startGame');
+      const startGameSpy = vi.spyOn(result.current.gameManager, 'startGame');
 
       act(() => {
         result.current.actions.startGame();
@@ -293,7 +293,7 @@ describe('useGameManager Hook', () => {
         expect(result.current.isReady).toBe(true);
       });
 
-      const stopGameSpy = jest.spyOn(result.current.gameManager, 'stopGame');
+      const stopGameSpy = vi.spyOn(result.current.gameManager, 'stopGame');
 
       act(() => {
         result.current.actions.stopGame();
@@ -309,7 +309,7 @@ describe('useGameManager Hook', () => {
         expect(result.current.isReady).toBe(true);
       });
 
-      const placeBuildingSpy = jest.spyOn(result.current.gameManager, 'placeBuilding');
+      const placeBuildingSpy = vi.spyOn(result.current.gameManager, 'placeBuilding');
 
       act(() => {
         result.current.actions.placeBuilding('FARM', { x: 0, y: 0, z: 0 });
@@ -325,7 +325,7 @@ describe('useGameManager Hook', () => {
         expect(result.current.isReady).toBe(true);
       });
 
-      const spawnNPCSpy = jest.spyOn(result.current.gameManager, 'spawnNPC');
+      const spawnNPCSpy = vi.spyOn(result.current.gameManager, 'spawnNPC');
 
       act(() => {
         result.current.actions.spawnNPC('FARMER');
@@ -342,7 +342,7 @@ describe('useGameManager Hook', () => {
         expect(result.current.isReady).toBe(true);
       });
 
-      const saveGameSpy = jest.spyOn(result.current.gameManager, 'saveGame');
+      const saveGameSpy = vi.spyOn(result.current.gameManager, 'saveGame');
 
       act(() => {
         result.current.actions.saveGame('slot-1');
@@ -498,7 +498,7 @@ describe('useGameManager Hook', () => {
         expect(result.current.isReady).toBe(true);
       });
 
-      const stopGameSpy = jest.spyOn(result.current.gameManager, 'stopGame');
+      const stopGameSpy = vi.spyOn(result.current.gameManager, 'stopGame');
 
       unmount();
 

@@ -72,7 +72,7 @@ const createMockGameState = (options = {}) => {
     player: {
       position: { x: 0, z: 0 },
       health: 100,
-      takeDamage: jest.fn(function(damage) {
+      takeDamage: vi.fn(function(damage) {
         this.health = Math.max(0, this.health - damage);
       }),
       ...options.player,
@@ -301,7 +301,7 @@ describe('WeatherGameplayEffects', () => {
       const effects = new WeatherGameplayEffects(weatherSystem);
       const gameState = createMockGameState();
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       effects.on('onLightningStrike', callback);
 
       // Update for a long time
@@ -314,7 +314,7 @@ describe('WeatherGameplayEffects', () => {
       const weatherSystem = new MockWeatherSystem();
       const effects = new WeatherGameplayEffects(weatherSystem);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       effects.on('onLightningWarning', callback);
 
       effects._createLightningWarning({ x: 5, z: 5 });
@@ -376,7 +376,7 @@ describe('WeatherGameplayEffects', () => {
       const effects = new WeatherGameplayEffects(weatherSystem);
       const gameState = createMockGameState();
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       effects.on('onLightningStrike', callback);
 
       effects._executeLightningStrike({ x: 5, z: 5 }, gameState);
@@ -399,7 +399,7 @@ describe('WeatherGameplayEffects', () => {
         player: {
           position: { x: 1, z: 1 },
           health: 100,
-          takeDamage: jest.fn(function(damage) {
+          takeDamage: vi.fn(function(damage) {
             this.health = Math.max(0, this.health - damage);
           }),
         },
@@ -420,7 +420,7 @@ describe('WeatherGameplayEffects', () => {
         player: {
           position: { x: 20, z: 20 },
           health: 100,
-          takeDamage: jest.fn(),
+          takeDamage: vi.fn(),
         },
       });
 
@@ -436,7 +436,7 @@ describe('WeatherGameplayEffects', () => {
         player: {
           position: { x: 1, z: 1 },
           health: 100,
-          takeDamage: jest.fn(),
+          takeDamage: vi.fn(),
         },
         structures: [
           {
@@ -460,7 +460,7 @@ describe('WeatherGameplayEffects', () => {
         player: {
           position: { x: 1, z: 1 },
           health: 100,
-          takeDamage: jest.fn(function(damage) {
+          takeDamage: vi.fn(function(damage) {
             this.health = Math.max(0, this.health - damage);
           }),
         },
@@ -480,7 +480,7 @@ describe('WeatherGameplayEffects', () => {
         player: {
           position: { x: 1, z: 1 },
           health: 100,
-          takeDamage: jest.fn(function(damage) {
+          takeDamage: vi.fn(function(damage) {
             this.health = Math.max(0, this.health - damage);
           }),
         },
@@ -500,13 +500,13 @@ describe('WeatherGameplayEffects', () => {
         player: {
           position: { x: 1, z: 1 },
           health: 100,
-          takeDamage: jest.fn(function(damage) {
+          takeDamage: vi.fn(function(damage) {
             this.health = Math.max(0, this.health - damage);
           }),
         },
       });
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       effects.on('onWeatherDamage', callback);
 
       effects._executeLightningStrike({ x: 0, z: 0 }, gameState);
@@ -529,7 +529,7 @@ describe('WeatherGameplayEffects', () => {
         player: {
           position: { x: 1, z: 1 },
           health: 100,
-          takeDamage: jest.fn(),
+          takeDamage: vi.fn(),
         },
       });
 

@@ -223,7 +223,7 @@ describe('RoomLayoutGenerator', () => {
       const generator = new RoomLayoutGenerator(42);
       const layout = generator.generate('CAVE', 5);
 
-      const mockCreateMonster = jest.fn((type, position, options) => ({
+      const mockCreateMonster = vi.fn((type, position, options) => ({
         id: `mock_${Date.now()}_${Math.random()}`,
         type,
         position,

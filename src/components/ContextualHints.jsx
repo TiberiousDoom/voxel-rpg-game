@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import useGameStore from '../stores/useGameStore';
 import { VOXEL_SIZE } from '../systems/chunks/coordinates';
 import { isUsableBlock } from '../data/blockUseActions';
+import { isTouchDevice } from '../utils/deviceDetection';
 
 /**
  * ContextualHints - Shows context-sensitive control hints
@@ -20,6 +21,8 @@ const ContextualHints = () => {
   const worldTime = useGameStore((state) => state.worldTime);
   const shelter = useGameStore((state) => state.shelter);
 
+  const isTouch = isTouchDevice();
+
   // Define hints with conditions
   const hints = [
     {
@@ -29,6 +32,7 @@ const ContextualHints = () => {
       priority: 1,
       duration: 5000,
       showOnce: true,
+      desktopOnly: true,
     },
     {
       id: 'inventory',
@@ -38,6 +42,7 @@ const ContextualHints = () => {
       delay: 8000,
       duration: 4000,
       showOnce: true,
+      desktopOnly: true,
     },
     {
       id: 'attack',
@@ -47,6 +52,7 @@ const ContextualHints = () => {
       delay: 15000,
       duration: 4000,
       showOnce: true,
+      desktopOnly: true,
     },
     {
       id: 'blocks',
@@ -56,6 +62,7 @@ const ContextualHints = () => {
       delay: 25000,
       duration: 5000,
       showOnce: true,
+      desktopOnly: true,
     },
     {
       id: 'sprint',
@@ -65,10 +72,12 @@ const ContextualHints = () => {
       delay: 40000,
       duration: 3000,
       showOnce: true,
+      desktopOnly: true,
     },
     {
       id: 'lowHealth',
       text: 'Low health! Press H to use a potion',
+      desktopOnly: true,
       condition: () => playerHealth < playerMaxHealth * 0.3 && potions > 0,
       priority: 10,
       duration: 4000,
@@ -83,6 +92,7 @@ const ContextualHints = () => {
       delay: 20000,
       duration: 5000,
       showOnce: true,
+      desktopOnly: true,
     },
     {
       id: 'firstPerson',
@@ -92,6 +102,7 @@ const ContextualHints = () => {
       delay: 60000,
       duration: 4000,
       showOnce: true,
+      desktopOnly: true,
     },
     {
       id: 'hungerWarning',
@@ -127,6 +138,7 @@ const ContextualHints = () => {
       delay: 30000,
       duration: 5000,
       showOnce: true,
+      desktopOnly: true,
     },
     {
       id: 'berry-bush-nearby',
@@ -294,6 +306,9 @@ const ContextualHints = () => {
 
       const now = Date.now();
       for (const hint of hints.sort((a, b) => a.priority - b.priority)) {
+        // Skip keyboard-specific hints on touch devices
+        if (hint.desktopOnly && isTouch) continue;
+
         // Skip if already shown and showOnce
         if (hint.showOnce && shownHintsRef.current.has(hint.id)) continue;
 

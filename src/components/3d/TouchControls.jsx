@@ -147,14 +147,21 @@ const TouchControls = () => {
         if (useGameStore.getState().zoneMode) return;
 
         if (groundHit) {
-          // Try to cast spell at the clicked ground location
-          const didCast = tryCastSpellAt(groundHit.point);
+          // On mobile: prioritize movement. Only cast spell if tapping near self.
+          const goalPos = [groundHit.point.x, groundHit.point.y, groundHit.point.z];
+          const clickStore = useGameStore.getState();
+          const playerPos = clickStore.player.position;
 
-          if (!didCast) {
-            // No spell available or on cooldown — move to location with pathfinding
-            const goalPos = [groundHit.point.x, groundHit.point.y, groundHit.point.z];
-            const clickStore = useGameStore.getState();
-            const playerPos = clickStore.player.position;
+          // Distance from player to tap point
+          const tapDx = goalPos[0] - playerPos[0];
+          const tapDz = goalPos[2] - playerPos[2];
+          const tapDist = Math.sqrt(tapDx * tapDx + tapDz * tapDz);
+
+          if (tapDist < 5) {
+            // Tap near self — cast spell at feet (AOE, self-buff, etc.)
+            tryCastSpellAt(groundHit.point);
+          } else {
+            // Tap far away — move to location with pathfinding
             const cm = clickStore._chunkManager;
 
             if (cm) {
@@ -162,11 +169,9 @@ const TouchControls = () => {
               if (path && path.length > 0) {
                 clickStore.setPlayerNavPath(path, goalPos);
               } else {
-                // No path found — fallback to direct move
                 clickStore.setPlayerTarget(goalPos);
               }
             } else {
-              // ChunkManager not ready — fallback to direct move
               clickStore.setPlayerTarget(goalPos);
             }
           }

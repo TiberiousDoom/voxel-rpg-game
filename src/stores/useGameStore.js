@@ -347,6 +347,30 @@ const useGameStore = create((rawSet, get, api) => {
   _networkLayer: null,
   setNetworkLayer: (layer) => set({ _networkLayer: layer }),
 
+  // Companion state (synced from CompanionAISystem by CompanionController)
+  companion: {
+    active: false,
+    type: null,
+    name: null,
+    position: [0, 0, 0],
+    state: 'IDLE',
+    health: 100,
+    maxHealth: 100,
+    bondLevel: 0,
+    command: 'FOLLOW',
+  },
+  setCompanionState: (updates) => set((state) => ({
+    companion: { ...state.companion, ...updates },
+  })),
+
+  // Unlocked spells (companion teaches new ones at bond milestones)
+  unlockedSpells: ['fireball', 'lightning', 'iceShard', 'heal', 'shield', 'haste'],
+  unlockSpell: (spellId) => set((state) => ({
+    unlockedSpells: state.unlockedSpells.includes(spellId)
+      ? state.unlockedSpells
+      : [...state.unlockedSpells, spellId],
+  })),
+
   // Debug stats (mutable, written by Canvas-internal components, read by DebugOverlay)
   _debugStats: { drawCalls: 0, triangles: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },
 

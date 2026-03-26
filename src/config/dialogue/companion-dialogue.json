@@ -1,0 +1,117 @@
+{
+  "discovery": {
+    "speaker": "Wounded Mage",
+    "text": "Help me... the rift... I was trying to close it alone. I'm Aria, a scholar of the void.",
+    "choices": [
+      {
+        "id": "help",
+        "text": "Here, eat this. You need your strength.",
+        "action": "help_companion",
+        "requires": { "food": true }
+      },
+      {
+        "id": "backstory",
+        "text": "What happened to you?",
+        "next": "backstory"
+      },
+      {
+        "id": "leave",
+        "text": "I'll come back later.",
+        "action": "close"
+      }
+    ]
+  },
+  "backstory": {
+    "speaker": "Aria",
+    "text": "I've been studying these rifts for months. They're tears in reality — something on the other side is pushing through. I thought I could close this one alone. I was wrong.",
+    "choices": [
+      {
+        "id": "help",
+        "text": "Let me help you. Take some food.",
+        "action": "help_companion",
+        "requires": { "food": true }
+      },
+      {
+        "id": "leave",
+        "text": "I need to prepare first.",
+        "action": "close"
+      }
+    ]
+  },
+  "helped": {
+    "speaker": "Aria",
+    "text": "Thank you... I can feel my strength returning already. I'll follow you — together we can close these rifts.",
+    "choices": [
+      {
+        "id": "ok",
+        "text": "Welcome aboard, Aria.",
+        "action": "close"
+      }
+    ]
+  },
+  "bond_30": {
+    "speaker": "Aria",
+    "text": "You know, I'm starting to feel much better. The corruption from the rift was draining me, but being away from it... I think I can help you fight now.",
+    "choices": [
+      {
+        "id": "ok",
+        "text": "Glad to hear it.",
+        "action": "close"
+      }
+    ]
+  },
+  "bond_50": {
+    "speaker": "Aria",
+    "text": "I want to teach you something. I've studied ice magic extensively — watch closely. This is Frost Nova. It freezes everything nearby. Use it when they surround you.",
+    "choices": [
+      {
+        "id": "ok",
+        "text": "I can feel the power. Thank you, Aria.",
+        "action": "close"
+      }
+    ]
+  },
+  "bond_80": {
+    "speaker": "Aria",
+    "text": "There's something I need to tell you. The rifts... they weren't always here. Someone opened them — a mage far more powerful than me. I found their journal before the corruption took the library. They were trying to reach something on the other side. Something ancient. I don't think they succeeded, but the rifts remain. Each one we close weakens the connection. If we close enough of them...",
+    "choices": [
+      {
+        "id": "ask_who",
+        "text": "Who was this mage?",
+        "next": "lore_mage"
+      },
+      {
+        "id": "ask_close",
+        "text": "How many do we need to close?",
+        "next": "lore_count"
+      },
+      {
+        "id": "ok",
+        "text": "We'll close them all.",
+        "action": "close"
+      }
+    ]
+  },
+  "lore_mage": {
+    "speaker": "Aria",
+    "text": "The journal was unsigned. But the magic was old — older than our traditions. Whoever they were, they understood the void better than anyone alive today. And here's the spell they left behind. Arcane Barrage — raw void energy. Dangerous, but effective.",
+    "choices": [
+      {
+        "id": "ok",
+        "text": "I'll use it wisely.",
+        "action": "close"
+      }
+    ]
+  },
+  "lore_count": {
+    "speaker": "Aria",
+    "text": "I don't know exactly. But each rift we seal permanently weakens the boundary. The corruption recedes. The monsters thin out. Close enough and maybe... maybe the tears will stop forming entirely. Take this spell — Arcane Barrage. You'll need it for the stronger rifts.",
+    "choices": [
+      {
+        "id": "ok",
+        "text": "Then let's get to work.",
+        "action": "close"
+      }
+    ]
+  }
+}

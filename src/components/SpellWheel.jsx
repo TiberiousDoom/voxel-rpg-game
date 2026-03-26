@@ -26,10 +26,14 @@ const SpellWheel = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Filter spells by what the player has unlocked
+  const unlockedSpells = useGameStore((s) => s.unlockedSpells);
+  const availableSpells = SPELLS.filter((s) => unlockedSpells.includes(s.id));
+
   // Display 6 spells per page
   const SPELLS_PER_PAGE = 6;
-  const totalPages = Math.ceil(SPELLS.length / SPELLS_PER_PAGE);
-  const spellsOnPage = SPELLS.slice(page * SPELLS_PER_PAGE, (page + 1) * SPELLS_PER_PAGE);
+  const totalPages = Math.ceil(availableSpells.length / SPELLS_PER_PAGE);
+  const spellsOnPage = availableSpells.slice(page * SPELLS_PER_PAGE, (page + 1) * SPELLS_PER_PAGE);
 
   // Toggle spell wheel (for mobile button)
   const toggleSpellWheel = () => {
@@ -67,7 +71,7 @@ const SpellWheel = () => {
         }
         if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
           const newIndex = selectedIndex + 1;
-          if (newIndex < SPELLS.length) {
+          if (newIndex < availableSpells.length) {
             setSelectedIndex(newIndex);
             // Auto-page if needed
             setPage(Math.floor(newIndex / SPELLS_PER_PAGE));
@@ -99,7 +103,7 @@ const SpellWheel = () => {
 
       if (e.key === 'Control' || e.key === 'Ctrl') {
         // Commit selected spell as the active spell for left-click casting
-        const spell = SPELLS[selectedIndex];
+        const spell = availableSpells[selectedIndex];
         if (spell) {
           setActiveSpellId(spell.id);
         }
@@ -116,7 +120,7 @@ const SpellWheel = () => {
     };
   }, [isActive, selectedIndex, page, spellsOnPage.length, totalPages, isMobile, setActiveSpellId]);
 
-  const selectedSpell = SPELLS[selectedIndex];
+  const selectedSpell = availableSpells[selectedIndex];
 
   return (
     <>

@@ -245,6 +245,33 @@ const ContextualHints = () => {
       duration: 6000,
       showOnce: true,
     },
+    // ── Companion hints ───────────────────────────────────
+    {
+      id: 'companion-nearby',
+      text: 'You sense someone nearby... investigate the rift to the north.',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        // Show when companion story manager would trigger discovery
+        return !s.companion.active && s.settlement.settlementCenter;
+      },
+      priority: 11,
+      delay: 120000,
+      duration: 6000,
+      showOnce: true,
+    },
+    {
+      id: 'companion-bonding',
+      text: 'Your companion looks stronger today. Stay close to deepen your bond.',
+      condition: () => {
+        if (gameState !== 'playing') return false;
+        const s = useGameStore.getState();
+        return s.companion.active && s.companion.bondLevel >= 25 && s.companion.bondLevel < 50;
+      },
+      priority: 14,
+      duration: 5000,
+      showOnce: true,
+    },
   ];
 
   // Keep ref in sync with state

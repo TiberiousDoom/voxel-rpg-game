@@ -644,7 +644,14 @@ export function BlockInteraction({ chunkManager }) {
         const rdz = playerPos[2] - rift.z;
         const rdist = Math.sqrt(rdx * rdx + rdz * rdz);
 
-        if (rdist < 8) { // RIFT_CLOSE_RANGE
+        if (rdist < 24) {
+          // Show distance feedback so player knows they're getting close
+          if (rdist >= 8) {
+            store.addPickupText(`Rift nearby (${Math.round(rdist)} units away — get closer!)`, '#aa88ff');
+            useBlockCooldown.current = now;
+            return true;
+          }
+
           // Must kill all rift monsters first
           if (rift.spawnedMonsterIds.length > 0) {
             store.addPickupText('Kill all rift monsters first!', '#ff6666');

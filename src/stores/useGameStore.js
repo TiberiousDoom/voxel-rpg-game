@@ -346,6 +346,8 @@ const useGameStore = create((rawSet, get, api) => {
   setSettlementModule: (mod) => set({ _settlementModule: mod }),
   _networkLayer: null,
   setNetworkLayer: (layer) => set({ _networkLayer: layer }),
+  _riftManager: null,
+  setRiftManager: (rm) => set({ _riftManager: rm }),
 
   // Companion state (synced from CompanionAISystem by CompanionController)
   companion: {

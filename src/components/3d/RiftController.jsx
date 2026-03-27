@@ -56,16 +56,13 @@ const RiftController = ({ chunkManager }) => {
     }
   }, []);
 
-  // Expose rift manager ref for E-key interaction
+  // Expose rift manager ref for E-key interaction (via proper store setter)
   useEffect(() => {
     if (riftManagerRef.current) {
-      useGameStore.getState()._riftManager = riftManagerRef.current;
+      useGameStore.getState().setRiftManager(riftManagerRef.current);
     }
     return () => {
-      const state = useGameStore.getState();
-      if (state._riftManager === riftManagerRef.current) {
-        state._riftManager = null;
-      }
+      useGameStore.getState().setRiftManager(null);
     };
   }, []);
 

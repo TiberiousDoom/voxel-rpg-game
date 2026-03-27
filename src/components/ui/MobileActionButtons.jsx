@@ -5,7 +5,7 @@
  * virtual key states into the keyboard system. Only renders on touch devices.
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { isTouchDevice } from '../../utils/deviceDetection';
 import { setVirtualKey } from '../../hooks/useKeyboard';
 import useGameStore from '../../stores/useGameStore';
@@ -46,30 +46,14 @@ const buttonStyle = {
   WebkitTapHighlightColor: 'transparent',
 };
 
-const activeStyle = {
-  ...buttonStyle,
-  background: 'rgba(80, 60, 140, 0.7)',
-  borderColor: 'rgba(160, 120, 220, 0.6)',
-};
-
 const MobileActionButtons = () => {
-  const [sprintActive, setSprintActive] = useState(false);
   const jumpTimeout = useRef(null);
   const isTouch = isTouchDevice();
 
   const handleJump = useCallback(() => {
     setVirtualKey('jump', true);
-    // Release after one frame (~16ms) so it's a single press
     clearTimeout(jumpTimeout.current);
     jumpTimeout.current = setTimeout(() => setVirtualKey('jump', false), 50);
-  }, []);
-
-  const handleSprint = useCallback(() => {
-    setSprintActive((prev) => {
-      const next = !prev;
-      setVirtualKey('run', next);
-      return next;
-    });
   }, []);
 
   const handleInteract = useCallback(() => {
@@ -97,7 +81,6 @@ const MobileActionButtons = () => {
   return (
     <div style={containerStyle}>
       <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleJump(); }} onClick={handleJump} aria-label="Jump">⬆</button>
-      <button style={sprintActive ? activeStyle : buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleSprint(); }} onClick={handleSprint} aria-label="Sprint">🏃</button>
       <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleInteract(); }} onClick={handleInteract} aria-label="Interact">E</button>
       <button style={buttonStyle} onTouchStart={(e) => { e.preventDefault(); handleDodge(); }} onClick={handleDodge} aria-label="Dodge">💨</button>
     </div>

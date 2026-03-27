@@ -4,10 +4,14 @@ import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { getSpellById, executeSpell } from '../../data/spells';
 import { performMeleeAttack, MELEE_COOLDOWN } from '../../data/meleeAttack';
-import { findPath } from '../../utils/playerPathfinder';
 
 /**
- * Component that handles touch/click controls for movement and attacking
+ * TouchControls — Handles click/tap for attacking and spell casting.
+ *
+ * Movement is handled by WASD (desktop) or VirtualJoystick (mobile).
+ * This component only handles:
+ *   - Tap/click on enemy = attack (spell or melee fallback)
+ *   - Tap/click on ground = cast spell at location
  */
 const TouchControls = () => {
   const { gl, scene, camera } = useThree();
@@ -17,188 +21,132 @@ const TouchControls = () => {
     if (gameState !== 'playing') return;
 
     const raycaster = new THREE.Raycaster();
-    let lastTapTime = 0;
 
-    const handlePointerDown = (event) => {
-      // Ignore if not in playing state
+    const handleClick = (event) => {
       if (useGameStore.getState().gameState !== 'playing') return;
 
-      // Don't handle clicks when pointer lock is active (first-person mode) -
-      // BlockInteraction handles mining/placement in that mode
+      // Don't handle clicks in first-person (BlockInteraction handles it)
       if (document.pointerLockElement) return;
 
-      // Skip if a block click just happened (desktop 3P mining/placing)
+      // Skip if a block click just happened
       const store = useGameStore.getState();
       if (store._blockClickActive) {
         store._blockClickActive = false;
         return;
       }
 
-      // Skip if a long press just fired - BlockInteraction stamps the canvas
-      // dataset when a long-press mine/place happens, and the synthetic click
-      // from touchend should not trigger movement
+      // Skip if a long press just fired
       const longPressAt = Number(gl.domElement.dataset.longPressAt || '0');
       if (Date.now() - longPressAt < 500) return;
 
-      // Double-tap detection for attack
-      const now = Date.now();
-      const timeSinceLastTap = now - lastTapTime;
-      const isDoubleTap = timeSinceLastTap > 50 && timeSinceLastTap < 350;
-      lastTapTime = now;
+      // Skip if build/zone mode is active
+      if (store.buildMode || store.zoneMode) return;
 
-      // Get normalized device coordinates
+      // Raycast from click position
       const rect = gl.domElement.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-      // Update raycaster
       raycaster.setFromCamera({ x, y }, camera);
-
-      // Get all intersections
+      raycaster.far = 50;
       const intersects = raycaster.intersectObjects(scene.children, true);
 
-      if (intersects.length > 0) {
-        // Check ALL intersections for enemies (prioritize enemies over ground)
-        let enemyHit = null;
-        let enemyData = null;
-        let groundHit = null;
+      let enemyHit = null;
+      let enemyData = null;
+      let groundHit = null;
 
-        for (let i = 0; i < intersects.length; i++) {
-          const hit = intersects[i];
-          let currentObject = hit.object;
-
-          // Traverse up to check if this is part of an enemy
-          while (currentObject) {
-            if (currentObject.userData?.isEnemy) {
-              enemyHit = hit;
-              enemyData = currentObject.userData;
-              break;
-            }
-            currentObject = currentObject.parent;
+      for (let i = 0; i < intersects.length; i++) {
+        const hit = intersects[i];
+        let obj = hit.object;
+        while (obj) {
+          if (obj.userData?.isEnemy) {
+            enemyHit = hit;
+            enemyData = obj.userData;
+            break;
           }
+          obj = obj.parent;
+        }
+        if (enemyHit) break;
+        if (!groundHit) groundHit = hit;
+      }
 
-          // If we found an enemy, stop looking
-          if (enemyHit) break;
+      // Helper: try to cast the active spell toward a world position
+      const tryCastSpellAt = (targetPoint) => {
+        const s = useGameStore.getState();
+        const spell = getSpellById(s.activeSpellId);
+        if (!spell) return false;
+        if (s.player.mana < spell.manaCost) return false;
+        const cooldown = s.getSpellCooldown(spell.id);
+        if (cooldown > 0) return false;
 
-          // Otherwise, store the first non-enemy hit (probably ground)
-          if (!groundHit) {
-            groundHit = hit;
+        const playerWithAim = {
+          ...s.player,
+          aimTarget: [targetPoint.x, targetPoint.y, targetPoint.z],
+        };
+
+        const result = executeSpell(spell, playerWithAim, s);
+        if (result.success) {
+          s.setSpellCooldown(spell.id, spell.cooldown);
+        }
+        return result.success;
+      };
+
+      // Tap on enemy = attack (spell or melee)
+      if (enemyHit && enemyData?.takeDamage) {
+        const spellFired = tryCastSpellAt(enemyHit.point);
+        if (!spellFired) {
+          const s = useGameStore.getState();
+          const meleeCooldown = s.getSpellCooldown('__melee__');
+          if (!meleeCooldown || meleeCooldown <= 0) {
+            const pp = s.player.position;
+            const facingAngle = Math.atan2(
+              enemyHit.point.x - pp[0],
+              enemyHit.point.z - pp[2]
+            );
+            performMeleeAttack(s, pp, facingAngle, s.enemies);
+            s.setSpellCooldown('__melee__', MELEE_COOLDOWN);
           }
         }
 
-        // Helper: try to cast the active spell toward a world position
-        const tryCastSpellAt = (targetPoint) => {
-          const attackStore = useGameStore.getState();
-          const spell = getSpellById(attackStore.activeSpellId);
-          if (!spell) return false;
-          if (attackStore.player.mana < spell.manaCost) return false;
-          const cooldown = attackStore.getSpellCooldown(spell.id);
-          if (cooldown > 0) return false;
-
-          // Set aimTarget so the projectile flies toward the click point
-          const playerWithAim = {
-            ...attackStore.player,
-            aimTarget: [targetPoint.x, targetPoint.y, targetPoint.z],
-          };
-
-          const result = executeSpell(spell, playerWithAim, attackStore);
-          if (result.success) {
-            attackStore.setSpellCooldown(spell.id, spell.cooldown);
+        // Red attack marker
+        useGameStore.getState().addTargetMarker({
+          position: [enemyHit.point.x, enemyHit.point.y + 1, enemyHit.point.z],
+          color: '#ff0000',
+        });
+        setTimeout(() => {
+          const markers = useGameStore.getState().targetMarkers;
+          if (markers.length > 0) {
+            useGameStore.getState().removeTargetMarker(markers[0].id);
           }
-          return result.success;
-        };
+        }, 800);
+        return;
+      }
 
-        if (enemyHit && enemyData?.takeDamage && isDoubleTap) {
-          // Double-tap on enemy — attack (spell or melee)
-          const spellFired = tryCastSpellAt(enemyHit.point);
-          if (!spellFired) {
-            const meleeStore = useGameStore.getState();
-            const meleeCooldown = meleeStore.getSpellCooldown('__melee__');
-            if (!meleeCooldown || meleeCooldown <= 0) {
-              const pp = meleeStore.player.position;
-              const ex = enemyHit.point.x;
-              const ez = enemyHit.point.z;
-              const facingAngle = Math.atan2(ex - pp[0], ez - pp[2]);
-              performMeleeAttack(meleeStore, pp, facingAngle, meleeStore.enemies);
-              meleeStore.setSpellCooldown('__melee__', MELEE_COOLDOWN);
-            }
-          }
-
-          // Add red attack marker at enemy center (elevated)
+      // Tap on ground = cast spell at location (no movement)
+      if (groundHit) {
+        const didCast = tryCastSpellAt(groundHit.point);
+        if (didCast) {
           useGameStore.getState().addTargetMarker({
-            position: [enemyHit.point.x, enemyHit.point.y + 1, enemyHit.point.z],
-            color: '#ff0000',
+            position: [groundHit.point.x, groundHit.point.y, groundHit.point.z],
+            color: '#ff6600',
           });
-
-          // Remove marker after 0.8 seconds
           setTimeout(() => {
             const markers = useGameStore.getState().targetMarkers;
             if (markers.length > 0) {
               useGameStore.getState().removeTargetMarker(markers[0].id);
             }
           }, 800);
-
-          // Don't move to enemy location - attack in place
-          return;
-        }
-
-        // Block movement clicks when build mode or zone mode is active (but attacks above still work)
-        if (useGameStore.getState().buildMode) return;
-        if (useGameStore.getState().zoneMode) return;
-
-        if (groundHit) {
-          const goalPos = [groundHit.point.x, groundHit.point.y, groundHit.point.z];
-          const clickStore = useGameStore.getState();
-          const playerPos = clickStore.player.position;
-
-          if (isDoubleTap) {
-            // Double-tap on ground — cast spell at location
-            tryCastSpellAt(groundHit.point);
-          } else {
-            // Single tap — always move to location
-            const cm = clickStore._chunkManager;
-
-            if (cm) {
-              const path = findPath(cm, playerPos, goalPos);
-              if (path && path.length > 0) {
-                clickStore.setPlayerNavPath(path, goalPos);
-              } else {
-                clickStore.setPlayerTarget(goalPos);
-              }
-            } else {
-              clickStore.setPlayerTarget(goalPos);
-            }
-          }
-
-          // Add marker (orange for spell, green for move)
-          const markerColor = didCast ? '#ff6600' : '#00ff00';
-          useGameStore.getState().addTargetMarker({
-            position: [groundHit.point.x, groundHit.point.y, groundHit.point.z],
-            color: markerColor,
-          });
-
-          // Remove marker after timeout
-          setTimeout(() => {
-            const markers = useGameStore.getState().targetMarkers;
-            if (markers.length > 0) {
-              useGameStore.getState().removeTargetMarker(markers[0].id);
-            }
-          }, didCast ? 800 : 2000);
         }
       }
     };
 
-    // Use click only (not touchstart) so that BlockInteraction's long-press
-    // touchend handler can preventDefault() to block the click on long press.
-    // Short taps still generate a click event for movement.
-    gl.domElement.addEventListener('click', handlePointerDown);
-
+    gl.domElement.addEventListener('click', handleClick);
     return () => {
-      gl.domElement.removeEventListener('click', handlePointerDown);
+      gl.domElement.removeEventListener('click', handleClick);
     };
   }, [gl, scene, camera, gameState]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 export default TouchControls;

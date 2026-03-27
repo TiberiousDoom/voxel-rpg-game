@@ -19,6 +19,7 @@ import DeathScreen from './components/DeathScreen';
 import DialogueUI from './components/ui/DialogueUI';
 import MobileActionButtons from './components/ui/MobileActionButtons';
 import MobileTouchTutorial from './components/ui/MobileTouchTutorial';
+import VirtualJoystick from './components/ui/VirtualJoystick';
 import useGameStore from './stores/useGameStore';
 
 /**
@@ -92,6 +93,7 @@ function App3D() {
       <MobileDebugOverlay />
 
       {/* Mobile on-screen controls */}
+      <VirtualJoystick />
       <MobileActionButtons />
 
       {/* Mobile touch tutorial (shows once on first mobile play) */}

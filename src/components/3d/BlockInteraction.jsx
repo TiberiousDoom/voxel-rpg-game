@@ -639,13 +639,19 @@ export function BlockInteraction({ chunkManager }) {
       for (const rift of riftManager.rifts) {
         if (rift.state === 'CLOSED') continue;
         if (rift.state !== 'ACTIVE' && rift.state !== 'WOUNDED') continue;
-        if (rift.spawnedMonsterIds.length > 0) continue;
 
         const rdx = playerPos[0] - rift.x;
         const rdz = playerPos[2] - rift.z;
         const rdist = Math.sqrt(rdx * rdx + rdz * rdz);
 
         if (rdist < 8) { // RIFT_CLOSE_RANGE
+          // Must kill all rift monsters first
+          if (rift.spawnedMonsterIds.length > 0) {
+            store.addPickupText('Kill all rift monsters first!', '#ff6666');
+            useBlockCooldown.current = now;
+            return true;
+          }
+
           const worldNow = store.worldTime.elapsed;
           if (rift.state === 'ACTIVE') {
             if (riftManager.beginClosing(rift.id, worldNow)) {

@@ -636,9 +636,15 @@ export function BlockInteraction({ chunkManager }) {
     // Check for rift interaction (E key near rift)
     const riftManager = store._riftManager;
     if (riftManager) {
+      // Build alive enemy set for cleaning stale monster IDs
+      const aliveEnemyIds = new Set(store.enemies.map(e => e.id));
+
       for (const rift of riftManager.rifts) {
         if (rift.state === 'CLOSED') continue;
         if (rift.state !== 'ACTIVE' && rift.state !== 'WOUNDED') continue;
+
+        // Clean stale monster IDs (monsters may have died since last rift tick)
+        rift.spawnedMonsterIds = rift.spawnedMonsterIds.filter(id => aliveEnemyIds.has(id));
 
         const rdx = playerPos[0] - rift.x;
         const rdz = playerPos[2] - rift.z;

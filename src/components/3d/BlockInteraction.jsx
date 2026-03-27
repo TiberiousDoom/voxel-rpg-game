@@ -623,7 +623,6 @@ export function BlockInteraction({ chunkManager }) {
   const useBlockCooldown = useRef(0);
 
   const useBlock = useCallback(() => {
-    if (!chunkManager) return false;
     const now = Date.now();
     if (now - useBlockCooldown.current < USE_KEY_COOLDOWN) {
       useGameStore.getState()._debugStats.useKeyCooldownLeft = USE_KEY_COOLDOWN - (now - useBlockCooldown.current);
@@ -633,7 +632,7 @@ export function BlockInteraction({ chunkManager }) {
     const store = useGameStore.getState();
     const playerPos = store.player.position;
 
-    // Check for rift interaction (E key near rift)
+    // Check for rift interaction FIRST (doesn't need chunkManager)
     const riftManager = store._riftManager;
     if (riftManager) {
       // Build alive enemy set for cleaning stale monster IDs
@@ -682,6 +681,9 @@ export function BlockInteraction({ chunkManager }) {
         }
       }
     }
+
+    // Block interactions need chunkManager
+    if (!chunkManager) return false;
 
     // In first-person with a target block: use it if usable
     if (firstPerson && targetBlock) {

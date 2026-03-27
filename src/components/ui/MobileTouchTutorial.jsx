@@ -73,13 +73,13 @@ const dismissStyle = {
 };
 
 const TIPS = [
-  { icon: '👆', text: 'Tap to move' },
-  { icon: '⚔️', text: 'Double-tap enemies to attack' },
+  { icon: '🕹️', text: 'Use the joystick (bottom-left) to move' },
+  { icon: '🏃', text: 'Push joystick to edge to sprint' },
+  { icon: '⚔️', text: 'Tap enemies to attack' },
+  { icon: '🪄', text: 'Tap ground to cast spells' },
   { icon: '🔄', text: 'Drag to rotate camera' },
   { icon: '🔍', text: 'Pinch to zoom in/out' },
   { icon: '⛏️', text: 'Long-press blocks to mine' },
-  { icon: '🎮', text: 'Use buttons on the right for Jump, Sprint, Dodge' },
-  { icon: '🪄', text: 'Tap the spell button (bottom-right) to select spells' },
 ];
 
 const MobileTouchTutorial = () => {

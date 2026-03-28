@@ -373,13 +373,16 @@ export class RiftManager {
     // Find nearby active rifts to send reinforcements from
     const sources = this.rifts.filter(r => {
       if (r.id === closingRift.id) return false;
-      if (r.state === RiftState.CLOSED) return false;
+      if (r.state !== RiftState.ACTIVE) return false;
       const dx = r.x - closingRift.x;
       const dz = r.z - closingRift.z;
       return Math.sqrt(dx * dx + dz * dz) < RIFT_CHAIN_REACTION_RANGE;
     });
 
-    if (sources.length === 0) return [];
+    // Fallback: if no nearby active rifts, the closing rift spawns its own defenders
+    const spawnSource = sources.length > 0
+      ? sources[Math.floor(Math.random() * sources.length)]
+      : closingRift;
 
     // Determine escalation tier based on corruption progress
     const progress = closingRift.corruptionProgress;
@@ -396,8 +399,7 @@ export class RiftManager {
     const escalation = Math.floor((1 - progress) * RIFT_REINFORCEMENT_ESCALATION);
     const waveSize = RIFT_REINFORCEMENT_COUNT_BASE + escalation;
 
-    // Pick a random source rift
-    const source = sources[Math.floor(Math.random() * sources.length)];
+    const source = spawnSource;
     const rand = mulberry32(this.seed * 37 + Math.floor(now * 100));
 
     for (let i = 0; i < waveSize; i++) {

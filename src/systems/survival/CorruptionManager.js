@@ -96,15 +96,16 @@ class CorruptionManager {
     let restored = 0;
     let shards = 0;
 
-    // Sample blocks in the ring — check a grid of positions
-    const step = VOXEL_SIZE * 2; // Check every other voxel for performance
+    // Scan every voxel column in the corruption area
+    const step = VOXEL_SIZE; // Check every block (not every other)
     const scanRadius = Math.ceil(outerRadius / step) * step;
 
     for (let dx = -scanRadius; dx <= scanRadius; dx += step) {
       for (let dz = -scanRadius; dz <= scanRadius; dz += step) {
         const dist = Math.sqrt(dx * dx + dz * dz);
 
-        // Only process blocks in the fade ring (outside current corruption edge)
+        // Restore any corrupted block outside the current corruption edge
+        // (everything from innerRadius outward should be clean)
         if (dist < innerRadius || dist > outerRadius) continue;
 
         const wx = cx + dx;

@@ -15,6 +15,7 @@ import NPCDebugPanel from './components/ui/NPCDebugPanel';
 import MobileDebugOverlay from './components/ui/MobileDebugOverlay';
 import PickupTextOverlay from './components/ui/PickupTextOverlay';
 import PauseMenu from './components/PauseMenu';
+import KeyboardShortcutsPanel from './components/KeyboardShortcutsPanel';
 import DeathScreen from './components/DeathScreen';
 import DialogueUI from './components/ui/DialogueUI';
 import MobileActionButtons from './components/ui/MobileActionButtons';
@@ -104,6 +105,9 @@ function App3D() {
 
       {/* Pause menu (F10 to toggle) */}
       <PauseMenu />
+
+      {/* Key assignments help (? to toggle) */}
+      <KeyboardShortcutsPanel />
 
       {/* Companion dialogue overlay */}
       {dialogueActive && (

@@ -96,20 +96,22 @@ class CorruptionManager {
     let restored = 0;
     let shards = 0;
 
-    // Scan every voxel column in the corruption area
-    const step = VOXEL_SIZE; // Check every block (not every other)
-    const scanRadius = Math.ceil(outerRadius / step) * step;
+    // Scan range in block coordinates, snapped to voxel grid
+    const scanBlocks = Math.ceil(outerRadius / VOXEL_SIZE);
 
-    for (let dx = -scanRadius; dx <= scanRadius; dx += step) {
-      for (let dz = -scanRadius; dz <= scanRadius; dz += step) {
-        const dist = Math.sqrt(dx * dx + dz * dz);
+    for (let bx = -scanBlocks; bx <= scanBlocks; bx++) {
+      for (let bz = -scanBlocks; bz <= scanBlocks; bz++) {
+        // World position at voxel grid center (matches corruption generation)
+        const wx = Math.floor(cx / VOXEL_SIZE) * VOXEL_SIZE + bx * VOXEL_SIZE;
+        const wz = Math.floor(cz / VOXEL_SIZE) * VOXEL_SIZE + bz * VOXEL_SIZE;
+
+        // Distance from rift center in world units
+        const ddx = wx - cx;
+        const ddz = wz - cz;
+        const dist = Math.sqrt(ddx * ddx + ddz * ddz);
 
         // Restore any corrupted block outside the current corruption edge
-        // (everything from innerRadius outward should be clean)
         if (dist < innerRadius || dist > outerRadius) continue;
-
-        const wx = cx + dx;
-        const wz = cz + dz;
 
         // Scan the Y column for corrupted blocks
         for (let vy = 0; vy < 32; vy++) {

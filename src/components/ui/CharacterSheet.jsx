@@ -9,8 +9,16 @@ import { getAllAttributeInfos } from '../../modules/character/CharacterSystem';
 import SkillTreeUI from './SkillTreeUI';
 import './CharacterSheet.css';
 
+const SKILL_TREES = [
+  { id: 'settlement', label: 'Settlement', icon: '\uD83C\uDFD8\uFE0F' },
+  { id: 'combat', label: 'Combat', icon: '\u2694\uFE0F' },
+  { id: 'exploration', label: 'Exploration', icon: '\uD83E\uDDED' },
+  { id: 'crafting', label: 'Crafting', icon: '\uD83D\uDD28' },
+];
+
 const CharacterSheet = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState('attributes'); // 'attributes' or 'skills'
+  const [activeTab, setActiveTab] = useState('attributes');
+  const [selectedTreeId, setSelectedTreeId] = useState('settlement');
 
   const player = useGameStore((state) => state.player);
   const character = useGameStore((state) => state.character);
@@ -191,7 +199,19 @@ const CharacterSheet = ({ isOpen, onClose }) => {
 
           {activeTab === 'skills' && (
             <div className="skills-tab">
-              <SkillTreeUI treeId="settlement" />
+              <div className="tree-selector" style={{ display: 'flex', gap: '4px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                {SKILL_TREES.map((tree) => (
+                  <button
+                    key={tree.id}
+                    className={`tab-button ${selectedTreeId === tree.id ? 'active' : ''}`}
+                    onClick={() => setSelectedTreeId(tree.id)}
+                    style={{ fontSize: '13px', padding: '6px 12px' }}
+                  >
+                    {tree.icon} {tree.label}
+                  </button>
+                ))}
+              </div>
+              <SkillTreeUI treeId={selectedTreeId} />
             </div>
           )}
 

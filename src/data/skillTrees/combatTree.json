@@ -1,0 +1,388 @@
+{
+  "id": "combat",
+  "name": "Combat Tree",
+  "description": "Master of weapons, elements, and martial prowess",
+  "icon": "\u2694\uFE0F",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Initiate",
+      "levelRequirement": 1,
+      "minPointsInTree": 0,
+      "skills": [
+        {
+          "id": "swordMastery",
+          "name": "Sword Mastery",
+          "description": "+10% melee damage",
+          "icon": "\uD83D\uDDE1\uFE0F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "meleeDamage": 0.10
+          }
+        },
+        {
+          "id": "armorTraining",
+          "name": "Armor Training",
+          "description": "+5 defense per point",
+          "icon": "\uD83D\uDEE1\uFE0F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "defense": 5
+          }
+        },
+        {
+          "id": "keenEye",
+          "name": "Keen Eye",
+          "description": "+5% critical hit chance per point",
+          "icon": "\uD83C\uDFAF",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 2,
+          "prerequisites": [],
+          "effects": {
+            "critChance": 0.05
+          }
+        },
+        {
+          "id": "nimbleFeet",
+          "name": "Nimble Feet",
+          "description": "+5% dodge chance per point",
+          "icon": "\uD83D\uDCA8",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 2,
+          "prerequisites": [],
+          "effects": {
+            "dodgeChance": 0.05
+          }
+        },
+        {
+          "id": "combatEndurance",
+          "name": "Combat Endurance",
+          "description": "+50 max health per point",
+          "icon": "\u2764\uFE0F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "maxHealth": 50
+          }
+        }
+      ]
+    },
+    {
+      "tier": 2,
+      "name": "Warrior",
+      "levelRequirement": 11,
+      "minPointsInTree": 5,
+      "skills": [
+        {
+          "id": "berserkerRage",
+          "name": "Berserker Rage",
+          "description": "+25% damage when below 50% HP",
+          "icon": "\uD83D\uDD25",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["swordMastery"],
+          "effects": {
+            "berserkerDamage": 0.25
+          }
+        },
+        {
+          "id": "shieldWall",
+          "name": "Shield Wall",
+          "description": "+15 defense, -10% movement speed",
+          "icon": "\uD83E\uDDF1",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["armorTraining"],
+          "effects": {
+            "defense": 15,
+            "movementSpeed": -0.10
+          }
+        },
+        {
+          "id": "assassinStrike",
+          "name": "Assassin Strike",
+          "description": "+20% critical damage",
+          "icon": "\uD83D\uDDE1\uFE0F",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["keenEye"],
+          "effects": {
+            "critDamage": 0.20
+          }
+        },
+        {
+          "id": "elementalAttunement",
+          "name": "Elemental Attunement",
+          "description": "+15% elemental damage from all sources",
+          "icon": "\u2728",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "effects": {
+            "elementalDamage": 0.15
+          }
+        },
+        {
+          "id": "warCry",
+          "name": "War Cry",
+          "description": "All party members gain +20% damage for 15 seconds",
+          "icon": "\uD83D\uDCE3",
+          "type": "active",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["swordMastery"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 40,
+            "cooldown": 60,
+            "duration": 15,
+            "effects": {
+              "partyDamageBoost": 0.20
+            }
+          }
+        },
+        {
+          "id": "secondWind",
+          "name": "Second Wind",
+          "description": "Heal 30% of max HP instantly",
+          "icon": "\uD83D\uDCA8",
+          "type": "active",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["combatEndurance"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 50,
+            "cooldown": 90,
+            "duration": 0,
+            "effects": {
+              "healPercent": 0.30
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 3,
+      "name": "Champion",
+      "levelRequirement": 21,
+      "minPointsInTree": 15,
+      "skills": [
+        {
+          "id": "weaponMaster",
+          "name": "Weapon Master",
+          "description": "+30% attack speed",
+          "icon": "\u2694\uFE0F",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["berserkerRage"],
+          "effects": {
+            "attackSpeed": 0.30
+          }
+        },
+        {
+          "id": "ironFortress",
+          "name": "Iron Fortress",
+          "description": "+50% defense, reflect 10% damage taken",
+          "icon": "\uD83C\uDFF0",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["shieldWall"],
+          "effects": {
+            "defenseMultiplier": 0.50,
+            "damageReflect": 0.10
+          }
+        },
+        {
+          "id": "deadlyPrecision",
+          "name": "Deadly Precision",
+          "description": "Critical hits deal 3x damage instead of 2x",
+          "icon": "\uD83D\uDCA0",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["assassinStrike"],
+          "effects": {
+            "critDamage": 1.00
+          }
+        },
+        {
+          "id": "elementalMastery",
+          "name": "Elemental Mastery",
+          "description": "Spells apply double elemental effect duration",
+          "icon": "\uD83C\uDF0A",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["elementalAttunement"],
+          "effects": {
+            "elementalDuration": 2.0,
+            "elementalDamage": 0.25
+          }
+        },
+        {
+          "id": "battleFrenzy",
+          "name": "Battle Frenzy",
+          "description": "+50% attack speed for 20 seconds",
+          "icon": "\u26A1",
+          "type": "active",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["weaponMaster"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 70,
+            "cooldown": 120,
+            "duration": 20,
+            "effects": {
+              "attackSpeedBoost": 0.50
+            }
+          }
+        },
+        {
+          "id": "lifesteal",
+          "name": "Lifesteal",
+          "description": "Heal 20% of damage dealt for 15 seconds",
+          "icon": "\uD83E\uDE78",
+          "type": "active",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["deadlyPrecision"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 60,
+            "cooldown": 90,
+            "duration": 15,
+            "effects": {
+              "lifestealPercent": 0.20
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 4,
+      "name": "Legendary",
+      "levelRequirement": 36,
+      "minPointsInTree": 25,
+      "skills": [
+        {
+          "id": "unstoppable",
+          "name": "Unstoppable",
+          "description": "Immune to stun/freeze, +25% all damage",
+          "icon": "\uD83D\uDCAA",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["weaponMaster"],
+          "effects": {
+            "stunImmunity": true,
+            "meleeDamage": 0.25,
+            "elementalDamage": 0.25
+          }
+        },
+        {
+          "id": "perfectDefense",
+          "name": "Perfect Defense",
+          "description": "25% chance to negate all damage from an attack",
+          "icon": "\uD83D\uDEE1\uFE0F",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["ironFortress"],
+          "effects": {
+            "blockChance": 0.25
+          }
+        },
+        {
+          "id": "executioner",
+          "name": "Executioner",
+          "description": "Attacks on enemies below 10% HP are instant kills",
+          "icon": "\uD83D\uDC80",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["deadlyPrecision"],
+          "effects": {
+            "executeThreshold": 0.10
+          }
+        },
+        {
+          "id": "arcaneWarrior",
+          "name": "Arcane Warrior",
+          "description": "Spells cost no mana for 30 seconds",
+          "icon": "\uD83D\uDD2E",
+          "type": "active",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["elementalMastery"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 80,
+            "cooldown": 300,
+            "duration": 30,
+            "effects": {
+              "freeSpells": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 5,
+      "name": "Capstone",
+      "levelRequirement": 50,
+      "minPointsInTree": 40,
+      "skills": [
+        {
+          "id": "warGod",
+          "name": "War God",
+          "description": "+100% damage, +50% attack speed, -30% defense. Pure offensive power.",
+          "icon": "\uD83D\uDD31",
+          "type": "capstone",
+          "pointCost": 5,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "mutuallyExclusiveWith": ["immortalGuardian"],
+          "effects": {
+            "meleeDamage": 1.00,
+            "attackSpeed": 0.50,
+            "defense": -30
+          }
+        },
+        {
+          "id": "immortalGuardian",
+          "name": "Immortal Guardian",
+          "description": "+200% defense, +100% max HP, auto-revive once per dungeon",
+          "icon": "\uD83D\uDC7C",
+          "type": "capstone",
+          "pointCost": 5,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "mutuallyExclusiveWith": ["warGod"],
+          "effects": {
+            "defenseMultiplier": 2.00,
+            "maxHealth": 500,
+            "autoRevive": true
+          }
+        }
+      ]
+    }
+  ]
+}

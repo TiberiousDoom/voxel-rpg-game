@@ -1,0 +1,401 @@
+{
+  "id": "exploration",
+  "name": "Exploration Tree",
+  "description": "Master of scouting, dungeon delving, and treasure hunting",
+  "icon": "\uD83E\uDDED",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Scout",
+      "levelRequirement": 1,
+      "minPointsInTree": 0,
+      "skills": [
+        {
+          "id": "swiftExplorer",
+          "name": "Swift Explorer",
+          "description": "+8% movement speed per point",
+          "icon": "\uD83D\uDC5F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "movementSpeed": 0.08
+          }
+        },
+        {
+          "id": "keenSenses",
+          "name": "Keen Senses",
+          "description": "+10% chance to detect traps per point",
+          "icon": "\uD83D\uDC41\uFE0F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "trapDetection": 0.10
+          }
+        },
+        {
+          "id": "scavenger",
+          "name": "Scavenger",
+          "description": "+10% loot quality per point",
+          "icon": "\uD83D\uDCB0",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "lootQuality": 0.10
+          }
+        },
+        {
+          "id": "cartographer",
+          "name": "Cartographer",
+          "description": "+15% map reveal radius per point",
+          "icon": "\uD83D\uDDFA\uFE0F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 2,
+          "prerequisites": [],
+          "effects": {
+            "mapReveal": 0.15
+          }
+        },
+        {
+          "id": "dungeonSense",
+          "name": "Dungeon Sense",
+          "description": "+10% XP from dungeon encounters per point",
+          "icon": "\uD83C\uDFF0",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "dungeonXP": 0.10
+          }
+        }
+      ]
+    },
+    {
+      "tier": 2,
+      "name": "Pathfinder",
+      "levelRequirement": 11,
+      "minPointsInTree": 5,
+      "skills": [
+        {
+          "id": "fleetFooted",
+          "name": "Fleet-Footed",
+          "description": "+20% movement speed, ignore terrain slowdown",
+          "icon": "\uD83C\uDFC3",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["swiftExplorer"],
+          "effects": {
+            "movementSpeed": 0.20,
+            "ignoreTerrainSlow": true
+          }
+        },
+        {
+          "id": "trapDisarmer",
+          "name": "Trap Disarmer",
+          "description": "Can disarm traps for bonus loot",
+          "icon": "\uD83D\uDD27",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["keenSenses"],
+          "effects": {
+            "trapDisarm": true,
+            "trapDetection": 0.20
+          }
+        },
+        {
+          "id": "treasureHunter",
+          "name": "Treasure Hunter",
+          "description": "+30% gold from dungeons, +1 treasure chest per floor",
+          "icon": "\uD83D\uDC8E",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["scavenger"],
+          "effects": {
+            "dungeonGold": 0.30,
+            "extraChests": 1
+          }
+        },
+        {
+          "id": "expeditionLeader",
+          "name": "Expedition Leader",
+          "description": "+15% expedition party survival rate",
+          "icon": "\uD83D\uDEA9",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["dungeonSense"],
+          "effects": {
+            "partySurvival": 0.15,
+            "dungeonXP": 0.15
+          }
+        },
+        {
+          "id": "sprint",
+          "name": "Sprint",
+          "description": "Double movement speed for 10 seconds",
+          "icon": "\u26A1",
+          "type": "active",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["swiftExplorer"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 30,
+            "cooldown": 45,
+            "duration": 10,
+            "effects": {
+              "movementSpeedBoost": 1.00
+            }
+          }
+        },
+        {
+          "id": "revealMap",
+          "name": "Reveal Map",
+          "description": "Reveal a large area of the minimap around you",
+          "icon": "\uD83D\uDD2D",
+          "type": "active",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["cartographer"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 40,
+            "cooldown": 120,
+            "duration": 0,
+            "effects": {
+              "revealRadius": 50
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 3,
+      "name": "Veteran",
+      "levelRequirement": 21,
+      "minPointsInTree": 15,
+      "skills": [
+        {
+          "id": "shadowStep",
+          "name": "Shadow Step",
+          "description": "Enemies have -20% chance to detect you, first strike bonus",
+          "icon": "\uD83C\uDF11",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["fleetFooted"],
+          "effects": {
+            "stealthChance": 0.20,
+            "firstStrikeDamage": 0.50
+          }
+        },
+        {
+          "id": "dungeonVeteran",
+          "name": "Dungeon Veteran",
+          "description": "+25% damage in dungeons, take 15% less damage",
+          "icon": "\uD83C\uDFC6",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["expeditionLeader"],
+          "effects": {
+            "dungeonDamage": 0.25,
+            "dungeonDamageReduction": 0.15
+          }
+        },
+        {
+          "id": "masterLooter",
+          "name": "Master Looter",
+          "description": "+50% loot quality, rare items drop more frequently",
+          "icon": "\uD83D\uDCBC",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["treasureHunter"],
+          "effects": {
+            "lootQuality": 0.50,
+            "rareDropBonus": 0.25
+          }
+        },
+        {
+          "id": "trapMaster",
+          "name": "Trap Master",
+          "description": "Turn disarmed traps into weapons that damage enemies",
+          "icon": "\uD83E\uDEA4",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["trapDisarmer"],
+          "effects": {
+            "trapWeaponize": true,
+            "trapDamage": 50
+          }
+        },
+        {
+          "id": "escapeArtist",
+          "name": "Escape Artist",
+          "description": "Teleport to dungeon entrance instantly",
+          "icon": "\uD83C\uDF00",
+          "type": "active",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["shadowStep"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 60,
+            "cooldown": 300,
+            "duration": 0,
+            "effects": {
+              "teleportToEntrance": true
+            }
+          }
+        },
+        {
+          "id": "lootersInstinct",
+          "name": "Looter's Instinct",
+          "description": "Highlight all loot on current floor for 30 seconds",
+          "icon": "\uD83D\uDD0D",
+          "type": "active",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["masterLooter"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 30,
+            "cooldown": 60,
+            "duration": 30,
+            "effects": {
+              "highlightLoot": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 4,
+      "name": "Legendary",
+      "levelRequirement": 36,
+      "minPointsInTree": 25,
+      "skills": [
+        {
+          "id": "dimensionalPocket",
+          "name": "Dimensional Pocket",
+          "description": "+50% inventory capacity, items weigh nothing",
+          "icon": "\uD83C\uDF0C",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["masterLooter"],
+          "effects": {
+            "inventoryCapacity": 0.50,
+            "weightless": true
+          }
+        },
+        {
+          "id": "dungeonConqueror",
+          "name": "Dungeon Conqueror",
+          "description": "+50% damage and XP in dungeons, reveal entire floor",
+          "icon": "\uD83D\uDC51",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["dungeonVeteran"],
+          "effects": {
+            "dungeonDamage": 0.50,
+            "dungeonXP": 0.50,
+            "floorReveal": true
+          }
+        },
+        {
+          "id": "phantomWalk",
+          "name": "Phantom Walk",
+          "description": "Become invisible and intangible for 10 seconds",
+          "icon": "\uD83D\uDC7B",
+          "type": "active",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["shadowStep"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 80,
+            "cooldown": 180,
+            "duration": 10,
+            "effects": {
+              "invisible": true,
+              "intangible": true
+            }
+          }
+        },
+        {
+          "id": "fortunesFavor",
+          "name": "Fortune's Favor",
+          "description": "Next 5 chests drop legendary loot",
+          "icon": "\uD83C\uDF1F",
+          "type": "active",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["dimensionalPocket"],
+          "activation": {
+            "costType": "none",
+            "cost": 0,
+            "cooldown": 600,
+            "duration": 0,
+            "effects": {
+              "legendaryChests": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 5,
+      "name": "Capstone",
+      "levelRequirement": 50,
+      "minPointsInTree": 40,
+      "skills": [
+        {
+          "id": "masterExplorer",
+          "name": "Master Explorer",
+          "description": "All dungeon loot doubled, +100% XP from exploration, immunity to traps",
+          "icon": "\uD83C\uDF0D",
+          "type": "capstone",
+          "pointCost": 5,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "mutuallyExclusiveWith": ["pathfinderSupreme"],
+          "effects": {
+            "lootQuality": 1.00,
+            "dungeonXP": 1.00,
+            "trapImmunity": true
+          }
+        },
+        {
+          "id": "pathfinderSupreme",
+          "name": "Pathfinder Supreme",
+          "description": "Instant travel between settlements, full map vision, +200% movement speed",
+          "icon": "\u2728",
+          "type": "capstone",
+          "pointCost": 5,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "mutuallyExclusiveWith": ["masterExplorer"],
+          "effects": {
+            "instantTravel": true,
+            "fullMapVision": true,
+            "movementSpeed": 2.00
+          }
+        }
+      ]
+    }
+  ]
+}

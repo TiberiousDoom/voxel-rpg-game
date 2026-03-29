@@ -272,6 +272,18 @@ const useGameStore = create((rawSet, get, api) => {
       worldTime: { ...state.worldTime, paused },
     })),
 
+  // Game speed convenience accessors (wraps worldTime.timeScale/paused)
+  gameSpeed: 1,
+  setGameSpeed: (speed) =>
+    set((state) => ({
+      gameSpeed: speed,
+      worldTime: {
+        ...state.worldTime,
+        timeScale: speed,
+        paused: speed === 0,
+      },
+    })),
+
   // Hunger actions (Phase 1)
   updateHunger: (hungerData) =>
     set((state) => ({

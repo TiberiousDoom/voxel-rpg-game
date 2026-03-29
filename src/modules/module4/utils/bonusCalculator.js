@@ -85,16 +85,29 @@ export function calculateTownStatistics(buildings, npcs, upgrades = {}) {
     const production = ['CRAFTING_STATION', 'MARKETPLACE', 'STORAGE_BUILDING'];
     return production.includes(b.type) && b.status === 'COMPLETE';
   });
-  const prosperity = Math.min(100, productionBuildings.length * 20 + (upgrades.marketplaceUpgrade ? 10 : 0));
+  let prosperity = productionBuildings.length * 20 + (upgrades.marketplaceUpgrade ? 10 : 0);
 
   // Production rate: based on completed production buildings
-  const productionRate = productionBuildings.length > 0 ? 1 + productionBuildings.length * 0.1 : 1;
+  let productionRate = productionBuildings.length > 0 ? 1 + productionBuildings.length * 0.1 : 1;
+
+  // Apply completed upgrade effects
+  let upgradeDefenseBonus = 0;
+  let upgradeHappinessBonus = 0;
+  if (upgrades && typeof upgrades === 'object') {
+    for (const upgrade of Object.values(upgrades)) {
+      if (upgrade.completed && upgrade.effects) {
+        if (upgrade.effects.defense) upgradeDefenseBonus += upgrade.effects.defense;
+        if (upgrade.effects.prosperity) prosperity += upgrade.effects.prosperity;
+        if (upgrade.effects.happiness) upgradeHappinessBonus += upgrade.effects.happiness;
+      }
+    }
+  }
 
   return {
     population,
-    happiness: npcMorale,
-    defense: defenseRating,
-    prosperity,
+    happiness: Math.min(100, npcMorale + upgradeHappinessBonus),
+    defense: Math.min(100, defenseRating + upgradeDefenseBonus),
+    prosperity: Math.min(100, prosperity),
     productionRate,
     totalBuildingCount,
     buildingCounts,

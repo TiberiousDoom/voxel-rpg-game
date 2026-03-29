@@ -1,0 +1,214 @@
+[
+  {
+    "id": "quest_story_gathering_storm",
+    "title": "The Gathering Storm",
+    "description": "Dark clouds gather on the horizon - literally and figuratively. Strange creatures have been appearing with increasing frequency. Investigate the source.",
+    "flavorText": "The old hermit spoke of rifts in the world's fabric. You dismissed it as madness. Now you're not so sure.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 3,
+    "objectives": [
+      {
+        "id": "obj_storm_kill",
+        "description": "Defeat 15 Rift Creatures",
+        "type": "KILL",
+        "targetType": "SLIME",
+        "targetCount": 15,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_storm_build",
+        "description": "Build a Watchtower to monitor the rifts",
+        "type": "BUILD",
+        "targetType": "WATCHTOWER",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 350,
+      "gold": 175,
+      "items": [],
+      "unlockQuests": ["quest_story_ancient_ruins"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_story_ancient_ruins",
+    "title": "Ancient Ruins",
+    "description": "Your scouts have found ancient ruins deep in the wilderness. Explore them to learn about the rifts and the creatures they spawn.",
+    "flavorText": "The ruins predate any known civilization. Carved into the walls are warnings in a language no one can read.",
+    "type": "EXPLORE",
+    "category": "MAIN",
+    "levelRequirement": 5,
+    "prerequisiteQuests": ["quest_story_gathering_storm"],
+    "objectives": [
+      {
+        "id": "obj_ruins_explore",
+        "description": "Reach Dungeon Floor 3",
+        "type": "EXPLORE",
+        "targetType": "DUNGEON_FLOOR",
+        "targetCount": 3,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_ruins_kill",
+        "description": "Defeat 10 Skeletons in the ruins",
+        "type": "KILL",
+        "targetType": "SKELETON",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 600,
+      "gold": 300,
+      "items": [],
+      "unlockQuests": ["quest_story_dark_portal"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_story_dark_portal",
+    "title": "The Dark Portal",
+    "description": "Deep in the ruins, you discovered a dark portal - the source of the rift creatures. Prepare your settlement for what's to come.",
+    "flavorText": "Through the portal, you glimpsed a world of shadow and flame. An army waits on the other side.",
+    "type": "BUILD",
+    "category": "MAIN",
+    "levelRequirement": 6,
+    "prerequisiteQuests": ["quest_story_ancient_ruins"],
+    "objectives": [
+      {
+        "id": "obj_portal_walls",
+        "description": "Build 6 Walls around your settlement",
+        "type": "BUILD",
+        "targetType": "WALL",
+        "targetCount": 6,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_portal_guards",
+        "description": "Build 2 Guard Posts",
+        "type": "BUILD",
+        "targetType": "GUARD_POST",
+        "targetCount": 2,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_portal_barracks",
+        "description": "Build a Barracks",
+        "type": "BUILD",
+        "targetType": "BARRACKS",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 800,
+      "gold": 400,
+      "items": [],
+      "unlockQuests": ["quest_story_army_of_shadows"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_story_army_of_shadows",
+    "title": "Army of Shadows",
+    "description": "The rift creatures are amassing an army. Strike first - venture into the dungeon and weaken their forces before they attack.",
+    "flavorText": "The ground trembles. The portal pulses with dark energy. The invasion is imminent.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 7,
+    "prerequisiteQuests": ["quest_story_dark_portal"],
+    "objectives": [
+      {
+        "id": "obj_shadow_orcs",
+        "description": "Defeat 15 Orcs",
+        "type": "KILL",
+        "targetType": "ORC",
+        "targetCount": 15,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_shadow_trolls",
+        "description": "Defeat 8 Trolls",
+        "type": "KILL",
+        "targetType": "TROLL",
+        "targetCount": 8,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_shadow_dungeon",
+        "description": "Reach Dungeon Floor 8",
+        "type": "EXPLORE",
+        "targetType": "DUNGEON_FLOOR",
+        "targetCount": 8,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 1200,
+      "gold": 600,
+      "items": [],
+      "unlockQuests": ["quest_story_final_stand"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_story_final_stand",
+    "title": "The Final Stand",
+    "description": "The dark army approaches. Build a fortress, rally your forces, and defeat the Dragon Lord who leads the invasion.",
+    "flavorText": "This is it. Everything you've built, everyone you've saved - it all comes down to this moment. Stand firm.",
+    "type": "KILL",
+    "category": "MAIN",
+    "levelRequirement": 9,
+    "prerequisiteQuests": ["quest_story_army_of_shadows"],
+    "objectives": [
+      {
+        "id": "obj_final_fortress",
+        "description": "Build a Fortress",
+        "type": "BUILD",
+        "targetType": "FORTRESS",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_final_dragon",
+        "description": "Defeat Ignithar the Flame",
+        "type": "KILL",
+        "targetType": "dragon_lord",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 3000,
+      "gold": 1500,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  }
+]

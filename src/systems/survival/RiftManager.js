@@ -266,7 +266,8 @@ export class RiftManager {
 
     rift.state = RiftState.CLOSING;
     rift.anchorHealth = RIFT_ANCHOR_HEALTH;
-    rift.lastReinforcementTime = now;
+    // Set to past so first reinforcement wave spawns immediately on next tick
+    rift.lastReinforcementTime = now - RIFT_REINFORCEMENT_INTERVAL;
 
     // Chain reaction: boost nearby active rifts
     for (const other of this.rifts) {

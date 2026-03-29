@@ -141,6 +141,26 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
       }
     }
 
+    // Auto-jump: detect 1-block obstacles ahead and jump over them
+    const xzVel = body.linvel();
+    const xzSpeed = Math.sqrt(xzVel.x * xzVel.x + xzVel.z * xzVel.z);
+    if (xzSpeed > 0.5 && Math.abs(xzVel.y) < 0.5) {
+      const chunkMgr = useGameStore.getState()._chunkManager;
+      if (chunkMgr) {
+        const moveDirX = xzVel.x / xzSpeed;
+        const moveDirZ = xzVel.z / xzSpeed;
+        const checkX = currentPos.x + moveDirX * 2.5;
+        const checkZ = currentPos.z + moveDirZ * 2.5;
+        const footY = currentPos.y + 0.5;
+        const headY = currentPos.y + 2.5;
+        const footBlock = chunkMgr.getBlock(checkX, footY, checkZ);
+        const headBlock = chunkMgr.getBlock(checkX, headY, checkZ);
+        if (isSolid(footBlock) && !isSolid(headBlock)) {
+          body.setLinvel({ x: xzVel.x, y: 8, z: xzVel.z }, true);
+        }
+      }
+    }
+
     // AI behaviors
     const detectionRange = 20;
     const attackRange = 2;

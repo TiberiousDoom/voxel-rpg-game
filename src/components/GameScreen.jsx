@@ -30,6 +30,7 @@ import CraftingUI from './CraftingUI';
 import KeyboardShortcutHints from './KeyboardShortcutHints';
 import DungeonScreen from './dungeon/DungeonScreen';
 import { activeSkillSystem } from '../modules/character/CharacterSystem';
+import { useAutoSave } from '../hooks/useAutoSave';
 import './GameScreen.css';
 
 /**
@@ -81,6 +82,13 @@ function GameScreen() {
   const [showCraftingModal, setShowCraftingModal] = useState(false);
   const [showPlayerInventoryModal, setShowPlayerInventoryModal] = useState(false);
   const [showDungeonScreen, setShowDungeonScreen] = useState(false);
+
+  // Auto-save integration
+  const { lastSaveDisplay, isSaving } = useAutoSave(gameManager, {
+    interval: 300000, // 5 minutes
+    enabled: true,
+    showToasts: true,
+  });
 
   // Auto-start game
   useEffect(() => {

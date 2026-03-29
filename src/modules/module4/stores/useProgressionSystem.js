@@ -179,6 +179,7 @@ export const useProgressionSystem = create(
         npcs = [],
         territoryRadius = 0,
         upgrades = [],
+        completedUpgradeCount = 0,
       } = gameData;
 
       set((state) => {
@@ -222,6 +223,17 @@ export const useProgressionSystem = create(
             fortressCondition.completed = true;
             fortressCondition.progress = 100;
             get().applyReward(fortressCondition.reward);
+          }
+        }
+
+        // Check prosperous town (5 upgrades completed)
+        const upgradeProgress = Math.min(100, (completedUpgradeCount / 5) * 100);
+        const upgradeCondition = state.victoryConditions.get('prosperous_town');
+        if (upgradeCondition) {
+          upgradeCondition.progress = upgradeProgress;
+          if (completedUpgradeCount >= 5 && !upgradeCondition.completed) {
+            upgradeCondition.completed = true;
+            get().applyReward(upgradeCondition.reward);
           }
         }
 

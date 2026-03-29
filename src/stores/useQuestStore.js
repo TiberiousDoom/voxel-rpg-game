@@ -12,6 +12,9 @@
 import { create } from 'zustand';
 import { Quest } from '../entities/Quest.js';
 import useGameStore from './useGameStore.js';
+import settlementQuests from '../config/quests/settlement-quests.json';
+import explorationQuests from '../config/quests/exploration-quests.json';
+import storyQuests from '../config/quests/story-quests.json';
 
 /**
  * Quest store
@@ -37,6 +40,19 @@ const useQuestStore = create((set, get) => ({
     set({ availableQuests: quests });
     // eslint-disable-next-line no-console
     console.log(`📜 QuestStore: Initialized ${quests.length} quests`);
+  },
+
+  /**
+   * Initialize all built-in quest configs (settlement, exploration, story)
+   */
+  initializeAllQuests: () => {
+    const allConfigs = [...settlementQuests, ...explorationQuests, ...storyQuests];
+    const quests = allConfigs.map(config => new Quest(config));
+    set((state) => ({
+      availableQuests: [...state.availableQuests, ...quests]
+    }));
+    // eslint-disable-next-line no-console
+    console.log(`📜 QuestStore: Loaded ${quests.length} built-in quests (${settlementQuests.length} settlement, ${explorationQuests.length} exploration, ${storyQuests.length} story)`);
   },
 
   /**

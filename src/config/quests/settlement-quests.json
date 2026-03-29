@@ -1,0 +1,238 @@
+[
+  {
+    "id": "quest_settlement_farm",
+    "title": "Feed the People",
+    "description": "Your settlers are hungry. Build farms to produce food and keep your population healthy.",
+    "flavorText": "A well-fed settlement is a productive settlement. The land is fertile - put it to use.",
+    "type": "BUILD",
+    "category": "MAIN",
+    "levelRequirement": 1,
+    "objectives": [
+      {
+        "id": "obj_farm_1",
+        "description": "Build 3 Farms",
+        "type": "BUILD",
+        "targetType": "FARM",
+        "targetCount": 3,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 150,
+      "gold": 75,
+      "items": [],
+      "unlockQuests": ["quest_settlement_housing"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_settlement_housing",
+    "title": "Housing Crisis",
+    "description": "Your population is growing but there's nowhere for them to live. Build houses to shelter your people.",
+    "flavorText": "Settlers sleep under the stars, but morale won't last. Build them proper homes.",
+    "type": "BUILD",
+    "category": "MAIN",
+    "levelRequirement": 2,
+    "prerequisiteQuests": ["quest_settlement_farm"],
+    "objectives": [
+      {
+        "id": "obj_house_1",
+        "description": "Build 5 Houses",
+        "type": "BUILD",
+        "targetType": "HOUSE",
+        "targetCount": 5,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 250,
+      "gold": 150,
+      "items": [],
+      "unlockQuests": ["quest_settlement_walls"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_settlement_walls",
+    "title": "Fortify the Walls",
+    "description": "Raids are becoming more frequent. Build defensive structures to protect your settlement.",
+    "flavorText": "The watchmen have reported movement in the hills. Best to prepare defenses now.",
+    "type": "BUILD",
+    "category": "MAIN",
+    "levelRequirement": 3,
+    "prerequisiteQuests": ["quest_settlement_housing"],
+    "objectives": [
+      {
+        "id": "obj_wall_1",
+        "description": "Build 4 Walls",
+        "type": "BUILD",
+        "targetType": "WALL",
+        "targetCount": 4,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_guard_1",
+        "description": "Build a Guard Post",
+        "type": "BUILD",
+        "targetType": "GUARD_POST",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 400,
+      "gold": 200,
+      "items": [],
+      "unlockQuests": ["quest_settlement_marketplace"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_settlement_marketplace",
+    "title": "The Marketplace",
+    "description": "A thriving economy needs a marketplace. Build one to boost your settlement's prosperity.",
+    "flavorText": "Traders have been passing through but have nowhere to sell their goods. A marketplace would change that.",
+    "type": "BUILD",
+    "category": "MAIN",
+    "levelRequirement": 4,
+    "prerequisiteQuests": ["quest_settlement_walls"],
+    "objectives": [
+      {
+        "id": "obj_market_1",
+        "description": "Build a Marketplace",
+        "type": "BUILD",
+        "targetType": "MARKETPLACE",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_storage_1",
+        "description": "Build 2 Storage Buildings",
+        "type": "BUILD",
+        "targetType": "STORAGE_BUILDING",
+        "targetCount": 2,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 500,
+      "gold": 300,
+      "items": [],
+      "unlockQuests": ["quest_settlement_barracks"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_settlement_barracks",
+    "title": "Raise an Army",
+    "description": "Build barracks to train soldiers and protect your growing settlement from threats.",
+    "flavorText": "Walls alone won't keep the enemy at bay. You need trained warriors to defend your people.",
+    "type": "BUILD",
+    "category": "MAIN",
+    "levelRequirement": 5,
+    "prerequisiteQuests": ["quest_settlement_marketplace"],
+    "objectives": [
+      {
+        "id": "obj_barracks_1",
+        "description": "Build a Barracks",
+        "type": "BUILD",
+        "targetType": "BARRACKS",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_watchtower_1",
+        "description": "Build 2 Watchtowers",
+        "type": "BUILD",
+        "targetType": "WATCHTOWER",
+        "targetCount": 2,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 600,
+      "gold": 350,
+      "items": [],
+      "unlockQuests": ["quest_settlement_fortress"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_settlement_fortress",
+    "title": "Fortress of Power",
+    "description": "The time has come to build a fortress - a symbol of your settlement's strength and authority.",
+    "flavorText": "Your settlement has grown from a humble camp to a thriving community. Now make it a fortress.",
+    "type": "BUILD",
+    "category": "MAIN",
+    "levelRequirement": 7,
+    "prerequisiteQuests": ["quest_settlement_barracks"],
+    "objectives": [
+      {
+        "id": "obj_fortress_1",
+        "description": "Build a Fortress",
+        "type": "BUILD",
+        "targetType": "FORTRESS",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 1000,
+      "gold": 500,
+      "items": [],
+      "unlockQuests": ["quest_settlement_castle"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_settlement_castle",
+    "title": "Crown Jewel",
+    "description": "Build a castle to establish your rule over the land. This is the ultimate achievement.",
+    "flavorText": "From nothing, you built an empire. Now crown it with a castle that will stand for ages.",
+    "type": "BUILD",
+    "category": "MAIN",
+    "levelRequirement": 10,
+    "prerequisiteQuests": ["quest_settlement_fortress"],
+    "objectives": [
+      {
+        "id": "obj_castle_1",
+        "description": "Build a Castle",
+        "type": "BUILD",
+        "targetType": "CASTLE",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 2000,
+      "gold": 1000,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  }
+]

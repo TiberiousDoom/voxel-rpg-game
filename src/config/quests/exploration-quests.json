@@ -1,0 +1,197 @@
+[
+  {
+    "id": "quest_explore_first_dungeon",
+    "title": "Into the Depths",
+    "description": "A mysterious dungeon entrance has been discovered nearby. Venture inside and clear the first floor.",
+    "flavorText": "The darkness below calls to the brave. What treasures - or horrors - await?",
+    "type": "EXPLORE",
+    "category": "SIDE",
+    "levelRequirement": 2,
+    "objectives": [
+      {
+        "id": "obj_dungeon_floor1",
+        "description": "Complete Dungeon Floor 1",
+        "type": "EXPLORE",
+        "targetType": "DUNGEON_FLOOR",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 200,
+      "gold": 100,
+      "items": [],
+      "unlockQuests": ["quest_explore_deep_dive"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_explore_deep_dive",
+    "title": "Deep Dive",
+    "description": "The dungeon goes deeper than expected. Reach floor 5 and discover what lies below.",
+    "flavorText": "Each floor reveals older architecture. Something ancient built this place.",
+    "type": "EXPLORE",
+    "category": "SIDE",
+    "levelRequirement": 4,
+    "prerequisiteQuests": ["quest_explore_first_dungeon"],
+    "objectives": [
+      {
+        "id": "obj_dungeon_floor5",
+        "description": "Reach Dungeon Floor 5",
+        "type": "EXPLORE",
+        "targetType": "DUNGEON_FLOOR",
+        "targetCount": 5,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 500,
+      "gold": 250,
+      "items": [],
+      "unlockQuests": ["quest_explore_boss_hunter"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_explore_boss_hunter",
+    "title": "Boss Hunter",
+    "description": "A powerful creature guards the 5th floor. Defeat the Goblin King to prove your strength.",
+    "flavorText": "The goblins worship their king with fanatic devotion. Cut off the head and the body will fall.",
+    "type": "KILL",
+    "category": "SIDE",
+    "levelRequirement": 5,
+    "prerequisiteQuests": ["quest_explore_deep_dive"],
+    "objectives": [
+      {
+        "id": "obj_boss_goblin_king",
+        "description": "Defeat the Goblin King",
+        "type": "KILL",
+        "targetType": "goblin_king",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 800,
+      "gold": 400,
+      "items": [],
+      "unlockQuests": ["quest_explore_dragon_slayer"]
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_explore_dragon_slayer",
+    "title": "Dragon Slayer",
+    "description": "Deep within the dungeon, an ancient dragon waits. Defeat Ignithar the Flame to become a legend.",
+    "flavorText": "Few have seen the dragon and lived. None have defeated it. Will you be the first?",
+    "type": "KILL",
+    "category": "SIDE",
+    "levelRequirement": 8,
+    "prerequisiteQuests": ["quest_explore_boss_hunter"],
+    "objectives": [
+      {
+        "id": "obj_boss_dragon",
+        "description": "Defeat Ignithar the Flame",
+        "type": "KILL",
+        "targetType": "dragon_lord",
+        "targetCount": 1,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 2000,
+      "gold": 1000,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  },
+  {
+    "id": "quest_explore_treasure_hunter",
+    "title": "Treasure Hunter",
+    "description": "Collect gold from dungeon expeditions. The deeper you go, the more you'll find.",
+    "flavorText": "Fortune favors the bold - and the bold favor gold.",
+    "type": "COLLECT",
+    "category": "SIDE",
+    "levelRequirement": 3,
+    "objectives": [
+      {
+        "id": "obj_gold_collect",
+        "description": "Collect 500 Gold from dungeons",
+        "type": "COLLECT",
+        "targetType": "DUNGEON_GOLD",
+        "targetCount": 500,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 300,
+      "gold": 200,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": true
+  },
+  {
+    "id": "quest_explore_monster_slayer",
+    "title": "Monster Slayer",
+    "description": "Prove your combat prowess by defeating monsters of various types.",
+    "flavorText": "A true warrior faces all manner of beasts without hesitation.",
+    "type": "KILL",
+    "category": "SIDE",
+    "levelRequirement": 3,
+    "objectives": [
+      {
+        "id": "obj_kill_goblins",
+        "description": "Kill 10 Goblins",
+        "type": "KILL",
+        "targetType": "GOBLIN",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_kill_skeletons",
+        "description": "Kill 10 Skeletons",
+        "type": "KILL",
+        "targetType": "SKELETON",
+        "targetCount": 10,
+        "currentCount": 0,
+        "completed": false
+      },
+      {
+        "id": "obj_kill_orcs",
+        "description": "Kill 5 Orcs",
+        "type": "KILL",
+        "targetType": "ORC",
+        "targetCount": 5,
+        "currentCount": 0,
+        "completed": false
+      }
+    ],
+    "rewards": {
+      "xp": 600,
+      "gold": 300,
+      "items": [],
+      "unlockQuests": []
+    },
+    "state": "AVAILABLE",
+    "questGiver": null,
+    "repeatable": false
+  }
+]

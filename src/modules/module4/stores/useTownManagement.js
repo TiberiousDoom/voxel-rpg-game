@@ -255,6 +255,86 @@ export const useTownManagement = create(
     },
 
     /**
+     * Start an upgrade (deduct costs handled by caller)
+     * @param {string} townId - Town ID
+     * @param {string} upgradeId - Upgrade ID to start
+     * @param {Object[]} buildings - Current buildings for requirement check
+     * @returns {Object} Result { success, error?, costs? }
+     */
+    startUpgrade: (townId, upgradeId, buildings) => {
+      const town = get().towns.get(townId);
+      if (!town) return { success: false, error: 'Town not found' };
+
+      const upgrade = town.upgrades[upgradeId];
+      if (!upgrade) return { success: false, error: 'Upgrade not found' };
+      if (upgrade.completed) return { success: false, error: 'Already completed' };
+      if (upgrade.inProgress) return { success: false, error: 'Already in progress' };
+
+      // Check requirements
+      const availability = get().isUpgradeAvailable(townId, upgradeId, buildings);
+      if (!availability.available) {
+        return { success: false, error: availability.missing.join(', ') };
+      }
+
+      set((state) => {
+        const t = state.towns.get(townId);
+        if (t) {
+          t.upgrades[upgradeId].inProgress = true;
+          t.upgrades[upgradeId].startedAt = Date.now();
+          t.updatedAt = Date.now();
+        }
+        return state;
+      });
+
+      return { success: true, costs: upgrade.costs };
+    },
+
+    /**
+     * Update upgrade progress (call each game tick)
+     * @param {string} townId - Town ID
+     * @param {number} deltaTime - Seconds elapsed since last tick
+     * @returns {string[]} Array of upgrade IDs that completed this tick
+     */
+    updateUpgradeProgress: (townId, deltaTime) => {
+      const town = get().towns.get(townId);
+      if (!town) return [];
+
+      const completed = [];
+      const now = Date.now();
+
+      for (const [upgradeId, upgrade] of Object.entries(town.upgrades)) {
+        if (!upgrade.inProgress || upgrade.completed) continue;
+
+        const elapsed = (now - upgrade.startedAt) / 1000;
+        if (elapsed >= upgrade.buildTime) {
+          get().completeUpgrade(townId, upgradeId);
+          completed.push(upgradeId);
+        }
+      }
+
+      return completed;
+    },
+
+    /**
+     * Get progress of an in-progress upgrade (0 to 1)
+     * @param {string} townId - Town ID
+     * @param {string} upgradeId - Upgrade ID
+     * @returns {number} Progress 0-1, or 1 if completed, 0 if not started
+     */
+    getUpgradeProgress: (townId, upgradeId) => {
+      const town = get().towns.get(townId);
+      if (!town) return 0;
+
+      const upgrade = town.upgrades[upgradeId];
+      if (!upgrade) return 0;
+      if (upgrade.completed) return 1;
+      if (!upgrade.inProgress) return 0;
+
+      const elapsed = (Date.now() - upgrade.startedAt) / 1000;
+      return Math.min(1, elapsed / upgrade.buildTime);
+    },
+
+    /**
      * Complete an upgrade
      * @param {string} townId - Town ID
      * @param {string} upgradeId - Upgrade ID to complete

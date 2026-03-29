@@ -1,0 +1,393 @@
+{
+  "id": "crafting",
+  "name": "Crafting Tree",
+  "description": "Master of forging, alchemy, and enchantment",
+  "icon": "\uD83D\uDD28",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Apprentice",
+      "levelRequirement": 1,
+      "minPointsInTree": 0,
+      "skills": [
+        {
+          "id": "apprenticeCrafter",
+          "name": "Apprentice Crafter",
+          "description": "+10% crafting speed per point",
+          "icon": "\u2692\uFE0F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "craftSpeed": 0.10
+          }
+        },
+        {
+          "id": "materialEfficiency",
+          "name": "Material Efficiency",
+          "description": "+5% chance to save materials per point",
+          "icon": "\u267B\uFE0F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "materialSaving": 0.05
+          }
+        },
+        {
+          "id": "qualityControl",
+          "name": "Quality Control",
+          "description": "+10% crafted item quality per point",
+          "icon": "\u2B50",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "craftQuality": 0.10
+          }
+        },
+        {
+          "id": "herbLore",
+          "name": "Herb Lore",
+          "description": "+15% potion effectiveness per point",
+          "icon": "\uD83C\uDF3F",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 2,
+          "prerequisites": [],
+          "effects": {
+            "potionEffectiveness": 0.15
+          }
+        },
+        {
+          "id": "smithingBasics",
+          "name": "Smithing Basics",
+          "description": "+10% weapon and armor stats when crafted per point",
+          "icon": "\uD83D\uDD25",
+          "type": "passive",
+          "pointCost": 1,
+          "maxPoints": 3,
+          "prerequisites": [],
+          "effects": {
+            "smithingBonus": 0.10
+          }
+        }
+      ]
+    },
+    {
+      "tier": 2,
+      "name": "Journeyman",
+      "levelRequirement": 11,
+      "minPointsInTree": 5,
+      "skills": [
+        {
+          "id": "masterSmith",
+          "name": "Master Smith",
+          "description": "Unlock rare weapon/armor recipes, +25% smithing bonus",
+          "icon": "\uD83D\uDDE1\uFE0F",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["smithingBasics"],
+          "effects": {
+            "smithingBonus": 0.25,
+            "unlockRareRecipes": true
+          }
+        },
+        {
+          "id": "alchemist",
+          "name": "Alchemist",
+          "description": "Unlock advanced potions, +30% potion effectiveness",
+          "icon": "\u2697\uFE0F",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["herbLore"],
+          "effects": {
+            "potionEffectiveness": 0.30,
+            "unlockAdvancedPotions": true
+          }
+        },
+        {
+          "id": "efficientCrafter",
+          "name": "Efficient Crafter",
+          "description": "+15% material savings, -20% crafting time",
+          "icon": "\u23F1\uFE0F",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["materialEfficiency"],
+          "effects": {
+            "materialSaving": 0.15,
+            "craftSpeed": 0.20
+          }
+        },
+        {
+          "id": "enchanter",
+          "name": "Enchanter",
+          "description": "Can add enchantments to crafted items",
+          "icon": "\uD83D\uDD2E",
+          "type": "passive",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["qualityControl"],
+          "effects": {
+            "enchanting": true,
+            "enchantPower": 0.20
+          }
+        },
+        {
+          "id": "inspiredCraft",
+          "name": "Inspired Craft",
+          "description": "Next craft is guaranteed Rare quality or higher",
+          "icon": "\uD83C\uDF1F",
+          "type": "active",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["qualityControl"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 40,
+            "cooldown": 180,
+            "duration": 0,
+            "effects": {
+              "guaranteedRareCraft": true
+            }
+          }
+        },
+        {
+          "id": "massProduceCraft",
+          "name": "Mass Produce",
+          "description": "Next craft produces 5x output",
+          "icon": "\uD83C\uDFED",
+          "type": "active",
+          "pointCost": 2,
+          "maxPoints": 1,
+          "prerequisites": ["efficientCrafter"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 60,
+            "cooldown": 300,
+            "duration": 0,
+            "effects": {
+              "craftMultiplier": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 3,
+      "name": "Artisan",
+      "levelRequirement": 21,
+      "minPointsInTree": 15,
+      "skills": [
+        {
+          "id": "weaponArtisan",
+          "name": "Weapon Artisan",
+          "description": "Crafted weapons have +50% stats, unique visual effects",
+          "icon": "\u2694\uFE0F",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["masterSmith"],
+          "effects": {
+            "smithingBonus": 0.50,
+            "craftedWeaponEffects": true
+          }
+        },
+        {
+          "id": "grandAlchemist",
+          "name": "Grand Alchemist",
+          "description": "Potions last twice as long, can craft legendary potions",
+          "icon": "\uD83E\uDDEA",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["alchemist"],
+          "effects": {
+            "potionDuration": 2.0,
+            "unlockLegendaryPotions": true
+          }
+        },
+        {
+          "id": "masterEnchanter",
+          "name": "Master Enchanter",
+          "description": "+50% enchantment power, can apply 2 enchantments",
+          "icon": "\u2728",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["enchanter"],
+          "effects": {
+            "enchantPower": 0.50,
+            "maxEnchantments": 2
+          }
+        },
+        {
+          "id": "resourceAlchemist",
+          "name": "Resource Alchemist",
+          "description": "Can transmute basic resources into rare resources",
+          "icon": "\uD83D\uDD04",
+          "type": "passive",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["efficientCrafter"],
+          "effects": {
+            "resourceTransmute": true,
+            "materialSaving": 0.20
+          }
+        },
+        {
+          "id": "perfectForge",
+          "name": "Perfect Forge",
+          "description": "Next 3 crafts are guaranteed Epic quality",
+          "icon": "\uD83D\uDD25",
+          "type": "active",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["weaponArtisan"],
+          "activation": {
+            "costType": "none",
+            "cost": 0,
+            "cooldown": 600,
+            "duration": 0,
+            "effects": {
+              "guaranteedEpicCrafts": 3
+            }
+          }
+        },
+        {
+          "id": "elixirOfPower",
+          "name": "Elixir of Power",
+          "description": "Create a powerful elixir: +30% all stats for 60 seconds",
+          "icon": "\uD83C\uDF77",
+          "type": "active",
+          "pointCost": 3,
+          "maxPoints": 1,
+          "prerequisites": ["grandAlchemist"],
+          "activation": {
+            "costType": "stamina",
+            "cost": 50,
+            "cooldown": 300,
+            "duration": 60,
+            "effects": {
+              "allStatsBoost": 0.30
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 4,
+      "name": "Legendary",
+      "levelRequirement": 36,
+      "minPointsInTree": 25,
+      "skills": [
+        {
+          "id": "legendarySmith",
+          "name": "Legendary Smith",
+          "description": "Can craft Legendary tier items, +100% weapon/armor stats",
+          "icon": "\uD83D\uDCA0",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["weaponArtisan"],
+          "effects": {
+            "smithingBonus": 1.00,
+            "unlockLegendaryItems": true
+          }
+        },
+        {
+          "id": "philosophersStone",
+          "name": "Philosopher's Stone",
+          "description": "Convert any resource to gold, potions heal 3x",
+          "icon": "\uD83D\uDFE1",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["grandAlchemist"],
+          "effects": {
+            "resourceToGold": true,
+            "potionEffectiveness": 2.00
+          }
+        },
+        {
+          "id": "arcaneForge",
+          "name": "Arcane Forge",
+          "description": "Enchantments are 3x more powerful",
+          "icon": "\uD83D\uDD2E",
+          "type": "passive",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["masterEnchanter"],
+          "effects": {
+            "enchantPower": 2.00
+          }
+        },
+        {
+          "id": "masterwork",
+          "name": "Masterwork",
+          "description": "Instantly craft 1 Legendary item with no materials",
+          "icon": "\uD83C\uDFC6",
+          "type": "active",
+          "pointCost": 4,
+          "maxPoints": 1,
+          "prerequisites": ["legendarySmith"],
+          "activation": {
+            "costType": "none",
+            "cost": 0,
+            "cooldown": 900,
+            "duration": 0,
+            "effects": {
+              "freeLegendaryCraft": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tier": 5,
+      "name": "Capstone",
+      "levelRequirement": 50,
+      "minPointsInTree": 40,
+      "skills": [
+        {
+          "id": "divineArtisan",
+          "name": "Divine Artisan",
+          "description": "All crafted items are Legendary, materials never consumed, crafting is instant",
+          "icon": "\uD83D\uDC51",
+          "type": "capstone",
+          "pointCost": 5,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "mutuallyExclusiveWith": ["alchemistSupreme"],
+          "effects": {
+            "craftQuality": 5.00,
+            "materialSaving": 1.00,
+            "craftSpeed": 10.00
+          }
+        },
+        {
+          "id": "alchemistSupreme",
+          "name": "Alchemist Supreme",
+          "description": "Potions are 3x effective, permanent duration, and can resurrect fallen NPCs",
+          "icon": "\u2697\uFE0F",
+          "type": "capstone",
+          "pointCost": 5,
+          "maxPoints": 1,
+          "prerequisites": [],
+          "mutuallyExclusiveWith": ["divineArtisan"],
+          "effects": {
+            "potionEffectiveness": 3.00,
+            "potionPermanent": true,
+            "potionResurrect": true
+          }
+        }
+      ]
+    }
+  ]
+}

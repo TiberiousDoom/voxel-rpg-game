@@ -11,6 +11,9 @@
  */
 
 import settlementTreeData from '../../data/skillTrees/settlementTree.json';
+import combatTreeData from '../../data/skillTrees/combatTree.json';
+import explorationTreeData from '../../data/skillTrees/explorationTree.json';
+import craftingTreeData from '../../data/skillTrees/craftingTree.json';
 
 /**
  * SkillTreeSystem - Main skill tree manager
@@ -19,7 +22,9 @@ export class SkillTreeSystem {
   constructor() {
     this.trees = {
       settlement: settlementTreeData,
-      // Future: explorer, combat trees
+      combat: combatTreeData,
+      exploration: explorationTreeData,
+      crafting: craftingTreeData,
     };
   }
 
@@ -338,7 +343,70 @@ export class SkillTreeSystem {
 
       // Settlements
       maxSettlements: 1,
-      sharedResources: false
+      sharedResources: false,
+
+      // Combat tree effects
+      meleeDamage: 0,
+      defense: 0,
+      critChance: 0,
+      dodgeChance: 0,
+      maxHealth: 0,
+      attackSpeed: 0,
+      critDamage: 0,
+      elementalDamage: 0,
+      berserkerDamage: 0,
+      defenseMultiplier: 0,
+      damageReflect: 0,
+      elementalDuration: 0,
+      stunImmunity: false,
+      blockChance: 0,
+      executeThreshold: 0,
+      autoRevive: false,
+
+      // Exploration tree effects
+      movementSpeed: 0,
+      trapDetection: 0,
+      lootQuality: 0,
+      mapReveal: 0,
+      dungeonXP: 0,
+      ignoreTerrainSlow: false,
+      trapDisarm: false,
+      dungeonGold: 0,
+      extraChests: 0,
+      partySurvival: 0,
+      stealthChance: 0,
+      firstStrikeDamage: 0,
+      dungeonDamage: 0,
+      dungeonDamageReduction: 0,
+      rareDropBonus: 0,
+      trapWeaponize: false,
+      trapDamage: 0,
+      inventoryCapacity: 0,
+      weightless: false,
+      floorReveal: false,
+      trapImmunity: false,
+      instantTravel: false,
+      fullMapVision: false,
+
+      // Crafting tree effects
+      craftSpeed: 0,
+      materialSaving: 0,
+      craftQuality: 0,
+      potionEffectiveness: 0,
+      smithingBonus: 0,
+      unlockRareRecipes: false,
+      unlockAdvancedPotions: false,
+      enchanting: false,
+      enchantPower: 0,
+      craftedWeaponEffects: false,
+      potionDuration: 0,
+      unlockLegendaryPotions: false,
+      maxEnchantments: 0,
+      resourceTransmute: false,
+      unlockLegendaryItems: false,
+      resourceToGold: false,
+      potionPermanent: false,
+      potionResurrect: false,
     };
 
     if (!character.skills) {

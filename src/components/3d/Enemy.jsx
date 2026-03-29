@@ -144,9 +144,10 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
     // AI behaviors
     const detectionRange = 20;
     const attackRange = 2;
+    const anchorTarget = monsterData?.targetPosition;
 
     if (distance < detectionRange) {
-      // Move towards player
+      // Player is close — chase and attack player (priority over anchor)
       const direction = _direction.current.subVectors(playerPos, enemyPos).normalize();
 
       const velocity = {
@@ -162,6 +163,42 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
         if (attackCooldownRef.current <= 0) {
           dealDamageToPlayer(mDamage, `Killed by ${mName}`);
           attackCooldownRef.current = 1.0;
+        }
+      }
+    } else if (anchorTarget) {
+      // Player is far — walk toward anchor target (reinforcement behavior)
+      const anchorPos = _direction.current.set(
+        anchorTarget[0] || anchorTarget.x || 0,
+        0,
+        anchorTarget[2] || anchorTarget.z || 0,
+      );
+      const toAnchor = anchorPos.sub(enemyPos).normalize();
+
+      body.setLinvel({
+        x: toAnchor.x * mSpeed,
+        y: body.linvel().y,
+        z: toAnchor.z * mSpeed,
+      }, true);
+
+      // Damage the anchor if within range
+      const anchorDx = (anchorTarget[0] || 0) - currentPos.x;
+      const anchorDz = (anchorTarget[2] || 0) - currentPos.z;
+      const anchorDist = Math.sqrt(anchorDx * anchorDx + anchorDz * anchorDz);
+      if (anchorDist < 3 && attackCooldownRef.current <= 0) {
+        const riftManager = useGameStore.getState()._riftManager;
+        if (riftManager) {
+          // Find which rift this anchor belongs to
+          for (const rift of riftManager.rifts) {
+            if (rift.state === 'CLOSING') {
+              const rx = rift.x - (anchorTarget[0] || 0);
+              const rz = rift.z - (anchorTarget[2] || 0);
+              if (Math.sqrt(rx * rx + rz * rz) < 5) {
+                riftManager.damageAnchor(rift.id);
+                attackCooldownRef.current = 2.0;
+                break;
+              }
+            }
+          }
         }
       }
     } else {

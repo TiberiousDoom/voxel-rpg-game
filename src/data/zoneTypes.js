@@ -23,5 +23,7 @@ export function createZone({ type, minX, minZ, maxX, maxZ }) {
     active: true,
     createdAt: Date.now(),
     miningTasks: null,  // Populated for MINING zones
+    // Stockpile storage (initialized for STOCKPILE zones, null otherwise)
+    storage: type === 'STOCKPILE' ? { items: {}, capacity: 0, usedCapacity: 0 } : null,
   };
 }

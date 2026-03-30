@@ -6,114 +6,127 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm install          # Install dependencies
-npm start            # Start dev server at http://localhost:3000
-npm run dev          # Start with ESLint disabled (for faster iteration)
-npm run build        # Production build
+npm start            # Start Vite dev server at http://localhost:3000
+npm run build        # Production build (output: build/)
 npm run deploy       # Build and deploy to GitHub Pages
 ```
 
 ## Testing
 
+Uses **Vitest** (not Jest). Tests colocated in `__tests__/` subdirectories.
+
 ```bash
-npm test                           # Run tests in watch mode
-npm test -- --watchAll=false       # Run all tests once
-npm test -- --coverage             # Run with coverage report
-npm test -- path/to/file.test.js   # Run a single test file
-npm test -- --testPathPattern="NPCManager"  # Run tests matching pattern
+npm test                                    # Run all tests once (vitest run)
+npm run test:watch                          # Watch mode
+npx vitest run path/to/file.test.js         # Single test file
+npx vitest run -t "test name pattern"       # Run tests matching name
 ```
 
-Tests are colocated with source code in `__tests__/` subdirectories. Use `fake-indexeddb` for IndexedDB mocking (already configured in setupTests.js).
+Test setup (`src/setupTests.js`) provides: fake-indexeddb, Canvas 2D mock, rAF polyfill, TextEncoder/TextDecoder, crypto.subtle mock. Vitest globals (`vi.fn`, `describe`, `it`) available without import.
 
 ## Linting & Formatting
 
 ```bash
-npm run lint         # Check for linting errors
-npm run lint:fix     # Auto-fix linting errors
-npm run format       # Format code with Prettier
+npm run lint         # ESLint check
+npm run lint:fix     # ESLint auto-fix
+npm run format       # Prettier (singleQuote, trailingComma: es5, semi: true)
 ```
 
-ESLint config: `no-unused-vars: warn`, `no-console: warn` (except warn/error).
+ESLint: `no-unused-vars: warn`, `no-console: warn` (except warn/error), `react/no-unknown-property: off` (needed for R3F).
 
 ## Architecture Overview
 
-### Core Pattern: Module Orchestration
+### Two Game Architectures (Coexisting)
 
-The game uses a **ModuleOrchestrator** (`src/core/ModuleOrchestrator.js`) that coordinates 25+ independent modules. Each module handles a specific game system and communicates through the orchestrator.
+1. **Module System** — `GameManager` → `ModuleOrchestrator` → 25+ modules in `src/modules/`. Used for the strategic/management layer (buildings, economy, NPCs, combat, expeditions). Communicates via orchestrator events.
+
+2. **3D Real-Time System** — `App3D.jsx` → `Experience.jsx` → R3F components + Zustand store. Used for the voxel world, player movement, real-time combat, settlement simulation. Runs inside a React Three Fiber `<Canvas>`.
+
+These two systems connect via bridge patterns (e.g., `SettlementBridge.js`) that sync module state into Zustand stores.
+
+### 3D Rendering Pipeline
 
 ```
-React UI (GameContext) → useGameManager hook → GameManager → ModuleOrchestrator → Modules
+App3D.jsx (Canvas + UI overlay)
+  → Experience.jsx (Physics, scene setup)
+    → useChunkSystem hook → ChunkManager + WorkerPool
+      → chunkWorker.js (terrain generation, off-thread)
+      → meshBuilder.js (block → geometry, off-thread)
+    → ChunkRenderer (visible chunk meshes)
+    → Player, Enemy, SettlerNPC, WildlifeAnimal (physics entities)
+    → Invisible tick components (SettlementTick, SurvivalTick, RiftController, ConstructionTick)
 ```
 
-### State Management Layers
+Tick components use `useFrame` inside R3F Canvas to drive game logic each frame.
 
-1. **GameContext** (`src/context/GameContext.js`) - React context providing `useGame()`, `useGameState()`, `useGameActions()` hooks
-2. **Zustand stores** (`src/stores/`) - Feature-specific state (dungeon, UI, quests, game)
-3. **GameManager** (`src/GameManager.js`) - Central game state and logic
+### State Management
 
-### Key Modules (in `src/modules/`)
+- **`useGameStore`** (`src/stores/useGameStore.js`, ~1650 lines) — Primary store. Player, enemies, projectiles, settlement NPCs, zones, world time, UI state, inventory. Almost all 3D components read/write here.
+- **`useDungeonStore`** — Dungeon layout, monsters, loot (2100+ lines).
+- **`useQuestStore`** — Quest progress and objectives.
+- **`useSettlementStore`** — Settlement UI state (zone selection, NPC panel).
 
-| Module | Purpose |
+Pattern: Game logic writes to stores via actions. 3D components subscribe to slices. No circular deps — modules don't read components.
+
+### Settlement System
+
+```
+SettlementTick.jsx (useFrame loop)
+  → SettlementBridge.js (reads store → feeds modules → writes results back)
+    → SettlementModule.js (orchestrates tick order)
+      → ImmigrationManager, ZoneManager, StockpileManager,
+        TaskAssignmentEngine, HousingManager, NPCStateMachine
+```
+
+NPC states: `IDLE → THINKING → WORKING_MINE/WORKING_HAUL/WORKING_BUILD → EATING/SLEEPING → LEAVING`
+
+### Web Workers
+
+| Worker | Purpose |
 |--------|---------|
-| `foundation/` | Grid system, spatial partitioning, terrain-aware placement |
-| `building-types/` | Building definitions, tiers, effects |
-| `resource-economy/` | Production ticks, storage, consumption, morale |
-| `territory-town/` | Territory expansion, town management |
-| `npc-system/` | NPC management, pathfinding, needs, autonomous decisions |
-| `combat/` | NPC skills and equipment for combat |
-| `expedition/` | Dungeon exploration, party management |
-| `defense/` | Raid events, defense combat |
-| `event-system/` | Disaster and positive random events |
-| `achievement-system/` | Achievement tracking and rewards |
-| `character/` | Character stats, skills, skill trees |
-| `environment/` | Chunk management, terrain, weather, world generation |
+| `chunkWorker.js` | Terrain generation via simplex noise (seeded) |
+| `meshBuilder.js` | Block arrays → Three.js geometry (face culling) |
+| `terrainGenerator.js` | Height maps, biomes, ore distribution |
 
-### Rendering Architecture
+WorkerPool caps at `Math.min(navigator.hardwareConcurrency, 4)` threads.
 
-The game uses React Three Fiber for 3D rendering. Rendering is separated into layers in `src/rendering/`:
-- `useVoxelRenderer.js` - Main voxel rendering
-- `useTerrainRenderer.js`, `useNPCRenderer.js`, `useMonsterRenderer.js`, `useBuildingRenderer.js` - Specialized renderers
+### Key Data Files
+
+- **`src/data/tuning.js`** — Single source of truth for ALL balance constants (day length, hunger rates, mining speeds, immigration thresholds, rift spawning, etc.). Never hardcode gameplay numbers.
+- **`src/data/zoneTypes.js`** — Zone type definitions (MINING, STOCKPILE, FARMING, BUILDING, RESTRICTED).
+- **`src/data/blockDrops.js`** — Block → loot tables, calculated via `calculateDrops(blockType, toolTier)`.
+- **`src/data/spells.js`** — Spell definitions with cooldowns and mana costs.
+- **`src/shared/config.js`** — Building types, tiers, dimensions, costs, resource types, grid config.
 
 ### Persistence
 
-Save/load system in `src/persistence/`:
-- `BrowserSaveManager.js` - localStorage + IndexedDB fallback
-- `GameStateSerializer.js` - State serialization (handles Maps, Sets)
-- `SaveValidator.js`, `SaveVersionManager.js` - Validation and migration
+Save/load in `src/persistence/`:
+- `BrowserSaveManager.js` — localStorage + IndexedDB fallback
+- `GameStateSerializer.js` — Handles Maps, Sets serialization
+- `SaveVersionManager.js` — Schema migrations (current: v3)
 
-### Configuration
+### Chunk System Constants
 
-`src/shared/config.js` is the **single source of truth** for game constants:
-- Building types, tiers, dimensions, costs
-- Resource types
-- Grid configuration
-- Territory settings
+`VOXEL_SIZE=2`, `CHUNK_SIZE=16`. ChunkManager exposes `getBlock(wx,wy,wz)` and `setBlock()` for world-space block access. Coordinate conversion in `src/systems/chunks/coordinates.js`.
+
+## Key Patterns
+
+- **drei Text/Billboard components cause WebGL shader corruption** — use mesh-based UIs instead.
+- Camera pitch stored in `camera.pitch` (radians, clamped ±1.05 ≈ 60°).
+- `dealDamageToPlayer(damage, source)` — second arg tracks death cause for DeathScreen.
+- Tool tier stored in `stats.toolTier` on crafting recipes.
+- Enemy.jsx accepts optional `monsterData` prop for rift-spawned enemies vs hardcoded defaults.
+- Mobile touch handlers need gesture disambiguation (tap vs drag) using time + distance thresholds.
+- `useEffect` deps in CameraRotateControls: only `[gl]` — reads store via `getState()` to avoid stale closures.
 
 ## Key Files
 
-- `src/App3D.jsx` - Main 3D game component entry point
-- `src/GameManager.js` - Central game state (44KB)
-- `src/core/ModuleOrchestrator.js` - Module coordination (55KB)
-- `src/components/GameViewport.jsx` - Main viewport (84KB)
-- `src/hooks/useGameManager.js` - Primary game hook
-
-## Code Patterns
-
-### Adding New Modules
-
-1. Create module in `src/modules/[module-name]/`
-2. Add to ModuleOrchestrator constructor
-3. Wire up in GameManager initialization
-4. Add `__tests__/` directory with tests
-
-### Component Structure
-
-- `src/components/3d/` - Three.js 3D components
-- `src/components/common/` - Reusable UI (Button, Modal, Toast, etc.)
-- `src/components/npc/` - NPC-specific UI
-- `src/components/resource/` - Resource management UI
-
-### Building Tiers
-
-Buildings progress through: `SURVIVAL → PERMANENT → TOWN → CASTLE`
-
-Building status flow: `BLUEPRINT → BUILDING → COMPLETE` (can become `DAMAGED` or `DESTROYED`)
+- `src/App3D.jsx` — Main 3D game component entry point
+- `src/components/3d/Experience.jsx` — Scene setup, entity rendering, tick orchestration
+- `src/stores/useGameStore.js` — Central Zustand store (~1650 lines)
+- `src/GameManager.js` — Module-based game state initialization
+- `src/core/ModuleOrchestrator.js` — Module coordination
+- `src/data/tuning.js` — All gameplay balance constants
+- `src/systems/chunks/ChunkManager.js` — Terrain chunk loading/unloading
+- `src/modules/settlement/SettlementModule.js` — Settlement tick orchestration
+- `src/modules/settlement/SettlementBridge.js` — Module ↔ Store bridge

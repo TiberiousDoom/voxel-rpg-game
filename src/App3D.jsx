@@ -13,6 +13,9 @@ import TestTracker from './components/TestTracker';
 import DebugOverlay from './components/ui/DebugOverlay';
 import NPCDebugPanel from './components/ui/NPCDebugPanel';
 import MobileDebugOverlay from './components/ui/MobileDebugOverlay';
+import StockpilePanel from './components/ui/StockpilePanel';
+import BuildingCatalog from './components/ui/BuildingCatalog';
+import ConstructionPanel from './components/ui/ConstructionPanel';
 import PickupTextOverlay from './components/ui/PickupTextOverlay';
 import PauseMenu from './components/PauseMenu';
 import KeyboardShortcutsPanel from './components/KeyboardShortcutsPanel';
@@ -74,6 +77,15 @@ function App3D() {
 
       {/* Zone type selection hotbar */}
       <ZoneHotbar />
+
+      {/* Stockpile deposit/withdraw panel */}
+      <StockpilePanel />
+
+      {/* Building catalog (B key) */}
+      <BuildingCatalog />
+
+      {/* Construction material delivery panel (E key) */}
+      <ConstructionPanel />
 
       {/* Crosshair for first-person mode */}
       <Crosshair />

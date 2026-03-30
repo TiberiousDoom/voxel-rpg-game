@@ -21,7 +21,7 @@ describe('coordinates', () => {
   describe('constants', () => {
     it('has expected chunk dimensions', () => {
       expect(CHUNK_SIZE).toBe(16);
-      expect(CHUNK_SIZE_Y).toBe(16);
+      expect(CHUNK_SIZE_Y).toBe(32);
       expect(VOXEL_SIZE).toBe(2);
     });
   });
@@ -132,7 +132,7 @@ describe('coordinates', () => {
 
     it('handles all corners', () => {
       expect(indexToLocal(blockIndex(0, 0, 0))).toEqual({ x: 0, y: 0, z: 0 });
-      expect(indexToLocal(blockIndex(15, 15, 15))).toEqual({ x: 15, y: 15, z: 15 });
+      expect(indexToLocal(blockIndex(15, 31, 15))).toEqual({ x: 15, y: 31, z: 15 });
     });
   });
 
@@ -153,7 +153,7 @@ describe('coordinates', () => {
   describe('isInBounds', () => {
     it('accepts valid coordinates', () => {
       expect(isInBounds(0, 0, 0)).toBe(true);
-      expect(isInBounds(15, 15, 15)).toBe(true);
+      expect(isInBounds(15, 31, 15)).toBe(true);
       expect(isInBounds(8, 8, 8)).toBe(true);
     });
 
@@ -162,7 +162,7 @@ describe('coordinates', () => {
       expect(isInBounds(0, -1, 0)).toBe(false);
       expect(isInBounds(0, 0, -1)).toBe(false);
       expect(isInBounds(16, 0, 0)).toBe(false);
-      expect(isInBounds(0, 16, 0)).toBe(false);
+      expect(isInBounds(0, 32, 0)).toBe(false);
       expect(isInBounds(0, 0, 16)).toBe(false);
     });
   });

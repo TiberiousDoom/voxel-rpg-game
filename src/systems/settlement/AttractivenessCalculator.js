@@ -17,7 +17,12 @@ import {
   ATTRACT_HOUSING_SCORE,
   ATTRACT_HAPPINESS_MIN_MULT,
   ATTRACT_HAPPINESS_MAX_MULT,
+  ATTRACT_STOCKPILE_FOOD_SCORE,
+  ATTRACT_STOCKPILE_FOOD_CAP,
+  ATTRACT_BUILDING_SCORE,
+  ATTRACT_HOUSING_BONUS,
 } from '../../data/tuning';
+import { getBuildingById } from '../../data/buildings';
 
 // Block types that count as player-placed structural blocks
 const STRUCTURAL_BLOCKS = new Set([
@@ -105,7 +110,34 @@ export function calculateAttractiveness(center, chunkManager, gameState) {
     }
   }
 
-  let baseScore = campfireScore + wallScore + housingScore + foodScore + riftPenalty;
+  // Stockpile food bonus
+  let stockpileFoodCount = 0;
+  if (gameState.zones) {
+    for (const zone of gameState.zones) {
+      if (zone.type === 'STOCKPILE' && zone.storage?.items) {
+        for (const mat of FOOD_MATERIALS) {
+          stockpileFoodCount += zone.storage.items[mat] || 0;
+        }
+      }
+    }
+  }
+  const stockpileFoodScore = Math.min(stockpileFoodCount, ATTRACT_STOCKPILE_FOOD_CAP) * ATTRACT_STOCKPILE_FOOD_SCORE;
+
+  // Completed building bonus
+  let buildingScore = 0;
+  if (gameState.constructionSites) {
+    for (const site of gameState.constructionSites) {
+      if (site.status !== 'COMPLETE') continue;
+      const bld = getBuildingById(site.buildingId);
+      if (!bld) continue;
+      buildingScore += ATTRACT_BUILDING_SCORE;
+      if (bld.effects.housing) {
+        buildingScore += bld.effects.housing * ATTRACT_HOUSING_BONUS;
+      }
+    }
+  }
+
+  let baseScore = campfireScore + wallScore + housingScore + foodScore + stockpileFoodScore + buildingScore + riftPenalty;
 
   // Happiness multiplier: if NPCs exist, scale by average happiness
   const npcs = gameState.settlement?.npcs;

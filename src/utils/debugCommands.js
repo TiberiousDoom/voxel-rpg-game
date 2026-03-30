@@ -319,6 +319,85 @@ export function initDebugCommands() {
     return monster;
   };
 
+  /**
+   * Give materials to the player
+   * @param {string} material - Material name (wood, stone, iron, coal, etc.) or 'all'
+   * @param {number} amount - Amount to give (default 100)
+   */
+  window.debug.give = (material = 'all', amount = 100) => {
+    const state = useGameStore.getState();
+    const currentMaterials = state.inventory.materials;
+
+    if (material === 'all') {
+      const newMaterials = { ...currentMaterials };
+      for (const mat of Object.keys(newMaterials)) {
+        newMaterials[mat] = (newMaterials[mat] || 0) + amount;
+      }
+      useGameStore.setState({
+        inventory: { ...state.inventory, materials: newMaterials },
+      });
+      console.log(`Added ${amount} of every material`);
+      return;
+    }
+
+    if (!(material in currentMaterials)) {
+      console.error(`Unknown material: "${material}". Available: ${Object.keys(currentMaterials).join(', ')}`);
+      return;
+    }
+
+    useGameStore.setState({
+      inventory: {
+        ...state.inventory,
+        materials: {
+          ...currentMaterials,
+          [material]: (currentMaterials[material] || 0) + amount,
+        },
+      },
+    });
+    console.log(`Added ${amount} ${material} (now: ${(currentMaterials[material] || 0) + amount})`);
+  };
+
+  /**
+   * Give gold to the player
+   * @param {number} amount - Amount of gold (default 500)
+   */
+  window.debug.giveGold = (amount = 500) => {
+    const state = useGameStore.getState();
+    const newGold = (state.inventory.gold || 0) + amount;
+    useGameStore.setState({
+      inventory: { ...state.inventory, gold: newGold },
+    });
+    console.log(`Added ${amount} gold (now: ${newGold})`);
+  };
+
+  /**
+   * Give potions to the player
+   * @param {number} amount - Number of potions (default 10)
+   */
+  window.debug.givePotions = (amount = 10) => {
+    const state = useGameStore.getState();
+    const newPotions = (state.inventory.potions || 0) + amount;
+    useGameStore.setState({
+      inventory: { ...state.inventory, potions: newPotions },
+    });
+    console.log(`Added ${amount} potions (now: ${newPotions})`);
+  };
+
+  /**
+   * Show current inventory
+   */
+  window.debug.inventory = () => {
+    const state = useGameStore.getState();
+    console.log('Inventory:');
+    console.log(`  Gold: ${state.inventory.gold}`);
+    console.log(`  Potions: ${state.inventory.potions}`);
+    console.log(`  Crystals: ${state.inventory.crystals}`);
+    console.log('  Materials:');
+    for (const [mat, qty] of Object.entries(state.inventory.materials)) {
+      if (qty > 0) console.log(`    ${mat}: ${qty}`);
+    }
+  };
+
   // Show available commands
   console.log(`
 🎮 Debug Commands Available:
@@ -339,12 +418,19 @@ Manage Monsters:
   debug.killAllMonsters()
   debug.clearMonsters()
 
+Items & Inventory:
+  debug.give(material, amount)     // e.g. debug.give('wood', 200)
+  debug.give()                     // Give 100 of everything
+  debug.giveGold(amount)           // e.g. debug.giveGold(500)
+  debug.givePotions(amount)        // e.g. debug.givePotions(10)
+  debug.inventory()                // Show current inventory
+
 Utility:
   debug.getPlayerPos()
   debug.teleportPlayer(x, z)
   debug.checkMonsterPipeline()
 
-Testing (NEW!):
+Testing:
   testMonsterAI.quick()         // Quick verification test
   testMonsterAI.runAll()        // Full automated test suite
   testMonsterAI.aggro()         // Test aggro detection

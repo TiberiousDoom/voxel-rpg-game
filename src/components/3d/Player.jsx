@@ -8,7 +8,17 @@ import { getTotalStats } from '../../utils/equipmentStats';
 import { SPELLS, executeSpell } from '../../data/spells';
 import { isTouchDevice } from '../../utils/deviceDetection';
 import { AUTO_JUMP_COOLDOWN_MS, AUTO_JUMP_DETECT_RANGE, AUTO_JUMP_IMPULSE, AUTO_JUMP_MIN_SPEED, JUMP_IMPULSE, JUMP_STAMINA_COST, JUMP_GROUNDED_THRESHOLD, JUMP_COOLDOWN_MS, NAV_WAYPOINT_ARRIVAL, NAV_STUCK_TIMEOUT } from '../../data/tuning';
-import { isSolid as isBlockSolid } from '../../systems/chunks/blockTypes';
+import { isSolid as isBlockSolid, isTransparent as isBlockTransparent } from '../../systems/chunks/blockTypes';
+
+// Pre-compute spell key map (SPELLS is static)
+const SPELL_KEY_MAP = {
+  spell1: SPELLS.find(s => s.key === '1'),
+  spell2: SPELLS.find(s => s.key === '2'),
+  spell3: SPELLS.find(s => s.key === '3'),
+  spell4: SPELLS.find(s => s.key === '4'),
+  spell5: SPELLS.find(s => s.key === '5'),
+  spell6: SPELLS.find(s => s.key === '6'),
+};
 
 const Player = () => {
   const playerRef = useRef();
@@ -384,13 +394,14 @@ const Player = () => {
 
       targetLookAt.set(currentPos.x, currentPos.y + 2, currentPos.z);
 
-      // Camera-terrain collision: pull camera in when obstructed
+      // Camera-terrain collision: pull camera in when obstructed by opaque blocks
+      // (skip transparent blocks like leaves so trees don't constantly clip the camera)
       const cm = useGameStore.getState()._chunkManager;
       if (cm) {
         const headX = currentPos.x;
         const headY = currentPos.y + 2;
         const headZ = currentPos.z;
-        const steps = Math.ceil(distance / 2.0);
+        const steps = Math.ceil(distance / 1.5);
         const sdx = (targetCameraPos.x - headX) / steps;
         const sdy = (targetCameraPos.y - headY) / steps;
         const sdz = (targetCameraPos.z - headZ) / steps;
@@ -400,8 +411,8 @@ const Player = () => {
           const sy = headY + sdy * i;
           const sz = headZ + sdz * i;
           const block = cm.getBlock(sx, sy, sz);
-          if (isBlockSolid(block)) {
-            clipFraction = Math.max(0.1, (i - 1) / steps);
+          if (isBlockSolid(block) && !isBlockTransparent(block)) {
+            clipFraction = Math.max(0.3, (i - 1) / steps);
             break;
           }
         }
@@ -410,8 +421,8 @@ const Player = () => {
         }
       }
 
-      // Smooth camera movement
-      camera.position.lerp(targetCameraPos, 0.1);
+      // Smooth camera movement (faster lerp for responsive recovery)
+      camera.position.lerp(targetCameraPos, 0.15);
       camera.lookAt(targetLookAt);
     }
 
@@ -445,20 +456,13 @@ const Player = () => {
     return () => window.removeEventListener('touchstart', handleDoubleTap);
   }, []);
 
-  // Handle spells and actions - mapped to keys and spell indices
-  useEffect(() => {
+  // Handle spells, potions, and E key — polled every frame via useFrame
+  // (Cannot use useEffect because `keys` is a stable mutable ref that never triggers re-renders)
+  useFrame(() => {
     const store = useGameStore.getState();
     const currentPlayer = store.player;
 
-    // Create key to spell mappings
-    const spellKeyMap = {
-      spell1: SPELLS.find(s => s.key === '1'),
-      spell2: SPELLS.find(s => s.key === '2'),
-      spell3: SPELLS.find(s => s.key === '3'),
-      spell4: SPELLS.find(s => s.key === '4'),
-      spell5: SPELLS.find(s => s.key === '5'),
-      spell6: SPELLS.find(s => s.key === '6'),
-    };
+    const spellKeyMap = SPELL_KEY_MAP;
 
     // In third-person, keyboard-cast spells aim in the camera's forward direction
     // (camera orbits behind the player, so forward = rotationAngle + PI)
@@ -507,7 +511,7 @@ const Player = () => {
       store.useBlock?.();
     }
     prevUseRef.current = !!keys.use;
-  }, [keys]);
+  });
 
   // Capsule collider: halfHeight=0.8, radius=0.6 → total height = 2*0.8 + 2*0.6 = 2.8 units (~1.4 blocks)
   // Smoother than cuboid — prevents getting stuck on block edges

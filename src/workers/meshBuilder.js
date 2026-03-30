@@ -7,7 +7,7 @@
 
 // Constants - must match coordinates.js
 const CHUNK_SIZE = 16;
-const CHUNK_SIZE_Y = 16;
+const CHUNK_SIZE_Y = 32;
 const VOXEL_SIZE = 2;
 
 // Block types
@@ -125,9 +125,9 @@ export function buildChunkMesh(params) {
   const { blocks, neighborNorth, neighborSouth, neighborEast, neighborWest } = params;
 
   // Pre-allocate arrays (will trim at end)
-  // Worst case: every block has 6 faces, 4 vertices each = 4096 * 6 * 4 = 98304 vertices
+  // Worst case: every block has 6 faces, 4 vertices each = 8192 * 6 * 4 = 196608 vertices
   // Typical case: ~5-10% of that
-  const maxVertices = 20000;
+  const maxVertices = 40000;
   const positions = new Float32Array(maxVertices * 3);
   const normals = new Float32Array(maxVertices * 3);
   const colors = new Float32Array(maxVertices * 3);

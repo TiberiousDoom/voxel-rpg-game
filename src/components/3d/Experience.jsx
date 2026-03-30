@@ -29,6 +29,10 @@ import ZoneInteraction from './ZoneInteraction';
 import Companion from './Companion';
 import CompanionController from './CompanionController';
 import WeatherEffects from './WeatherEffects';
+import StockpileVisual from './StockpileVisual';
+import BuildingPlacement from './BuildingPlacement';
+import ConstructionVisual from './ConstructionVisual';
+import ConstructionTick from './ConstructionTick';
 import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
@@ -318,6 +322,14 @@ const Experience = () => {
       {/* Zone designation overlays + interaction (Phase 2.2) */}
       <ZoneOverlay chunkManager={isReady ? chunkManager : null} />
       <ZoneInteraction chunkManager={isReady ? chunkManager : null} />
+
+      {/* Stockpile visual crates (Phase 2.3) */}
+      <StockpileVisual chunkManager={isReady ? chunkManager : null} />
+
+      {/* Construction system (Phase 2.4) */}
+      <BuildingPlacement chunkManager={isReady ? chunkManager : null} />
+      <ConstructionVisual chunkManager={isReady ? chunkManager : null} />
+      <ConstructionTick chunkManager={isReady ? chunkManager : null} />
 
       {/* Target markers for tap-to-move/attack feedback */}
       {targetMarkers.map((marker) => (

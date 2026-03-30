@@ -296,6 +296,18 @@ export const ZONE_MAX_COUNT = 10;
 export const ZONE_MAX_SIDE_VOXELS = 32;     // Max voxels per side (64 world units)
 export const ZONE_MIN_SIDE_VOXELS = 2;      // Min voxels per side (4 world units)
 
+// ─── Stockpile System ────────────────────────────────────────
+export const STOCKPILE_CAPACITY_PER_VOXEL = 10;    // Items per ground voxel in zone
+export const STOCKPILE_INTERACT_RANGE = 6;          // World units — E key range to open panel
+export const ATTRACT_STOCKPILE_FOOD_SCORE = 3;      // Per food item in stockpile
+export const ATTRACT_STOCKPILE_FOOD_CAP = 30;       // Max food items counted for attractiveness
+
+// ─── Construction System ───────────────────────────────────
+export const CONSTRUCTION_BLOCK_INTERVAL = 0.5;   // Seconds between block placements
+export const CONSTRUCTION_INTERACT_RANGE = 8;      // World units — E key range to open panel
+export const ATTRACT_BUILDING_SCORE = 5;            // Per completed building attractiveness
+export const ATTRACT_HOUSING_BONUS = 10;            // Per housing slot attractiveness
+
 // ─── E Key Interact ─────────────────────────────────────────
 export const USE_KEY_RANGE = 6;                     // World units (3 blocks) for proximity search
 export const USE_KEY_COOLDOWN = 300;                // ms between uses
@@ -319,6 +331,21 @@ export const NAV_MAX_STEP_DOWN = 3;           // Max voxel drop per step
 export const NAV_PLAYER_HEIGHT_VOXELS = 2;    // Air clearance needed
 export const NAV_WAYPOINT_ARRIVAL = 1.5;      // World units to count as "arrived at waypoint"
 export const NAV_STUCK_TIMEOUT = 3.0;         // Seconds before canceling a stuck path
+
+// ─── NPC Work Loop ─────────────────────────────────────────
+export const WORK_SCAN_INTERVAL = 3;          // Seconds between task scans
+export const WORK_SEEK_TIMEOUT = 5;           // Max idle seconds before finding work
+export const NPC_MINE_DURATION = 4;           // Seconds to mine one block
+export const NPC_HAUL_SPEED = 2.5;            // Units/sec while carrying
+export const NPC_BUILD_DURATION = 3;          // Seconds per build-step
+export const NPC_WORK_RANGE = 2.5;            // How close NPC must be to work target
+export const NPC_SKILL_WEIGHT = 50;           // Task scoring weight for skill match
+export const NPC_DISTANCE_WEIGHT = 1;         // Task scoring penalty per unit distance
+export const NPC_PRIORITY_WEIGHT = 100;       // Task scoring weight for task priority
+export const NPC_JOB_PREF_BONUS = 30;         // Bonus when preferred job matches task
+export const NPC_MINE_TOOL_TIER = 1;          // NPCs mine as if wood pickaxe
+export const NPC_THOUGHT_DURATION = 4;        // Seconds thought bubble shows
+export const NPC_SKILL_GROWTH = 0.01;         // Skill increment per completed task
 
 // ─── Debug ───────────────────────────────────────────────────
 export const DEBUG_TIME_SCALES = [1, 2, 5, 10, 0]; // 0 = paused

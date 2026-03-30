@@ -20,7 +20,6 @@ const KEYMAP = {
   KeyI: 'inventory',
   KeyC: 'crafting',
   KeyK: 'skills',
-  KeyB: 'base',
   KeyM: 'map',
   Escape: 'menu',
   KeyE: 'use',

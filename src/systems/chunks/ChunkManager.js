@@ -12,6 +12,7 @@ import {
   chunkDistanceSq,
   getChunksInRadiusSorted,
   CHUNK_SIZE,
+  CHUNK_SIZE_Y,
   VOXEL_SIZE,
 } from './coordinates.js';
 import { BlockTypes } from './blockTypes.js';
@@ -371,13 +372,13 @@ export class ChunkManager {
 
         // Simple height based on sine waves
         const height = Math.floor(
-          8 +
+          24 +
           Math.sin(worldX * 0.1) * 2 +
           Math.cos(worldZ * 0.1) * 2 +
           Math.sin(worldX * 0.05 + worldZ * 0.05) * 3
         );
 
-        for (let y = 0; y < CHUNK_SIZE; y++) {
+        for (let y = 0; y < CHUNK_SIZE_Y; y++) {
           let blockType = 0; // Air
 
           if (y === 0) {
@@ -514,7 +515,7 @@ export class ChunkManager {
     const voxelZ = Math.floor(worldZ / VOXEL_SIZE);
 
     const localX = ((voxelX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
-    const localY = Math.max(0, Math.min(CHUNK_SIZE - 1, voxelY));
+    const localY = Math.max(0, Math.min(CHUNK_SIZE_Y - 1, voxelY));
     const localZ = ((voxelZ % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
     return chunk.getBlock(localX, localY, localZ);
@@ -540,7 +541,7 @@ export class ChunkManager {
     const voxelZ = Math.floor(worldZ / VOXEL_SIZE);
 
     const localX = ((voxelX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
-    const localY = Math.max(0, Math.min(CHUNK_SIZE - 1, voxelY));
+    const localY = Math.max(0, Math.min(CHUNK_SIZE_Y - 1, voxelY));
     const localZ = ((voxelZ % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
     const result = chunk.setBlock(localX, localY, localZ, blockType);

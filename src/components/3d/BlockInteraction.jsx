@@ -13,7 +13,8 @@ import { BlockTypes, isSolid, getBlockHardness } from '../../systems/chunks/bloc
 import useGameStore from '../../stores/useGameStore';
 import { calculateDrops } from '../../data/blockDrops';
 import { BLOCK_USE_ACTIONS } from '../../data/blockUseActions';
-import { HARVEST_SPEED_BARE_HANDS, USE_KEY_RANGE, USE_KEY_COOLDOWN } from '../../data/tuning';
+import { HARVEST_SPEED_BARE_HANDS, USE_KEY_RANGE, USE_KEY_COOLDOWN, STOCKPILE_INTERACT_RANGE, CONSTRUCTION_INTERACT_RANGE } from '../../data/tuning';
+import { getBuildingById } from '../../data/buildings';
 import { getSpellById, executeSpell } from '../../data/spells';
 import { performMeleeAttack, MELEE_COOLDOWN } from '../../data/meleeAttack';
 import { audioManager } from '../../utils/AudioManager';
@@ -632,6 +633,20 @@ export function BlockInteraction({ chunkManager }) {
     const store = useGameStore.getState();
     const playerPos = store.player.position;
 
+    // If stockpile panel is open, close it
+    if (store.activeStockpileZoneId) {
+      store.closeStockpilePanel();
+      useBlockCooldown.current = now;
+      return true;
+    }
+
+    // If construction panel is open, close it
+    if (store.activeConstructionSiteId) {
+      store.closeConstructionPanel();
+      useBlockCooldown.current = now;
+      return true;
+    }
+
     // Check for rift interaction FIRST (doesn't need chunkManager)
     const riftManager = store._riftManager;
     if (riftManager) {
@@ -679,6 +694,37 @@ export function BlockInteraction({ chunkManager }) {
             }
           }
         }
+      }
+    }
+
+    // Check if player is near a construction site — open delivery panel
+    const px = playerPos[0], pz = playerPos[2];
+    for (const site of store.constructionSites) {
+      if (site.status === 'COMPLETE') continue;
+      const building = getBuildingById(site.buildingId);
+      if (!building) continue;
+      const centerX = site.position[0] + (building.size.width * VOXEL_SIZE) / 2;
+      const centerZ = site.position[2] + (building.size.depth * VOXEL_SIZE) / 2;
+      const dx = px - centerX, dz = pz - centerZ;
+      if (Math.sqrt(dx * dx + dz * dz) <= CONSTRUCTION_INTERACT_RANGE) {
+        store.setActiveConstructionSite(site.id);
+        useBlockCooldown.current = now;
+        return true;
+      }
+    }
+
+    // Check if player is near a stockpile zone — open panel instead of block interact
+    const zones = store.zones;
+    for (const zone of zones) {
+      if (zone.type !== 'STOCKPILE' || !zone.storage) continue;
+      const { minX, minZ, maxX, maxZ } = zone.bounds;
+      const centerX = (minX + maxX) / 2;
+      const centerZ = (minZ + maxZ) / 2;
+      const dx = px - centerX, dz = pz - centerZ;
+      if (Math.sqrt(dx * dx + dz * dz) <= STOCKPILE_INTERACT_RANGE) {
+        store.setActiveStockpileZone(zone.id);
+        useBlockCooldown.current = now;
+        return true;
       }
     }
 

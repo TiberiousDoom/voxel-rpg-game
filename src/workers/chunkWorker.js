@@ -12,7 +12,7 @@
 // ============================================================================
 
 const CHUNK_SIZE = 16;
-const CHUNK_SIZE_Y = 16;
+const CHUNK_SIZE_Y = 32;
 const VOXEL_SIZE = 2;
 
 // Block types
@@ -374,10 +374,10 @@ function generateTerrain(params) {
   const random = new SeededRandom(seed + chunkX * 31337 + chunkZ * 7919);
   const blocks = new Uint8Array(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE_Y);
 
-  // Terrain parameters - increased for more visible terrain
-  const seaLevel = 2;
-  const baseHeight = 4;
-  const heightVariation = 4;
+  // Terrain parameters - deep underground for stone/iron/gold
+  const seaLevel = 8;
+  const baseHeight = 24;
+  const heightVariation = 6;
 
   for (let x = 0; x < CHUNK_SIZE; x++) {
     for (let z = 0; z < CHUNK_SIZE; z++) {
@@ -411,9 +411,9 @@ function generateTerrain(params) {
         } else if (y < height - 4) {
           blockType = BlockTypes.STONE;
           const oreNoise = noise.noise2D(worldX * 0.1 + y * 0.1, worldZ * 0.1);
-          if (y < 8 && oreNoise > 0.7 && random.next() < 0.3) {
+          if (y < 10 && oreNoise > 0.7 && random.next() < 0.3) {
             blockType = BlockTypes.GOLD_ORE;
-          } else if (y < 12 && oreNoise > 0.6 && random.next() < 0.4) {
+          } else if (y < 16 && oreNoise > 0.6 && random.next() < 0.4) {
             blockType = BlockTypes.IRON_ORE;
           } else if (oreNoise > 0.5 && random.next() < 0.5) {
             blockType = BlockTypes.COAL_ORE;
@@ -492,7 +492,7 @@ function generateTree(blocks, x, baseY, z, random) {
 function buildChunkMesh(params) {
   const { blocks, neighborNorth, neighborSouth, neighborEast, neighborWest } = params;
 
-  const maxVertices = 20000;
+  const maxVertices = 40000;
   const positions = new Float32Array(maxVertices * 3);
   const normals = new Float32Array(maxVertices * 3);
   const colors = new Float32Array(maxVertices * 3);
@@ -838,7 +838,7 @@ function buildLODMesh(params) {
   const { lodBlocks, lodSize, lodSizeY } = generateLODBlocks(blocks, lodLevel);
   const voxelScale = LOD_MERGE_FACTORS[lodLevel] * VOXEL_SIZE;
 
-  const maxVertices = 8000;
+  const maxVertices = 16000;
   const positions = new Float32Array(maxVertices * 3);
   const normals = new Float32Array(maxVertices * 3);
   const colors = new Float32Array(maxVertices * 3);

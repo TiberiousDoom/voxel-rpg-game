@@ -10,7 +10,7 @@
 
 // Constants - must match coordinates.js
 const CHUNK_SIZE = 16;
-const CHUNK_SIZE_Y = 16;
+const CHUNK_SIZE_Y = 32;
 
 // Block types - must match blockTypes.js
 const BlockTypes = {
@@ -155,9 +155,9 @@ export function generateTerrain(params) {
 
   const blocks = new Uint8Array(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE_Y);
 
-  // Base terrain parameters
-  const seaLevel = 6;
-  const baseHeight = 8;
+  // Base terrain parameters - deep underground for stone/iron/gold
+  const seaLevel = 8;
+  const baseHeight = 24;
   const heightVariation = 6;
 
   for (let x = 0; x < CHUNK_SIZE; x++) {
@@ -205,10 +205,10 @@ export function generateTerrain(params) {
 
           // Ore generation
           const oreNoise = noise.noise2D(worldX * 0.1 + y * 0.1, worldZ * 0.1);
-          if (y < 8 && oreNoise > 0.7 && random.next() < 0.3) {
+          if (y < 10 && oreNoise > 0.7 && random.next() < 0.3) {
             // Gold ore (deep only)
             blockType = BlockTypes.GOLD_ORE;
-          } else if (y < 12 && oreNoise > 0.6 && random.next() < 0.4) {
+          } else if (y < 16 && oreNoise > 0.6 && random.next() < 0.4) {
             // Iron ore
             blockType = BlockTypes.IRON_ORE;
           } else if (oreNoise > 0.5 && random.next() < 0.5) {

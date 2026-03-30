@@ -30,6 +30,7 @@ const TestTracker = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileView, setMobileView] = useState('sidebar'); // sidebar | list | detail
   const [thumbnailUrls, setThumbnailUrls] = useState({});
+  const [collapsedPhases, setCollapsedPhases] = useState(new Set());
   const debounceTimers = useRef({});
 
   // Detect mobile
@@ -335,23 +336,54 @@ const TestTracker = () => {
         const allInPhase = phase.categories.flatMap((c) => c.criteria);
         const passCount = allInPhase.filter((cr) => getRecord(cr.id).status === 'pass').length;
         const failCount = allInPhase.filter((cr) => getRecord(cr.id).status === 'fail').length;
+        const isCollapsed = collapsedPhases.has(phase.id);
 
         return (
           <div key={phase.id} style={{ marginBottom: '12px' }}>
-            <div style={{
-              color: '#ff922b',
-              fontWeight: 'bold',
-              fontSize: '0.85rem',
-              marginBottom: '6px',
-              padding: '0 4px',
-            }}>
-              {phase.name}
+            <button
+              onClick={() => {
+                setCollapsedPhases((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(phase.id)) next.delete(phase.id);
+                  else next.add(phase.id);
+                  return next;
+                });
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                marginBottom: isCollapsed ? 0 : '6px',
+                touchAction: 'manipulation',
+              }}
+            >
+              <span style={{
+                color: '#a0aec0',
+                fontSize: '0.7rem',
+                marginRight: '6px',
+                transition: 'transform 0.2s ease',
+                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                display: 'inline-block',
+              }}>
+                &#9660;
+              </span>
+              <span style={{
+                color: '#ff922b',
+                fontWeight: 'bold',
+                fontSize: '0.85rem',
+              }}>
+                {phase.name}
+              </span>
               <span style={{ color: '#a0aec0', fontWeight: 'normal', fontSize: '0.75rem', marginLeft: '6px' }}>
                 {passCount}/{allInPhase.length}
                 {failCount > 0 && <span style={{ color: '#ff6b6b' }}> ({failCount} fail)</span>}
               </span>
-            </div>
-            {phase.categories.map((cat) => {
+            </button>
+            {!isCollapsed && phase.categories.map((cat) => {
               const isSelected = selectedCategory?.id === cat.id;
               const catPass = cat.criteria.filter((cr) => getRecord(cr.id).status === 'pass').length;
               return (

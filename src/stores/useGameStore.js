@@ -49,7 +49,7 @@ const useGameStore = create((rawSet, get, api) => {
 
   // Player state
   player: {
-    position: [0, 12, 0], // x, y, z in 3D space - spawn above terrain
+    position: [0, 70, 0], // x, y, z in 3D space - spawn above terrain (falls to surface)
     velocity: [0, 0, 0],
     targetPosition: null, // For tap-to-move
     navPath: null,        // Array of [x,y,z] waypoints or null
@@ -204,6 +204,13 @@ const useGameStore = create((rawSet, get, api) => {
   zoneMode: false,
   zoneTypeToPlace: null,
   zoneDragStart: null,    // [worldX, worldZ] of first corner
+  activeStockpileZoneId: null,  // Zone ID of open stockpile panel (or null)
+
+  // Construction system state (Phase 2.4)
+  constructionSites: [],          // Array of construction site objects
+  activeBuildingCatalog: false,   // Whether building catalog is open
+  placingBuildingId: null,        // Building ID being placed (preview mode)
+  activeConstructionSiteId: null, // Site ID of open construction panel
 
   // Actions
   setGameState: (state) => set({ gameState: state }),
@@ -1297,7 +1304,7 @@ const useGameStore = create((rawSet, get, api) => {
           health: Math.ceil(state.player.maxHealth * 0.5),
           mana: state.player.maxMana,
           stamina: Math.ceil(state.player.maxStamina * 0.5),
-          position: [spawnX, 20, spawnZ],
+          position: [spawnX, 70, spawnZ],
           velocity: [0, 0, 0],
           targetPosition: null,
           navPath: null,
@@ -1378,9 +1385,21 @@ const useGameStore = create((rawSet, get, api) => {
     if (state.zones.length >= ZONE_MAX_COUNT) return state;
     return { zones: [...state.zones, zone] };
   }),
-  removeZone: (zoneId) => set((state) => ({
-    zones: state.zones.filter(z => z.id !== zoneId),
-  })),
+  removeZone: (zoneId) => set((state) => {
+    const zone = state.zones.find(z => z.id === zoneId);
+    let newMaterials = state.inventory.materials;
+    if (zone?.storage?.items) {
+      newMaterials = { ...newMaterials };
+      for (const [mat, qty] of Object.entries(zone.storage.items)) {
+        newMaterials[mat] = (newMaterials[mat] || 0) + qty;
+      }
+    }
+    return {
+      zones: state.zones.filter(z => z.id !== zoneId),
+      inventory: { ...state.inventory, materials: newMaterials },
+      activeStockpileZoneId: state.activeStockpileZoneId === zoneId ? null : state.activeStockpileZoneId,
+    };
+  }),
   syncZones: (moduleZones) => set({
     zones: Array.isArray(moduleZones) ? moduleZones : Array.from(moduleZones.values()),
   }),
@@ -1391,6 +1410,176 @@ const useGameStore = create((rawSet, get, api) => {
     set({ zoneMode: active, zoneTypeToPlace: zoneType, zoneDragStart: null }),
   setZoneDragStart: (pos) => set({ zoneDragStart: pos }),
   clearZoneDrag: () => set({ zoneDragStart: null }),
+
+  // Stockpile actions (Phase 2.3)
+  setActiveStockpileZone: (zoneId) => set({ activeStockpileZoneId: zoneId }),
+  closeStockpilePanel: () => set({ activeStockpileZoneId: null }),
+
+  depositToStockpile: (zoneId, materialType, amount) => set((state) => {
+    const zone = state.zones.find(z => z.id === zoneId);
+    if (!zone?.storage) return state;
+    const available = state.inventory.materials[materialType] || 0;
+    const spaceLeft = zone.storage.capacity - zone.storage.usedCapacity;
+    const toDeposit = Math.min(amount, available, spaceLeft);
+    if (toDeposit <= 0) return state;
+    const newItems = { ...zone.storage.items };
+    newItems[materialType] = (newItems[materialType] || 0) + toDeposit;
+    return {
+      zones: state.zones.map(z => z.id === zoneId ? {
+        ...z, storage: { ...z.storage, items: newItems, usedCapacity: zone.storage.usedCapacity + toDeposit }
+      } : z),
+      inventory: { ...state.inventory, materials: {
+        ...state.inventory.materials, [materialType]: available - toDeposit,
+      }},
+    };
+  }),
+
+  withdrawFromStockpile: (zoneId, materialType, amount) => set((state) => {
+    const zone = state.zones.find(z => z.id === zoneId);
+    if (!zone?.storage) return state;
+    const stored = zone.storage.items[materialType] || 0;
+    const toWithdraw = Math.min(amount, stored);
+    if (toWithdraw <= 0) return state;
+    const newItems = { ...zone.storage.items };
+    newItems[materialType] = stored - toWithdraw;
+    if (newItems[materialType] <= 0) delete newItems[materialType];
+    return {
+      zones: state.zones.map(z => z.id === zoneId ? {
+        ...z, storage: { ...z.storage, items: newItems, usedCapacity: Math.max(0, zone.storage.usedCapacity - toWithdraw) }
+      } : z),
+      inventory: { ...state.inventory, materials: {
+        ...state.inventory.materials, [materialType]: (state.inventory.materials[materialType] || 0) + toWithdraw,
+      }},
+    };
+  }),
+
+  consumeFromStockpile: (zoneId, materialType, amount) => set((state) => {
+    const zone = state.zones.find(z => z.id === zoneId);
+    if (!zone?.storage) return state;
+    const stored = zone.storage.items[materialType] || 0;
+    const toConsume = Math.min(amount, stored);
+    if (toConsume <= 0) return state;
+    const newItems = { ...zone.storage.items };
+    newItems[materialType] = stored - toConsume;
+    if (newItems[materialType] <= 0) delete newItems[materialType];
+    return {
+      zones: state.zones.map(z => z.id === zoneId ? {
+        ...z, storage: { ...z.storage, items: newItems, usedCapacity: Math.max(0, zone.storage.usedCapacity - toConsume) }
+      } : z),
+    };
+  }),
+
+  // Construction system actions (Phase 2.4)
+  toggleBuildingCatalog: () => set((state) => ({
+    activeBuildingCatalog: !state.activeBuildingCatalog,
+    placingBuildingId: state.activeBuildingCatalog ? null : state.placingBuildingId,
+  })),
+  closeBuildingCatalog: () => set({ activeBuildingCatalog: false }),
+  startPlacingBuilding: (buildingId) => set({ placingBuildingId: buildingId, activeBuildingCatalog: false }),
+  cancelPlacingBuilding: () => set({ placingBuildingId: null }),
+
+  placeConstructionSite: (buildingId, position, materialsRequired, totalBlocks) => set((state) => ({
+    constructionSites: [...state.constructionSites, {
+      id: `cs_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      buildingId,
+      position,
+      status: 'PLACED',
+      materialsDelivered: {},
+      materialsRequired,
+      blocksPlaced: 0,
+      totalBlocks,
+      createdAt: Date.now(),
+    }],
+    placingBuildingId: null,
+  })),
+
+  setActiveConstructionSite: (siteId) => set({ activeConstructionSiteId: siteId }),
+  closeConstructionPanel: () => set({ activeConstructionSiteId: null }),
+
+  deliverToConstruction: (siteId, material, amount) => set((state) => {
+    const site = state.constructionSites.find(s => s.id === siteId);
+    if (!site || site.status === 'COMPLETE') return state;
+    const available = state.inventory.materials[material] || 0;
+    const needed = (site.materialsRequired[material] || 0) - (site.materialsDelivered[material] || 0);
+    const toDeliver = Math.min(amount, available, needed);
+    if (toDeliver <= 0) return state;
+
+    const newDelivered = { ...site.materialsDelivered, [material]: (site.materialsDelivered[material] || 0) + toDeliver };
+
+    // Check if all materials are now met
+    let allMet = true;
+    for (const [mat, req] of Object.entries(site.materialsRequired)) {
+      if ((newDelivered[mat] || 0) < req) { allMet = false; break; }
+    }
+
+    return {
+      constructionSites: state.constructionSites.map(s => s.id === siteId ? {
+        ...s,
+        materialsDelivered: newDelivered,
+        status: allMet ? 'BUILDING' : s.status,
+      } : s),
+      inventory: {
+        ...state.inventory,
+        materials: {
+          ...state.inventory.materials,
+          [material]: available - toDeliver,
+        },
+      },
+    };
+  }),
+
+  // NPC delivers materials from stockpile (does NOT deduct from player inventory)
+  npcDeliverToConstruction: (siteId, material, amount) => set((state) => {
+    const site = state.constructionSites.find(s => s.id === siteId);
+    if (!site || site.status === 'COMPLETE') return state;
+    const needed = (site.materialsRequired[material] || 0) - (site.materialsDelivered[material] || 0);
+    const toDeliver = Math.min(amount, needed);
+    if (toDeliver <= 0) return state;
+
+    const newDelivered = { ...site.materialsDelivered, [material]: (site.materialsDelivered[material] || 0) + toDeliver };
+
+    let allMet = true;
+    for (const [mat, req] of Object.entries(site.materialsRequired)) {
+      if ((newDelivered[mat] || 0) < req) { allMet = false; break; }
+    }
+
+    return {
+      constructionSites: state.constructionSites.map(s => s.id === siteId ? {
+        ...s,
+        materialsDelivered: newDelivered,
+        status: allMet ? 'BUILDING' : s.status,
+      } : s),
+    };
+  }),
+
+  advanceConstruction: (siteId) => set((state) => {
+    const site = state.constructionSites.find(s => s.id === siteId);
+    if (!site || site.status !== 'BUILDING') return state;
+    const newBlocksPlaced = site.blocksPlaced + 1;
+    const isComplete = newBlocksPlaced >= site.totalBlocks;
+    return {
+      constructionSites: state.constructionSites.map(s => s.id === siteId ? {
+        ...s,
+        blocksPlaced: newBlocksPlaced,
+        status: isComplete ? 'COMPLETE' : 'BUILDING',
+      } : s),
+    };
+  }),
+
+  removeConstructionSite: (siteId) => set((state) => {
+    const site = state.constructionSites.find(s => s.id === siteId);
+    if (!site) return state;
+    // Return delivered materials to player
+    const newMaterials = { ...state.inventory.materials };
+    for (const [mat, qty] of Object.entries(site.materialsDelivered)) {
+      if (qty > 0) newMaterials[mat] = (newMaterials[mat] || 0) + qty;
+    }
+    return {
+      constructionSites: state.constructionSites.filter(s => s.id !== siteId),
+      inventory: { ...state.inventory, materials: newMaterials },
+      activeConstructionSiteId: state.activeConstructionSiteId === siteId ? null : state.activeConstructionSiteId,
+    };
+  }),
 
   reset: () =>
     set({
@@ -1404,7 +1593,7 @@ const useGameStore = create((rawSet, get, api) => {
         yaw: 0,
       },
       player: {
-        position: [0, 12, 0],
+        position: [0, 70, 0],
         velocity: [0, 0, 0],
         targetPosition: null,
         navPath: null,
@@ -1451,7 +1640,8 @@ const useGameStore = create((rawSet, get, api) => {
         lastImmigrationCheck: 0, lastAttractivenessCalc: 0, lastNeedsUpdate: 0,
       },
       buildMode: false,
-      zones: [], zoneMode: false, zoneTypeToPlace: null, zoneDragStart: null,
+      zones: [], zoneMode: false, zoneTypeToPlace: null, zoneDragStart: null, activeStockpileZoneId: null,
+      constructionSites: [], activeBuildingCatalog: false, placingBuildingId: null, activeConstructionSiteId: null,
     }),
 
   // Character system actions

@@ -9,7 +9,7 @@
 
 // Chunk dimensions
 export const CHUNK_SIZE = 16;
-export const CHUNK_SIZE_Y = 16; // Same for now, could be different for tall worlds
+export const CHUNK_SIZE_Y = 32; // Taller chunks for proper underground depth
 export const CHUNK_SIZE_SQ = CHUNK_SIZE * CHUNK_SIZE;
 export const CHUNK_SIZE_CUBED = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE_Y;
 
@@ -132,7 +132,7 @@ export function blockIndex(x, y, z) {
 export function indexToLocal(index) {
   const x = index & 0xF;           // index % 16
   const z = (index >> 4) & 0xF;    // (index / 16) % 16
-  const y = (index >> 8) & 0xF;    // index / 256
+  const y = index >> 8;             // index / 256 (no mask needed - y is highest component)
   return { x, y, z };
 }
 

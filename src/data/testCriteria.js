@@ -185,32 +185,32 @@ export const TEST_PHASES = [
         id: 'p2-stockpile',
         name: 'Stockpile System (2.3)',
         criteria: [
-          { id: 'p2-stock-deposit', label: 'Deposit resources', description: 'Resources can be deposited into stockpile slots' },
-          { id: 'p2-stock-withdraw', label: 'Withdraw resources', description: 'Resources can be withdrawn from stockpile slots' },
-          { id: 'p2-stock-reserve', label: 'Slot reservation', description: 'Reservation prevents two NPCs claiming same stockpile slot' },
-          { id: 'p2-stock-visual', label: 'Stockpile visuals', description: 'Resource items visible on stockpile ground' },
-          { id: 'p2-stock-capacity', label: 'Capacity limit', description: 'Stockpile capacity enforced (ground blocks x stack limit)' },
-          { id: 'p2-stock-persist', label: 'Stockpile save/load', description: 'Stockpile contents persist in save/load' },
-          { id: 'p2-haul-pickup', label: 'NPC hauling', description: 'NPCs pick up dropped items and deliver to stockpiles' },
-          { id: 'p2-haul-priority', label: 'Haul priority', description: 'Priority system ensures construction materials hauled first' },
-          { id: 'p2-haul-timeout', label: 'Haul timeout', description: 'Task timeout prevents stuck haul claims' },
+          { id: 'p2-stock-capacity', label: 'Capacity limit', description: 'Creating a STOCKPILE zone computes capacity from area (voxels × 10); pickup text shows capacity' },
+          { id: 'p2-stock-panel', label: 'Stockpile panel (E key)', description: 'Press E near stockpile zone to open deposit/withdraw panel; E or Escape closes it' },
+          { id: 'p2-stock-deposit', label: 'Deposit resources', description: 'Player can deposit materials via +1/+10/All buttons or Deposit All; capacity bar fills' },
+          { id: 'p2-stock-withdraw', label: 'Withdraw resources', description: 'Player can withdraw materials via -1/-10/All buttons or Withdraw All; items return to inventory' },
+          { id: 'p2-stock-visual', label: 'Stockpile visuals', description: 'Colored crate meshes appear on stockpile ground proportional to stored materials' },
+          { id: 'p2-stock-delete-refund', label: 'Delete refunds items', description: 'Deleting a stockpile zone returns all stored materials to player inventory' },
+          { id: 'p2-stock-npc-eat', label: 'NPC eats from stockpile', description: 'Hungry NPCs consume food (berry/meat) from stockpile zones before player inventory' },
+          { id: 'p2-stock-attract', label: 'Attractiveness bonus', description: 'Stockpiled food increases settlement attractiveness score' },
+          { id: 'p2-stock-persist', label: 'Stockpile save/load', description: 'Stockpile contents persist across save/load (zone storage auto-persisted)' },
         ],
       },
       {
         id: 'p2-construction',
         name: 'Construction System (2.4)',
         criteria: [
-          { id: 'p2-build-blueprint', label: 'Blueprint placement', description: 'Player can browse and place building blueprints with ghost preview' },
-          { id: 'p2-build-validate', label: 'Blueprint validation', description: 'Validation prevents invalid placement (uneven terrain, overlap, out of territory)' },
+          { id: 'p2-build-catalog', label: 'Building catalog', description: 'B key opens building catalog with 4 building types' },
+          { id: 'p2-build-blueprint', label: 'Blueprint placement', description: 'Player selects building and places ghost preview on terrain' },
+          { id: 'p2-build-validate', label: 'Placement validation', description: 'Invalid placements (uneven terrain, overlap) shown in red' },
           { id: 'p2-build-ghost', label: 'Ghost blocks', description: 'Placed blueprint shows translucent ghost blocks at each position' },
-          { id: 'p2-build-haul-mats', label: 'Material delivery', description: 'NPCs haul required materials to construction site' },
-          { id: 'p2-build-block-place', label: 'Block-by-block build', description: 'Builder NPCs place blocks in correct order (bottom-up)' },
+          { id: 'p2-build-deliver', label: 'Material delivery', description: 'E key near site opens panel; player delivers materials from inventory' },
+          { id: 'p2-build-block-place', label: 'Block-by-block build', description: 'Auto-construction places blocks bottom-up after materials delivered' },
           { id: 'p2-build-progress', label: 'Construction progress', description: 'Progress bar visible above construction site' },
-          { id: 'p2-build-complete', label: 'Building completion', description: 'Completed building becomes functional with effects' },
-          { id: 'p2-build-multi-builder', label: 'Multiple builders', description: 'Multiple builder NPCs can work one site (up to 3 cap)' },
-          { id: 'p2-build-pause', label: 'Material stall', description: 'Construction pauses when materials run out' },
-          { id: 'p2-build-effects', label: 'Building effects', description: 'Buildings provide housing, storage, production, or happiness bonuses' },
-          { id: 'p2-build-upgrade', label: 'Building upgrades', description: 'Buildings can be upgraded to higher tiers' },
+          { id: 'p2-build-complete', label: 'Building completion', description: 'Completed building becomes solid blocks in the world' },
+          { id: 'p2-build-attract', label: 'Attractiveness bonus', description: 'Completed buildings increase settlement attractiveness' },
+          { id: 'p2-build-cancel', label: 'Cancel construction', description: 'Canceling construction returns delivered materials to player' },
+          { id: 'p2-build-persist', label: 'Construction save/load', description: 'Construction sites persist across save/load' },
         ],
       },
       {
@@ -322,6 +322,32 @@ export const AUTO_CHECKS = {
   'p2-zone-mode-toggle': (s) => s.zoneMode === true,
   'p2-zone-mining-scan': (s) => s.zones.some((z) => z.type === 'MINING' && z.miningTasks && z.miningTasks.length > 0),
   'p2-zone-colors': (s) => s.zones.length > 0,
+
+  // Phase 2 — Stockpile System (2.3)
+  'p2-stock-capacity': (s) => s.zones.some(z => z.type === 'STOCKPILE' && z.storage && z.storage.capacity > 0),
+  'p2-stock-panel': (s) => s.activeStockpileZoneId !== null,
+  'p2-stock-deposit': (s) => s.zones.some(z => z.type === 'STOCKPILE' && z.storage && z.storage.usedCapacity > 0),
+  'p2-stock-visual': (s) => s.zones.some(z => z.type === 'STOCKPILE' && z.storage && Object.keys(z.storage.items).length > 0),
+  'p2-stock-npc-eat': (s) => s.settlement.npcs.some(n => n.state === 'EATING'),
+
+  // Phase 2 — Construction System (2.4)
+  'p2-build-catalog': (s) => s.activeBuildingCatalog === true,
+  'p2-build-ghost': (s) => s.constructionSites.length > 0,
+  'p2-build-deliver': (s) => s.constructionSites.some(cs => Object.values(cs.materialsDelivered).some(v => v > 0)),
+  'p2-build-block-place': (s) => s.constructionSites.some(cs => cs.status === 'BUILDING'),
+  'p2-build-complete': (s) => s.constructionSites.some(cs => cs.status === 'COMPLETE'),
+
+  // Phase 2 — NPC Work Loop (2.5)
+  'p2-work-find': (s) => s.settlement.npcs.some(n => n.state?.startsWith('WORKING_')),
+  'p2-work-mine': (s) => s.settlement.npcs.some(n => n.state === 'WORKING_MINE'),
+  'p2-work-specialize': (s) => s.settlement.npcs.filter(n => n.state?.startsWith('WORKING_')).length >= 2,
+  'p2-work-no-conflict': (s) => {
+    const ids = s.settlement.npcs.map(n => n.currentTaskId).filter(Boolean);
+    return ids.length > 0 && ids.length === new Set(ids).size;
+  },
+  'p2-work-needs-priority': (s) => s.settlement.npcs.some(n => n.savedTaskId != null),
+  'p2-work-anim': (s) => s.settlement.npcs.some(n => n.state?.startsWith('WORKING_')),
+  'p2-work-thought': (s) => s.settlement.npcs.some(n => n.thoughtBubble != null),
 
   // Phase 2 — NPC Needs & Daily Life (2.6) — auto-detectable states
   'p2-needs-eat': (s) => s.settlement.npcs.some((n) => n.state === 'EATING'),

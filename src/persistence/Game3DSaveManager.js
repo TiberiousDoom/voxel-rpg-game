@@ -128,10 +128,13 @@ class Game3DSaveManager {
       // Zones state
       const zonesState = state.zones || [];
 
+      // Construction sites state
+      const constructionSitesState = state.constructionSites || [];
+
       // Main save data
       const saveData = {
         slot,
-        version: 4,
+        version: 5,
         savedAt: Date.now(),
         player: playerState,
         inventory: inventoryState,
@@ -142,6 +145,7 @@ class Game3DSaveManager {
         worldTime: worldTimeState,
         settlement: settlementState,
         zones: zonesState,
+        constructionSites: constructionSitesState,
       };
 
       // Save main state
@@ -256,6 +260,12 @@ class Game3DSaveManager {
         saveData.version = 4;
       }
 
+      // Migrate V4 saves → V5 (add construction sites)
+      if (saveData.version < 5) {
+        saveData.constructionSites = [];
+        saveData.version = 5;
+      }
+
       // Restore player state
       if (store.updatePlayer) {
         store.updatePlayer(saveData.player);
@@ -288,9 +298,28 @@ class Game3DSaveManager {
 
       // Restore settlement
       if (saveData.settlement && store.setState) {
+        // Collect carried items so they can be returned to inventory after state restore
+        const lostItems = [];
+        // Reset ephemeral work fields on all NPCs
+        const npcs = (saveData.settlement.npcs || []).map(npc => {
+          if (npc.carryingItem) {
+            lostItems.push(npc.carryingItem);
+          }
+          return {
+            ...npc,
+            // Reset work-loop ephemeral state
+            ...(npc.state?.startsWith('WORKING_') ? { state: 'IDLE', stateTimer: 0 } : {}),
+            currentTaskId: null,
+            savedTaskId: null,
+            workTimer: 0,
+            carryingItem: null,
+            haulPhase: null,
+            thoughtBubble: null,
+          };
+        });
         store.setState({
           settlement: {
-            npcs: saveData.settlement.npcs || [],
+            npcs,
             attractiveness: saveData.settlement.attractiveness || 0,
             settlementCenter: saveData.settlement.settlementCenter || null,
             lastImmigrationCheck: 0,
@@ -298,11 +327,22 @@ class Game3DSaveManager {
             lastNeedsUpdate: 0,
           },
         });
+        // Return carried items to player inventory
+        for (const item of lostItems) {
+          if (item.material && item.amount) {
+            store.getState().addMaterial(item.material, item.amount);
+          }
+        }
       }
 
       // Restore zones
       if (saveData.zones && store.setState) {
         store.setState({ zones: saveData.zones });
+      }
+
+      // Restore construction sites
+      if (saveData.constructionSites && store.setState) {
+        store.setState({ constructionSites: saveData.constructionSites });
       }
 
       // Load modified chunks

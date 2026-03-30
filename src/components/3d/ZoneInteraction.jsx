@@ -15,7 +15,7 @@ import useGameStore from '../../stores/useGameStore';
 import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
 import { isSolid } from '../../systems/chunks/blockTypes';
 import { createZone, ZONE_COLORS } from '../../data/zoneTypes';
-import { ZONE_MAX_COUNT, ZONE_MAX_SIDE_VOXELS, ZONE_MIN_SIDE_VOXELS } from '../../data/tuning';
+import { ZONE_MAX_COUNT, ZONE_MAX_SIDE_VOXELS, ZONE_MIN_SIDE_VOXELS, STOCKPILE_CAPACITY_PER_VOXEL } from '../../data/tuning';
 import { scanMiningZone } from '../../systems/settlement/MiningZoneScanner';
 
 function getTerrainY(chunkManager, wx, wz) {
@@ -172,6 +172,13 @@ export default function ZoneInteraction({ chunkManager }) {
         const miningTasks = scanMiningZone(storeZone.bounds, chunkManager);
         store.updateZone(storeZone.id, { miningTasks });
         store.addPickupText(`Mining Zone created (${miningTasks.length} blocks)`, '#ff8c00');
+      } else if (storeZone.type === 'STOCKPILE') {
+        const areaVoxels = ((maxX - minX) / VOXEL_SIZE) * ((maxZ - minZ) / VOXEL_SIZE);
+        const capacity = areaVoxels * STOCKPILE_CAPACITY_PER_VOXEL;
+        store.updateZone(storeZone.id, {
+          storage: { items: {}, capacity, usedCapacity: 0 },
+        });
+        store.addPickupText(`Stockpile created (${capacity} capacity)`, '#4488ff');
       } else {
         store.addPickupText(`${storeZone.type} Zone created`, '#4488ff');
       }

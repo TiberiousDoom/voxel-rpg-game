@@ -4,6 +4,8 @@
  * Kinematic body (we control position, not physics). Walks toward target,
  * idle-wanders, shows status indicators. Combat system ignores these
  * (userData.isNPC, NOT isEnemy).
+ *
+ * Phase 2.5: Added arms, work animations, thought bubbles, hauling visuals.
  */
 
 import React, { useRef, useMemo, useEffect } from 'react';
@@ -11,9 +13,10 @@ import { useFrame } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
-import { NPC_WALK_SPEED, NPC_APPROACH_SPEED } from '../../data/tuning';
+import { NPC_WALK_SPEED, NPC_APPROACH_SPEED, NPC_HAUL_SPEED } from '../../data/tuning';
 import { VOXEL_SIZE, CHUNK_SIZE_Y } from '../../systems/chunks/coordinates';
 import { isSolid } from '../../systems/chunks/blockTypes';
+import NPCThoughtBubble from './NPCThoughtBubble';
 
 // Pre-allocated vectors
 const _targetVec = new THREE.Vector3();
@@ -25,9 +28,10 @@ const headGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
 const hairGeo = new THREE.BoxGeometry(0.62, 0.15, 0.62);
 const bodyGeo = new THREE.BoxGeometry(0.7, 0.9, 0.5);
 const legGeo = new THREE.BoxGeometry(0.25, 0.6, 0.25);
-const armGeo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
+const armGeo = new THREE.BoxGeometry(0.2, 0.6, 0.2);
 const indicatorGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
 const statusGeo = new THREE.SphereGeometry(0.12, 6, 6);
+const carryGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
 
 // Status colors
 const STATUS_COLORS = {
@@ -39,6 +43,9 @@ const STATUS_COLORS = {
   WORKING: '#4488ff',
   HAULING: '#4488ff',
   BUILDING: '#ff8844',
+  WORKING_MINE: '#ff8c00',
+  WORKING_HAUL: '#ffcc00',
+  WORKING_BUILD: '#4488ff',
   EVALUATING: '#00ccff',
   SOCIALIZING: '#ff88ff',
   LEAVING: '#ff4444',
@@ -68,6 +75,7 @@ const SettlerNPC = React.memo(({ npcData }) => {
   const lastTerrainCheck = useRef(0);
   const terrainY = useRef(npcData.position[1]);
   const evalRotation = useRef(0);
+  const npcIndexRef = useRef(0);
 
   // Materials (memoized per NPC, stable across state changes)
   const materials = useMemo(() => ({
@@ -77,6 +85,7 @@ const SettlerNPC = React.memo(({ npcData }) => {
     clothingAlt: new THREE.MeshLambertMaterial({ color: new THREE.Color(...npcData.appearance.clothingSecondary) }),
     indicator: new THREE.MeshBasicMaterial({ color: '#4488ff' }),
     status: new THREE.MeshBasicMaterial({ color: '#44cc44' }), // color updated in useFrame
+    carry: new THREE.MeshBasicMaterial({ color: '#ddaa44' }),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [npcData.appearance]);
 
@@ -89,8 +98,15 @@ const SettlerNPC = React.memo(({ npcData }) => {
     if (!bodyRef.current) return;
 
     const store = useGameStore.getState();
-    const npc = store.settlement.npcs.find((n) => n.id === npcData.id);
-    if (!npc) return;
+    // Fast path: check cached index first, fall back to find()
+    const npcs = store.settlement.npcs;
+    let npc = npcs[npcIndexRef.current];
+    if (!npc || npc.id !== npcData.id) {
+      const idx = npcs.findIndex((n) => n.id === npcData.id);
+      if (idx === -1) return;
+      npcIndexRef.current = idx;
+      npc = npcs[idx];
+    }
 
     const rb = bodyRef.current;
     const pos = rb.translation();
@@ -125,9 +141,34 @@ const SettlerNPC = React.memo(({ npcData }) => {
       _currentVec.set(pos.x, 0, pos.z);
       const dist = _currentVec.distanceTo(_targetVec);
 
-      if (dist > 0.5) {
-        const speed = npc.state === 'APPROACHING' || npc.state === 'LEAVING'
-          ? NPC_APPROACH_SPEED : NPC_WALK_SPEED;
+      if (dist < 1.5) {
+        // Arrived at target
+        if (npc.state === 'APPROACHING' && (npc.stateTimer || 0) <= 60) {
+          // Transition to EVALUATING (skip if SettlementTick already timed out to LEAVING)
+          store.updateSettlementNPC(npc.id, {
+            targetPosition: null,
+            arrivedAtSettlement: true,
+            state: 'EVALUATING',
+            stateTimer: 0,
+          });
+        } else if (npc.state === 'WANDERING' || npc.state === 'SOCIALIZING') {
+          store.updateSettlementNPC(npc.id, {
+            targetPosition: null,
+            arrivedAtSettlement: true,
+            state: 'IDLE',
+            stateTimer: npc.state === 'WANDERING' ? 0 : npc.stateTimer,
+          });
+        }
+        // Work states: don't clear targetPosition here — SettlementTick handles arrival
+      } else {
+        // Determine speed based on state
+        let speed = NPC_WALK_SPEED;
+        if (npc.state === 'APPROACHING' || npc.state === 'LEAVING') {
+          speed = NPC_APPROACH_SPEED;
+        } else if (npc.state === 'HAULING' || (npc.state === 'WORKING_HAUL' && npc.carryingItem)) {
+          speed = NPC_HAUL_SPEED;
+        }
+
         _dirVec.subVectors(_targetVec, _currentVec).normalize();
         const step = speed * delta;
 
@@ -198,33 +239,51 @@ const SettlerNPC = React.memo(({ npcData }) => {
       evalRotation.current = 0;
     }
 
-    // Walk animation (legs)
+    // ── Animations ──
+    const time = now / 1000;
+
+    // Walk animation (legs + subtle arm counterswing)
     if (moving) {
       walkPhase.current += delta * 8;
       const swing = Math.sin(walkPhase.current) * 0.5;
       if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
       if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
+      // Subtle arm counterswing when walking (unless in a work state)
+      if (!npc.state?.startsWith('WORKING_')) {
+        if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.4;
+        if (rightArmRef.current) rightArmRef.current.rotation.x = swing * 0.4;
+      }
     } else {
       walkPhase.current = 0;
       if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
       if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
+      if (!npc.state?.startsWith('WORKING_')) {
+        if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
+        if (rightArmRef.current) rightArmRef.current.rotation.x = 0;
+      }
     }
 
-    // Arm animation (work swing when HAULING/BUILDING, gentle walk swing otherwise)
-    const isWorking = npc.state === 'HAULING' || npc.state === 'BUILDING';
-    if (isWorking) {
+    // Work animations (specific work states override walk arm swing)
+    if (npc.state === 'WORKING_MINE') {
+      // Right arm swings down (pickaxe motion)
+      if (rightArmRef.current) rightArmRef.current.rotation.x = Math.sin(time * 6) * 0.8;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
+    } else if (npc.state === 'WORKING_BUILD') {
+      // Right arm taps forward (hammer motion)
+      if (rightArmRef.current) rightArmRef.current.rotation.x = Math.sin(time * 4) * 0.6;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
+    } else if (npc.state === 'WORKING_HAUL' && npc.carryingItem) {
+      // Both arms angled forward ~45deg
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -0.8;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -0.8;
+    } else if (npc.state === 'HAULING' || npc.state === 'BUILDING') {
+      // Legacy work states — phase-based arm swing
       workPhase.current += delta * 6;
       const swing = Math.sin(workPhase.current) * 0.8;
       if (rightArmRef.current) rightArmRef.current.rotation.x = swing;
       if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.3;
-    } else if (moving) {
-      const armSwing = Math.sin(walkPhase.current) * 0.3;
-      if (leftArmRef.current) leftArmRef.current.rotation.x = armSwing;
-      if (rightArmRef.current) rightArmRef.current.rotation.x = -armSwing;
-    } else {
+    } else if (!moving) {
       workPhase.current = 0;
-      if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
-      if (rightArmRef.current) rightArmRef.current.rotation.x = 0;
     }
 
     // Sleeping visual — lay NPC on side
@@ -238,6 +297,10 @@ const SettlerNPC = React.memo(({ npcData }) => {
     const stateColor = STATUS_COLORS[npc.state] || '#44cc44';
     materials.status.color.set(stateColor);
   });
+
+  // Determine thought bubble type from current npc data
+  const thoughtType = npcData.thoughtBubble?.type || null;
+  const isCarrying = npcData.carryingItem != null;
 
   return (
     <RigidBody
@@ -256,12 +319,12 @@ const SettlerNPC = React.memo(({ npcData }) => {
         {/* Body */}
         <mesh geometry={bodyGeo} material={materials.clothing} position={[0, 1.35, 0]} />
         {/* Left arm */}
-        <group ref={leftArmRef} position={[-0.45, 1.55, 0]}>
-          <mesh geometry={armGeo} material={materials.clothingAlt} position={[0, -0.25, 0]} />
+        <group ref={leftArmRef} position={[-0.45, 1.65, 0]}>
+          <mesh geometry={armGeo} material={materials.skin} position={[0, -0.3, 0]} />
         </group>
         {/* Right arm */}
-        <group ref={rightArmRef} position={[0.45, 1.55, 0]}>
-          <mesh geometry={armGeo} material={materials.clothingAlt} position={[0, -0.25, 0]} />
+        <group ref={rightArmRef} position={[0.45, 1.65, 0]}>
+          <mesh geometry={armGeo} material={materials.skin} position={[0, -0.3, 0]} />
         </group>
         {/* Left leg */}
         <group ref={leftLegRef} position={[-0.18, 0.6, 0]}>
@@ -271,12 +334,19 @@ const SettlerNPC = React.memo(({ npcData }) => {
         <group ref={rightLegRef} position={[0.18, 0.6, 0]}>
           <mesh geometry={legGeo} material={materials.clothingAlt} position={[0, 0, 0]} />
         </group>
+        {/* Carrying item (small colored cube at body front) */}
+        {isCarrying && (
+          <mesh geometry={carryGeo} material={materials.carry} position={[0, 1.2, 0.4]} />
+        )}
       </group>
 
       {/* NPC indicator (blue cube above head) */}
       <mesh geometry={indicatorGeo} material={materials.indicator} position={[0, 2.8, 0]} />
       {/* State indicator (small sphere) */}
       <mesh geometry={statusGeo} material={materials.status} position={[0.25, 2.8, 0]} />
+
+      {/* Thought bubble */}
+      <NPCThoughtBubble type={thoughtType} />
     </RigidBody>
   );
 });

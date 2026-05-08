@@ -29,6 +29,8 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
   const deathPosition = useRef(null); // Capture actual death position
   const attackCooldownRef = useRef(0); // Ref to avoid per-frame re-renders
   const [damageFlash, setDamageFlash] = useState(0);
+  const isMountedRef = useRef(true);
+  const pendingTimeouts = useRef(new Set());
 
   const mDamage = monsterData?.damage || 5;
   const mSpeed = monsterData?.speed || 2;
@@ -54,7 +56,11 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
 
     // Trigger damage flash effect
     setDamageFlash(1);
-    setTimeout(() => setDamageFlash(0), 300);
+    const flashTimeout = setTimeout(() => {
+      pendingTimeouts.current.delete(flashTimeout);
+      if (isMountedRef.current) setDamageFlash(0);
+    }, 300);
+    pendingTimeouts.current.add(flashTimeout);
 
     // Spawn floating damage number and apply knockback
     if (enemyRef.current) {
@@ -101,6 +107,22 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
       };
     }
   }, [takeDamage]);
+
+  // Cleanup on unmount: clear pending timeouts and remove tracked enemy position.
+  // Without this, setTimeouts fire after unmount (warning + wasted store writes)
+  // and _enemyPositions accumulates stale entries when enemies are unloaded
+  // (chunk unload, settings reset) without dying.
+  React.useEffect(() => {
+    const enemyId = monsterData?.id;
+    return () => {
+      isMountedRef.current = false;
+      for (const t of pendingTimeouts.current) clearTimeout(t);
+      pendingTimeouts.current.clear();
+      if (enemyId) {
+        useGameStore.getState()._enemyPositions.delete(enemyId);
+      }
+    };
+  }, [monsterData?.id]);
 
   // Enemy AI behavior
   useFrame((state, delta) => {
@@ -233,9 +255,11 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
 
       // Remove from rift enemy list after death animation
       if (monsterData?.id) {
-        setTimeout(() => {
+        const removeTimeout = setTimeout(() => {
+          pendingTimeouts.current.delete(removeTimeout);
           useGameStore.getState().removeRiftEnemy(monsterData.id);
         }, 2000);
+        pendingTimeouts.current.add(removeTimeout);
       }
     }
   });

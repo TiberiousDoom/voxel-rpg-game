@@ -485,6 +485,28 @@ describe('Save Migration Tests', () => {
         expect(result.errors.length).toBeGreaterThan(0);
       }
     });
+
+    test('migrate refuses saves from a newer game version', () => {
+      const futureSave = {
+        version: SAVE_VERSION.CURRENT + 1,
+        player: { level: 5 },
+      };
+
+      expect(() => SaveVersionManager.migrate(futureSave)).toThrow(/newer than supported/);
+    });
+
+    test('safeMigrate returns failure (not silent pass) for newer-version saves', () => {
+      const futureSave = {
+        version: SAVE_VERSION.CURRENT + 5,
+        player: { level: 5 },
+      };
+
+      const result = SaveVersionManager.safeMigrate(futureSave);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors.some((e) => /newer than supported/.test(e))).toBe(true);
+    });
   });
 
   // ============================================================================

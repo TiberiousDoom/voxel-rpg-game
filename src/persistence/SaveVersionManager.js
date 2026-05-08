@@ -89,9 +89,20 @@ class SaveVersionManager {
    * Migrate save data to current version
    * @param {object} saveData - The save data to migrate
    * @returns {object} Migrated save data
+   * @throws {Error} If save version is newer than CURRENT (forward-incompatible)
    */
   static migrate(saveData) {
     const currentVersion = this.detectVersion(saveData);
+
+    // Forward-incompatible: refuse to load saves from a newer game version.
+    // Silently passing through unknown versions could let absent fields crash
+    // downstream code or, worse, write a corrupted save back to disk.
+    if (currentVersion > SAVE_VERSION.CURRENT) {
+      throw new Error(
+        `Save version v${currentVersion} is newer than supported v${SAVE_VERSION.CURRENT}. ` +
+        `Refusing to load to avoid data corruption.`
+      );
+    }
 
     if (currentVersion === SAVE_VERSION.CURRENT) {
       return saveData; // Already current version

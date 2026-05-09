@@ -64,7 +64,7 @@ vi.mock('../../../stores/useGameStore', () => {
     return selector ? selector(state) : state;
   });
   mockStore.getState = () => createState();
-  return mockStore;
+  return { default: mockStore };
 });
 
 // Import after mocks

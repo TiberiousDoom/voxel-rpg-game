@@ -69,13 +69,48 @@ const createPlayerStoreState = () => ({
   updateCamera: () => {},
 });
 
+// vi.mock is hoisted above const declarations, so its factory cannot close
+// over outer-scope values. Inline a self-contained state factory here.
 vi.mock('../../../stores/useGameStore', () => {
+  const buildState = () => ({
+    player: {
+      position: [0, 2, 0], velocity: [0, 0, 0], targetPosition: null,
+      health: 100, maxHealth: 100, mana: 100, maxMana: 100,
+      stamina: 100, maxStamina: 100, level: 1, xp: 0, xpToNext: 100,
+      damage: 10, speed: 5, facingAngle: 0, defense: 0,
+      isJumping: false, isGrounded: true, isDodging: false, isBlocking: false,
+      spellCooldowns: {},
+    },
+    inventory: { gold: 100, potions: 3, items: [] },
+    equipment: { weapon: null, armor: null },
+    camera: { rotationAngle: 0, distance: 12, height: 10, firstPerson: false },
+    enemies: [],
+    projectiles: [],
+    worldTime: { isNight: false, elapsed: 0, timeScale: 1, paused: false },
+    gameState: 'playing',
+    buildMode: false,
+    _chunkManager: null,
+    updatePlayer: () => {},
+    setPlayerPosition: () => {},
+    setPlayerTarget: () => {},
+    consumeMana: () => {},
+    consumeStamina: () => {},
+    regenStamina: () => {},
+    regenMana: () => {},
+    healPlayer: () => {},
+    addProjectile: () => {},
+    setSpellCooldown: () => {},
+    getSpellCooldown: () => 0,
+    updateSpellCooldowns: () => {},
+    attackMonster: () => {},
+    updateCamera: () => {},
+  });
   const mockStore = vi.fn((selector) => {
-    const state = createPlayerStoreState();
+    const state = buildState();
     return selector ? selector(state) : state;
   });
-  mockStore.getState = () => createPlayerStoreState();
-  return mockStore;
+  mockStore.getState = buildState;
+  return { default: mockStore };
 });
 
 // Import after mocks

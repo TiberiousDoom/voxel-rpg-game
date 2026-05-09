@@ -10,7 +10,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV !== 'production',
   },
   define: {
     // Polyfill process.env for libraries that expect it

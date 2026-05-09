@@ -6,9 +6,10 @@ import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import '../testSetup';
 
-// Mock the store
+// Mock the store. Vitest mock factories must return a module-shaped object;
+// the store is a default export, so the mock function is wrapped in `default`.
 vi.mock('../../../stores/useGameStore', () => {
-  return vi.fn((selector) => {
+  const mockStore = vi.fn((selector) => {
     const state = {
       player: {
         position: [0, 2, 0],
@@ -19,9 +20,17 @@ vi.mock('../../../stores/useGameStore', () => {
       addDamageNumber: vi.fn(),
       removeEnemy: vi.fn(),
       handleMonsterDeath: vi.fn(),
+      _enemyPositions: new Map(),
+      removeRiftEnemy: vi.fn(),
     };
     return selector ? selector(state) : state;
   });
+  mockStore.getState = () => ({
+    _enemyPositions: new Map(),
+    removeRiftEnemy: vi.fn(),
+    player: { position: [0, 2, 0] },
+  });
+  return { default: mockStore };
 });
 
 // Import after mocks

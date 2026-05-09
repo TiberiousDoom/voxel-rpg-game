@@ -488,7 +488,11 @@ class ModuleOrchestrator {
       // STEP 4.8: PHASE 2 - SETTLEMENT UPDATE
       // ============================================
       if (this.settlementModule) {
-        const settlementResult = this.settlementModule.update(deltaTime, this.gameState);
+        // 1 second per tick (matches sibling module.update calls in this file).
+        // Was passing an undefined `deltaTime` here; the ReferenceError was
+        // silently swallowed by the outer try/catch, so settlement updates
+        // routed through the orchestrator never actually ran.
+        const settlementResult = this.settlementModule.update(1.0, this.gameState);
         result.settlement = settlementResult.settlement;
       }
 

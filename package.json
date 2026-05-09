@@ -105,7 +105,32 @@
       "react": {
         "version": "detect"
       }
-    }
+    },
+    "overrides": [
+      {
+        "files": [
+          "**/__tests__/**",
+          "**/__mocks__/**",
+          "**/testSetup.{js,jsx}",
+          "**/setupTests.{js,jsx}",
+          "**/test-utils.{js,jsx}",
+          "**/*.test.{js,jsx}",
+          "**/*.spec.{js,jsx}"
+        ],
+        "globals": {
+          "vi": "readonly",
+          "describe": "readonly",
+          "it": "readonly",
+          "test": "readonly",
+          "expect": "readonly",
+          "beforeEach": "readonly",
+          "afterEach": "readonly",
+          "beforeAll": "readonly",
+          "afterAll": "readonly",
+          "jest": "readonly"
+        }
+      }
+    ]
   },
   "prettier": {
     "singleQuote": true,

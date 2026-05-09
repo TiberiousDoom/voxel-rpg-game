@@ -203,7 +203,7 @@ class ActiveSkillSystem {
       if (buff.effects) {
         // Aggregate buff effects
         for (const [key, value] of Object.entries(buff.effects)) {
-          if (effects.hasOwnProperty(key)) {
+          if (Object.prototype.hasOwnProperty.call(effects, key)) {
             effects[key] += value;
           }
         }

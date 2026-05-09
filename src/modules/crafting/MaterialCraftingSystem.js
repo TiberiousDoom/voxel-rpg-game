@@ -324,7 +324,7 @@ export class MaterialCraftingSystem {
    * @param {function} callback - Callback function
    */
   on(event, callback) {
-    if (this.callbacks.hasOwnProperty(event)) {
+    if (Object.prototype.hasOwnProperty.call(this.callbacks, event)) {
       this.callbacks[event] = callback;
     }
   }

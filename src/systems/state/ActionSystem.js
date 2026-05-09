@@ -115,12 +115,13 @@ export function validateAction(action, state) {
       }
       return { valid: true };
 
-    case ActionTypes.INVENTORY_GOLD_CHANGE:
+    case ActionTypes.INVENTORY_GOLD_CHANGE: {
       const newGold = state.inventory.gold + payload.amount;
       if (newGold < 0) {
         return { valid: false, reason: 'Insufficient gold' };
       }
       return { valid: true };
+    }
 
     default:
       // Allow unknown actions by default (for extensibility)
@@ -234,7 +235,7 @@ export function applyAction(action, state) {
         player: { ...state.player, position: payload.position },
       };
 
-    case ActionTypes.PLAYER_TAKE_DAMAGE:
+    case ActionTypes.PLAYER_TAKE_DAMAGE: {
       const finalDamage = state.player.isBlocking
         ? payload.damage * 0.25
         : payload.damage;
@@ -246,6 +247,7 @@ export function applyAction(action, state) {
           rage: Math.min(state.player.maxRage, state.player.rage + 10),
         },
       };
+    }
 
     case ActionTypes.PLAYER_HEAL:
       return {
@@ -255,7 +257,7 @@ export function applyAction(action, state) {
         },
       };
 
-    case ActionTypes.PLAYER_GAIN_XP:
+    case ActionTypes.PLAYER_GAIN_XP: {
       let newXP = state.player.xp + payload.amount;
       let newLevel = state.player.level;
       let xpToNext = state.player.xpToNext;
@@ -274,6 +276,7 @@ export function applyAction(action, state) {
           xpToNext,
         },
       };
+    }
 
     case ActionTypes.INVENTORY_GOLD_CHANGE:
       return {

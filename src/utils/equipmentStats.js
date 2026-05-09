@@ -20,7 +20,7 @@ export const calculateEquipmentStats = (equipment) => {
   Object.values(equipment).forEach((item) => {
     if (item && item.stats) {
       Object.entries(item.stats).forEach(([stat, value]) => {
-        if (stats.hasOwnProperty(stat)) {
+        if (Object.prototype.hasOwnProperty.call(stats, stat)) {
           stats[stat] += value;
         }
       });

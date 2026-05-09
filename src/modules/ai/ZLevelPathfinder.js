@@ -55,7 +55,7 @@ class PriorityQueue {
   _bubbleDown(index) {
     const length = this.elements.length;
 
-    while (true) {
+    for (;;) {
       const leftChild = 2 * index + 1;
       const rightChild = 2 * index + 2;
       let smallest = index;
@@ -423,7 +423,7 @@ export class ZLevelPathfinder {
 
     const path = [];
 
-    while (true) {
+    for (;;) {
       const pos = { x: x0, y: y0, z: start.z };
 
       if (!this._isWalkable(pos)) {

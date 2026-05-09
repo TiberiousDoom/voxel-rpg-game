@@ -1711,10 +1711,11 @@ class NPCManager {
     if (!npc || !npc.personality) return null;
 
     switch (decisionType) {
-      case 'shouldRest':
+      case 'shouldRest': {
         // Lazy NPCs rest more, industrious less
         const restThreshold = npc.personality.restThreshold;
         return npc.fatigued || (options.fatigueLevel || 0) > restThreshold;
+      }
 
       case 'preferredTask':
         // Choose task based on skill preferences

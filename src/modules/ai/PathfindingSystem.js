@@ -87,7 +87,7 @@ class PriorityQueue {
   _bubbleDown(index) {
     const length = this.elements.length;
 
-    while (true) {
+    for (;;) {
       const leftChild = 2 * index + 1;
       const rightChild = 2 * index + 2;
       let smallest = index;
@@ -593,7 +593,7 @@ export class PathfindingSystem {
     const sz = z0 < z1 ? 1 : -1;
     let err = dx - dz;
 
-    while (true) {
+    for (;;) {
       if (!this._isWalkable({ x: x0, z: z0 }, customIsWalkable)) {
         return false;
       }

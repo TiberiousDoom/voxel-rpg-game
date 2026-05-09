@@ -170,7 +170,7 @@ export default class DifficultyManager {
    * @param {number} value - Value to add (default 1)
    */
   updateStat(statName, value = 1) {
-    if (this.stats.hasOwnProperty(statName)) {
+    if (Object.prototype.hasOwnProperty.call(this.stats, statName)) {
       this.stats[statName] += value;
 
       // Check if dynamic difficulty adjustment is needed

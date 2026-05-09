@@ -2,6 +2,7 @@
  * Test Utilities
  * Shared helpers and utilities for testing
  */
+import { vi } from 'vitest';
 
 /**
  * Wait for a condition to be true
@@ -26,7 +27,7 @@ export async function waitFor(condition, timeout = 5000, interval = 50) {
  * @returns {jest.Mock & {calls: Array, lastCall: any}}
  */
 export function createMockCallback() {
-  const mock = jest.fn();
+  const mock = vi.fn();
   mock.calls = [];
   mock.lastCall = null;
 
@@ -98,13 +99,13 @@ export function mockAnimationFrame() {
   let callbacks = [];
   let frameId = 0;
 
-  global.requestAnimationFrame = jest.fn((callback) => {
+  global.requestAnimationFrame = vi.fn((callback) => {
     const id = ++frameId;
     callbacks.push({ id, callback });
     return id;
   });
 
-  global.cancelAnimationFrame = jest.fn((id) => {
+  global.cancelAnimationFrame = vi.fn((id) => {
     callbacks = callbacks.filter(cb => cb.id !== id);
   });
 
@@ -125,7 +126,7 @@ export function mockPerformanceNow() {
 
   const originalNow = performance.now.bind(performance);
 
-  performance.now = jest.fn(() => now);
+  performance.now = vi.fn(() => now);
 
   const advance = (ms) => {
     now += ms;
@@ -147,8 +148,8 @@ export async function suppressConsole(fn) {
   const originalWarn = console.warn;
   const originalError = console.error;
 
-  console.warn = jest.fn();
-  console.error = jest.fn();
+  console.warn = vi.fn();
+  console.error = vi.fn();
 
   try {
     await fn();
@@ -220,6 +221,6 @@ export async function expectToThrow(fn, errorMatch) {
  * @returns {jest.SpyInstance}
  */
 export function spyOn(obj, method) {
-  const spy = jest.spyOn(obj, method);
+  const spy = vi.spyOn(obj, method);
   return spy;
 }

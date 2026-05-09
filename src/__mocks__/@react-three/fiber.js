@@ -3,6 +3,7 @@
  * Provides mock implementations for testing 3D components
  */
 import React from 'react';
+import { vi } from 'vitest';
 
 // Mock Canvas component
 export const Canvas = ({ children, shadows, ...props }) => (
@@ -12,7 +13,7 @@ export const Canvas = ({ children, shadows, ...props }) => (
 );
 
 // Mock useFrame hook
-export const useFrame = jest.fn((callback) => {
+export const useFrame = vi.fn((callback) => {
   // Optionally call with mock state and delta
   // callback({ clock: { elapsedTime: 0 } }, 0.016);
 });
@@ -23,14 +24,14 @@ const createMockCanvas = () => {
     return document.createElement('canvas');
   }
   return {
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }),
     style: {},
   };
 };
 
-// Mock useThree hook - defined as a regular function (not jest.fn) so that
+// Mock useThree hook - defined as a regular function (not vi.fn) so that
 // CRA's resetMocks: true doesn't strip the implementation between tests.
 export const useThree = (selector) => {
   const state = {
@@ -60,13 +61,13 @@ export const useThree = (selector) => {
 };
 
 // Mock extend function
-export const extend = jest.fn();
+export const extend = vi.fn();
 
 // Mock primitive
 export const primitive = 'primitive';
 
 // Mock events
-export const events = jest.fn(() => ({}));
+export const events = vi.fn(() => ({}));
 
 // Default export
 export default {

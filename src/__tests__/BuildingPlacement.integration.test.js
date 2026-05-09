@@ -48,17 +48,17 @@ describe('Building Placement Integration', () => {
       expect(result.message || result.error).toBeDefined();
     });
 
-    test('emits building:placed event', (done) => {
-      jest.setTimeout(10000);
+    test('emits building:placed event', () => {
+      return new Promise((resolve) => {
+        gameManager.on('building:placed', (data) => {
+          expect(data.buildingId).toBeDefined();
+          expect(data.type).toBe('FARM');
+          resolve();
+        });
 
-      gameManager.on('building:placed', (data) => {
-        expect(data.buildingId).toBeDefined();
-        expect(data.type).toBe('FARM');
-        done();
+        gameManager.placeBuilding('FARM', { x: 5, y: 0, z: 5 });
       });
-
-      gameManager.placeBuilding('FARM', { x: 5, y: 0, z: 5 });
-    });
+    }, 10000);
 
     test('removes building through orchestrator', () => {
       const { buildingId } = gameManager.placeBuilding('FARM', { x: 5, y: 0, z: 5 });

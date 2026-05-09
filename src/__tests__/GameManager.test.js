@@ -126,7 +126,7 @@ describe('GameManager', () => {
       expect(gameManager.gameState).toBe(GameManager.GAME_STATE.ERRORED);
 
       // Restore
-      jest.unmock('../modules/foundation/GridManager');
+      vi.unmock('../modules/foundation/GridManager');
     });
   });
 
@@ -494,7 +494,6 @@ describe('GameManager', () => {
 
     test.skip('game events propagate correctly', (done) => {
       // Skipped: Event timing issues in test environment
-      jest.setTimeout(10000);
       gameManager.initialize();
 
       let eventCount = 0;

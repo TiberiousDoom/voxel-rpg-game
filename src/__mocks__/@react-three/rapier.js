@@ -3,6 +3,7 @@
  * Provides mock implementations for physics components
  */
 import React from 'react';
+import { vi } from 'vitest';
 
 // Mock Physics context
 export const Physics = ({ children, ...props }) => (
@@ -15,23 +16,23 @@ export const Physics = ({ children, ...props }) => (
 export const RigidBody = React.forwardRef(({ children, ...props }, ref) => {
   const mockRef = {
     current: {
-      translation: jest.fn(() => ({ x: 0, y: 0, z: 0 })),
-      setTranslation: jest.fn(),
-      linvel: jest.fn(() => ({ x: 0, y: 0, z: 0 })),
-      setLinvel: jest.fn(),
-      applyImpulse: jest.fn(),
-      applyForce: jest.fn(),
-      setGravityScale: jest.fn(),
-      lockRotations: jest.fn(),
-      setEnabledRotations: jest.fn(),
-      rotation: jest.fn(() => ({ x: 0, y: 0, z: 0, w: 1 })),
-      setRotation: jest.fn(),
-      resetForces: jest.fn(),
-      resetTorques: jest.fn(),
-      mass: jest.fn(() => 1),
-      setMass: jest.fn(),
-      isSleeping: jest.fn(() => false),
-      wakeUp: jest.fn(),
+      translation: vi.fn(() => ({ x: 0, y: 0, z: 0 })),
+      setTranslation: vi.fn(),
+      linvel: vi.fn(() => ({ x: 0, y: 0, z: 0 })),
+      setLinvel: vi.fn(),
+      applyImpulse: vi.fn(),
+      applyForce: vi.fn(),
+      setGravityScale: vi.fn(),
+      lockRotations: vi.fn(),
+      setEnabledRotations: vi.fn(),
+      rotation: vi.fn(() => ({ x: 0, y: 0, z: 0, w: 1 })),
+      setRotation: vi.fn(),
+      resetForces: vi.fn(),
+      resetTorques: vi.fn(),
+      mass: vi.fn(() => 1),
+      setMass: vi.fn(),
+      isSleeping: vi.fn(() => false),
+      wakeUp: vi.fn(),
     },
   };
 
@@ -69,41 +70,41 @@ export const CapsuleCollider = (props) => (
 );
 
 // Mock useRapier hook
-export const useRapier = jest.fn(() => ({
+export const useRapier = vi.fn(() => ({
   world: {
     gravity: { x: 0, y: -9.81, z: 0 },
     timestep: 1 / 60,
-    step: jest.fn(),
-    createRigidBody: jest.fn(),
-    removeRigidBody: jest.fn(),
-    createCollider: jest.fn(),
-    removeCollider: jest.fn(),
-    castRay: jest.fn(() => null),
-    intersectionsWithRay: jest.fn(() => []),
+    step: vi.fn(),
+    createRigidBody: vi.fn(),
+    removeRigidBody: vi.fn(),
+    createCollider: vi.fn(),
+    removeCollider: vi.fn(),
+    castRay: vi.fn(() => null),
+    intersectionsWithRay: vi.fn(() => []),
   },
   rapier: {
     RigidBodyDesc: {
-      dynamic: jest.fn(() => ({})),
-      fixed: jest.fn(() => ({})),
-      kinematicPositionBased: jest.fn(() => ({})),
+      dynamic: vi.fn(() => ({})),
+      fixed: vi.fn(() => ({})),
+      kinematicPositionBased: vi.fn(() => ({})),
     },
     ColliderDesc: {
-      cuboid: jest.fn(() => ({})),
-      ball: jest.fn(() => ({})),
-      capsule: jest.fn(() => ({})),
+      cuboid: vi.fn(() => ({})),
+      ball: vi.fn(() => ({})),
+      capsule: vi.fn(() => ({})),
     },
   },
 }));
 
 // Mock vec3 helper
-export const vec3 = jest.fn((v) => ({
+export const vec3 = vi.fn((v) => ({
   x: v?.x || 0,
   y: v?.y || 0,
   z: v?.z || 0,
 }));
 
 // Mock quat helper
-export const quat = jest.fn((q) => ({
+export const quat = vi.fn((q) => ({
   x: q?.x || 0,
   y: q?.y || 0,
   z: q?.z || 0,
@@ -111,13 +112,13 @@ export const quat = jest.fn((q) => ({
 }));
 
 // Mock interactionGroups
-export const interactionGroups = jest.fn(() => 0xffffffff);
+export const interactionGroups = vi.fn(() => 0xffffffff);
 
 // Mock collision event types
-export const CollisionEnterHandler = jest.fn();
-export const CollisionExitHandler = jest.fn();
-export const IntersectionEnterHandler = jest.fn();
-export const IntersectionExitHandler = jest.fn();
+export const CollisionEnterHandler = vi.fn();
+export const CollisionExitHandler = vi.fn();
+export const IntersectionEnterHandler = vi.fn();
+export const IntersectionExitHandler = vi.fn();
 
 // Default export
 export default {

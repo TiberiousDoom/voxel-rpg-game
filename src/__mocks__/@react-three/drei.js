@@ -3,6 +3,7 @@
  * Provides mock implementations for Three.js helper components
  */
 import React from 'react';
+import { vi } from 'vitest';
 
 // Mock Stats component
 export const Stats = () => <div data-testid="drei-stats" />;
@@ -35,9 +36,9 @@ export const OrbitControls = React.forwardRef((props, ref) => (
 ));
 
 // Mock useKeyboardControls
-export const useKeyboardControls = jest.fn(() => [
-  jest.fn(), // selector function
-  jest.fn(), // get function
+export const useKeyboardControls = vi.fn(() => [
+  vi.fn(), // selector function
+  vi.fn(), // get function
 ]);
 
 // Mock KeyboardControls
@@ -48,14 +49,14 @@ export const KeyboardControls = ({ children, ...props }) => (
 );
 
 // Mock useGLTF
-export const useGLTF = jest.fn(() => ({
-  scene: { clone: jest.fn() },
+export const useGLTF = vi.fn(() => ({
+  scene: { clone: vi.fn() },
   nodes: {},
   materials: {},
 }));
 
 // Mock useTexture
-export const useTexture = jest.fn(() => ({
+export const useTexture = vi.fn(() => ({
   map: {},
 }));
 
@@ -80,7 +81,7 @@ export const Environment = (props) => <div data-testid="drei-environment" {...pr
 export const Sky = (props) => <mesh data-testid="drei-sky" {...props} />;
 
 // Mock useHelper
-export const useHelper = jest.fn();
+export const useHelper = vi.fn();
 
 // Default export
 export default {

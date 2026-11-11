@@ -111,7 +111,9 @@ Save/load in `src/persistence/Game3DSaveManager.js` (IndexedDB `voxel3d-saves`, 
 - Gameplay must stop while `gameState === 'paused'` (Physics is paused; `useFrame` loops should early-return).
 - Block placement goes through `tryPlaceBlock` in BlockInteraction.jsx, which charges `BLOCK_PLACEMENT_COSTS` (`src/data/blockDrops.js`).
 - World edits survive chunk unloads via `ChunkManager.modifiedChunkCache`; saves use `getModifiedChunks()` / `applyModifiedChunks()`.
-- Debug tools (F3/F4 overlays, mobile debug overlay, backtick QA tracker) load only in dev builds or with `?debug=1` (remembered; `?debug=0` turns it off) — see `src/utils/debugFlags.js`.
+- Debug tools load only in dev builds or with `?debug=1` (remembered; `?debug=0` turns it off) — see `src/utils/debugFlags.js`:
+  - **Dev overlay** (`src/components/dev/DevOverlay.jsx`): F3 cycles closed → full → mini perf strip; F4 opens the Settlement tab; DEV button on touch devices. Tabs: Perf (frame-time graph vs. 60 fps budget, draw calls, chunks, workers, entities), Player (stats + cheats: heal, god mode, materials, XP, teleports), World (time controls, spawn/kill enemies, rifts, quick save/load in its own slot), Settlement (NPCs, zones, Phase 2 checks). Cheats live in `devActions.js`; renderer stats come from `DebugStatsTick` in Experience.jsx via `store._debugStats`.
+  - **QA tracker** (backtick): manual test checklist (`TestTracker.jsx`, criteria in `data/testCriteria.js`).
 
 ## Key Files
 

@@ -113,7 +113,7 @@ const RiftVisualWithTerrainY = React.memo(({ rift, chunkManager, isNight }) => {
 
 /**
  * Writes WebGL renderer stats to store._debugStats every 30 frames (~0.5s).
- * DebugOverlay reads these for perf automation.
+ * The dev overlay (components/dev/DevOverlay.jsx) reads these.
  */
 function DebugStatsTick() {
   const { gl } = useThree();
@@ -139,6 +139,9 @@ function DebugStatsTick() {
     const stats = useGameStore.getState()._debugStats;
     stats.drawCalls = gl.info.render.calls;
     stats.triangles = gl.info.render.triangles;
+    stats.geometries = gl.info.memory.geometries;
+    stats.textures = gl.info.memory.textures;
+    stats.programs = gl.info.programs?.length ?? 0;
   });
 
   return null;
@@ -234,7 +237,7 @@ const Experience = () => {
       {/* DayNightCycle manages scene.background and fog dynamically */}
       <DayNightCycle />
 
-      {/* Debug stats tick (renderer info for DebugOverlay) */}
+      {/* Debug stats tick (renderer info for the dev overlay) */}
       <DebugStatsTick />
 
       {/* Survival systems tick (hunger drain, starvation damage, shelter detection) */}

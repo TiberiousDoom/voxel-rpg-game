@@ -51,7 +51,7 @@ function mulberry32(seed) {
   };
 }
 
-const MONSTER_TYPES = {
+export const MONSTER_TYPES = {
   slime: { name: 'Slime', health: 40, damage: 5, speed: 1.5, color: '#44cc44', xp: 20, nocturnalOnly: false },
   goblin: { name: 'Goblin', health: 60, damage: 8, speed: 2.5, color: '#88aa44', xp: 30, nocturnalOnly: false },
   skeleton: { name: 'Skeleton', health: 80, damage: 12, speed: 2.0, color: '#cccccc', xp: 45, nocturnalOnly: true },

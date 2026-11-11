@@ -1,7 +1,7 @@
 /**
  * debugFlags.js — Whether developer/QA tools are enabled.
  *
- * Debug overlays (F3/F4), the mobile debug overlay and the QA test tracker
+ * The dev overlay (F3, or the DEV button on touch devices) and the QA test tracker
  * (backtick) are always available in development builds. In production they
  * are hidden unless explicitly enabled with `?debug=1` in the URL (which is
  * remembered in localStorage) — disable again with `?debug=0`.

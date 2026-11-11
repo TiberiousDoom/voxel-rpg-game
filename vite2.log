@@ -1,0 +1,9 @@
+
+  VITE v6.4.6  ready in 129 ms
+
+  ➜  Local:   http://localhost:3124/voxel-rpg-game/
+  ➜  Network: use --host to expose
+Error: spawn xdg-open ENOENT
+    at ChildProcess._handle.onexit (node:internal/child_process:285:19)
+    at onErrorNT (node:internal/child_process:483:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)

@@ -28,9 +28,7 @@ const DialogueUI = lazy(() => import('./components/ui/DialogueUI'));
 
 // Developer / QA tools: only loaded when enabled (dev builds or ?debug=1)
 const TestTracker = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/TestTracker')) : null;
-const DebugOverlay = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/ui/DebugOverlay')) : null;
-const NPCDebugPanel = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/ui/NPCDebugPanel')) : null;
-const MobileDebugOverlay = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/ui/MobileDebugOverlay')) : null;
+const DevOverlay = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/dev/DevOverlay')) : null;
 
 /**
  * Main 3D App component
@@ -121,10 +119,8 @@ function App3D() {
         {/* Key assignments help (? to toggle) */}
         <KeyboardShortcutsPanel />
 
-        {/* Developer tools: F3 debug overlay, F4 NPC panel, mobile overlay, ` QA tracker */}
-        {DebugOverlay && <DebugOverlay />}
-        {NPCDebugPanel && <NPCDebugPanel />}
-        {MobileDebugOverlay && <MobileDebugOverlay />}
+        {/* Developer tools: F3 dev overlay (DEV button on touch), ` QA tracker */}
+        {DevOverlay && <DevOverlay />}
         {TestTracker && <TestTracker />}
 
         {/* Companion dialogue overlay */}

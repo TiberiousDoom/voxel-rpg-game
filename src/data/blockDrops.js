@@ -89,3 +89,47 @@ export function calculateDrops(blockType, toolTier = 0) {
 
   return drops;
 }
+
+/**
+ * Materials consumed when PLACING a block (Build mode).
+ * Mirrors what mining the block yields so placing then mining is never a
+ * net gain. Blocks not listed here cannot be placed from the hotbar.
+ */
+export const BLOCK_PLACEMENT_COSTS = {
+  [BlockTypes.DIRT]: { dirt: 1 },
+  [BlockTypes.GRASS]: { dirt: 1 },
+  [BlockTypes.STONE]: { stone: 1 },
+  [BlockTypes.SAND]: { sand: 1 },
+  [BlockTypes.SNOW]: { snow: 1 },
+  [BlockTypes.WOOD]: { wood: 1 },
+  // Leaves can drop berries when mined, so they cost wood to avoid a free-food loop
+  [BlockTypes.LEAVES]: { wood: 1 },
+  [BlockTypes.GRAVEL]: { stone: 1 },
+  [BlockTypes.COAL_ORE]: { coal: 1 },
+  [BlockTypes.CLAY]: { clay: 1 },
+  [BlockTypes.ICE]: { ice: 1 },
+  [BlockTypes.CAMPFIRE]: { wood: 2 },
+};
+
+/**
+ * Get the material cost for placing a block, or null if it can't be placed.
+ * @param {number} blockType
+ * @returns {Object<string, number>|null}
+ */
+export function getPlacementCost(blockType) {
+  return BLOCK_PLACEMENT_COSTS[blockType] || null;
+}
+
+/**
+ * Check whether an inventory can pay a placement cost.
+ * @param {Object<string, number>} materials - inventory.materials
+ * @param {Object<string, number>} cost
+ * @returns {{ ok: boolean, missing: string|null }}
+ */
+export function canAffordPlacement(materials, cost) {
+  if (!cost) return { ok: false, missing: null };
+  for (const [mat, qty] of Object.entries(cost)) {
+    if ((materials?.[mat] || 0) < qty) return { ok: false, missing: mat };
+  }
+  return { ok: true, missing: null };
+}

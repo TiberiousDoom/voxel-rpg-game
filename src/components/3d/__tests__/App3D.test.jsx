@@ -43,10 +43,9 @@ describe('App3D Component', () => {
              screen.queryByTestId('r3f-canvas')).toBeTruthy();
     });
 
-    test('renders Stats component for performance monitoring', () => {
+    test('mounts the notification system so window.addNotification works', () => {
       render(<App3D />);
-      const stats = screen.queryByTestId('drei-stats');
-      expect(stats).toBeInTheDocument();
+      expect(typeof window.addNotification).toBe('function');
     });
   });
 

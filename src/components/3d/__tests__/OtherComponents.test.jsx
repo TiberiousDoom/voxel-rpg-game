@@ -5,6 +5,7 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import '../testSetup';
+import useGameStoreMock from '../../../stores/useGameStore';
 
 // Mock the store
 vi.mock('../../../stores/useGameStore', () => {
@@ -64,7 +65,7 @@ vi.mock('../../../stores/useGameStore', () => {
     return selector ? selector(state) : state;
   });
   mockStore.getState = () => createState();
-  return mockStore;
+  return { default: mockStore, selectPlayerStats: (s) => s.player };
 });
 
 // Import after mocks
@@ -82,7 +83,7 @@ const TestWrapper = ({ children }) => (
 
 // Re-init store mock after every clearAllMocks call
 beforeEach(() => {
-  const useGameStore = require('../../../stores/useGameStore');
+  const useGameStore = useGameStoreMock;
   if (useGameStore.mockImplementation) {
     const noop = () => {};
     const createState = () => ({
@@ -197,7 +198,7 @@ describe('Projectile Component', () => {
   });
 
   test('projectile is removed after lifetime expires', () => {
-    const useGameStore = require('../../../stores/useGameStore');
+    const useGameStore = useGameStoreMock;
 
     render(
       <TestWrapper>

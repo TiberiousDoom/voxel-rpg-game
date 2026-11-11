@@ -70,13 +70,16 @@ describe('GameManager', () => {
       expect(gameManager.gameState).toBe(GameManager.GAME_STATE.INITIALIZED);
     });
 
-    test('emits game:initialized event', (done) => {
-      gameManager.on('game:initialized', () => {
-        expect(gameManager.gameState).toBe(GameManager.GAME_STATE.INITIALIZED);
-        done();
+    test('emits game:initialized event', async () => {
+      const emitted = new Promise((resolve) => {
+        gameManager.on('game:initialized', () => {
+          expect(gameManager.gameState).toBe(GameManager.GAME_STATE.INITIALIZED);
+          resolve();
+        });
       });
 
       gameManager.initialize();
+      await emitted;
     });
 
     test('creates all required subsystems', () => {
@@ -109,24 +112,18 @@ describe('GameManager', () => {
       expect(gm.errorRecovery).toBeDefined();
     });
 
-    test.skip('handles initialization errors gracefully', () => {
-      // Skipped: Runtime mocking doesn't work properly in Jest
-      // Would need to be set up as a top-level mock
-      // Force an error by mocking a failing dependency
-      const originalGridManager = require('../modules/foundation/GridManager').default;
-      vi.mock('../modules/foundation/GridManager', () => {
-        return vi.fn().mockImplementation(() => {
-          throw new Error('Initialization failed');
-        });
+    test('handles initialization errors gracefully', () => {
+      // Force a failure inside initialize() via a failing module factory
+      vi.spyOn(gameManager, '_createModules').mockImplementation(() => {
+        throw new Error('Initialization failed');
       });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const result = gameManager.initialize();
 
       expect(result).toBe(false);
       expect(gameManager.gameState).toBe(GameManager.GAME_STATE.ERRORED);
-
-      // Restore
-      jest.unmock('../modules/foundation/GridManager');
+      errorSpy.mockRestore();
     });
   });
 
@@ -494,7 +491,7 @@ describe('GameManager', () => {
 
     test.skip('game events propagate correctly', (done) => {
       // Skipped: Event timing issues in test environment
-      jest.setTimeout(10000);
+      vi.setConfig({ testTimeout: 10000 });
       gameManager.initialize();
 
       let eventCount = 0;

@@ -258,12 +258,17 @@ export function ChunkRenderer({ chunkManager, workerPool }) {
   const frameCountRef = useRef(0);
   const chunkLODRef = useRef(new Map()); // chunk key -> current LOD level
   const playerChunkRef = useRef({ chunkX: 0, chunkZ: 0 });
-  const playerPosition = useGameStore((state) => state.player.position);
+  // Subscribe to the player's chunk (a string), not the position array, so this
+  // component only re-renders when the player crosses a chunk boundary
+  const playerChunkKey = useGameStore((state) => {
+    const c = worldToChunk(state.player.position[0], state.player.position[2]);
+    return `${c.chunkX},${c.chunkZ}`;
+  });
 
-  // Compute player chunk coordinates (only recalculates when playerPosition changes)
   const playerChunk = useMemo(() => {
-    return worldToChunk(playerPosition[0], playerPosition[2]);
-  }, [playerPosition]);
+    const [chunkX, chunkZ] = playerChunkKey.split(',').map(Number);
+    return { chunkX, chunkZ };
+  }, [playerChunkKey]);
 
   // Keep ref in sync for use in callbacks
   playerChunkRef.current = playerChunk;

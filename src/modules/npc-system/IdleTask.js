@@ -87,18 +87,20 @@ export class IdleTask {
    */
   _calculatePriority(type, data) {
     switch (type) {
-      case IdleTaskType.REST:
+      case IdleTaskType.REST: {
         // REST priority increases with fatigue
         const fatigue = data.npcFatigue || 0;
         if (fatigue > 70) return TaskPriority.HIGH;
         if (fatigue > 40) return TaskPriority.MEDIUM;
         return TaskPriority.LOW;
+      }
 
-      case IdleTaskType.SOCIALIZE:
+      case IdleTaskType.SOCIALIZE: {
         // SOCIALIZE is medium priority
         const social = data.npcSocialNeed || 50;
         if (social < 30) return TaskPriority.HIGH;
         return TaskPriority.MEDIUM;
+      }
 
       case IdleTaskType.WANDER:
       case IdleTaskType.INSPECT:

@@ -87,6 +87,7 @@ class PriorityQueue {
   _bubbleDown(index) {
     const length = this.elements.length;
 
+    // eslint-disable-next-line no-constant-condition -- loop exits via break/return
     while (true) {
       const leftChild = 2 * index + 1;
       const rightChild = 2 * index + 2;
@@ -593,6 +594,7 @@ export class PathfindingSystem {
     const sz = z0 < z1 ? 1 : -1;
     let err = dx - dz;
 
+    // eslint-disable-next-line no-constant-condition -- loop exits via break/return
     while (true) {
       if (!this._isWalkable({ x: x0, z: z0 }, customIsWalkable)) {
         return false;

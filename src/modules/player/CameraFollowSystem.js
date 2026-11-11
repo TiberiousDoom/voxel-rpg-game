@@ -201,14 +201,21 @@ export function useCameraFollow(player, options = {}) {
     return () => window.removeEventListener('keydown', handleToggleMode);
   }, [handleToggleMode]);
 
+  // Stable accessors: consumers use these as effect dependencies, so returning
+  // new functions every render caused an infinite render/effect loop.
+  const getTransform = useCallback(() => cameraRef.current?.getTransform(), []);
+  const getOffset = useCallback(() => cameraRef.current?.getOffset(), []);
+  const screenToWorld = useCallback((x, y) => cameraRef.current?.screenToWorld(x, y), []);
+  const worldToScreen = useCallback((x, z) => cameraRef.current?.worldToScreen(x, z), []);
+
   return {
     camera: cameraRef.current,
     cameraMode,
     setCameraMode,
-    getTransform: () => cameraRef.current?.getTransform(),
-    getOffset: () => cameraRef.current?.getOffset(),
-    screenToWorld: (x, y) => cameraRef.current?.screenToWorld(x, y),
-    worldToScreen: (x, z) => cameraRef.current?.worldToScreen(x, z),
+    getTransform,
+    getOffset,
+    screenToWorld,
+    worldToScreen,
   };
 }
 

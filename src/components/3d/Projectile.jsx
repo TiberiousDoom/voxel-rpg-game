@@ -3,6 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
+import { isSolid } from '../../systems/chunks/blockTypes';
+
+// Distance at which the fallback hit check registers a hit
+const HIT_RADIUS = 1.5;
 
 /**
  * Projectile component - For spells and ranged attacks
@@ -32,37 +36,69 @@ const Projectile = ({
 
   const removeProjectile = useGameStore((state) => state.removeProjectile);
 
-  // Apply status effect to enemy
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const applyStatusEffect = useCallback((enemyId) => {
-    if (!effectType || !effectDuration) return;
+  /**
+   * Apply a hit to an enemy. Single code path for both the physics sensor and
+   * the distance-based fallback so damage, crits, combo and status effects are
+   * identical (and damage numbers aren't duplicated — Enemy.takeDamage shows them).
+   */
+  const applyHit = useCallback((hitData, hitPos) => {
+    if (hasHit.current && type !== 'aoe') return;
+    hasHit.current = true;
 
     const store = useGameStore.getState();
-    // Store status effects on enemies (handled in Enemy component)
-    store.updateEnemy(enemyId, {
-      statusEffects: [
-        {
-          type: effectType,
-          duration: effectDuration,
-          value: effectValue,
-        },
-      ],
-    });
-  }, [effectType, effectDuration, effectValue]);
+    const player = store.player;
 
-  // Handle collision with enemies
+    // Critical hit + combo bonus
+    const isCrit = Math.random() * 100 < player.critChance;
+    let finalDamage = isCrit ? damage * (player.critDamage / 100) : damage;
+    finalDamage *= 1 + (player.comboCount * 0.1);
+
+    store.updatePlayer({ comboCount: player.comboCount + 1, comboTimer: 3 });
+
+    hitData.takeDamage(Math.round(finalDamage));
+
+    // Status effect (freeze, poison, ...)
+    if (effectType && effectDuration && hitData.applyStatusEffect) {
+      hitData.applyStatusEffect({ type: effectType, duration: effectDuration, value: effectValue });
+      store.addParticleEffect({
+        position: hitPos,
+        color,
+        type: 'spiral',
+        count: 15,
+      });
+    }
+
+    // Screen shake scales with damage
+    const shakeIntensity = Math.min(0.3 + (finalDamage / 100) * 0.4, 0.8);
+    store.triggerScreenShake(isCrit ? shakeIntensity * 1.5 : shakeIntensity, 0.2);
+
+    // Hit marker (TargetMarker removes itself after its duration)
+    store.addTargetMarker({ position: hitPos, color: isCrit ? '#ffff00' : '#ff6600' });
+
+    if (isCrit) {
+      store.addDamageNumber({ position: [hitPos[0], hitPos[1] + 2, hitPos[2]], damage: 'CRIT!' });
+      store.addParticleEffect({ position: hitPos, color: '#ffff00', type: 'burst', count: 25 });
+    }
+    if (player.comboCount > 1) {
+      store.addDamageNumber({
+        position: [hitPos[0], hitPos[1] + 1.8, hitPos[2]],
+        damage: `${player.comboCount}x COMBO`,
+      });
+    }
+
+    store.addRage(5);
+    removeProjectile(id);
+  }, [id, damage, type, color, effectType, effectValue, effectDuration, removeProjectile]);
+
+  // Physics sensor collision with enemies
   const handleIntersection = useCallback((event) => {
-    // Avoid multiple hits for non-AOE spells
     if (hasHit.current && type !== 'aoe') return;
 
     // In react-three-rapier, userData is on rigidBodyObject (Three.js object), not rigidBody (Rapier object)
     const otherObject = event.other.rigidBodyObject;
     if (!otherObject) return;
 
-    // Check if we hit an enemy - check userData on the object and its children
     let userData = otherObject.userData;
-
-    // If not found on the rigid body object, traverse children to find enemy data
     if (!userData?.isEnemy) {
       otherObject.traverse((child) => {
         if (child.userData?.isEnemy && child.userData?.takeDamage) {
@@ -72,98 +108,16 @@ const Projectile = ({
     }
 
     if (userData?.isEnemy && userData?.takeDamage) {
-      hasHit.current = true;
-
-      const store = useGameStore.getState();
-      const player = store.player;
-
-      // Calculate critical hit
-      const isCrit = Math.random() * 100 < player.critChance;
-      let finalDamage = damage;
-
-      if (isCrit) {
-        finalDamage = damage * (player.critDamage / 100);
-      }
-
-      // Apply combo bonus
-      const comboBonus = 1 + (player.comboCount * 0.1);
-      finalDamage *= comboBonus;
-
-      // Increment combo
-      store.updatePlayer({
-        comboCount: player.comboCount + 1,
-        comboTimer: 3,
-      });
-
-      // Deal damage to enemy
-      userData.takeDamage(Math.round(finalDamage));
-
-      // Trigger screen shake on hit (intensity scales with damage)
-      const shakeIntensity = Math.min(0.3 + (finalDamage / 100) * 0.4, 0.8);
-      store.triggerScreenShake(isCrit ? shakeIntensity * 1.5 : shakeIntensity, 0.2);
-
-      // Apply status effect if present
-      if (effectType && userData.id) {
-        applyStatusEffect(userData.id);
-      }
-
-      // Add hit effect marker
-      const hitPos = event.rigidBody.translation();
-      store.addTargetMarker({
-        position: [hitPos.x, hitPos.y, hitPos.z],
-        color: isCrit ? '#ffff00' : '#ff6600',
-      });
-
-      // Critical hit visual effect
-      if (isCrit) {
-        store.addDamageNumber({
-          position: [hitPos.x, hitPos.y + 2, hitPos.z],
-          damage: 'CRIT!',
-        });
-        store.addParticleEffect({
-          position: [hitPos.x, hitPos.y, hitPos.z],
-          color: '#ffff00',
-          type: 'burst',
-          count: 25,
-        });
-      }
-
-      // Combo visual
-      if (player.comboCount > 1) {
-        store.addDamageNumber({
-          position: [hitPos.x, hitPos.y + 1.8, hitPos.z],
-          damage: `${player.comboCount}x COMBO`,
-        });
-      }
-
-      // Status effect visual
-      if (effectType) {
-        store.addParticleEffect({
-          position: [hitPos.x, hitPos.y, hitPos.z],
-          color: color,
-          type: 'spiral',
-          count: 15,
-        });
-      }
-
-      // Add rage for hitting enemies
-      store.addRage(5);
-
-      // Remove marker after 0.5 seconds
-      setTimeout(() => {
-        const markers = store.targetMarkers;
-        if (markers.length > 0) {
-          store.removeTargetMarker(markers[0].id);
-        }
-      }, 500);
-
-      // Remove projectile (unless it's a piercing spell)
-      removeProjectile(id);
+      const t = event.rigidBody.translation();
+      applyHit(userData, [t.x, t.y, t.z]);
     }
-  }, [id, damage, removeProjectile, effectType, color, type, applyStatusEffect]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [applyHit, type]);
 
   useFrame((state, delta) => {
     if (!rigidBodyRef.current || hasHit.current) return;
+
+    const store = useGameStore.getState();
+    if (store.gameState === 'paused') return;
 
     // Update velocity
     rigidBodyRef.current.setLinvel(
@@ -191,41 +145,36 @@ const Projectile = ({
       return;
     }
 
-    // Manual distance-based enemy hit detection (fallback for physics sensor)
-    // Traverse scene to find nearby enemies
-    const hitRadius = 1.5;
-    const hitRadiusSq = hitRadius * hitRadius;
-    state.scene.traverse((child) => {
-      if (hasHit.current) return;
-      if (!child.userData?.isEnemy || !child.userData?.takeDamage) return;
-      // Get child world position
-      const wp = child.getWorldPosition(new THREE.Vector3());
-      const dx = pos.x - wp.x;
-      const dy = pos.y - wp.y;
-      const dz = pos.z - wp.z;
-      if (dx * dx + dy * dy + dz * dz < hitRadiusSq) {
-        // Create synthetic event-like object for handleIntersection
+    // Distance-based enemy hit detection (fallback for the physics sensor).
+    // Iterates registered enemies instead of traversing the whole scene graph.
+    const hitRadiusSq = HIT_RADIUS * HIT_RADIUS;
+    for (const [enemyId, handler] of store._enemyHandlers) {
+      const ep = store._enemyPositions.get(enemyId);
+      if (!ep) continue;
+      // Enemy positions are at the body base; aim at its centre
+      const ex = pos.x - ep[0];
+      const ey = pos.y - (ep[1] + 0.5);
+      const ez = pos.z - ep[2];
+      if (ex * ex + ey * ey + ez * ez < hitRadiusSq) {
+        applyHit(handler, [ep[0], ep[1] + 0.5, ep[2]]);
+        return;
+      }
+    }
+
+    // Projectiles stop when they hit terrain (beams pierce)
+    if (type !== 'beam') {
+      const cm = store._chunkManager;
+      if (cm && isSolid(cm.getBlock(pos.x, pos.y, pos.z))) {
         hasHit.current = true;
-        const store = useGameStore.getState();
-        const player = store.player;
-        const isCrit = Math.random() * 100 < player.critChance;
-        let finalDamage = damage;
-        if (isCrit) finalDamage = damage * (player.critDamage / 100);
-        finalDamage *= 1 + (player.comboCount * 0.1);
-        store.updatePlayer({ comboCount: player.comboCount + 1, comboTimer: 3 });
-        child.userData.takeDamage(Math.round(finalDamage));
-        store.triggerScreenShake(Math.min(0.3 + (finalDamage / 100) * 0.4, 0.8), 0.2);
-        store.addDamageNumber({
-          position: [wp.x, wp.y + 1.5, wp.z],
-          damage: Math.round(finalDamage),
+        store.addParticleEffect({
+          position: [pos.x, pos.y, pos.z],
+          color,
+          type: 'burst',
+          count: 8,
         });
-        if (isCrit) {
-          store.addDamageNumber({ position: [wp.x, wp.y + 2, wp.z], damage: 'CRIT!' });
-        }
-        store.addRage(5);
         removeProjectile(id);
       }
-    });
+    }
   });
 
   // Render different projectile types with unique visuals

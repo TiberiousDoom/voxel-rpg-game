@@ -5,6 +5,13 @@
  * Follows the same IDB pattern as Game3DSaveManager.
  */
 
+// Import limits for user-supplied tracker files
+const VALID_STATUSES = new Set(['untested', 'pass', 'fail']); // Must match TestTracker STATUS_CYCLE
+const MAX_IMPORT_ENTRIES = 5000;
+const MAX_NOTES_LENGTH = 20000;
+const MAX_SCREENSHOT_BASE64 = 20 * 1024 * 1024; // ~15 MB image
+const BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
+
 class TestNotesManager {
   constructor() {
     this.db = null;
@@ -115,38 +122,50 @@ class TestNotesManager {
    * @param {object} data - The exported JSON data
    */
   async importFromJSON(data) {
-    if (!data || !data.criteria) return;
+    if (!data || !Array.isArray(data.criteria)) {
+      throw new Error('Invalid test tracker file: expected { criteria: [...] }');
+    }
+
+    // Validate every entry before writing anything (files are user-supplied)
+    const records = [];
+    for (const entry of data.criteria.slice(0, MAX_IMPORT_ENTRIES)) {
+      if (!entry || typeof entry.id !== 'string' || entry.id.length === 0 || entry.id.length > 200) continue;
+      const record = {
+        id: entry.id,
+        status: VALID_STATUSES.has(entry.status) ? entry.status : 'untested',
+        notes: typeof entry.notes === 'string' ? entry.notes.slice(0, MAX_NOTES_LENGTH) : '',
+        screenshotTimestamp: Number.isFinite(entry.screenshotTimestamp) ? entry.screenshotTimestamp : null,
+        lastModified: Number.isFinite(entry.lastModified) ? entry.lastModified : Date.now(),
+        screenshot: null,
+      };
+
+      if (typeof entry.screenshot === 'string' && entry.screenshot.length <= MAX_SCREENSHOT_BASE64 &&
+          BASE64_RE.test(entry.screenshot)) {
+        try {
+          // Convert base64 back to ArrayBuffer
+          const binary = atob(entry.screenshot);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          record.screenshot = bytes.buffer;
+        } catch {
+          record.screenshot = null; // Malformed base64: keep the notes, drop the image
+          record.screenshotTimestamp = null;
+        }
+      }
+      records.push(record);
+    }
 
     await this.dbReady;
     const tx = this.db.transaction(['criteria'], 'readwrite');
     const store = tx.objectStore('criteria');
 
-    const promises = data.criteria.map((entry) => {
-      const record = {
-        id: entry.id,
-        status: entry.status || 'untested',
-        notes: entry.notes || '',
-        screenshotTimestamp: entry.screenshotTimestamp || null,
-        lastModified: entry.lastModified || Date.now(),
-        screenshot: null,
-      };
-
-      if (entry.screenshot) {
-        // Convert base64 back to ArrayBuffer
-        const binary = atob(entry.screenshot);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        record.screenshot = bytes.buffer;
-      }
-
-      return new Promise((resolve, reject) => {
-        const request = store.put(record);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-      });
-    });
+    const promises = records.map((record) => new Promise((resolve, reject) => {
+      const request = store.put(record);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    }));
 
     await Promise.all(promises);
   }

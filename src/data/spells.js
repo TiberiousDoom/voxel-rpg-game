@@ -1,3 +1,4 @@
+import { damageEnemy, getEnemiesInRadius, getEnemyPosition, isEnemyHittable, rollPlayerDamage } from '../systems/combat/enemyHits';
 import { Flame, Zap, Snowflake, Wind, Heart, Shield, Wand2, Cloud, Zap as Lightning, Droplets, Skull } from 'lucide-react';
 
 /**
@@ -338,6 +339,13 @@ export const getSpellsByType = (type) =>
 export const getSpellByKey = (key) =>
   SPELLS.find(s => s.key === key);
 
+// Unique projectile/effect IDs (Date.now() alone collides when two casts land in one frame)
+let _spellEntityCounter = 0;
+const nextSpellEntityId = (prefix) => `${prefix}_${Date.now()}_${++_spellEntityCounter}`;
+
+// Fallback distance for targeted AOE spells (meteor, poison cloud) with no enemy in sight
+const AOE_DEFAULT_TARGET_DISTANCE = 10;
+
 /**
  * Spell execution pipeline
  */
@@ -448,7 +456,7 @@ const executeProjectileSpell = (spell, player, store) => {
     for (let i = 0; i < spell.burstCount; i++) {
       setTimeout(() => {
         store.addProjectile({
-          id: `projectile_${Date.now()}_${i}`,
+          id: nextSpellEntityId('projectile'),
           position: spawnPos,
           direction,
           speed: spell.speed,
@@ -465,7 +473,7 @@ const executeProjectileSpell = (spell, player, store) => {
     }
   } else {
     store.addProjectile({
-      id: `projectile_${Date.now()}`,
+      id: nextSpellEntityId('projectile'),
       position: spawnPos,
       direction,
       speed: spell.speed,
@@ -483,31 +491,81 @@ const executeProjectileSpell = (spell, player, store) => {
   return { success: true };
 };
 
+/**
+ * Pick the centre of an AOE spell.
+ * - Self-centred spells (speed 0: frost nova, inferno) explode on the player.
+ * - Targeted spells (meteor, poison cloud) hit the click/tap target, else the
+ *   nearest enemy in the facing cone within range, else a point ahead.
+ */
+function getAOECenter(spell, player, state) {
+  if (!spell.speed) return [player.position[0], player.position[1], player.position[2]];
+  if (player.aimTarget) return player.aimTarget;
+
+  const fwdX = Math.sin(player.facingAngle);
+  const fwdZ = Math.cos(player.facingAngle);
+  let best = null;
+  let bestDist = Infinity;
+  for (const enemy of state.enemies || []) {
+    if (!isEnemyHittable(state, enemy)) continue;
+    const pos = getEnemyPosition(state, enemy);
+    if (!pos) continue;
+    const dx = pos[0] - player.position[0];
+    const dz = pos[2] - player.position[2];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < 0.5 || dist > (spell.range || 50)) continue;
+    if ((dx * fwdX + dz * fwdZ) / dist < 0.5) continue; // ~60° cone
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = pos;
+    }
+  }
+  if (best) return best;
+  return [
+    player.position[0] + fwdX * AOE_DEFAULT_TARGET_DISTANCE,
+    player.position[1],
+    player.position[2] + fwdZ * AOE_DEFAULT_TARGET_DISTANCE,
+  ];
+}
+
 const executeAOESpell = (spell, player, store) => {
-  const now = Date.now();
+  const state = store.getState ? store.getState() : store;
+  const center = getAOECenter(spell, player, state);
+  const radius = spell.aoeRadius || 5;
+
+  // Damage + status effect on every enemy inside the blast radius
+  const statusEffect = spell.effectType
+    ? { type: spell.effectType, duration: spell.effectDuration || spell.duration || 0, value: spell.effectValue || 0 }
+    : null;
+  const targets = getEnemiesInRadius(state, center, radius);
+  for (const { enemy } of targets) {
+    const { damage } = rollPlayerDamage(state.player, spell.damage || 0);
+    if (spell.damage > 0) {
+      damageEnemy(state, enemy, damage, statusEffect);
+    } else if (statusEffect) {
+      state._enemyHandlers?.get(enemy.id)?.applyStatusEffect(statusEffect);
+    }
+  }
+  if (targets.length > 0 && spell.damage > 0) {
+    store.triggerScreenShake?.(Math.min(0.3 + spell.damage / 150, 0.8), 0.25);
+  }
 
   store.addParticleEffect({
-    id: `aoe_${now}`,
-    position: [player.position[0], player.position[1] + 0.5, player.position[2]],
+    id: nextSpellEntityId('aoe'),
+    position: [center[0], center[1] + 0.5, center[2]],
     color: spell.color,
     type: 'burst',
     count: 50,
-    radius: spell.aoeRadius,
+    radius,
     spellId: spell.id,
-    damage: spell.damage,
-    effectType: spell.effectType,
-    effectValue: spell.effectValue,
-    effectDuration: spell.effectDuration,
-    aoeRadius: spell.aoeRadius,
   });
 
-  return { success: true };
+  return { success: true, hits: targets.length };
 };
 
 const executeHealSpell = (spell, player, store) => {
   store.healPlayer(spell.healAmount);
   store.addParticleEffect({
-    id: `heal_${Date.now()}`,
+    id: nextSpellEntityId('heal'),
     position: [player.position[0], player.position[1] + 2.5, player.position[2]],
     color: spell.color,
     type: 'heal',
@@ -526,7 +584,7 @@ const executeBuffSpell = (spell, player, store) => {
   });
 
   store.addParticleEffect({
-    id: `buff_${Date.now()}`,
+    id: nextSpellEntityId('buff'),
     position: [player.position[0], player.position[1] + 2.5, player.position[2]],
     color: spell.color,
     type: 'buff',
@@ -550,7 +608,7 @@ const executeBeamSpell = (spell, player, store) => {
   // Spawn beam 2 units ahead to clear player collider
   const spawnOffset = 2;
   store.addProjectile({
-    id: `beam_${Date.now()}`,
+    id: nextSpellEntityId('beam'),
     position: [
       player.position[0] + direction[0] * spawnOffset,
       player.position[1] + 1.5 + direction[1] * spawnOffset,

@@ -319,7 +319,7 @@ describe('RiftManager — Rift Closing', () => {
       expect(spawns[0].targetPosition[0]).toBe(closingRift.x);
     });
 
-    test('returns empty if no nearby active rifts', () => {
+    test('closing rift spawns its own defenders if no nearby active rifts', () => {
       const closingRift = rm.rifts[0];
       closingRift.state = RiftState.CLOSING;
       closingRift.lastReinforcementTime = 0;
@@ -328,7 +328,8 @@ describe('RiftManager — Rift Closing', () => {
       rm.rifts = [closingRift];
 
       const spawns = rm.getReinforcementSpawns(closingRift, 100);
-      expect(spawns).toHaveLength(0);
+      expect(spawns.length).toBeGreaterThan(0);
+      expect(spawns.every((s) => s.riftId === closingRift.id)).toBe(true);
     });
 
     test('escalates enemy types as corruption decreases', () => {

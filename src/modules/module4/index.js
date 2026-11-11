@@ -15,10 +15,12 @@
 // STORES
 // ============================================================================
 
-export { useTerritory } from './stores/useTerritory';
-export { useTownManagement } from './stores/useTownManagement';
-export { useNPCSystem } from './stores/useNPCSystem';
-export { useProgressionSystem } from './stores/useProgressionSystem';
+import { useTerritory } from './stores/useTerritory';
+import { useTownManagement } from './stores/useTownManagement';
+import { useNPCSystem } from './stores/useNPCSystem';
+import { useProgressionSystem } from './stores/useProgressionSystem';
+
+export { useTerritory, useTownManagement, useNPCSystem, useProgressionSystem };
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -112,8 +114,6 @@ export const MODULE_4_INFO = {
  * @param {Object} config - Configuration object
  */
 export function initializeModule4(config = {}) {
-  const { useTerritory, useTownManagement, useNPCSystem, useProgressionSystem } = require('./index');
-
   // Initialize default state
   const territoryStore = useTerritory.getState();
   const townStore = useTownManagement.getState();

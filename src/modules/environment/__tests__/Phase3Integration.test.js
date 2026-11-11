@@ -256,8 +256,8 @@ describe('Phase 3: Enhanced Terrain Features Integration', () => {
     test('should change weather based on biome', () => {
       weatherSystem.changeWeather('tundra');
 
-      // Tundra should favor snow
-      expect([WeatherType.CLEAR, WeatherType.SNOW, WeatherType.FOG]).toContain(
+      // Tundra weather is cold-climate only
+      expect([WeatherType.CLEAR, WeatherType.SNOW, WeatherType.BLIZZARD, WeatherType.FOG]).toContain(
         weatherSystem.targetWeather
       );
     });

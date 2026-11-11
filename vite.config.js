@@ -11,6 +11,17 @@ export default defineConfig({
   build: {
     outDir: 'build',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        // Split large, rarely-changing vendor libraries into their own cacheable chunks
+        manualChunks: {
+          // React lives with R3F: they import each other, so separate chunks would be circular
+          'vendor-react': ['react', 'react-dom', '@react-three/fiber', '@react-three/drei'],
+          'vendor-three': ['three'],
+          'vendor-rapier': ['@react-three/rapier'],
+        },
+      },
+    },
   },
   define: {
     // Polyfill process.env for libraries that expect it

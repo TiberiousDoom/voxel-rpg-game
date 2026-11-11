@@ -37,10 +37,11 @@ describe('DungeonCombatEngine', () => {
     });
 
     test('scales enemy count with floor number', () => {
+      // Floor 5 is a boss floor (single boss), so compare two regular floors
       const floor1 = engine.generateFloor(1, 1);
-      const floor5 = engine.generateFloor(5, 1);
+      const floor4 = engine.generateFloor(4, 1);
 
-      expect(floor5.enemies.length).toBeGreaterThan(floor1.enemies.length);
+      expect(floor4.enemies.length).toBeGreaterThan(floor1.enemies.length);
     });
 
     test('enemies have required properties', () => {
@@ -160,7 +161,18 @@ describe('DungeonCombatEngine', () => {
 
       const initialHealth1 = npc1.combatStats.health.current;
       const initialHealth2 = npc2.combatStats.health.current;
-      const result = engine.simulateCombat(party, enemies);
+      // Deterministic randomness (Park-Miller LCG) so the outcome doesn't depend on luck
+      let seed = 42;
+      const randomSpy = vi.spyOn(Math, 'random').mockImplementation(() => {
+        seed = (seed * 16807) % 2147483647;
+        return (seed - 1) / 2147483646;
+      });
+      let result;
+      try {
+        result = engine.simulateCombat(party, enemies);
+      } finally {
+        randomSpy.mockRestore();
+      }
 
       expect(result.victory).toBe(true);
       // At least one NPC should have taken damage

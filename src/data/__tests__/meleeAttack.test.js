@@ -25,6 +25,7 @@ function makeEnemy(overrides = {}) {
     id: 'enemy_1',
     alive: true,
     position: [2, 0, 2],
+    takeDamage: vi.fn(), // legacy Monster instance (handled by store.attackMonster)
     ...overrides,
   };
 }

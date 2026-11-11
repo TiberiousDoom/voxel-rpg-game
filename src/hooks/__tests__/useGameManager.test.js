@@ -14,9 +14,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import useGameManager from '../useGameManager';
 
-// Mock GameManager - must be defined inline in jest.mock to avoid TDZ issues
+// Mock GameManager - must be defined inline in vi.mock to avoid TDZ issues
 vi.mock('../../GameManager', () => {
-  return class MockGameManager {
+  const MockGameManager = class MockGameManager {
     constructor() {
       this.isRunning = false;
       this.eventListeners = {};
@@ -123,10 +123,11 @@ vi.mock('../../GameManager', () => {
       }
     }
   };
+  return { default: MockGameManager };
 });
 
 vi.mock('../../persistence/BrowserSaveManager', () => {
-  return vi.fn().mockImplementation(() => ({}));
+  return { default: vi.fn().mockImplementation(() => ({})) };
 });
 
 describe('useGameManager Hook', () => {

@@ -1,30 +1,36 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, lazy, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import Experience from './components/3d/Experience';
 import GameUI from './components/GameUI';
 import SpellWheel from './components/SpellWheel';
-import CraftingUI from './components/CraftingUI';
-import InventoryUI from './components/InventoryUI';
 import BlockHotbar from './components/ui/BlockHotbar';
 import ZoneHotbar from './components/ui/ZoneHotbar';
 import Crosshair from './components/ui/Crosshair';
 import ContextualHints from './components/ContextualHints';
-import TestTracker from './components/TestTracker';
-import DebugOverlay from './components/ui/DebugOverlay';
-import NPCDebugPanel from './components/ui/NPCDebugPanel';
-import MobileDebugOverlay from './components/ui/MobileDebugOverlay';
 import StockpilePanel from './components/ui/StockpilePanel';
-import BuildingCatalog from './components/ui/BuildingCatalog';
 import ConstructionPanel from './components/ui/ConstructionPanel';
 import PickupTextOverlay from './components/ui/PickupTextOverlay';
 import PauseMenu from './components/PauseMenu';
-import KeyboardShortcutsPanel from './components/KeyboardShortcutsPanel';
-import DeathScreen from './components/DeathScreen';
-import DialogueUI from './components/ui/DialogueUI';
 import MobileActionButtons from './components/ui/MobileActionButtons';
 import MobileTouchTutorial from './components/ui/MobileTouchTutorial';
 import VirtualJoystick from './components/ui/VirtualJoystick';
+import NotificationSystem from './components/notifications/NotificationSystem';
+import { DEBUG_TOOLS_ENABLED } from './utils/debugFlags';
 import useGameStore from './stores/useGameStore';
+
+// Panels that aren't needed for the first frame are code-split into their own chunks
+const CraftingUI = lazy(() => import('./components/CraftingUI'));
+const InventoryUI = lazy(() => import('./components/InventoryUI'));
+const BuildingCatalog = lazy(() => import('./components/ui/BuildingCatalog'));
+const KeyboardShortcutsPanel = lazy(() => import('./components/KeyboardShortcutsPanel'));
+const DeathScreen = lazy(() => import('./components/DeathScreen'));
+const DialogueUI = lazy(() => import('./components/ui/DialogueUI'));
+
+// Developer / QA tools: only loaded when enabled (dev builds or ?debug=1)
+const TestTracker = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/TestTracker')) : null;
+const DebugOverlay = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/ui/DebugOverlay')) : null;
+const NPCDebugPanel = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/ui/NPCDebugPanel')) : null;
+const MobileDebugOverlay = DEBUG_TOOLS_ENABLED ? lazy(() => import('./components/ui/MobileDebugOverlay')) : null;
 
 /**
  * Main 3D App component
@@ -35,6 +41,7 @@ function App3D() {
   const lastDamageSource = useGameStore((state) => state.lastDamageSource);
   const dialogueActive = useGameStore((state) => state.dialogue.active);
   const dialogueTree = useGameStore((state) => state.dialogue.tree);
+  const dialogueOnAction = useGameStore((state) => state.dialogue.onAction);
 
   const handleRespawn = useCallback(() => {
     useGameStore.getState().respawnPlayer();
@@ -47,7 +54,8 @@ function App3D() {
       {/* Three.js Canvas */}
       <Canvas
         shadows
-        gl={{ preserveDrawingBuffer: true }}
+        // preserveDrawingBuffer is only needed for QA tracker screenshots and costs performance
+        gl={{ preserveDrawingBuffer: DEBUG_TOOLS_ENABLED }}
         camera={{
           fov: 60,
           near: 0.1,
@@ -63,14 +71,11 @@ function App3D() {
       {/* HTML UI overlay */}
       <GameUI />
 
+      {/* Toast notifications (window.addNotification) */}
+      <NotificationSystem />
+
       {/* Spell selection wheel */}
       <SpellWheel />
-
-      {/* Crafting UI */}
-      <CraftingUI />
-
-      {/* Inventory UI */}
-      <InventoryUI />
 
       {/* Block selection hotbar */}
       <BlockHotbar />
@@ -80,9 +85,6 @@ function App3D() {
 
       {/* Stockpile deposit/withdraw panel */}
       <StockpilePanel />
-
-      {/* Building catalog (B key) */}
-      <BuildingCatalog />
 
       {/* Construction material delivery panel (E key) */}
       <ConstructionPanel />
@@ -96,15 +98,6 @@ function App3D() {
       {/* Contextual hints for new players */}
       <ContextualHints />
 
-      {/* Debug overlay (F3 to toggle) */}
-      <DebugOverlay />
-
-      {/* NPC debug panel (F4 to toggle) */}
-      <NPCDebugPanel />
-
-      {/* Mobile debug overlay (touch button to toggle) */}
-      <MobileDebugOverlay />
-
       {/* Mobile on-screen controls */}
       <VirtualJoystick />
       <MobileActionButtons />
@@ -112,33 +105,42 @@ function App3D() {
       {/* Mobile touch tutorial (shows once on first mobile play) */}
       <MobileTouchTutorial />
 
-      {/* QA Test Tracker (backtick key to toggle) */}
-      <TestTracker />
-
       {/* Pause menu (F10 to toggle) */}
       <PauseMenu />
 
-      {/* Key assignments help (? to toggle) */}
-      <KeyboardShortcutsPanel />
+      <Suspense fallback={null}>
+        {/* Crafting UI */}
+        <CraftingUI />
 
-      {/* Companion dialogue overlay */}
-      {dialogueActive && (
-        <DialogueUI
-          dialogueTree={dialogueTree}
-          onAction={(action) => {
-            // Handle dialogue actions (help_companion, etc.)
-            if (window.handleDialogueAction) {
-              window.handleDialogueAction(action);
-            }
-          }}
-          onClose={() => useGameStore.getState().closeDialogue()}
-        />
-      )}
+        {/* Inventory UI */}
+        <InventoryUI />
 
-      {/* Death screen overlay */}
-      {isDead && (
-        <DeathScreen onRespawn={handleRespawn} deathCause={lastDamageSource} />
-      )}
+        {/* Building catalog (B key) */}
+        <BuildingCatalog />
+
+        {/* Key assignments help (? to toggle) */}
+        <KeyboardShortcutsPanel />
+
+        {/* Developer tools: F3 debug overlay, F4 NPC panel, mobile overlay, ` QA tracker */}
+        {DebugOverlay && <DebugOverlay />}
+        {NPCDebugPanel && <NPCDebugPanel />}
+        {MobileDebugOverlay && <MobileDebugOverlay />}
+        {TestTracker && <TestTracker />}
+
+        {/* Companion dialogue overlay */}
+        {dialogueActive && (
+          <DialogueUI
+            dialogueTree={dialogueTree}
+            onAction={(action) => dialogueOnAction?.(action)}
+            onClose={() => useGameStore.getState().closeDialogue()}
+          />
+        )}
+
+        {/* Death screen overlay */}
+        {isDead && (
+          <DeathScreen onRespawn={handleRespawn} deathCause={lastDamageSource} />
+        )}
+      </Suspense>
     </div>
   );
 }

@@ -349,3 +349,35 @@ export const NPC_SKILL_GROWTH = 0.01;         // Skill increment per completed t
 
 // ─── Debug ───────────────────────────────────────────────────
 export const DEBUG_TIME_SCALES = [1, 2, 5, 10, 0]; // 0 = paused
+
+// ─── Player Movement & Resources ─────────────────────────────
+export const PLAYER_SPRINT_SPEED_MULT = 1.5;   // Speed multiplier while sprinting
+export const PLAYER_STAMINA_SPRINT_DRAIN = 20; // Stamina/sec while sprinting
+export const PLAYER_STAMINA_BLOCK_DRAIN = 15;  // Stamina/sec while blocking
+export const PLAYER_STAMINA_REGEN = 30;        // Stamina/sec when resting
+export const PLAYER_MANA_REGEN = 10;           // Mana/sec
+export const PLAYER_MOVE_SMOOTHING = 0.2;      // Velocity lerp factor at 60 fps
+export const CAMERA_FOLLOW_SMOOTHING = 0.15;   // Third-person camera lerp factor at 60 fps
+export const DODGE_STAMINA_COST = 30;
+export const DODGE_DURATION = 0.3;             // Seconds
+export const DODGE_SPEED = 20;                 // World units/sec during dodge
+export const DODGE_DOUBLE_TAP_MS = 300;        // Window for double-tap dodge
+export const RESPAWN_INVINCIBILITY_SECONDS = 5;
+export const RESPAWN_MIN_DISTANCE = 40;        // Respawn this far from death position...
+export const RESPAWN_DISTANCE_SPREAD = 20;     // ...plus up to this much extra
+export const RESPAWN_HEIGHT = 70;              // Drop-in height (falls to terrain)
+export const POTION_HEAL_AMOUNT = 50;
+export const POTION_COOLDOWN = 5;              // Seconds
+
+// ─── Settlement Housing & NPC Timeouts ───────────────────────
+export const HOUSING_WALLS_PER_SLOT = 25;      // Structural blocks per housing slot
+export const HOUSING_MIN_NPC_CAP = 3;          // Population cap before any walls
+export const NPC_APPROACH_TIMEOUT = 60;        // Seconds before a stuck immigrant gives up
+export const NPC_LEAVING_TIMEOUT = 30;         // Seconds before a leaving NPC is force-removed
+
+// ─── Combat Status Effects ───────────────────────────────────
+export const STATUS_TICK_INTERVAL = 1;         // Seconds between DoT ticks
+export const STATUS_FREEZE_SLOW = 0.5;         // Speed multiplier while frozen
+export const STATUS_SLOW_MULT = 0.7;           // Speed multiplier while slowed
+export const STATUS_BURN_DAMAGE_TAKEN_MULT = 1.25; // Extra damage taken while burning
+export const SHIELD_DAMAGE_REDUCTION = 0.5;    // Fraction of damage absorbed while shielded (until shield HP runs out)

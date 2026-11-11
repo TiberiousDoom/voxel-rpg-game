@@ -57,6 +57,10 @@ import {
   NPC_MINE_TOOL_TIER,
   NPC_THOUGHT_DURATION,
   NPC_SKILL_GROWTH,
+  HOUSING_WALLS_PER_SLOT,
+  HOUSING_MIN_NPC_CAP,
+  NPC_APPROACH_TIMEOUT,
+  NPC_LEAVING_TIMEOUT,
 } from '../../data/tuning';
 import { isSolid } from '../../systems/chunks/blockTypes';
 
@@ -315,8 +319,8 @@ export default function SettlementTick({ chunkManager }) {
       const threshold = IMMIGRATION_THRESHOLD + npcCount * IMMIGRATION_THRESHOLD_PER_NPC;
 
       // Housing-based population cap
-      const housingSlots = Math.floor((settlement.wallCount || 0) / 25);
-      const maxNPCs = Math.min(IMMIGRATION_MAX_NPCS, Math.max(3, housingSlots));
+      const housingSlots = Math.floor((settlement.wallCount || 0) / HOUSING_WALLS_PER_SLOT);
+      const maxNPCs = Math.min(IMMIGRATION_MAX_NPCS, Math.max(HOUSING_MIN_NPC_CAP, housingSlots));
 
       if (settlement.attractiveness >= threshold && npcCount < maxNPCs) {
         // Spawn immigrant
@@ -377,7 +381,7 @@ export default function SettlementTick({ chunkManager }) {
         // APPROACHING — tick timer; if stuck for 60s, force to LEAVING
         if (npc.state === 'APPROACHING') {
           const timer = (npc.stateTimer || 0) + tickDelta;
-          if (timer > 60) {
+          if (timer > NPC_APPROACH_TIMEOUT) {
             batchUpdates[npc.id] = {
               state: 'LEAVING',
               stateTimer: 0,
@@ -395,7 +399,7 @@ export default function SettlementTick({ chunkManager }) {
         // LEAVING — tick timer; if stuck for 30s, force-remove
         if (npc.state === 'LEAVING') {
           const timer = (npc.stateTimer || 0) + tickDelta;
-          if (timer > 30) {
+          if (timer > NPC_LEAVING_TIMEOUT) {
             removeIds.push(npc.id);
           } else {
             batchUpdates[npc.id] = { stateTimer: timer };

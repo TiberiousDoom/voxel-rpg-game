@@ -136,3 +136,26 @@ afterEach(() => {
   vi.clearAllMocks();
   vi.clearAllTimers();
 });
+
+// Deterministic randomness: many game systems (loot, spawning, terrain, combat)
+// use Math.random, which made tests pass or fail by luck. Every test starts
+// from the same seeded PRNG sequence, so results are reproducible. A test can
+// still override Math.random with vi.spyOn when it needs specific values.
+const nativeRandom = Math.random;
+function createSeededRandom(seed) {
+  // mulberry32
+  let a = seed >>> 0;
+  return function seededRandom() {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+beforeEach(() => {
+  Math.random = createSeededRandom(0x5eed);
+});
+afterAll(() => {
+  Math.random = nativeRandom;
+});

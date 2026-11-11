@@ -15,6 +15,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ResourceItem from '../ResourceItem';
+import * as resourceAnimation from '../../../hooks/useResourceAnimation';
 
 // Mock the animation hook
 vi.mock('../../../hooks/useResourceAnimation', () => ({
@@ -38,7 +39,7 @@ describe('ResourceItem Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Re-apply mock implementations after clearAllMocks wipes them
-    const { useResourceAnimation, useResourceTrend } = require('../../../hooks/useResourceAnimation');
+    const { useResourceAnimation, useResourceTrend } = resourceAnimation;
     useResourceAnimation.mockImplementation((value) => value);
     useResourceTrend.mockImplementation(() => 0);
   });
@@ -135,7 +136,7 @@ describe('ResourceItem Component', () => {
 
   describe('Trend Indicator', () => {
     it('should show trend indicator when enabled', () => {
-      const { useResourceTrend } = require('../../../hooks/useResourceAnimation');
+      const { useResourceTrend } = resourceAnimation;
       useResourceTrend.mockReturnValue(5);
 
       const { container } = render(
@@ -198,7 +199,7 @@ describe('ResourceItem Component', () => {
 
   describe('Animation Integration', () => {
     it('should use animated value from hook', () => {
-      const { useResourceAnimation } = require('../../../hooks/useResourceAnimation');
+      const { useResourceAnimation } = resourceAnimation;
       useResourceAnimation.mockReturnValue(450);
 
       const { container } = render(<ResourceItem {...defaultProps} amount={500} />);
@@ -207,7 +208,7 @@ describe('ResourceItem Component', () => {
     });
 
     it('should pass correct animation options', () => {
-      const { useResourceAnimation } = require('../../../hooks/useResourceAnimation');
+      const { useResourceAnimation } = resourceAnimation;
 
       render(<ResourceItem {...defaultProps} />);
 

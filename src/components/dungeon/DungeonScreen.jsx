@@ -462,7 +462,7 @@ function DungeonScreen({ onExit }) {
             e.preventDefault();
             handleAttack();
             break;
-          case 'tab':
+          case 'tab': {
             e.preventDefault();
             const aliveEnemies = currentEnemies.filter(e => e.alive);
             if (aliveEnemies.length > 0) {
@@ -471,6 +471,7 @@ function DungeonScreen({ onExit }) {
               selectTarget(aliveEnemies[nextIndex].id);
             }
             break;
+          }
           default:
             break;
         }

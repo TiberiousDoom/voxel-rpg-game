@@ -16,13 +16,13 @@ const XPOrb = ({ position, xpAmount = 25, id, onCollect }) => {
   const _orbPos = useRef(new THREE.Vector3());
   const _direction = useRef(new THREE.Vector3());
 
-  const player = useGameStore((state) => state.player);
 
   useFrame(() => {
     if (!rigidBodyRef.current || collected) return;
 
     const orbTranslation = rigidBodyRef.current.translation();
-    const playerPos = _playerPos.current.set(player.position[0], player.position[1], player.position[2]);
+    const playerPosArr = useGameStore.getState().player.position;
+    const playerPos = _playerPos.current.set(playerPosArr[0], playerPosArr[1], playerPosArr[2]);
     const orbVec = _orbPos.current.set(orbTranslation.x, orbTranslation.y, orbTranslation.z);
 
     // Calculate distance to player

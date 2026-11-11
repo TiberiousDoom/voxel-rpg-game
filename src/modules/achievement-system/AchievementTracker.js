@@ -155,7 +155,8 @@ class AchievementTracker {
    * @param {string} tier - Tier name
    */
   recordTierReached(tier) {
-    if (!this.gameEvents.tierReachTimes[tier]) {
+    // `in` check: a tier reached at 0 seconds must not be overwritten later
+    if (!(tier in this.gameEvents.tierReachTimes)) {
       const elapsed = (Date.now() - this.gameEvents.startTime) / 1000; // seconds
       this.gameEvents.tierReachTimes[tier] = elapsed;
     }

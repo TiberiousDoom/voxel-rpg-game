@@ -13,7 +13,7 @@ const SpellWheel = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [page, setPage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const player = useGameStore((state) => state.player);
+  const playerMana = useGameStore((state) => state.player.mana);
   const setActiveSpellId = useGameStore((state) => state.setActiveSpellId);
 
   // Detect mobile device
@@ -230,7 +230,7 @@ const SpellWheel = () => {
             const globalIndex = page * SPELLS_PER_PAGE + localIndex;
             const isSelected = globalIndex === selectedIndex;
             const Icon = spell.icon;
-            const canAfford = player.mana >= spell.manaCost;
+            const canAfford = playerMana >= spell.manaCost;
 
             return (
               <div

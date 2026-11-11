@@ -34,6 +34,9 @@
  * - Compression ratio: 80%+ for sparse modifications
  */
 
+import { TerrainSystem } from './TerrainSystem.js';
+import { WorldGenerator } from './WorldGenerator.js';
+
 export class SaveSystem {
   static VERSION = 1;
 
@@ -102,9 +105,6 @@ export class SaveSystem {
       saveData = SaveSystem.migrate(saveData, SaveSystem.VERSION);
     }
 
-    // Import TerrainSystem dynamically to avoid circular dependency
-    const { TerrainSystem } = require('./TerrainSystem.js');
-
     // Create terrain system with saved seed and config
     const terrainSystem = new TerrainSystem({
       seed: saveData.seed,
@@ -113,7 +113,6 @@ export class SaveSystem {
     });
 
     // Restore world generator config
-    const { WorldGenerator } = require('./WorldGenerator.js');
     terrainSystem.worldGenerator = WorldGenerator.fromJSON({
       seed: saveData.seed,
       config: saveData.worldConfig

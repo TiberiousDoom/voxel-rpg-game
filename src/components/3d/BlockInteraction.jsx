@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { VOXEL_SIZE } from '../../systems/chunks/coordinates';
 import { BlockTypes, isSolid, getBlockHardness } from '../../systems/chunks/blockTypes';
 import useGameStore from '../../stores/useGameStore';
-import { calculateDrops } from '../../data/blockDrops';
+import { calculateDrops, getPlacementCost, canAffordPlacement } from '../../data/blockDrops';
 import { BLOCK_USE_ACTIONS } from '../../data/blockUseActions';
 import { HARVEST_SPEED_BARE_HANDS, USE_KEY_RANGE, USE_KEY_COOLDOWN, STOCKPILE_INTERACT_RANGE, CONSTRUCTION_INTERACT_RANGE } from '../../data/tuning';
 import { getBuildingById } from '../../data/buildings';
@@ -85,6 +85,60 @@ function wouldOverlapPlayer(bx, by, bz) {
   return pMinX < bMaxX && pMaxX > bMinX &&
          pMinY < bMaxY && pMaxY > bMinY &&
          pMinZ < bMaxZ && pMaxZ > bMinZ;
+}
+
+/** World-space centre of the block adjacent to `block` across `face`, or null. */
+function getAdjacentBlockCenter(block, face) {
+  const x = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+  const y = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+  const z = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
+  switch (face) {
+    case 'top': return [x, y + VOXEL_SIZE, z];
+    case 'bottom': return [x, y - VOXEL_SIZE, z];
+    case 'north': return [x, y, z + VOXEL_SIZE];
+    case 'south': return [x, y, z - VOXEL_SIZE];
+    case 'east': return [x + VOXEL_SIZE, y, z];
+    case 'west': return [x - VOXEL_SIZE, y, z];
+    default: return null;
+  }
+}
+
+// Throttle "not enough materials" feedback so holding the button doesn't spam it
+let _lastCostWarning = 0;
+
+/**
+ * Place a block against `face` of `block`, paying its material cost.
+ * Single code path for desktop first-person, third-person and mobile placement.
+ * @returns {boolean} true if the block was placed
+ */
+function tryPlaceBlock(chunkManager, block, face, blockType) {
+  if (!chunkManager || !block || !face) return false;
+  const target = getAdjacentBlockCenter(block, face);
+  if (!target) return false;
+  const [px, py, pz] = target;
+
+  // Placement position must be empty and not overlap the player
+  if (isSolid(chunkManager.getBlock(px, py, pz))) return false;
+  if (wouldOverlapPlayer(px, py, pz)) return false;
+
+  // Pay for the block (mining it back returns the same materials)
+  const store = useGameStore.getState();
+  const cost = getPlacementCost(blockType);
+  const { ok, missing } = canAffordPlacement(store.inventory.materials, cost);
+  if (!ok) {
+    const now = Date.now();
+    if (now - _lastCostWarning > 1000) {
+      _lastCostWarning = now;
+      store.addPickupText(missing ? `Need ${cost[missing]} ${missing}` : 'Cannot place that block', '#ff6666');
+    }
+    return false;
+  }
+
+  if (!chunkManager.setBlock(px, py, pz, blockType)) return false;
+  for (const [mat, qty] of Object.entries(cost)) {
+    store.removeMaterial(mat, qty);
+  }
+  return true;
 }
 
 /**
@@ -578,33 +632,7 @@ export function BlockInteraction({ chunkManager }) {
   const placeBlock = useCallback((blockType) => {
     if (!targetBlock || !chunkManager) return false;
 
-    // Calculate adjacent position based on face hit
-    const blockX = Math.floor(targetBlock.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-    const blockY = Math.floor(targetBlock.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-    const blockZ = Math.floor(targetBlock.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-
-    let placeX = blockX;
-    let placeY = blockY;
-    let placeZ = blockZ;
-
-    // Offset based on face
-    switch (targetFace) {
-      case 'top': placeY += VOXEL_SIZE; break;
-      case 'bottom': placeY -= VOXEL_SIZE; break;
-      case 'north': placeZ += VOXEL_SIZE; break;
-      case 'south': placeZ -= VOXEL_SIZE; break;
-      case 'east': placeX += VOXEL_SIZE; break;
-      case 'west': placeX -= VOXEL_SIZE; break;
-      default: return false;
-    }
-
-    // Check if placement position is empty and doesn't overlap the player
-    const existingBlock = chunkManager.getBlock(placeX, placeY, placeZ);
-    if (isSolid(existingBlock)) return false;
-    if (wouldOverlapPlayer(placeX, placeY, placeZ)) return false;
-
-    // Place the block
-    const success = chunkManager.setBlock(placeX, placeY, placeZ, blockType);
+    const success = tryPlaceBlock(chunkManager, targetBlock, targetFace, blockType);
 
     if (success) {
       // Force immediate raycast to update target for consecutive placement
@@ -886,21 +914,7 @@ export function BlockInteraction({ chunkManager }) {
             setTargetFace(freshResult.face);
             prevTargetRef.current = { block: freshResult.block, face: freshResult.face };
             // Place adjacent to the freshly raycasted block
-            const bx = Math.floor(freshResult.block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            const by = Math.floor(freshResult.block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            const bz = Math.floor(freshResult.block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            let px = bx, py = by, pz = bz;
-            switch (freshResult.face) {
-              case 'top': py += VOXEL_SIZE; break;
-              case 'bottom': py -= VOXEL_SIZE; break;
-              case 'north': pz += VOXEL_SIZE; break;
-              case 'south': pz -= VOXEL_SIZE; break;
-              case 'east': px += VOXEL_SIZE; break;
-              case 'west': px -= VOXEL_SIZE; break;
-              default: break;
-            }
-            if (chunkManager && !isSolid(chunkManager.getBlock(px, py, pz)) && !wouldOverlapPlayer(px, py, pz)) {
-              chunkManager.setBlock(px, py, pz, selectedBlockType);
+            if (tryPlaceBlock(chunkManager, freshResult.block, freshResult.face, selectedBlockType)) {
               // Refresh target after placement
               lastRaycast.current = 0;
               prevTargetRef.current = { block: null, face: null };
@@ -1067,24 +1081,8 @@ export function BlockInteraction({ chunkManager }) {
         const block = result.block;
         const face = result.face;
         if (block && face && chunkManager) {
-          const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-          let plX = blockX, plY = blockY, plZ = blockZ;
-          switch (face) {
-            case 'top': plY += VOXEL_SIZE; break;
-            case 'bottom': plY -= VOXEL_SIZE; break;
-            case 'north': plZ += VOXEL_SIZE; break;
-            case 'south': plZ -= VOXEL_SIZE; break;
-            case 'east': plX += VOXEL_SIZE; break;
-            case 'west': plX -= VOXEL_SIZE; break;
-            default: break;
-          }
-          const existing = chunkManager.getBlock(plX, plY, plZ);
-          if (!isSolid(existing) && !wouldOverlapPlayer(plX, plY, plZ)) {
-            const store = useGameStore.getState();
-            chunkManager.setBlock(plX, plY, plZ, store.selectedBlockType ?? BlockTypes.DIRT);
-          }
+          const store = useGameStore.getState();
+          tryPlaceBlock(chunkManager, block, face, store.selectedBlockType ?? BlockTypes.DIRT);
         }
         rightClickPending = false;
         rightClickResult = null;
@@ -1195,23 +1193,7 @@ export function BlockInteraction({ chunkManager }) {
           const store = useGameStore.getState();
           if (store.blockPlacementMode) {
             // Placement is still instant
-            const blockX = Math.floor(block.x / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            const blockY = Math.floor(block.y / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            const blockZ = Math.floor(block.z / VOXEL_SIZE) * VOXEL_SIZE + VOXEL_SIZE / 2;
-            let placeX = blockX, placeY = blockY, placeZ = blockZ;
-            switch (face) {
-              case 'top': placeY += VOXEL_SIZE; break;
-              case 'bottom': placeY -= VOXEL_SIZE; break;
-              case 'north': placeZ += VOXEL_SIZE; break;
-              case 'south': placeZ -= VOXEL_SIZE; break;
-              case 'east': placeX += VOXEL_SIZE; break;
-              case 'west': placeX -= VOXEL_SIZE; break;
-              default: return;
-            }
-            const existing = chunkManager.getBlock(placeX, placeY, placeZ);
-            if (!isSolid(existing) && !wouldOverlapPlayer(placeX, placeY, placeZ)) {
-              chunkManager.setBlock(placeX, placeY, placeZ, store.selectedBlockType ?? BlockTypes.DIRT);
-            }
+            tryPlaceBlock(chunkManager, block, face, store.selectedBlockType ?? BlockTypes.DIRT);
           } else {
             // Start progressive mining (useFrame will accumulate)
             isHoldingMine.current = true;

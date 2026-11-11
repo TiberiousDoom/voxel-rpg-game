@@ -21,6 +21,10 @@ import { BlockTypes } from './blockTypes.js';
 // a campfire is placed/removed within this distance of a chunk edge.
 const CAMPFIRE_GLOW_RADIUS = 5;
 
+// Failed chunk loads (worker crash, timeout) are retried with linear backoff
+const MAX_LOAD_RETRIES = 3;
+const LOAD_RETRY_DELAY_MS = 500;
+
 /**
  * Priority queue for chunk loading
  */
@@ -111,6 +115,16 @@ export class ChunkManager {
     // Mesh rebuild queue
     this.meshRebuildQueue = new Set();
 
+    // Block data of modified chunks that are currently unloaded.
+    // Chunks are regenerated from the seed when they reload, so without this
+    // cache every player/NPC edit would vanish once the player walked away.
+    // key -> { blocks: Uint8Array, lastModified: number }
+    this.modifiedChunkCache = new Map();
+
+    // Retry bookkeeping for failed loads: key -> attempt count
+    this.loadRetries = new Map();
+    this.disposed = false;
+
     // Worker reference (set externally)
     this.workerPool = null;
 
@@ -179,6 +193,14 @@ export class ChunkManager {
     for (const [key] of this.chunks) {
       if (!neededKeys.has(key)) {
         this.unloadQueue.add(key);
+      }
+    }
+
+    // Chunks queued for unload that are needed again (player doubled back
+    // before the queue drained) must stay loaded
+    for (const key of this.unloadQueue) {
+      if (neededKeys.has(key)) {
+        this.unloadQueue.delete(key);
       }
     }
 
@@ -300,8 +322,17 @@ export class ChunkManager {
 
     try {
       let chunk;
+      const cached = this.modifiedChunkCache.get(key);
 
-      if (this.workerPool) {
+      if (cached) {
+        // Restore previously modified chunk instead of regenerating it
+        chunk = new Chunk(chunkX, chunkZ);
+        chunk.blocks = cached.blocks;
+        chunk.lastModified = cached.lastModified;
+        chunk.isDirty = true;
+        chunk.rebuildHeightMap();
+        this.modifiedChunkCache.delete(key);
+      } else if (this.workerPool) {
         // Use worker for terrain generation
         const result = await this.workerPool.execute({
           type: 'generateTerrain',
@@ -325,12 +356,24 @@ export class ChunkManager {
         chunkX, chunkZ
       );
 
-      if (distSq > (this.viewDistance + 1) * (this.viewDistance + 1)) {
-        // No longer needed
+      if (this.disposed || distSq > (this.viewDistance + 1) * (this.viewDistance + 1)) {
+        // No longer needed — keep any edits for when the player returns
+        this._cacheIfModified(chunk);
         chunk.dispose();
         this.loading.delete(key);
         return;
       }
+
+      // A save may have been loaded while the worker was generating this chunk
+      const savedWhileLoading = this.modifiedChunkCache.get(key);
+      if (savedWhileLoading) {
+        chunk.blocks = savedWhileLoading.blocks;
+        chunk.lastModified = savedWhileLoading.lastModified;
+        chunk.isDirty = true;
+        chunk.rebuildHeightMap();
+        this.modifiedChunkCache.delete(key);
+      }
+      this.loadRetries.delete(key);
 
       // Add to active chunks
       chunk.state = ChunkState.READY;
@@ -350,8 +393,106 @@ export class ChunkManager {
       this.stats.chunksLoaded++;
 
     } catch (error) {
-      console.error(`Failed to load chunk ${key}:`, error);
       this.loading.delete(key);
+      if (this.disposed) return;
+
+      const attempts = (this.loadRetries.get(key) || 0) + 1;
+      this.loadRetries.set(key, attempts);
+      if (attempts <= MAX_LOAD_RETRIES) {
+        console.warn(`Failed to load chunk ${key} (attempt ${attempts}), retrying:`, error);
+        setTimeout(() => {
+          if (this.disposed || this.chunks.has(key) || this.loading.has(key)) return;
+          const distSq = chunkDistanceSq(this.playerChunkX, this.playerChunkZ, chunkX, chunkZ);
+          if (distSq <= this.viewDistance * this.viewDistance) {
+            this.loadQueue.enqueue(chunkX, chunkZ, distSq);
+          }
+        }, LOAD_RETRY_DELAY_MS * attempts);
+      } else {
+        console.error(`Failed to load chunk ${key} after ${attempts} attempts:`, error);
+      }
+    }
+  }
+
+  /**
+   * Remember a modified chunk's blocks so edits survive unload/reload.
+   * @param {Chunk} chunk
+   */
+  _cacheIfModified(chunk) {
+    if (chunk && chunk.blocks && chunk.lastModified > 0) {
+      this.modifiedChunkCache.set(chunk.key, {
+        blocks: chunk.blocks,
+        lastModified: chunk.lastModified,
+      });
+    }
+  }
+
+  /**
+   * All chunks containing world edits, loaded or not (for saving).
+   * @returns {Array<{ key: string, x: number, z: number, blocks: Uint8Array, lastModified: number }>}
+   */
+  getModifiedChunks() {
+    const result = [];
+    for (const chunk of this.chunks.values()) {
+      if (chunk.blocks && chunk.lastModified > 0) {
+        result.push({ key: chunk.key, x: chunk.x, z: chunk.z, blocks: chunk.blocks, lastModified: chunk.lastModified });
+      }
+    }
+    for (const [key, data] of this.modifiedChunkCache) {
+      if (this.chunks.has(key)) continue;
+      const [x, z] = key.split(',').map(Number);
+      result.push({ key, x, z, blocks: data.blocks, lastModified: data.lastModified });
+    }
+    return result;
+  }
+
+  /**
+   * Replace all world edits with the given set (for loading a save).
+   * Loaded chunks are updated in place; loaded chunks with edits that are not
+   * in the save are regenerated; unloaded chunks are applied when they load.
+   * @param {Array<{ x: number, z: number, blocks: Uint8Array, lastModified: number }>} modified
+   */
+  applyModifiedChunks(modified) {
+    this.modifiedChunkCache.clear();
+    const savedKeys = new Set();
+
+    for (const data of modified) {
+      const key = chunkKey(data.x, data.z);
+      savedKeys.add(key);
+      const blocks = new Uint8Array(data.blocks); // copy: never alias saved buffers
+      const chunk = this.chunks.get(key);
+      if (chunk) {
+        chunk.blocks = blocks;
+        chunk.lastModified = data.lastModified || Date.now();
+        chunk.isDirty = true;
+        chunk.rebuildHeightMap();
+        this._markChunkAndNeighborsDirty(chunk);
+      } else {
+        this.modifiedChunkCache.set(key, { blocks, lastModified: data.lastModified || Date.now() });
+      }
+    }
+
+    // Revert edits made since the save: regenerate those chunks from the seed
+    for (const chunk of [...this.chunks.values()]) {
+      if (chunk.lastModified > 0 && !savedKeys.has(chunk.key)) {
+        const { x, z } = chunk;
+        this.unloadChunk(chunk, { keepEdits: false });
+        this.loadQueue.enqueue(x, z, chunkDistanceSq(this.playerChunkX, this.playerChunkZ, x, z));
+      }
+    }
+  }
+
+  /**
+   * Mark a chunk and its loaded neighbours for mesh rebuild.
+   * @param {Chunk} chunk
+   */
+  _markChunkAndNeighborsDirty(chunk) {
+    chunk.meshDirty = true;
+    this.meshRebuildQueue.add(chunk.key);
+    for (const n of Object.values(chunk.neighbors)) {
+      if (n) {
+        n.meshDirty = true;
+        this.meshRebuildQueue.add(n.key);
+      }
     }
   }
 
@@ -399,6 +540,9 @@ export class ChunkManager {
     }
 
     chunk.rebuildHeightMap();
+    // Freshly generated terrain is not a world edit
+    chunk.isDirty = false;
+    chunk.lastModified = 0;
     return chunk;
   }
 
@@ -444,7 +588,10 @@ export class ChunkManager {
    * Unload a chunk
    * @param {Chunk} chunk
    */
-  unloadChunk(chunk) {
+  unloadChunk(chunk, { keepEdits = true } = {}) {
+    // Preserve world edits so they reappear when the chunk reloads
+    if (keepEdits) this._cacheIfModified(chunk);
+
     // Remove from neighbors
     const north = chunk.neighbors.north;
     const south = chunk.neighbors.south;
@@ -514,8 +661,11 @@ export class ChunkManager {
     const voxelY = Math.floor(worldY / VOXEL_SIZE);
     const voxelZ = Math.floor(worldZ / VOXEL_SIZE);
 
+    // Above or below the world is air (don't clamp onto the top/bedrock layer)
+    if (voxelY < 0 || voxelY >= CHUNK_SIZE_Y) return BlockTypes.AIR;
+
     const localX = ((voxelX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
-    const localY = Math.max(0, Math.min(CHUNK_SIZE_Y - 1, voxelY));
+    const localY = voxelY;
     const localZ = ((voxelZ % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
     return chunk.getBlock(localX, localY, localZ);
@@ -540,8 +690,11 @@ export class ChunkManager {
     const voxelY = Math.floor(worldY / VOXEL_SIZE);
     const voxelZ = Math.floor(worldZ / VOXEL_SIZE);
 
+    // Out-of-world writes are rejected (previously clamped onto bedrock/top layer)
+    if (voxelY < 0 || voxelY >= CHUNK_SIZE_Y) return false;
+
     const localX = ((voxelX % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
-    const localY = Math.max(0, Math.min(CHUNK_SIZE_Y - 1, voxelY));
+    const localY = voxelY;
     const localZ = ((voxelZ % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
     const result = chunk.setBlock(localX, localY, localZ, blockType);
@@ -624,6 +777,10 @@ export class ChunkManager {
    * Clean up all resources
    */
   dispose() {
+    this.disposed = true;
+    this.modifiedChunkCache.clear();
+    this.loadRetries.clear();
+
     // Unload all chunks
     for (const chunk of this.chunks.values()) {
       chunk.dispose();

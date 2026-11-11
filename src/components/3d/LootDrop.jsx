@@ -18,7 +18,6 @@ const LootDrop = ({ position, lootType, type, amount = 10, material, color, id, 
   const _lootPos = useRef(new THREE.Vector3());
 
   const spawnTime = useRef(Date.now());
-  const player = useGameStore((state) => state.player);
   const addGold = useGameStore((state) => state.addGold);
   const addMaterial = useGameStore((state) => state.addMaterial);
 
@@ -48,7 +47,8 @@ const LootDrop = ({ position, lootType, type, amount = 10, material, color, id, 
 
     // Check distance to player for auto-collect
     const lootTranslation = rigidBodyRef.current.translation();
-    const playerPos = _playerPos.current.set(player.position[0], player.position[1], player.position[2]);
+    const playerPosArr = useGameStore.getState().player.position;
+    const playerPos = _playerPos.current.set(playerPosArr[0], playerPosArr[1], playerPosArr[2]);
     const lootVec = _lootPos.current.set(lootTranslation.x, lootTranslation.y, lootTranslation.z);
     const distance = playerPos.distanceTo(lootVec);
 

@@ -13,15 +13,147 @@ import {
   grantLevelUpPoints,
   calculateDerivedStats,
 } from '../modules/character/CharacterSystem';
-import { DAY_LENGTH_SECONDS, ZONE_MAX_COUNT } from '../data/tuning';
+import {
+  DAY_LENGTH_SECONDS,
+  ZONE_MAX_COUNT,
+  DEATH_MATERIAL_DROP_PERCENT,
+  DEATH_RESPAWN_HEALTH_PERCENT,
+  DEATH_RESPAWN_HUNGER_PERCENT,
+  DEATH_RESPAWN_STAMINA_PERCENT,
+  RESPAWN_INVINCIBILITY_SECONDS,
+  RESPAWN_MIN_DISTANCE,
+  RESPAWN_DISTANCE_SPREAD,
+  RESPAWN_HEIGHT,
+  POTION_HEAL_AMOUNT,
+  POTION_COOLDOWN,
+} from '../data/tuning';
 import { ActionHistory, createActionMiddleware } from '../systems/state/ActionSystem';
 
 // Action history for replay/rollback/debugging
 export const actionHistory = new ActionHistory(1000);
 
+// Player fields that change every frame. Components that only display stats
+// should use selectPlayerStats with useShallow so they don't re-render 60x/sec.
+const PLAYER_FRAME_FIELDS = new Set(['position', 'velocity', 'facingAngle']);
+export const selectPlayerStats = (state) => {
+  const out = {};
+  for (const key in state.player) {
+    if (!PLAYER_FRAME_FIELDS.has(key)) out[key] = state.player[key];
+  }
+  return out;
+};
+
 // Monotonic counter for unique entity IDs (avoids React duplicate key warnings)
 let _entityIdCounter = 0;
 const nextEntityId = () => `e${Date.now()}_${++_entityIdCounter}`;
+
+
+// ── Initial-state factories (shared by store creation and reset()) ──
+const createInitialCamera = () => ({
+  rotationAngle: 0, // Horizontal rotation around player
+  distance: 12, // Zoomed in closer to player (was 20)
+  height: 10,  // Lower camera height (was 15)
+  // First-person mode settings
+  firstPerson: false, // Toggle first-person (pointer lock) mode
+  pitch: 0, // Vertical look angle (radians, clamped)
+  yaw: 0, // Horizontal look angle (radians)
+});
+
+const createInitialPlayer = () => ({
+  position: [0, 70, 0], // x, y, z in 3D space - spawn above terrain (falls to surface)
+  velocity: [0, 0, 0],
+  targetPosition: null, // For tap-to-move
+  navPath: null,        // Array of [x,y,z] waypoints or null
+  navPathIndex: 0,      // Current waypoint being pursued
+  health: 100,
+  maxHealth: 100,
+  mana: 100,
+  maxMana: 100,
+  stamina: 100,
+  maxStamina: 100,
+  level: 1,
+  xp: 0,
+  xpToNext: 100,
+  damage: 10,
+  speed: 5,
+  facingAngle: 0,
+  defense: 0,
+  critChance: 5,
+  critDamage: 150,
+  dodgeChance: 5,
+  skillPoints: 0,
+  isJumping: false,
+  isGrounded: true,
+  isDodging: false,
+  isBlocking: false,
+  potionCooldown: 0,
+  comboCount: 0,
+  comboTimer: 0,
+  isInvincible: false,
+  invincibilityTimer: 0,
+  rage: 0,
+  maxRage: 100,
+  statusEffects: [], // Array of {type, duration, value}
+  spellCooldowns: {}, // Track cooldowns per spell id
+  isSprinting: false,
+});
+
+const createInitialEquipment = () => ({
+  weapon: null,
+  armor: null,
+  helmet: null,
+  gloves: null,
+  boots: null,
+  ring1: null,
+  ring2: null,
+  amulet: null,
+  offhand: null,
+});
+
+const createInitialInventory = () => ({
+  gold: 100,
+  essence: 5,
+  crystals: 3,
+  potions: 3,
+  items: [],
+  materials: { wood: 10, stone: 0, iron: 5, coal: 0, dirt: 0, sand: 0, clay: 0, gold_ore: 0, leather: 8, crystal: 2, berry: 0, meat: 0, bone: 0, fiber: 0 },
+});
+
+const createInitialWorldTime = () => ({
+  elapsed: (5 / 24) * DAY_LENGTH_SECONDS, // Total seconds elapsed — 05:00
+  timeOfDay: 5 / 24,   // 0.0–1.0 (0=midnight, 0.5=noon) — start at 05:00
+  dayNumber: 1,
+  isNight: false,
+  period: 'dawn',      // 'night'|'dawn'|'day'|'dusk'
+  hour: 5,
+  minute: 0,
+  timeScale: 1,        // Debug: 0=paused, 1=normal, 2/5/10=fast
+  paused: true,         // Starts paused until player presses Start Game
+});
+
+const createInitialHunger = () => ({
+  current: 100,        // 0–100
+  max: 100,
+  isStarving: false,   // hunger === 0
+  status: 'well_fed',  // 'well_fed'|'hungry'|'starving'|'famished'
+});
+
+const createInitialShelter = () => ({
+  isFullShelter: false,
+  isPartialShelter: false,
+  isExposed: true,
+  tier: 'exposed',     // 'full'|'partial'|'exposed'
+});
+
+const createInitialSettlement = () => ({
+  npcs: [],              // Settler NPC entities
+  attractiveness: 0,
+  wallCount: 0,          // Structural blocks counted (for housing cap)
+  settlementCenter: null, // [x,y,z] of first campfire
+  lastImmigrationCheck: 0,
+  lastAttractivenessCalc: 0,
+  lastNeedsUpdate: 0,
+});
 
 const useGameStore = create((rawSet, get, api) => {
   // Wrap set with action middleware - intercepts action objects for validation/history
@@ -37,81 +169,19 @@ const useGameStore = create((rawSet, get, api) => {
   setAISystemManager: (manager) => set({ aiSystemManager: manager }),
 
   // Camera state
-  camera: {
-    rotationAngle: 0, // Horizontal rotation around player
-    distance: 12, // Zoomed in closer to player (was 20)
-    height: 10,  // Lower camera height (was 15)
-    // First-person mode settings
-    firstPerson: false, // Toggle first-person (pointer lock) mode
-    pitch: 0, // Vertical look angle (radians, clamped)
-    yaw: 0, // Horizontal look angle (radians)
-  },
+  camera: createInitialCamera(),
 
   // Player state
-  player: {
-    position: [0, 70, 0], // x, y, z in 3D space - spawn above terrain (falls to surface)
-    velocity: [0, 0, 0],
-    targetPosition: null, // For tap-to-move
-    navPath: null,        // Array of [x,y,z] waypoints or null
-    navPathIndex: 0,      // Current waypoint being pursued
-    health: 100,
-    maxHealth: 100,
-    mana: 100,
-    maxMana: 100,
-    stamina: 100,
-    maxStamina: 100,
-    level: 1,
-    xp: 0,
-    xpToNext: 100,
-    damage: 10,
-    speed: 5,
-    facingAngle: 0,
-    defense: 0,
-    critChance: 5,
-    critDamage: 150,
-    dodgeChance: 5,
-    skillPoints: 0,
-    isJumping: false,
-    isGrounded: true,
-    isDodging: false,
-    isBlocking: false,
-    potionCooldown: 0,
-    comboCount: 0,
-    comboTimer: 0,
-    isInvincible: false,
-    invincibilityTimer: 0,
-    rage: 0,
-    maxRage: 100,
-    statusEffects: [], // Array of {type, duration, value}
-    spellCooldowns: {}, // Track cooldowns per spell id
-    isSprinting: false,
-  },
+  player: createInitialPlayer(),
 
   // Character system (attributes and skills)
   character: getDefaultCharacterData(),
 
   // Equipment
-  equipment: {
-    weapon: null,
-    armor: null,
-    helmet: null,
-    gloves: null,
-    boots: null,
-    ring1: null,
-    ring2: null,
-    amulet: null,
-    offhand: null,
-  },
+  equipment: createInitialEquipment(),
 
   // Inventory
-  inventory: {
-    gold: 100,
-    essence: 5,
-    crystals: 3,
-    potions: 3,
-    items: [],
-    materials: { wood: 10, stone: 0, iron: 5, coal: 0, dirt: 0, sand: 0, clay: 0, gold_ore: 0, leather: 8, crystal: 2, berry: 0, meat: 0, bone: 0, fiber: 0 },
-  },
+  inventory: createInitialInventory(),
 
   // Enemies/Monsters (rift-spawned)
   enemies: [],
@@ -152,33 +222,13 @@ const useGameStore = create((rawSet, get, api) => {
   buildMode: false, // Toggle build mode (Tab key) — gates all block interaction
 
   // World time state (Phase 1) — start at 05:00 (dawn)
-  worldTime: {
-    elapsed: (5 / 24) * DAY_LENGTH_SECONDS, // Total seconds elapsed — 05:00
-    timeOfDay: 5 / 24,   // 0.0–1.0 (0=midnight, 0.5=noon) — start at 05:00
-    dayNumber: 1,
-    isNight: false,
-    period: 'dawn',      // 'night'|'dawn'|'day'|'dusk'
-    hour: 5,
-    minute: 0,
-    timeScale: 1,        // Debug: 0=paused, 1=normal, 2/5/10=fast
-    paused: true,         // Starts paused until player presses Start Game
-  },
+  worldTime: createInitialWorldTime(),
 
   // Hunger state (Phase 1)
-  hunger: {
-    current: 100,        // 0–100
-    max: 100,
-    isStarving: false,   // hunger === 0
-    status: 'well_fed',  // 'well_fed'|'hungry'|'starving'|'famished'
-  },
+  hunger: createInitialHunger(),
 
   // Shelter state (Phase 1)
-  shelter: {
-    isFullShelter: false,
-    isPartialShelter: false,
-    isExposed: true,
-    tier: 'exposed',     // 'full'|'partial'|'exposed'
-  },
+  shelter: createInitialShelter(),
 
   // Death tracking (Phase 1)
   lastDamageSource: null, // String describing what killed the player
@@ -189,15 +239,7 @@ const useGameStore = create((rawSet, get, api) => {
   },
 
   // Settlement state (Phase 2)
-  settlement: {
-    npcs: [],              // Settler NPC entities
-    attractiveness: 0,
-    wallCount: 0,          // Structural blocks counted (for housing cap)
-    settlementCenter: null, // [x,y,z] of first campfire
-    lastImmigrationCheck: 0,
-    lastAttractivenessCalc: 0,
-    lastNeedsUpdate: 0,
-  },
+  settlement: createInitialSettlement(),
 
   // Zone designation state (Phase 2.2)
   zones: [],
@@ -247,7 +289,7 @@ const useGameStore = create((rawSet, get, api) => {
 
   addTargetMarker: (marker) =>
     set((state) => ({
-      targetMarkers: [...state.targetMarkers, { ...marker, id: Date.now() }],
+      targetMarkers: [...state.targetMarkers, { ...marker, id: marker.id ?? nextEntityId() }],
     })),
 
   removeTargetMarker: (id) =>
@@ -385,9 +427,10 @@ const useGameStore = create((rawSet, get, api) => {
   })),
 
   // Dialogue state (for companion conversations)
-  dialogue: { active: false, tree: null },
-  openDialogue: (tree) => set({ dialogue: { active: true, tree } }),
-  closeDialogue: () => set({ dialogue: { active: false, tree: null } }),
+  // onAction: optional callback invoked with dialogue actions (e.g. 'help_companion')
+  dialogue: { active: false, tree: null, onAction: null },
+  openDialogue: (tree, onAction = null) => set({ dialogue: { active: true, tree, onAction } }),
+  closeDialogue: () => set({ dialogue: { active: false, tree: null, onAction: null } }),
 
   // Unlocked spells (companion teaches new ones at bond milestones)
   unlockedSpells: ['fireball', 'lightning', 'iceShard', 'heal', 'shield', 'haste'],
@@ -402,6 +445,22 @@ const useGameStore = create((rawSet, get, api) => {
 
   // Live enemy positions (mutable Map, written by Enemy.jsx each frame, read by spell auto-aim)
   _enemyPositions: new Map(),
+
+  // Live enemy hit handlers (mutable Map, registered by Enemy.jsx on mount):
+  // id -> { takeDamage(amount), applyStatusEffect({type, duration, value}) }
+  // Rift enemies are plain data objects; their health lives in the Enemy component,
+  // so melee/AOE/projectile code must go through these handlers.
+  _enemyHandlers: new Map(),
+
+  // Player teleport request (respawn, save load). Player.jsx consumes it and moves
+  // the physics body, since the store position is otherwise written FROM physics.
+  pendingTeleport: null,
+  teleportPlayer: (position) =>
+    set((state) => ({
+      pendingTeleport: [...position],
+      player: { ...state.player, position: [...position], velocity: [0, 0, 0] },
+    })),
+  clearPendingTeleport: () => set({ pendingTeleport: null }),
 
   // Rift actions (Phase 1)
   setRifts: (rifts) => set({ rifts }),
@@ -890,6 +949,22 @@ const useGameStore = create((rawSet, get, api) => {
     const defenseReduction = state.player.defense * 0.5;
     finalDamage = Math.max(1, finalDamage - defenseReduction);
 
+    // Shield buff absorbs damage until its pool (effect value) is used up
+    let statusEffects = state.player.statusEffects || [];
+    const shield = statusEffects.find((e) => e.type === 'shield' && e.value > 0);
+    if (shield) {
+      const absorbed = Math.min(shield.value, finalDamage);
+      finalDamage -= absorbed;
+      const remaining = shield.value - absorbed;
+      statusEffects = remaining > 0
+        ? statusEffects.map((e) => (e === shield ? { ...e, value: remaining } : e))
+        : statusEffects.filter((e) => e !== shield);
+      if (finalDamage <= 0) {
+        set({ player: { ...state.player, statusEffects } });
+        return;
+      }
+    }
+
     const newHealth = Math.max(0, state.player.health - finalDamage);
 
     // Track damage source for death screen
@@ -897,6 +972,7 @@ const useGameStore = create((rawSet, get, api) => {
       player: {
         ...state.player,
         health: newHealth,
+        statusEffects,
         rage: Math.min(state.player.maxRage, state.player.rage + 10),
       },
     };
@@ -911,13 +987,30 @@ const useGameStore = create((rawSet, get, api) => {
     get().triggerScreenShake(shakeIntensity, 0.15);
   },
 
+  // Re-casting a buff refreshes it instead of stacking duplicate entries
   addStatusEffect: (effect) =>
     set((state) => ({
       player: {
         ...state.player,
-        statusEffects: [...state.player.statusEffects, effect],
+        statusEffects: [
+          ...(state.player.statusEffects || []).filter((e) => e.type !== effect.type),
+          effect,
+        ],
       },
     })),
+
+  // Count down player status effect durations and drop expired ones
+  tickPlayerStatusEffects: (delta) =>
+    set((state) => {
+      const effects = state.player.statusEffects;
+      if (!effects || effects.length === 0) return state;
+      const next = [];
+      for (const e of effects) {
+        const duration = (e.duration ?? 0) - delta;
+        if (duration > 0) next.push({ ...e, duration });
+      }
+      return { player: { ...state.player, statusEffects: next } };
+    }),
 
   removeStatusEffect: (type) =>
     set((state) => ({
@@ -995,9 +1088,9 @@ const useGameStore = create((rawSet, get, api) => {
   usePotion: () =>
     set((state) => {
       if (state.inventory.potions <= 0 || state.player.potionCooldown > 0) return state;
-      const newHealth = Math.min(state.player.maxHealth, state.player.health + 50);
+      const newHealth = Math.min(state.player.maxHealth, state.player.health + POTION_HEAL_AMOUNT);
       return {
-        player: { ...state.player, health: newHealth, potionCooldown: 5 },
+        player: { ...state.player, health: newHealth, potionCooldown: POTION_COOLDOWN },
         inventory: { ...state.inventory, potions: state.inventory.potions - 1 },
       };
     }),
@@ -1076,47 +1169,52 @@ const useGameStore = create((rawSet, get, api) => {
       const xpMultiplier = derivedStats.xpGainMultiplier || 1.0;
       const bonusXP = Math.floor(xp * xpMultiplier);
 
-      const newXP = state.player.xp + bonusXP;
-      const xpToNext = state.player.xpToNext;
+      let newXP = state.player.xp + bonusXP;
+      let xpToNext = state.player.xpToNext;
+      let newLevel = state.player.level;
+      let updatedCharacter = state.character;
 
-      if (newXP >= xpToNext) {
-        // Level up
-        const newLevel = state.player.level + 1;
-
+      // Handle multiple level-ups from a single large XP grant
+      while (newXP >= xpToNext) {
+        newXP -= xpToNext;
+        newLevel += 1;
+        xpToNext = Math.floor(xpToNext * 1.5);
         // Grant character system points (5 attribute, 2 skill per level)
-        const updatedCharacter = grantLevelUpPoints(state.character, newLevel);
+        updatedCharacter = grantLevelUpPoints(updatedCharacter, newLevel);
+      }
 
-        // Calculate new derived stats
-        const newDerivedStats = calculateDerivedStats(
-          updatedCharacter,
-          { ...state.player, level: newLevel },
-          state.equipment
-        );
-
+      if (newLevel === state.player.level) {
         return {
-          player: {
-            ...state.player,
-            level: newLevel,
-            xp: newXP - xpToNext,
-            xpToNext: Math.floor(xpToNext * 1.5),
-            // Update stats with derived values
-            maxHealth: newDerivedStats.maxHealth,
-            health: newDerivedStats.maxHealth, // Fully heal on level up
-            maxMana: newDerivedStats.maxMana,
-            mana: newDerivedStats.maxMana, // Fully restore mana on level up
-            maxStamina: newDerivedStats.maxStamina,
-            stamina: newDerivedStats.maxStamina, // Fully restore stamina on level up
-            damage: newDerivedStats.damage,
-            defense: newDerivedStats.defense,
-            critChance: newDerivedStats.critChance,
-            speed: newDerivedStats.speed,
-          },
-          character: updatedCharacter,
+          player: { ...state.player, xp: newXP },
         };
       }
 
+      // Calculate new derived stats
+      const newDerivedStats = calculateDerivedStats(
+        updatedCharacter,
+        { ...state.player, level: newLevel },
+        state.equipment
+      );
+
       return {
-        player: { ...state.player, xp: newXP },
+        player: {
+          ...state.player,
+          level: newLevel,
+          xp: newXP,
+          xpToNext,
+          // Update stats with derived values
+          maxHealth: newDerivedStats.maxHealth,
+          health: newDerivedStats.maxHealth, // Fully heal on level up
+          maxMana: newDerivedStats.maxMana,
+          mana: newDerivedStats.maxMana, // Fully restore mana on level up
+          maxStamina: newDerivedStats.maxStamina,
+          stamina: newDerivedStats.maxStamina, // Fully restore stamina on level up
+          damage: newDerivedStats.damage,
+          defense: newDerivedStats.defense,
+          critChance: newDerivedStats.critChance,
+          speed: newDerivedStats.speed,
+        },
+        character: updatedCharacter,
       };
     }),
 
@@ -1288,35 +1386,38 @@ const useGameStore = create((rawSet, get, api) => {
       // Reduce each material by death penalty (50%), floored
       const penalizedMaterials = {};
       for (const [key, val] of Object.entries(state.inventory.materials)) {
-        penalizedMaterials[key] = Math.floor(val * (1 - 0.5));
+        penalizedMaterials[key] = Math.floor(val * (1 - DEATH_MATERIAL_DROP_PERCENT));
       }
 
       // Spawn far from death position to avoid enemy clusters
       const deathPos = state.player.position;
       const angle = Math.random() * Math.PI * 2;
-      const dist = 40 + Math.random() * 20; // 40-60 units away from death
+      const dist = RESPAWN_MIN_DISTANCE + Math.random() * RESPAWN_DISTANCE_SPREAD;
       const spawnX = deathPos[0] + Math.cos(angle) * dist;
       const spawnZ = deathPos[2] + Math.sin(angle) * dist;
+      const spawnPos = [spawnX, RESPAWN_HEIGHT, spawnZ];
 
       return {
         player: {
           ...state.player,
-          health: Math.ceil(state.player.maxHealth * 0.5),
+          health: Math.ceil(state.player.maxHealth * DEATH_RESPAWN_HEALTH_PERCENT),
           mana: state.player.maxMana,
-          stamina: Math.ceil(state.player.maxStamina * 0.5),
-          position: [spawnX, 70, spawnZ],
+          stamina: Math.ceil(state.player.maxStamina * DEATH_RESPAWN_STAMINA_PERCENT),
+          position: spawnPos,
           velocity: [0, 0, 0],
           targetPosition: null,
           navPath: null,
           navPathIndex: 0,
           isInvincible: true,
-          invincibilityTimer: 5.0, // 5 seconds of spawn protection
+          invincibilityTimer: RESPAWN_INVINCIBILITY_SECONDS,
           isDodging: false,
           isBlocking: false,
+          statusEffects: [],
         },
+        pendingTeleport: spawnPos,
         hunger: {
           ...state.hunger,
-          current: Math.ceil(state.hunger.max * 0.5),
+          current: Math.ceil(state.hunger.max * DEATH_RESPAWN_HUNGER_PERCENT),
           isStarving: false,
           status: 'hungry',
         },
@@ -1584,62 +1685,32 @@ const useGameStore = create((rawSet, get, api) => {
   reset: () =>
     set({
       gameState: 'intro',
-      camera: {
-        rotationAngle: 0,
-        distance: 12,
-        height: 10,
-        firstPerson: false,
-        pitch: 0,
-        yaw: 0,
-      },
-      player: {
-        position: [0, 70, 0],
-        velocity: [0, 0, 0],
-        targetPosition: null,
-        navPath: null,
-        navPathIndex: 0,
-        health: 100,
-        maxHealth: 100,
-        mana: 100,
-        maxMana: 100,
-        stamina: 100,
-        maxStamina: 100,
-        level: 1,
-        xp: 0,
-        xpToNext: 100,
-        damage: 10,
-        speed: 5,
-        facingAngle: 0,
-        defense: 0,
-        critChance: 5,
-        critDamage: 150,
-        dodgeChance: 5,
-        skillPoints: 0,
-        isJumping: false,
-        isGrounded: true,
-        spellCooldowns: {},
-      },
+      camera: createInitialCamera(),
+      player: createInitialPlayer(),
       character: getDefaultCharacterData(),
+      equipment: createInitialEquipment(),
+      inventory: createInitialInventory(),
       enemies: [],
+      rifts: [],
       wildlife: [],
       projectiles: [],
       targetMarkers: [],
       damageNumbers: [],
+      pickupTexts: [],
       lootDrops: [],
       xpOrbs: [],
       particleEffects: [],
-      worldTime: {
-        elapsed: (5 / 24) * DAY_LENGTH_SECONDS, timeOfDay: 5 / 24, dayNumber: 1, isNight: false,
-        period: 'dawn', hour: 5, minute: 0, timeScale: 1, paused: true,
-      },
-      hunger: { current: 100, max: 100, isStarving: false, status: 'well_fed' },
-      shelter: { isFullShelter: false, isPartialShelter: false, isExposed: true, tier: 'exposed' },
+      screenShake: null,
+      pendingTeleport: null,
+      worldTime: createInitialWorldTime(),
+      hunger: createInitialHunger(),
+      shelter: createInitialShelter(),
+      lastDamageSource: null,
       tutorialHints: { shownHints: [] },
-      settlement: {
-        npcs: [], attractiveness: 0, wallCount: 0, settlementCenter: null,
-        lastImmigrationCheck: 0, lastAttractivenessCalc: 0, lastNeedsUpdate: 0,
-      },
+      settlement: createInitialSettlement(),
+      dialogue: { active: false, tree: null, onAction: null },
       buildMode: false,
+      blockPlacementMode: false,
       zones: [], zoneMode: false, zoneTypeToPlace: null, zoneDragStart: null, activeStockpileZoneId: null,
       constructionSites: [], activeBuildingCatalog: false, placingBuildingId: null, activeConstructionSiteId: null,
     }),

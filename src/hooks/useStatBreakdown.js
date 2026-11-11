@@ -4,14 +4,15 @@
  */
 
 import { useMemo } from 'react';
-import useGameStore from '../stores/useGameStore';
+import useGameStore, { selectPlayerStats } from '../stores/useGameStore';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Calculate stat breakdown showing base + attributes + equipment
  * @returns {object} Stat breakdowns for all stats
  */
 export function useStatBreakdown() {
-  const player = useGameStore((state) => state.player);
+  const player = useGameStore(useShallow(selectPlayerStats));
   const character = useGameStore((state) => state.character);
   const equipment = useGameStore((state) => state.equipment);
 

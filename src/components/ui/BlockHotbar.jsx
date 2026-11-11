@@ -6,6 +6,18 @@ import React, { useEffect, useRef } from 'react';
 import useGameStore from '../../stores/useGameStore';
 import { BlockTypes, BlockProperties } from '../../systems/chunks/blockTypes';
 import { isTouchDevice } from '../../utils/deviceDetection';
+import { getPlacementCost } from '../../data/blockDrops';
+
+/** How many of a block the player can afford to place right now. */
+function countPlaceable(blockType, materials) {
+  const cost = getPlacementCost(blockType);
+  if (!cost) return 0;
+  let count = Infinity;
+  for (const [mat, qty] of Object.entries(cost)) {
+    count = Math.min(count, Math.floor((materials?.[mat] || 0) / qty));
+  }
+  return Number.isFinite(count) ? count : 0;
+}
 
 // Blocks available in the hotbar
 const HOTBAR_BLOCKS = [
@@ -35,6 +47,7 @@ export function BlockHotbar() {
   const selectedBlockType = useGameStore((state) => state.selectedBlockType);
   const blockPlacementMode = useGameStore((state) => state.blockPlacementMode);
   const buildMode = useGameStore((state) => state.buildMode);
+  const materials = useGameStore((state) => state.inventory.materials);
   const setSelectedBlockType = useGameStore((state) => state.setSelectedBlockType);
   const toggleBlockPlacementMode = useGameStore((state) => state.toggleBlockPlacementMode);
   const isMobile = useRef(isTouchDevice());
@@ -113,6 +126,9 @@ export function BlockHotbar() {
           const props = BlockProperties[blockType];
           const isSelected = selectedBlockType === blockType;
           const slotSize = isMobile.current ? '40px' : '48px';
+          const placeable = countPlaceable(blockType, materials);
+          const cost = getPlacementCost(blockType) || {};
+          const costText = Object.entries(cost).map(([m, q]) => `${q} ${m}`).join(', ');
 
           return (
             <button
@@ -125,10 +141,13 @@ export function BlockHotbar() {
                 backgroundColor: rgbToCSS(props.color),
                 border: isSelected ? '3px solid #fff' : '2px solid #555',
                 transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                opacity: placeable > 0 ? 1 : 0.45,
+                position: 'relative',
               }}
               onClick={() => setSelectedBlockType(blockType)}
-              title={`${props.name} (${index + 1})`}
+              title={`${props.name} (${index + 1}) — costs ${costText || 'n/a'}`}
             >
+              <span style={styles.countBadge}>{placeable}</span>
               <span style={styles.keyHint}>{index + 1}</span>
             </button>
           );
@@ -194,6 +213,15 @@ const styles = {
     justifyContent: 'flex-end',
     padding: '4px',
     transition: 'transform 0.1s, border 0.1s',
+  },
+  countBadge: {
+    position: 'absolute',
+    top: '2px',
+    left: '4px',
+    fontSize: '10px',
+    color: '#fff',
+    textShadow: '1px 1px 2px #000',
+    fontWeight: 'bold',
   },
   keyHint: {
     fontSize: '10px',

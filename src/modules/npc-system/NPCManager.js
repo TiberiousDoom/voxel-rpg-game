@@ -16,7 +16,7 @@
  */
 
 import PathfindingService from './PathfindingService.js';
-import { CommandQueue, Formation } from './NPCCommand.js';
+import { CommandQueue, Formation, CommandType } from './NPCCommand.js';
 import { Personality, RelationshipManager } from './NPCPersonality.js';
 import { NPCVisualFeedbackManager } from './NPCVisualFeedback.js';
 import { NPCIntegration } from '../../utils/integrations/NPCIntegration.js';
@@ -1097,8 +1097,6 @@ class NPCManager {
    * @param {number} deltaTime - Time delta
    */
   _executeCommand(npc, command, deltaTime) {
-    const { CommandType } = require('./NPCCommand.js');
-
     switch (command.type) {
       case CommandType.MOVE_TO:
         this._executeMoveToCommand(npc, command);
@@ -1711,10 +1709,11 @@ class NPCManager {
     if (!npc || !npc.personality) return null;
 
     switch (decisionType) {
-      case 'shouldRest':
+      case 'shouldRest': {
         // Lazy NPCs rest more, industrious less
         const restThreshold = npc.personality.restThreshold;
         return npc.fatigued || (options.fatigueLevel || 0) > restThreshold;
+      }
 
       case 'preferredTask':
         // Choose task based on skill preferences

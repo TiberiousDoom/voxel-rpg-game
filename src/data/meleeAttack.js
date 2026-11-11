@@ -19,6 +19,7 @@ import {
 } from './tuning';
 import { audioManager } from '../utils/AudioManager';
 import { getSpellById } from './spells';
+import { getEnemyPosition, isEnemyHittable, rollPlayerDamage } from '../systems/combat/enemyHits';
 
 // Convert degrees to radians once
 const CONE_HALF_ANGLE_RAD = (MELEE_CONE_ANGLE * Math.PI) / 180;
@@ -43,33 +44,39 @@ export function performMeleeAttack(store, playerPos, facingAngle, enemies) {
   // Facing direction as a unit vector
   const faceDirX = Math.sin(facingAngle);
   const faceDirZ = Math.cos(facingAngle);
+  const minDot = Math.cos(CONE_HALF_ANGLE_RAD);
+
+  // Base damage: weapon damage, or the player's (level-scaled) damage, never below bare hands
+  const baseDamage = Math.max(getMeleeDamage(store), store.player?.damage || 0);
 
   let enemiesHit = 0;
 
   for (const enemy of enemies) {
-    if (!enemy.alive) continue;
-    if (!enemy.position) continue;
-
-    const ex = enemy.position[0] ?? enemy.position.x;
-    const ez = enemy.position[2] ?? enemy.position.z;
+    if (!isEnemyHittable(store, enemy)) continue;
+    // Use the live physics position — store positions are spawn-time only
+    const pos = getEnemyPosition(store, enemy);
+    if (!pos) continue;
 
     // Distance check
-    const dx = ex - px;
-    const dz = ez - pz;
+    const dx = pos[0] - px;
+    const dz = pos[2] - pz;
     const dist = Math.sqrt(dx * dx + dz * dz);
     if (dist > MELEE_RANGE) continue;
 
     // Cone angle check — dot product between facing direction and enemy direction
     if (dist > 0.1) {
-      const toEnemyX = dx / dist;
-      const toEnemyZ = dz / dist;
-      const dot = faceDirX * toEnemyX + faceDirZ * toEnemyZ;
-      // dot = cos(angle between facing and enemy direction)
-      if (dot < Math.cos(CONE_HALF_ANGLE_RAD)) continue;
+      const dot = (faceDirX * dx + faceDirZ * dz) / dist;
+      if (dot < minDot) continue;
     }
 
-    // Hit! Use store.attackMonster which handles damage calc, crits, numbers, loot
-    store.attackMonster(enemy.id);
+    const handler = store._enemyHandlers?.get(enemy.id);
+    if (handler) {
+      const { damage } = rollPlayerDamage(store.player, baseDamage);
+      handler.takeDamage(damage); // Enemy shows the damage number + knockback
+    } else {
+      // Legacy Monster instance: store.attackMonster handles crits, numbers, loot
+      store.attackMonster(enemy.id);
+    }
     enemiesHit++;
   }
 

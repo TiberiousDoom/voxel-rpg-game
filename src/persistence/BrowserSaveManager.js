@@ -542,6 +542,18 @@ class BrowserSaveManager {
         request.onerror = () => reject(request.error);
       });
 
+      // Remove any older localStorage copy of this slot: loadGame checks
+      // localStorage first, so a stale copy would shadow this newer save.
+      try {
+        localStorage.removeItem(`${this.config.storagePrefix}save-${slotName}`);
+        localStorage.removeItem(`${this.config.storagePrefix}metadata-${slotName}`);
+        localStorage.setItem(`${this.config.storagePrefix}current-slot`, slotName);
+      } catch (err) {
+        // localStorage unavailable/full — IndexedDB save still succeeded
+      }
+      this.currentSave = slotName;
+      this.metadataCache.delete(slotName);
+
       return {
         success: true,
         message: `Game saved to slot: ${slotName}`,

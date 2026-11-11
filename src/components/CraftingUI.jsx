@@ -20,7 +20,6 @@ const CraftingUI = () => {
   const craftingSystemRef = useRef(null);
 
   const inventory = useGameStore((state) => state.inventory);
-  const player = useGameStore((state) => state.player);
   const equipment = useGameStore((state) => state.equipment);
 
   // Initialize MaterialCraftingSystem
@@ -84,7 +83,7 @@ const CraftingUI = () => {
 
       // Spawn crafting effect with quality-based color
       useGameStore.getState().addParticleEffect?.({
-        position: player.position,
+        position: useGameStore.getState().player.position,
         color: result.quality.color,
         type: 'spiral',
         count: 30,

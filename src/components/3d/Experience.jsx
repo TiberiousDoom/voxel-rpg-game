@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState, useRef } from 'react';
+import React, { Suspense, useEffect, useState, useRef, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import Player from './Player';
@@ -37,6 +37,9 @@ import useGameStore from '../../stores/useGameStore';
 import { useChunkSystem } from '../../hooks/useChunkSystem';
 import { VOXEL_SIZE, CHUNK_SIZE_Y, worldToChunk } from '../../systems/chunks/coordinates';
 import { isSolid } from '../../systems/chunks/blockTypes';
+
+// Cell size (world units) for re-sorting nearest rifts as the player moves
+const RIFT_SORT_CELL = 32;
 
 /**
  * Find the terrain surface Y at a given world (x, z).
@@ -156,7 +159,14 @@ const Experience = () => {
   const removeLootDrop = useGameStore((state) => state.removeLootDrop);
   const removeParticleEffect = useGameStore((state) => state.removeParticleEffect);
   const removeTargetMarker = useGameStore((state) => state.removeTargetMarker);
-  const playerPosition = useGameStore((state) => state.player.position);
+  // Coarse player position (re-renders only when crossing a chunk-sized cell),
+  // used to pick the nearest rifts to render. Subscribing to the exact position
+  // would re-render the entire scene every frame.
+  const playerCell = useGameStore((state) => {
+    const p = state.player.position;
+    return `${Math.floor(p[0] / RIFT_SORT_CELL)},${Math.floor(p[2] / RIFT_SORT_CELL)}`;
+  });
+  const isPaused = useGameStore((state) => state.gameState === 'paused');
   const riftEnemies = useGameStore((state) => state.enemies);
   const rifts = useGameStore((state) => state.rifts);
   const isNight = useGameStore((state) => state.worldTime.isNight);
@@ -175,12 +185,6 @@ const Experience = () => {
     viewDistance: 8,
   });
 
-  // Update chunk system based on player position
-  useEffect(() => {
-    if (isReady && playerPosition) {
-      updatePlayerPosition(playerPosition[0], playerPosition[2]);
-    }
-  }, [isReady, playerPosition, updatePlayerPosition]);
 
   // Store chunkManager reference for other systems (auto-jump, etc.)
   useEffect(() => {
@@ -189,12 +193,28 @@ const Experience = () => {
     }
   }, [isReady, chunkManager]);
 
-  // Update chunk system every frame
+  // Update chunk system every frame (position check is a cheap integer compare)
   useFrame((state, delta) => {
     if (isReady) {
+      const p = useGameStore.getState().player.position;
+      updatePlayerPosition(p[0], p[2]);
       updateChunks(delta);
     }
   });
+
+  // Nearest rifts, recomputed only when the player changes cell or rifts change
+  const nearestRifts = useMemo(() => {
+    const p = useGameStore.getState().player.position;
+    return rifts
+      .map((rift) => {
+        const dx = rift.x - p[0];
+        const dz = rift.z - p[2];
+        return { rift, dist2: dx * dx + dz * dz };
+      })
+      .sort((a, b) => a.dist2 - b.dist2)
+      .slice(0, 3)
+      .map((r) => r.rift);
+  }, [rifts, playerCell]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -233,14 +253,7 @@ const Experience = () => {
       <CompanionController />
 
       {/* Rift visuals — render nearest rifts with terrain-aligned Y */}
-      {isReady && chunkManager && rifts
-        .map((rift) => {
-          const dx = rift.x - playerPosition[0];
-          const dz = rift.z - playerPosition[2];
-          return { ...rift, _dist2: dx * dx + dz * dz };
-        })
-        .sort((a, b) => a._dist2 - b._dist2)
-        .slice(0, 3)
+      {isReady && chunkManager && nearestRifts
         .map((rift) => (
           <RiftVisualWithTerrainY key={rift.id} rift={rift} chunkManager={chunkManager} isNight={isNight} />
         ))
@@ -250,7 +263,7 @@ const Experience = () => {
       <WeatherEffects />
 
       {/* Physics world */}
-      <Physics gravity={[0, -20, 0]}>
+      <Physics gravity={[0, -20, 0]} paused={isPaused}>
         {/* Player - outside Suspense for reliable physics */}
         <Player />
 

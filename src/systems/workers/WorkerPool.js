@@ -29,6 +29,7 @@ export class WorkerPool {
     this.pending = new Map(); // requestId -> { resolve, reject, worker }
     this.queue = []; // Tasks waiting for available worker
     this.terminated = false;
+    this.exhausted = false; // true once every worker crashed and respawning stopped
 
     // Track consecutive errors to prevent infinite respawn loops
     this.consecutiveErrors = 0;
@@ -128,6 +129,17 @@ export class WorkerPool {
         console.error(`Worker pool: ${this.consecutiveErrors} consecutive errors, stopping respawn. ${this.workers.length} workers remaining.`);
       }
     }
+
+    // No workers left and none coming back: queued tasks would wait forever.
+    // Fail them (and all future tasks) so callers can fall back or retry.
+    if (this.workers.length === 0) {
+      this.exhausted = true;
+      const queued = this.queue;
+      this.queue = [];
+      for (const { reject } of queued) {
+        reject(new Error('Worker pool has no live workers'));
+      }
+    }
   }
 
   /**
@@ -172,6 +184,10 @@ export class WorkerPool {
     return new Promise((resolve, reject) => {
       if (this.terminated) {
         reject(new Error('Worker pool has been terminated'));
+        return;
+      }
+      if (this.exhausted) {
+        reject(new Error('Worker pool has no live workers'));
         return;
       }
 

@@ -192,7 +192,7 @@ const ContextHelpTooltip = ({ contextHelp }) => {
                   fontWeight: '500',
                 }}
               >
-                Don't show again
+                Don&apos;t show again
               </button>
               <button
                 onClick={() => handleDismiss(tip.id)}

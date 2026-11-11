@@ -49,7 +49,7 @@ describe('Building Placement Integration', () => {
     });
 
     test('emits building:placed event', (done) => {
-      jest.setTimeout(10000);
+      vi.setConfig({ testTimeout: 10000 });
 
       gameManager.on('building:placed', (data) => {
         expect(data.buildingId).toBeDefined();

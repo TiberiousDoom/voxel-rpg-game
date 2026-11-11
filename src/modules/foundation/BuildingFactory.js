@@ -200,7 +200,6 @@ class BuildingFactory {
       productionType: null,
       workSlots: 0,
       description: `${type} building`,
-      tier: 'SURVIVAL',
     };
   }
 }

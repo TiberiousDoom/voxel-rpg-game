@@ -18,6 +18,9 @@
 import { BuildingIntegration } from '../utils/integrations/BuildingIntegration.js';
 import { calculateDerivedStats, activeSkillSystem } from '../modules/character/CharacterSystem.js';
 
+// Each orchestrator tick represents one second of game time
+const TICK_SECONDS = 1;
+
 class ModuleOrchestrator {
   /**
    * Initialize orchestrator with all modules
@@ -471,7 +474,7 @@ class ModuleOrchestrator {
         };
 
         // Update all AI systems
-        const aiResult = this.aiSystemManager.update(1, aiGameState);
+        const aiResult = this.aiSystemManager.update(TICK_SECONDS, aiGameState);
 
         result.phase4AI = {
           ticksProcessed: aiResult.tick,
@@ -488,7 +491,8 @@ class ModuleOrchestrator {
       // STEP 4.8: PHASE 2 - SETTLEMENT UPDATE
       // ============================================
       if (this.settlementModule) {
-        const settlementResult = this.settlementModule.update(deltaTime, this.gameState);
+        // Was `deltaTime`, which is undefined here (ReferenceError every tick)
+        const settlementResult = this.settlementModule.update(TICK_SECONDS, this.gameState);
         result.settlement = settlementResult.settlement;
       }
 

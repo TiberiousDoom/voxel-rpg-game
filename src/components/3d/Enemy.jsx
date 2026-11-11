@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { audioManager } from '../../utils/AudioManager';
@@ -9,6 +9,23 @@ import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { VOXEL_SIZE, CHUNK_SIZE_Y } from '../../systems/chunks/coordinates';
 import { isSolid } from '../../systems/chunks/blockTypes';
+import {
+  STATUS_TICK_INTERVAL,
+  STATUS_FREEZE_SLOW,
+  STATUS_SLOW_MULT,
+  STATUS_BURN_DAMAGE_TAKEN_MULT,
+} from '../../data/tuning';
+
+/** Movement multiplier from active crowd-control effects. */
+function getStatusSpeedMultiplier(effects) {
+  let mult = 1;
+  for (const e of effects) {
+    if (e.type === 'stun') return 0;
+    if (e.type === 'freeze') mult *= STATUS_FREEZE_SLOW;
+    else if (e.type === 'slow') mult *= STATUS_SLOW_MULT;
+  }
+  return mult;
+}
 
 /**
  * Enemy component - Basic hostile mob with AI
@@ -42,11 +59,14 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
   const _enemyPos = useRef(new THREE.Vector3());
   const _direction = useRef(new THREE.Vector3());
 
-  const player = useGameStore((state) => state.player);
-  const dealDamageToPlayer = useGameStore((state) => state.dealDamageToPlayer);
+  // Active status effects: [{ type, duration, value, tickTimer }]
+  const statusEffectsRef = useRef([]);
 
   // Handle taking damage - useCallback ensures stable reference
-  const takeDamage = useCallback((damage) => {
+  const takeDamage = useCallback((rawDamage) => {
+    if (isDead.current) return;
+    const burning = statusEffectsRef.current.some((e) => e.type === 'burn');
+    const damage = Math.round(burning ? rawDamage * STATUS_BURN_DAMAGE_TAKEN_MULT : rawDamage);
     setHealth((prev) => {
       const newHealth = Math.max(0, prev - damage);
       return newHealth;
@@ -92,31 +112,77 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
     }
   }, []);
 
-  // Update RigidBody userData with takeDamage function
-  React.useEffect(() => {
+  // Apply (or refresh) a status effect such as stun/freeze/poison/burn
+  const applyStatusEffect = useCallback((effect) => {
+    if (!effect?.type || !effect.duration || isDead.current) return;
+    statusEffectsRef.current = [
+      ...statusEffectsRef.current.filter((e) => e.type !== effect.type),
+      { type: effect.type, duration: effect.duration, value: effect.value || 0, tickTimer: 0 },
+    ];
+  }, []);
+
+  const enemyId = monsterData?.id;
+  const hitUserData = useMemo(
+    () => ({ isEnemy: true, id: enemyId, takeDamage, applyStatusEffect }),
+    [enemyId, takeDamage, applyStatusEffect]
+  );
+
+  // Register hit handlers so melee/AOE/projectile code can damage this enemy by id
+  useEffect(() => {
+    if (!enemyId) return undefined;
+    const handlers = useGameStore.getState()._enemyHandlers;
+    handlers.set(enemyId, { takeDamage, applyStatusEffect });
+    return () => {
+      handlers.delete(enemyId);
+      useGameStore.getState()._enemyPositions.delete(enemyId);
+    };
+  }, [enemyId, takeDamage, applyStatusEffect]);
+
+  // Keep RigidBody userData in sync with the hit handlers
+  useEffect(() => {
     if (enemyRef.current) {
-      enemyRef.current.userData = {
-        isEnemy: true,
-        takeDamage: takeDamage,
-      };
+      enemyRef.current.userData = hitUserData;
     }
-  }, [takeDamage]);
+  }, [hitUserData]);
 
   // Enemy AI behavior
   useFrame((state, delta) => {
     if (!enemyRef.current || !isAlive || isDead.current) return;
 
+    const gameStore = useGameStore.getState();
+    // Frozen while paused / not playing (physics is paused too)
+    if (gameStore.gameState !== 'playing') return;
+
     const body = enemyRef.current;
     const currentPos = body.translation();
 
-    // Sync live position for spell auto-aim
-    const enemyId = monsterData?.id;
+    // Sync live position for spell auto-aim, melee and AOE hit detection
     if (enemyId) {
-      useGameStore.getState()._enemyPositions.set(enemyId, [currentPos.x, currentPos.y, currentPos.z]);
+      gameStore._enemyPositions.set(enemyId, [currentPos.x, currentPos.y, currentPos.z]);
+    }
+
+    // ── Status effects: tick durations and damage-over-time ──
+    let speedMult = 1;
+    if (statusEffectsRef.current.length > 0) {
+      const remaining = [];
+      for (const effect of statusEffectsRef.current) {
+        effect.duration -= delta;
+        if ((effect.type === 'poison' || effect.type === 'burn') && effect.value > 0) {
+          effect.tickTimer += delta;
+          if (effect.tickTimer >= STATUS_TICK_INTERVAL) {
+            effect.tickTimer -= STATUS_TICK_INTERVAL;
+            setHealth((prev) => Math.max(0, prev - effect.value));
+          }
+        }
+        if (effect.duration > 0) remaining.push(effect);
+      }
+      statusEffectsRef.current = remaining;
+      speedMult = getStatusSpeedMultiplier(remaining);
     }
 
     // Calculate distance to player (reuse vectors)
-    const playerPos = _playerPos.current.set(player.position[0], player.position[1], player.position[2]);
+    const playerPosArr = gameStore.player.position;
+    const playerPos = _playerPos.current.set(playerPosArr[0], playerPosArr[1], playerPosArr[2]);
     const enemyPos = _enemyPos.current.set(currentPos.x, currentPos.y, currentPos.z);
     const distance = playerPos.distanceTo(enemyPos);
 
@@ -150,17 +216,17 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
       const direction = _direction.current.subVectors(playerPos, enemyPos).normalize();
 
       const velocity = {
-        x: direction.x * mSpeed,
+        x: direction.x * mSpeed * speedMult,
         y: body.linvel().y,
-        z: direction.z * mSpeed,
+        z: direction.z * mSpeed * speedMult,
       };
 
       body.setLinvel(velocity, true);
 
       // Attack player if in range
-      if (distance < attackRange) {
+      if (distance < attackRange && speedMult > 0 && gameStore.player.health > 0) {
         if (attackCooldownRef.current <= 0) {
-          dealDamageToPlayer(mDamage, `Killed by ${mName}`);
+          gameStore.dealDamageToPlayer(mDamage, `Killed by ${mName}`);
           attackCooldownRef.current = 1.0;
         }
       }
@@ -171,7 +237,7 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
         {
           x: currentVel.x * 0.9,
           y: currentVel.y,
-          z: currentVel.x * 0.9,
+          z: currentVel.z * 0.9,
         },
         true
       );
@@ -187,8 +253,12 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
       isDead.current = true;
       deathPosition.current = [currentPos.x, currentPos.y, currentPos.z];
       setIsAlive(false);
-      const store = useGameStore.getState();
-      if (enemyId) store._enemyPositions.delete(enemyId);
+      const store = gameStore;
+      statusEffectsRef.current = [];
+      if (enemyId) {
+        store._enemyPositions.delete(enemyId);
+        store._enemyHandlers.delete(enemyId);
+      }
       const ePos = body.translation();
 
       // Spawn XP orb
@@ -263,17 +333,17 @@ const Enemy = ({ position = [0, 2, 0], type = 'slime', name = 'Slime', monsterDa
       colliders="cuboid"
       mass={0.8}
       linearDamping={0.8}
-      userData={{ isEnemy: true, takeDamage }}
+      userData={hitUserData}
     >
-      <group userData={{ isEnemy: true, takeDamage }} scale={damageFlash > 0 ? [1.15, 1.15, 1.15] : [1, 1, 1]}>
+      <group userData={hitUserData} scale={damageFlash > 0 ? [1.15, 1.15, 1.15] : [1, 1, 1]}>
         {/* Invisible larger hitbox for easier tap detection on mobile */}
-        <mesh position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
+        <mesh position={[0, 0.5, 0]} userData={hitUserData}>
           <boxGeometry args={[1.5, 1.5, 1.5]} />
           <meshBasicMaterial visible={false} />
         </mesh>
 
         {/* Enemy body */}
-        <mesh position={[0, 0.5, 0]} userData={{ isEnemy: true, takeDamage }}>
+        <mesh position={[0, 0.5, 0]} userData={hitUserData}>
           <boxGeometry args={[1, 1, 1]} />
           <meshBasicMaterial color={damageFlash > 0 ? "#ffff00" : mColor} />
         </mesh>

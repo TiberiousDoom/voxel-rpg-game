@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Zap, TrendingUp, Package, Activity, Flame, Hammer, Pickaxe, MapPin } from 'lucide-react';
-import useGameStore from '../stores/useGameStore';
+import useGameStore, { selectPlayerStats } from '../stores/useGameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getTotalStats } from '../utils/equipmentStats';
 import StatBarWithTooltip from './ui/StatBarWithTooltip';
 import { useStatBreakdown } from '../hooks/useStatBreakdown';
@@ -9,8 +10,14 @@ import { useStatBreakdown } from '../hooks/useStatBreakdown';
  * GameUI component - HTML overlay for game interface
  * Mobile-compatible with responsive stat panels
  */
+// Isolated so only this text re-renders when the player moves
+const LivePosition = () => {
+  const position = useGameStore((state) => state.player.position);
+  return <>{position.map((p) => p.toFixed(1)).join(', ')}</>;
+};
+
 const GameUI = () => {
-  const player = useGameStore((state) => state.player);
+  const player = useGameStore(useShallow(selectPlayerStats));
   const equipment = useGameStore((state) => state.equipment);
   const inventory = useGameStore((state) => state.inventory);
   const gameState = useGameStore((state) => state.gameState);
@@ -86,7 +93,7 @@ const GameUI = () => {
               </p>
               <p style={{ fontSize: '0.9rem', margin: '0.5rem 0 0 0', lineHeight: '1.4' }}>
                 Enable Hardware Acceleration in Chrome:<br />
-                Settings → System → "Use hardware acceleration when available"
+                Settings → System → &quot;Use hardware acceleration when available&quot;
               </p>
             </div>
           )}
@@ -570,7 +577,7 @@ const GameUI = () => {
           fontSize: '0.8rem',
         }}
       >
-        Position: {player.position.map((p) => p.toFixed(1)).join(', ')}
+        Position: <LivePosition />
       </div>
       )}
     </div>

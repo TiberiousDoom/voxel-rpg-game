@@ -1,13 +1,16 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import useGameStore from '../../stores/useGameStore';
 import { useKeyboard } from '../../hooks/useKeyboard';
-import { getTotalStats } from '../../utils/equipmentStats';
+import { calculateEquipmentStats } from '../../utils/equipmentStats';
 import { SPELLS, executeSpell } from '../../data/spells';
 import { isTouchDevice } from '../../utils/deviceDetection';
-import { AUTO_JUMP_COOLDOWN_MS, AUTO_JUMP_DETECT_RANGE, AUTO_JUMP_IMPULSE, AUTO_JUMP_MIN_SPEED, JUMP_IMPULSE, JUMP_STAMINA_COST, JUMP_GROUNDED_THRESHOLD, JUMP_COOLDOWN_MS, NAV_WAYPOINT_ARRIVAL, NAV_STUCK_TIMEOUT } from '../../data/tuning';
+import { AUTO_JUMP_COOLDOWN_MS, AUTO_JUMP_DETECT_RANGE, AUTO_JUMP_IMPULSE, AUTO_JUMP_MIN_SPEED, JUMP_IMPULSE, JUMP_STAMINA_COST, JUMP_GROUNDED_THRESHOLD, JUMP_COOLDOWN_MS, NAV_WAYPOINT_ARRIVAL, NAV_STUCK_TIMEOUT,
+  PLAYER_SPRINT_SPEED_MULT, PLAYER_STAMINA_SPRINT_DRAIN, PLAYER_STAMINA_BLOCK_DRAIN, PLAYER_STAMINA_REGEN,
+  PLAYER_MANA_REGEN, PLAYER_MOVE_SMOOTHING, CAMERA_FOLLOW_SMOOTHING,
+  DODGE_STAMINA_COST, DODGE_DURATION, DODGE_SPEED, DODGE_DOUBLE_TAP_MS } from '../../data/tuning';
 import { isSolid as isBlockSolid, isTransparent as isBlockTransparent } from '../../systems/chunks/blockTypes';
 
 // Pre-compute spell key map (SPELLS is static)
@@ -20,26 +23,55 @@ const SPELL_KEY_MAP = {
   spell6: SPELLS.find(s => s.key === '6'),
 };
 
+// Frame-rate independent smoothing: `factor` is the lerp amount per 60fps frame
+const smoothing = (factor, delta) => 1 - Math.pow(1 - factor, delta * 60);
+
+/**
+ * Ground check: is there a solid block just below the capsule's feet?
+ * Samples the centre and four points near the capsule edge so standing on a
+ * block corner still counts. Falls back to the velocity heuristic when the
+ * chunk system isn't ready.
+ */
+function isOnGround(cm, pos, vy) {
+  if (Math.abs(vy) >= JUMP_GROUNDED_THRESHOLD) return false;
+  if (!cm) return true;
+  const footY = pos.y - 0.15;
+  const r = 0.45;
+  const samples = [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]];
+  for (const [ox, oz] of samples) {
+    if (isBlockSolid(cm.getBlock(pos.x + ox, footY, pos.z + oz))) return true;
+  }
+  return false;
+}
+
+/** Sum the speed multiplier of active movement buffs (haste). */
+function getBuffSpeedMultiplier(statusEffects) {
+  let mult = 1;
+  if (!statusEffects) return mult;
+  for (const e of statusEffects) {
+    if (e.type === 'haste' && e.value) mult *= e.value;
+  }
+  return mult;
+}
+
 const Player = () => {
   const playerRef = useRef();
+  const bodyGroupRef = useRef();
   const { camera } = useThree();
   const keys = useKeyboard();
 
-  const player = useGameStore((state) => state.player);
-  const equipment = useGameStore((state) => state.equipment);
-  const cameraState = useGameStore((state) => state.camera);
-  const updatePlayer = useGameStore((state) => state.updatePlayer);
-
-  // Calculate total stats with equipment bonuses
-  const totalStats = getTotalStats(player, equipment);
+  // Read the spawn position once: after mount the physics body owns the position
+  // (store position is written FROM physics each frame). Subscribing to the whole
+  // player object here would re-render the player 60x per second.
+  const initialPosition = useMemo(() => useGameStore.getState().player.position, []);
 
   // Double-tap detection for mobile sprint
   const lastTapTime = useRef(0);
-  const [isSprinting, setIsSprinting] = React.useState(false);
+  const isSprintingToggle = useRef(false);
 
-  // Dodge roll state
+  // Dodge roll state (refs, not React state — updated inside useFrame)
   const lastSpacePress = useRef(0);
-  const [isDodging, setIsDodging] = React.useState(false);
+  const isDodging = useRef(false);
   const dodgeDirection = useRef(new THREE.Vector3());
   const dodgeTimer = useRef(0);
 
@@ -73,25 +105,34 @@ const Player = () => {
   useFrame((state, delta) => {
     if (!playerRef.current) return;
 
+    const store = useGameStore.getState();
     const body = playerRef.current;
-    const currentPos = body.translation();
-    const currentVel = body.linvel();
 
-    // Detect teleport (respawn) — store position jumped far from physics body
-    const storePos = useGameStore.getState().player.position;
-    const dx = storePos[0] - currentPos.x;
-    const dz = storePos[2] - currentPos.z;
-    if (dx * dx + dz * dz > 100) { // >10 units away = teleport
-      body.setTranslation({ x: storePos[0], y: storePos[1], z: storePos[2] }, true);
+    // Explicit teleport requests (respawn, save load) move the physics body
+    if (store.pendingTeleport) {
+      const [tx, ty, tz] = store.pendingTeleport;
+      body.setTranslation({ x: tx, y: ty, z: tz }, true);
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      store.clearPendingTeleport();
       return; // Skip this frame to let physics settle
     }
 
-    // Determine if sprinting (keyboard Shift or mobile double-tap)
-    const isSprintingNow = (keys.run || isSprinting) && player.stamina > 0;
+    // Frozen while paused (physics is paused too)
+    if (store.gameState === 'paused') return;
 
-    // Get movement direction from keyboard or tap-to-move (use totalStats for equipment bonuses)
-    const moveSpeed = isSprintingNow ? totalStats.speed * 1.5 : totalStats.speed;
+    const player = store.player;
+    const cameraState = store.camera;
+    const currentPos = body.translation();
+    const currentVel = body.linvel();
+    const cm = store._chunkManager;
+
+    // Determine if sprinting (keyboard Shift or mobile double-tap)
+    const isSprintingNow = (keys.run || isSprintingToggle.current) && player.stamina > 0;
+
+    // Movement speed: base + equipment + buffs (haste)
+    const equipSpeed = calculateEquipmentStats(store.equipment).speed || 0;
+    const baseSpeed = (player.speed + equipSpeed) * getBuffSpeedMultiplier(player.statusEffects);
+    const moveSpeed = isSprintingNow ? baseSpeed * PLAYER_SPRINT_SPEED_MULT : baseSpeed;
     const velocity = _velocity.current.set(currentVel.x, currentVel.y, currentVel.z);
 
     // Use stamina when sprinting and moving
@@ -153,7 +194,7 @@ const Player = () => {
         } else {
           stuckTimer.current += delta;
           if (stuckTimer.current >= NAV_STUCK_TIMEOUT) {
-            useGameStore.getState().clearNavPath();
+            store.clearNavPath();
             stuckTimer.current = 0;
             lastDistToWaypoint.current = Infinity;
           }
@@ -163,9 +204,9 @@ const Player = () => {
         stuckTimer.current = 0;
         lastDistToWaypoint.current = Infinity;
         if (player.navPathIndex < player.navPath.length - 1) {
-          useGameStore.getState().advanceNavPathIndex();
+          store.advanceNavPathIndex();
         } else {
-          useGameStore.getState().clearNavPath();
+          store.clearNavPath();
         }
       }
     } else if (!hasKeyboardInput && player.targetPosition) {
@@ -182,13 +223,13 @@ const Player = () => {
         movement.addScaledVector(direction, moveSpeed);
         isMoving = true;
       } else {
-        useGameStore.getState().setPlayerTarget(null);
+        store.setPlayerTarget(null);
       }
     }
 
     // If keyboard input is active, clear both navPath and targetPosition
     if (hasKeyboardInput && (player.targetPosition || player.navPath)) {
-      useGameStore.getState().clearNavPath();
+      store.clearNavPath();
       stuckTimer.current = 0;
       lastDistToWaypoint.current = Infinity;
     }
@@ -206,21 +247,21 @@ const Player = () => {
       batch.isSprinting = sprintState;
     }
 
-    // Stamina: consume or regenerate (read current from store for accuracy)
-    const curStamina = useGameStore.getState().player.stamina;
+    // Stamina: consume or regenerate
+    const curStamina = player.stamina;
     if (isBlocking) {
-      batch.stamina = Math.max(0, curStamina - delta * 15);
+      batch.stamina = Math.max(0, curStamina - delta * PLAYER_STAMINA_BLOCK_DRAIN);
     } else if (isSprintingNow && isMoving) {
-      batch.stamina = Math.max(0, curStamina - delta * 20);
+      batch.stamina = Math.max(0, curStamina - delta * PLAYER_STAMINA_SPRINT_DRAIN);
     } else {
-      batch.stamina = Math.min(player.maxStamina, curStamina + delta * 30);
+      batch.stamina = Math.min(player.maxStamina, curStamina + delta * PLAYER_STAMINA_REGEN);
     }
 
     // Mana regeneration
-    const curMana = useGameStore.getState().player.mana;
-    batch.mana = Math.min(player.maxMana, curMana + delta * 10);
+    batch.mana = Math.min(player.maxMana, player.mana + delta * PLAYER_MANA_REGEN);
 
     // Respawn invincibility countdown
+    let respawnProtected = false;
     if (player.isInvincible && player.invincibilityTimer > 0) {
       const newTimer = player.invincibilityTimer - delta;
       if (newTimer <= 0) {
@@ -228,6 +269,7 @@ const Player = () => {
         batch.invincibilityTimer = 0;
       } else {
         batch.invincibilityTimer = newTimer;
+        respawnProtected = true;
       }
     }
 
@@ -245,31 +287,36 @@ const Player = () => {
       }
     }
 
-    // Spell cooldowns (has internal early-return if nothing active)
-    useGameStore.getState().updateSpellCooldowns(delta);
+    // Spell cooldowns + buff durations (both early-return if nothing active)
+    store.updateSpellCooldowns(delta);
+    store.tickPlayerStatusEffects(delta);
 
     // Apply movement with damping for smooth control
-    velocity.x = THREE.MathUtils.lerp(velocity.x, movement.x, 0.2);
-    velocity.z = THREE.MathUtils.lerp(velocity.z, movement.z, 0.2);
+    const moveLerp = smoothing(PLAYER_MOVE_SMOOTHING, delta);
+    velocity.x = THREE.MathUtils.lerp(velocity.x, movement.x, moveLerp);
+    velocity.z = THREE.MathUtils.lerp(velocity.z, movement.z, moveLerp);
 
     // Dodge roll handling
-    if (isDodging) {
+    if (isDodging.current) {
       dodgeTimer.current -= delta;
       if (dodgeTimer.current > 0) {
-        velocity.x = dodgeDirection.current.x * 20;
-        velocity.z = dodgeDirection.current.z * 20;
+        velocity.x = dodgeDirection.current.x * DODGE_SPEED;
+        velocity.z = dodgeDirection.current.z * DODGE_SPEED;
         if (!player.isInvincible) {
           batch.isInvincible = true;
         }
       } else {
-        setIsDodging(false);
-        batch.isInvincible = false;
+        isDodging.current = false;
+        // Don't cancel respawn spawn-protection when a dodge ends
+        if (!respawnProtected) batch.isInvincible = false;
       }
     }
 
+    const grounded = isOnGround(cm, currentPos, currentVel.y);
+
     // Auto-jump: detect 1-block obstacles ahead and jump over them
     // Triggers on mobile (always) and desktop click-to-move (no keyboard to press Space)
-    if ((isMobileDevice.current || player.targetPosition || player.navPath) && !isDodging && Math.abs(currentVel.y) < 0.1 && isMoving) {
+    if ((isMobileDevice.current || player.targetPosition || player.navPath) && !isDodging.current && grounded && isMoving) {
       const xzSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
       if (xzSpeed > AUTO_JUMP_MIN_SPEED) {
         const now = Date.now();
@@ -281,7 +328,6 @@ const Player = () => {
           // Check if there's a solid block at foot level but NOT at head level
           const footY = currentPos.y + 0.5;
           const headY = currentPos.y + 2.5;
-          const cm = useGameStore.getState()._chunkManager;
           if (cm) {
             const footBlock = cm.getBlock(checkX, footY, checkZ);
             const headBlock = cm.getBlock(checkX, headY, checkZ);
@@ -294,17 +340,17 @@ const Player = () => {
       }
     }
 
-    // Jumping (disabled during dodge, requires grounded + cooldown + stamina)
-    if (keys.jump && Math.abs(currentVel.y) < JUMP_GROUNDED_THRESHOLD && !isDodging) {
+    // Jumping (disabled during dodge, requires ground contact + cooldown + stamina)
+    if (keys.jump && grounded && !isDodging.current) {
       const now = Date.now();
       if (now - lastJumpTime.current >= JUMP_COOLDOWN_MS) {
         // Check for double-tap dodge roll
-        if (now - lastSpacePress.current < 300 && batch.stamina >= 30 && movement.length() > 0) {
+        if (now - lastSpacePress.current < DODGE_DOUBLE_TAP_MS && batch.stamina >= DODGE_STAMINA_COST && movement.length() > 0) {
           // Double-tap detected - dodge roll!
-          batch.stamina = Math.max(0, batch.stamina - 30);
-          setIsDodging(true);
-          dodgeTimer.current = 0.3; // 0.3 second dodge duration
-          dodgeDirection.current = movement.clone().normalize();
+          batch.stamina = Math.max(0, batch.stamina - DODGE_STAMINA_COST);
+          isDodging.current = true;
+          dodgeTimer.current = DODGE_DURATION;
+          dodgeDirection.current.copy(movement).normalize();
           lastSpacePress.current = 0; // Reset to prevent triple tap
           lastJumpTime.current = now;
         } else if (batch.stamina >= JUMP_STAMINA_COST) {
@@ -328,12 +374,12 @@ const Player = () => {
     if (xzSpeed > 0.5) {
       walkPhaseRef.current += delta * 10;
       const swing = Math.sin(walkPhaseRef.current) * 0.6;
-      if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
-      if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
+      if (leftLegRef.current?.rotation) leftLegRef.current.rotation.x = swing;
+      if (rightLegRef.current?.rotation) rightLegRef.current.rotation.x = -swing;
     } else {
       walkPhaseRef.current = 0;
-      if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
-      if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
+      if (leftLegRef.current?.rotation) leftLegRef.current.rotation.x = 0;
+      if (rightLegRef.current?.rotation) rightLegRef.current.rotation.x = 0;
     }
 
     // Update camera based on mode (first-person or third-person)
@@ -396,7 +442,6 @@ const Player = () => {
 
       // Camera-terrain collision: pull camera in when obstructed by opaque blocks
       // (skip transparent blocks like leaves so trees don't constantly clip the camera)
-      const cm = useGameStore.getState()._chunkManager;
       if (cm) {
         const headX = currentPos.x;
         const headY = currentPos.y + 2;
@@ -421,8 +466,8 @@ const Player = () => {
         }
       }
 
-      // Smooth camera movement (faster lerp for responsive recovery)
-      camera.position.lerp(targetCameraPos, 0.15);
+      // Smooth camera movement (frame-rate independent)
+      camera.position.lerp(targetCameraPos, smoothing(CAMERA_FOLLOW_SMOOTHING, delta));
       camera.lookAt(targetLookAt);
     }
 
@@ -433,9 +478,14 @@ const Player = () => {
       batch.facingAngle = Math.atan2(movement.x, movement.z);
     }
 
+    // Rotate the body mesh directly (no React re-render)
+    if (bodyGroupRef.current?.rotation) {
+      bodyGroupRef.current.rotation.y = batch.facingAngle ?? player.facingAngle;
+    }
+
     // ── Single batched store write for all player state ──
     batch.position = newPos;
-    updatePlayer(batch);
+    store.updatePlayer(batch);
   });
 
   // Handle double-tap for mobile sprint
@@ -446,7 +496,7 @@ const Player = () => {
 
       if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
         // Double tap detected
-        setIsSprinting((prev) => !prev);
+        isSprintingToggle.current = !isSprintingToggle.current;
       }
 
       lastTapTime.current = now;
@@ -460,6 +510,7 @@ const Player = () => {
   // (Cannot use useEffect because `keys` is a stable mutable ref that never triggers re-renders)
   useFrame(() => {
     const store = useGameStore.getState();
+    if (store.gameState !== 'playing') return;
     const currentPlayer = store.player;
 
     const spellKeyMap = SPELL_KEY_MAP;
@@ -502,7 +553,7 @@ const Player = () => {
     trycastSpell('spell6', spellKeyMap.spell6);
 
     // Potion use (H key)
-    if (keys.potion && store.inventory.potions > 0 && currentPlayer.potionCooldown <= 0) {
+    if (keys.potion && store.inventory.potions > 0 && currentPlayer.potionCooldown <= 0 && currentPlayer.health > 0) {
       store.usePotion();
     }
 
@@ -518,7 +569,7 @@ const Player = () => {
   return (
     <RigidBody
       ref={playerRef}
-      position={player.position}
+      position={initialPosition}
       enabledRotations={[false, false, false]}
       type="dynamic"
       colliders={false}
@@ -527,7 +578,7 @@ const Player = () => {
       angularDamping={1}
     >
       <CapsuleCollider args={[0.8, 0.6]} position={[0, 1.4, 0]} friction={0} restitution={0} />
-      <group rotation={[0, player.facingAngle, 0]}>
+      <group ref={bodyGroupRef}>
         {/* Player body (torso) */}
         <mesh position={[0, 1.35, 0]}>
           <boxGeometry args={[1.2, 1.3, 0.8]} />

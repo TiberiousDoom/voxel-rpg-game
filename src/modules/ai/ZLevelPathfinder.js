@@ -55,6 +55,7 @@ class PriorityQueue {
   _bubbleDown(index) {
     const length = this.elements.length;
 
+    // eslint-disable-next-line no-constant-condition -- loop exits via break/return
     while (true) {
       const leftChild = 2 * index + 1;
       const rightChild = 2 * index + 2;
@@ -423,6 +424,7 @@ export class ZLevelPathfinder {
 
     const path = [];
 
+    // eslint-disable-next-line no-constant-condition -- loop exits via break/return
     while (true) {
       const pos = { x: x0, y: y0, z: start.z };
 

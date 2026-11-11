@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, Package } from 'lucide-react';
-import useGameStore from '../stores/useGameStore';
+import useGameStore, { selectPlayerStats } from '../stores/useGameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { ITEM_TYPES } from '../data/craftingRecipes';
 import {
   compareStatsWithItem,
@@ -48,7 +49,7 @@ const InventoryUI = () => {
   const consumeItem = useGameStore((state) => state.consumeItem);
   const eatMaterial = useGameStore((state) => state.eatMaterial);
   const character = useGameStore((state) => state.character);
-  const player = useGameStore((state) => state.player);
+  const player = useGameStore(useShallow(selectPlayerStats));
   const hunger = useGameStore((state) => state.hunger);
 
   // Get harvested materials

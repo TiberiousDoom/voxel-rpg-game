@@ -56,7 +56,7 @@ const MigrationNotification = ({ data, onClose }) => {
 
           {/* What's New */}
           <div className="migration-features">
-            <h3>What's New:</h3>
+            <h3>What&apos;s New:</h3>
             <ul>
               <li>
                 <strong>6 Attributes</strong> - Leadership, Construction, Exploration, Combat, Magic, Endurance

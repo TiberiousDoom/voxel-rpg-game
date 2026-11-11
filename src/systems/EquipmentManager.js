@@ -78,7 +78,7 @@ export class EquipmentManager {
 
       // Add base stats
       Object.keys(item.stats || {}).forEach(stat => {
-        if (stats.hasOwnProperty(stat)) {
+        if (Object.prototype.hasOwnProperty.call(stats, stat)) {
           stats[stat] += item.stats[stat];
         }
       });
@@ -88,7 +88,7 @@ export class EquipmentManager {
         const statBonus = this.getStatBonusFromProperty(prop);
         if (statBonus) {
           Object.keys(statBonus).forEach(stat => {
-            if (stats.hasOwnProperty(stat)) {
+            if (Object.prototype.hasOwnProperty.call(stats, stat)) {
               stats[stat] += statBonus[stat];
             }
           });

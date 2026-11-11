@@ -74,7 +74,7 @@ function TutorialMessage({ tutorialSystem, onClose }) {
         <div className="tutorial-empty">
           <Check size={48} />
           <h3>All caught up!</h3>
-          <p>You've completed all available tutorial steps.</p>
+          <p>You&apos;ve completed all available tutorial steps.</p>
           <button className="tutorial-view-all-btn" onClick={() => setShowAll(true)}>
             View All Steps
           </button>

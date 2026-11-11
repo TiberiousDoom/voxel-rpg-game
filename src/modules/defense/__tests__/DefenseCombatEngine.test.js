@@ -134,7 +134,17 @@ describe('DefenseCombatEngine', () => {
     });
 
     test('updates defender health', () => {
-      engine.simulateWaveCombat(defenders, enemies);
+      // Deterministic randomness (Park-Miller LCG) so the outcome doesn't depend on luck
+      let seed = 42;
+      const randomSpy = vi.spyOn(Math, 'random').mockImplementation(() => {
+        seed = (seed * 16807) % 2147483647;
+        return (seed - 1) / 2147483646;
+      });
+      try {
+        engine.simulateWaveCombat(defenders, enemies);
+      } finally {
+        randomSpy.mockRestore();
+      }
 
       expect(
         defenders[0].combatStats.health.current < 150 ||

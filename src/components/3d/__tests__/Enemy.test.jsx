@@ -5,23 +5,35 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import '../testSetup';
+import useGameStoreMock from '../../../stores/useGameStore';
+import { advanceFrames } from '@react-three/fiber';
 
 // Mock the store
 vi.mock('../../../stores/useGameStore', () => {
-  return vi.fn((selector) => {
-    const state = {
-      player: {
-        position: [0, 2, 0],
-        health: 100,
-        maxHealth: 100,
-      },
-      dealDamageToPlayer: vi.fn(),
-      addDamageNumber: vi.fn(),
-      removeEnemy: vi.fn(),
-      handleMonsterDeath: vi.fn(),
-    };
-    return selector ? selector(state) : state;
+  const createState = () => ({
+    gameState: 'playing',
+    player: {
+      position: [0, 2, 0],
+      health: 100,
+      maxHealth: 100,
+    },
+    dealDamageToPlayer: vi.fn(),
+    addDamageNumber: vi.fn(),
+    addParticleEffect: vi.fn(),
+    addXPOrb: vi.fn(),
+    addLootDrop: vi.fn(),
+    removeEnemy: vi.fn(),
+    removeRiftEnemy: vi.fn(),
+    handleMonsterDeath: vi.fn(),
+    _enemyPositions: new Map(),
+    _enemyHandlers: new Map(),
+    _chunkManager: null,
   });
+  let state = createState();
+  const mockStore = vi.fn((selector) => (selector ? selector(state) : state));
+  mockStore.getState = () => state;
+  mockStore.__reset = () => { state = createState(); };
+  return { default: mockStore };
 });
 
 // Import after mocks
@@ -39,6 +51,7 @@ describe('Enemy Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useGameStoreMock.__reset();
     vi.useFakeTimers();
   });
 
@@ -180,42 +193,68 @@ describe('Enemy Component', () => {
 
   describe('Combat', () => {
     test('enemy attacks player when in melee range', () => {
-      const useGameStore = require('../../../stores/useGameStore');
-
-      // Enemy very close to player
+      // Enemy very close to the player at [0, 2, 0]
       render(
         <TestWrapper>
           <Enemy position={[1, 2, 1]} name="Slime" />
         </TestWrapper>
       );
 
-      // Fast forward attack cooldown
-      act(() => {
-        vi.advanceTimersByTime(1500);
-      });
-
-      expect(useGameStore).toHaveBeenCalled();
+      act(() => advanceFrames(1));
+      expect(useGameStoreMock.getState().dealDamageToPlayer).toHaveBeenCalledTimes(1);
     });
 
     test('attack has cooldown period', () => {
-      const useGameStore = require('../../../stores/useGameStore');
-
       render(
         <TestWrapper>
           <Enemy position={[1, 2, 1]} name="Slime" />
         </TestWrapper>
       );
 
-      // Multiple time advances
-      act(() => {
-        vi.advanceTimersByTime(500);
-      });
+      act(() => advanceFrames(30)); // 0.5s: still cooling down
+      expect(useGameStoreMock.getState().dealDamageToPlayer).toHaveBeenCalledTimes(1);
 
-      act(() => {
-        vi.advanceTimersByTime(500);
-      });
+      act(() => advanceFrames(40)); // > 1s total: attacks again
+      expect(useGameStoreMock.getState().dealDamageToPlayer).toHaveBeenCalledTimes(2);
+    });
 
-      expect(useGameStore).toHaveBeenCalled();
+    test('does not attack while the game is paused', () => {
+      useGameStoreMock.getState().gameState = 'paused';
+      render(
+        <TestWrapper>
+          <Enemy position={[1, 2, 1]} name="Slime" />
+        </TestWrapper>
+      );
+
+      act(() => advanceFrames(10));
+      expect(useGameStoreMock.getState().dealDamageToPlayer).not.toHaveBeenCalled();
+    });
+
+    test('registers hit handlers so melee/AOE can damage it by id', () => {
+      render(
+        <TestWrapper>
+          <Enemy position={[10, 5, 10]} monsterData={{ id: 'rift_1', health: 50 }} />
+        </TestWrapper>
+      );
+
+      const handler = useGameStoreMock.getState()._enemyHandlers.get('rift_1');
+      expect(handler).toBeDefined();
+      expect(typeof handler.takeDamage).toBe('function');
+      expect(typeof handler.applyStatusEffect).toBe('function');
+    });
+
+    test('stun stops the enemy from attacking', () => {
+      render(
+        <TestWrapper>
+          <Enemy position={[1, 2, 1]} monsterData={{ id: 'rift_2', health: 50 }} />
+        </TestWrapper>
+      );
+      act(() => {
+        useGameStoreMock.getState()._enemyHandlers.get('rift_2')
+          .applyStatusEffect({ type: 'stun', duration: 2, value: 0 });
+      });
+      act(() => advanceFrames(10));
+      expect(useGameStoreMock.getState().dealDamageToPlayer).not.toHaveBeenCalled();
     });
   });
 
@@ -232,15 +271,21 @@ describe('Enemy Component', () => {
     });
 
     test('death triggers cleanup after animation', () => {
-      const useGameStore = require('../../../stores/useGameStore');
-
       render(
         <TestWrapper>
-          <Enemy {...defaultProps} />
+          <Enemy position={[10, 5, 10]} monsterData={{ id: 'rift_3', health: 20, xp: 5 }} />
         </TestWrapper>
       );
+      const state = useGameStoreMock.getState();
 
-      expect(useGameStore).toHaveBeenCalled();
+      act(() => state._enemyHandlers.get('rift_3').takeDamage(100));
+      act(() => advanceFrames(1));
+
+      expect(state.addXPOrb).toHaveBeenCalled();
+      expect(state._enemyHandlers.has('rift_3')).toBe(false);
+
+      act(() => vi.advanceTimersByTime(2000));
+      expect(state.removeRiftEnemy).toHaveBeenCalledWith('rift_3');
     });
   });
 

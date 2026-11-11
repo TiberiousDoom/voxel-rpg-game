@@ -260,24 +260,29 @@ describe('Loot System Integration', () => {
 
   describe('Level-Based Loot Scaling', () => {
     test('should generate better loot from higher level monsters', () => {
-      const lowLevel = new Monster('GOBLIN', { x: 0, z: 0 }, { level: 1 });
-      const highLevel = new Monster('GOBLIN', { x: 10, z: 10 }, { level: 10 });
+      // Loot is random per drop, so compare averages over many drops
+      const SAMPLES = 100;
+      const sample = (level) => {
+        let gold = 0;
+        let statTotal = 0;
+        let itemCount = 0;
+        for (let i = 0; i < SAMPLES; i++) {
+          const monster = new Monster('GOBLIN', { x: 0, z: 0 }, { level });
+          const loot = lootTable.generateLoot(monster);
+          gold += loot.gold || 0;
+          for (const item of loot.items) {
+            statTotal += Object.values(item.stats || {}).reduce((sum, v) => sum + v, 0);
+            itemCount++;
+          }
+        }
+        return { avgGold: gold / SAMPLES, avgItemStats: itemCount ? statTotal / itemCount : 0 };
+      };
 
-      // Generate loot for both
-      const lowLevelLoot = lootTable.generateLoot(lowLevel);
-      const highLevelLoot = lootTable.generateLoot(highLevel);
+      const low = sample(1);
+      const high = sample(10);
 
-      // High level should drop more gold (on average)
-      if (lowLevelLoot.gold > 0 && highLevelLoot.gold > 0) {
-        expect(highLevelLoot.gold).toBeGreaterThanOrEqual(lowLevelLoot.gold);
-      }
-
-      // High level items should have better stats
-      if (lowLevelLoot.items.length > 0 && highLevelLoot.items.length > 0) {
-        const lowStats = Object.values(lowLevelLoot.items[0].stats).reduce((s, v) => s + v, 0);
-        const highStats = Object.values(highLevelLoot.items[0].stats).reduce((s, v) => s + v, 0);
-        expect(highStats).toBeGreaterThan(lowStats);
-      }
+      expect(high.avgGold).toBeGreaterThan(low.avgGold);
+      expect(high.avgItemStats).toBeGreaterThan(low.avgItemStats);
     });
   });
 

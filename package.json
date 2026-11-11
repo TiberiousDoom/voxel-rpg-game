@@ -2,10 +2,10 @@
   "name": "voxel-rpg-game",
   "version": "2.0.0",
   "description": "Voxel RPG Game - 3D version with React Three Fiber",
-  "private": false,
+  "private": true,
   "homepage": "https://TiberiousDoom.github.io/voxel-rpg-game",
   "license": "MIT",
-  "author": "Your Name",
+  "author": "TiberiousDoom",
   "repository": {
     "type": "git",
     "url": "https://github.com/TiberiousDoom/voxel-rpg-game.git"
@@ -59,9 +59,9 @@
     "test:watch": "vitest",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
-    "format": "prettier --write \"src/**/*.js\""
+    "lint": "eslint --ext .js,.jsx src/",
+    "lint:fix": "eslint --ext .js,.jsx src/ --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx}\""
   },
   "eslintConfig": {
     "extends": [
@@ -105,7 +105,30 @@
       "react": {
         "version": "detect"
       }
-    }
+    },
+    "overrides": [
+      {
+        "files": [
+          "src/**/__tests__/**",
+          "src/**/*.test.{js,jsx}",
+          "src/__mocks__/**",
+          "src/setupTests.js",
+          "src/test-utils.js",
+          "src/components/3d/testSetup.js"
+        ],
+        "globals": {
+          "vi": "readonly",
+          "describe": "readonly",
+          "it": "readonly",
+          "test": "readonly",
+          "expect": "readonly",
+          "beforeEach": "readonly",
+          "afterEach": "readonly",
+          "beforeAll": "readonly",
+          "afterAll": "readonly"
+        }
+      }
+    ]
   },
   "prettier": {
     "singleQuote": true,

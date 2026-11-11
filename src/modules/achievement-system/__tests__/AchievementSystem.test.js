@@ -162,10 +162,21 @@ describe('AchievementSystem', () => {
     });
 
     test('should record tier reached', () => {
-      achievementSystem.recordTierReached('TOWN');
+      vi.useFakeTimers();
+      try {
+        achievementSystem.tracker.gameEvents.startTime = Date.now();
+        vi.advanceTimersByTime(5000);
+        achievementSystem.recordTierReached('TOWN');
 
-      expect(achievementSystem.tracker.gameEvents.tierReachTimes['TOWN']).toBeDefined();
-      expect(achievementSystem.tracker.gameEvents.tierReachTimes['TOWN']).toBeGreaterThan(0);
+        expect(achievementSystem.tracker.gameEvents.tierReachTimes['TOWN']).toBe(5);
+
+        // First reach time is kept
+        vi.advanceTimersByTime(5000);
+        achievementSystem.recordTierReached('TOWN');
+        expect(achievementSystem.tracker.gameEvents.tierReachTimes['TOWN']).toBe(5);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     test('should update resource totals', () => {
@@ -310,26 +321,34 @@ describe('AchievementSystem', () => {
   });
 
   describe('Event System', () => {
-    test('should emit unlock event when achievement is unlocked', (done) => {
+    test('should emit unlock event when achievement is unlocked', async () => {
+      let received = null;
       achievementSystem.on('achievement:unlocked', (data) => {
+        received = data;
+      });
+
+      mockGameState.buildings = [{ id: 1, type: 'farm' }];
+      achievementSystem.checkAchievements(mockGameState);
+
+      expect(received).not.toBeNull();
+      const data = received;
         expect(data.id).toBe('test_first_building');
         expect(data.name).toBe('First Building');
-        done();
-      });
-
-      mockGameState.buildings = [{ id: 1, type: 'farm' }];
-      achievementSystem.checkAchievements(mockGameState);
     });
 
-    test('should emit reward event when achievement is unlocked', (done) => {
+    test('should emit reward event when achievement is unlocked', async () => {
+      let received = null;
       achievementSystem.on('achievement:reward', (data) => {
-        expect(data.achievementId).toBe('test_first_building');
-        expect(data.rewardType).toBe('multiplier');
-        done();
+        received = data;
       });
 
       mockGameState.buildings = [{ id: 1, type: 'farm' }];
       achievementSystem.checkAchievements(mockGameState);
+
+      expect(received).not.toBeNull();
+      const data = received;
+        expect(data.achievementId).toBe('test_first_building');
+        expect(data.rewardType).toBe('multiplier');
     });
   });
 });

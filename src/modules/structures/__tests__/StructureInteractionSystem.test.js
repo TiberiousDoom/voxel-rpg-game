@@ -320,9 +320,15 @@ describe('StructureInteractionSystem', () => {
     });
 
     it('should track loot collected in statistics', () => {
+      // Loot is rolled when the chest opens (and can be empty); stub it so the
+      // assertion is deterministic
+      vi.spyOn(interactionSystem.lootSystem, 'generateLoot').mockReturnValue([
+        { type: 'gold', amount: 5 },
+        { type: 'iron', amount: 2 },
+      ]);
       interactionSystem.openChest(chestId, mockPlayer);
 
-      expect(Object.keys(interactionSystem.stats.totalLootCollected).length).toBeGreaterThan(0);
+      expect(interactionSystem.stats.totalLootCollected).toEqual({ gold: 5, iron: 2 });
     });
 
     it('should call onChestOpened callback', () => {

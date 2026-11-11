@@ -126,21 +126,31 @@ describe('GameViewport Component', () => {
     test('calls onSelectTile on canvas click', () => {
       const onSelectTile = vi.fn();
 
+      // Tile selection applies when player movement is off (otherwise a
+      // click moves the player)
       render(
         <GameViewport
           buildings={[]}
           npcs={[]}
           onSelectTile={onSelectTile}
+          enablePlayerMovement={false}
         />
       );
 
       const canvas = document.querySelector('canvas');
+      // jsdom has no layout: give the canvas its real on-screen size
+      canvas.getBoundingClientRect = () => ({
+        left: 0, top: 0, right: canvas.width, bottom: canvas.height,
+        width: canvas.width, height: canvas.height, x: 0, y: 0,
+      });
       fireEvent.click(canvas, {
         clientX: 100,
         clientY: 100
       });
 
-      expect(onSelectTile).toHaveBeenCalled();
+      expect(onSelectTile).toHaveBeenCalledWith(
+        expect.objectContaining({ x: expect.any(Number), z: expect.any(Number) })
+      );
     });
 
     test('updates on mouse move', () => {

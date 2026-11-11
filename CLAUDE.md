@@ -22,7 +22,10 @@ npx vitest run path/to/file.test.js         # Single test file
 npx vitest run -t "test name pattern"       # Run tests matching name
 ```
 
-Test setup (`src/setupTests.js`) provides: fake-indexeddb, Canvas 2D mock, rAF polyfill, TextEncoder/TextDecoder, crypto.subtle mock. Vitest globals (`vi.fn`, `describe`, `it`) available without import.
+Test setup (`src/setupTests.js`) provides: fake-indexeddb, Canvas 2D mock, rAF polyfill, TextEncoder/TextDecoder, crypto.subtle mock, and a **seeded `Math.random` reset before every test** (results are reproducible; use `vi.spyOn(Math, 'random')` for specific values). Vitest globals (`vi.fn`, `describe`, `it`) available without import.
+
+- Test files containing JSX must use the `.jsx` extension. `vi.mock` factories must return a module object (`{ default: ... }`), and tests use ESM imports, not `require()`.
+- 3D component tests import `src/components/3d/testSetup.js` first: it swaps `@react-three/*` for the DOM mocks in `src/__mocks__/@react-three/` and stubs `Worker`. The fiber mock's `advanceFrames(n, delta)` runs mounted `useFrame` callbacks so frame logic can be tested.
 
 ## Linting & Formatting
 
@@ -32,7 +35,7 @@ npm run lint:fix     # ESLint auto-fix
 npm run format       # Prettier (singleQuote, trailingComma: es5, semi: true)
 ```
 
-ESLint: `no-unused-vars: warn`, `no-console: warn` (except warn/error), `react/no-unknown-property: off` (needed for R3F).
+ESLint (lints `.js` and `.jsx`; CI fails on errors): `no-unused-vars: warn`, `no-console: warn` (except warn/error), `react/no-unknown-property: off` (needed for R3F). CI (`.github/workflows/deploy.yml`) runs lint + tests before building; only `main` auto-deploys.
 
 ## Architecture Overview
 
@@ -118,6 +121,13 @@ Save/load in `src/persistence/`:
 - Enemy.jsx accepts optional `monsterData` prop for rift-spawned enemies vs hardcoded defaults.
 - Mobile touch handlers need gesture disambiguation (tap vs drag) using time + distance thresholds.
 - `useEffect` deps in CameraRotateControls: only `[gl]` — reads store via `getState()` to avoid stale closures.
+- **Never subscribe to `state.player` or `state.player.position` in components** — position changes every frame. Read it with `getState()` inside `useFrame`, use `useShallow(selectPlayerStats)` for HUD-style stats, or select a coarse derived value (e.g. chunk key).
+- Move the player with `teleportPlayer(pos)` / `pendingTeleport` (Player.jsx moves the physics body); writing `player.position` alone is overwritten by physics next frame.
+- Rift enemies are plain data; their health lives in `Enemy.jsx`. Damage them through `store._enemyHandlers` (see `src/systems/combat/enemyHits.js`), with live positions from `store._enemyPositions`.
+- Gameplay must stop while `gameState === 'paused'` (Physics is paused; `useFrame` loops should early-return).
+- Block placement goes through `tryPlaceBlock` in BlockInteraction.jsx, which charges `BLOCK_PLACEMENT_COSTS` (`src/data/blockDrops.js`).
+- World edits survive chunk unloads via `ChunkManager.modifiedChunkCache`; saves use `getModifiedChunks()` / `applyModifiedChunks()`.
+- Debug tools (F3/F4 overlays, mobile debug overlay, backtick QA tracker) load only in dev builds or with `?debug=1` (remembered; `?debug=0` turns it off) — see `src/utils/debugFlags.js`.
 
 ## Key Files
 

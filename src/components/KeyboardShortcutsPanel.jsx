@@ -101,7 +101,8 @@ const shortcuts = {
   debug: {
     title: 'Debug & Info',
     keys: [
-      { key: 'F3', description: 'Toggle debug overlay' },
+      { key: 'F3', description: 'Dev overlay: open / mini / close (dev builds or ?debug=1)' },
+      { key: 'F4', description: 'Dev overlay: settlement tab' },
       { key: 'D', description: 'Toggle debug panel' },
     ],
   },

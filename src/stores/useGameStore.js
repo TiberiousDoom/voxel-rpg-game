@@ -440,8 +440,12 @@ const useGameStore = create((rawSet, get, api) => {
       : [...state.unlockedSpells, spellId],
   })),
 
-  // Debug stats (mutable, written by Canvas-internal components, read by DebugOverlay)
-  _debugStats: { drawCalls: 0, triangles: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },
+  // Debug stats (mutable, written by Canvas-internal components, read by the dev overlay)
+  _debugStats: { drawCalls: 0, triangles: 0, geometries: 0, textures: 0, programs: 0, meshRebuilds: 0, meshRebuildMs: 0, useKeyCooldownLeft: 0 },
+
+  // Developer overlay: god mode makes the player ignore all damage
+  _devGodMode: false,
+  setDevGodMode: (enabled) => set({ _devGodMode: !!enabled }),
 
   // Live enemy positions (mutable Map, written by Enemy.jsx each frame, read by spell auto-aim)
   _enemyPositions: new Map(),
@@ -934,8 +938,8 @@ const useGameStore = create((rawSet, get, api) => {
   dealDamageToPlayer: (damage, source) => {
     const state = get();
 
-    // Check invincibility
-    if (state.player.isInvincible) {
+    // Check invincibility (respawn protection, dodge, dev god mode)
+    if (state.player.isInvincible || state._devGodMode) {
       return;
     }
 

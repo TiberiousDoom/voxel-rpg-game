@@ -39,13 +39,9 @@ ESLint (lints `.js` and `.jsx`; CI fails on errors): `no-unused-vars: warn`, `no
 
 ## Architecture Overview
 
-### Two Game Architectures (Coexisting)
+The game is a single 3D real-time app: `index.jsx` → `App3D.jsx` → `Experience.jsx` → R3F components + the `useGameStore` Zustand store, inside a React Three Fiber `<Canvas>`. The old 2D game and the `GameManager`/`ModuleOrchestrator` module system were removed (they were never reachable from the app); `git log` has them if needed.
 
-1. **Module System** — `GameManager` → `ModuleOrchestrator` → 25+ modules in `src/modules/`. Used for the strategic/management layer (buildings, economy, NPCs, combat, expeditions). Communicates via orchestrator events.
-
-2. **3D Real-Time System** — `App3D.jsx` → `Experience.jsx` → R3F components + Zustand store. Used for the voxel world, player movement, real-time combat, settlement simulation. Runs inside a React Three Fiber `<Canvas>`.
-
-These two systems connect via bridge patterns (e.g., `SettlementBridge.js`) that sync module state into Zustand stores.
+`src/modules/` now holds only modules the 3D game uses or is about to: `character/` (attributes, skill trees), `crafting/`, and `settlement/` + `hauling/` + `construction/` + `voxel/` + `npc-system/NPCPersonality.js`, which form the headless settlement engine that `.claude/plans/phase2-settlement-unification.md` wires in via `SettlementBridge` (not yet active — `SettlementTick.jsx` still runs its own inline logic).
 
 ### 3D Rendering Pipeline
 
@@ -53,8 +49,7 @@ These two systems connect via bridge patterns (e.g., `SettlementBridge.js`) that
 App3D.jsx (Canvas + UI overlay)
   → Experience.jsx (Physics, scene setup)
     → useChunkSystem hook → ChunkManager + WorkerPool
-      → chunkWorker.js (terrain generation, off-thread)
-      → meshBuilder.js (block → geometry, off-thread)
+      → chunkWorker.js (terrain generation + meshing, off-thread)
     → ChunkRenderer (visible chunk meshes)
     → Player, Enemy, SettlerNPC, WildlifeAnimal (physics entities)
     → Invisible tick components (SettlementTick, SurvivalTick, RiftController, ConstructionTick)
@@ -65,21 +60,15 @@ Tick components use `useFrame` inside R3F Canvas to drive game logic each frame.
 ### State Management
 
 - **`useGameStore`** (`src/stores/useGameStore.js`, ~1650 lines) — Primary store. Player, enemies, projectiles, settlement NPCs, zones, world time, UI state, inventory. Almost all 3D components read/write here.
-- **`useDungeonStore`** — Dungeon layout, monsters, loot (2100+ lines).
-- **`useQuestStore`** — Quest progress and objectives.
-- **`useSettlementStore`** — Settlement UI state (zone selection, NPC panel).
+- **`useQuestStore`** — Quest progress and objectives (driven by `systems/QuestManager.js`; no quest UI yet).
 
 Pattern: Game logic writes to stores via actions. 3D components subscribe to slices. No circular deps — modules don't read components.
 
 ### Settlement System
 
-```
-SettlementTick.jsx (useFrame loop)
-  → SettlementBridge.js (reads store → feeds modules → writes results back)
-    → SettlementModule.js (orchestrates tick order)
-      → ImmigrationManager, ZoneManager, StockpileManager,
-        TaskAssignmentEngine, HousingManager, NPCStateMachine
-```
+Live today: `SettlementTick.jsx` (useFrame loop) runs campfire detection, attractiveness, immigration, NPC needs and the work loop inline, using `systems/settlement/*` (TaskAssignmentEngine, AttractivenessCalculator, MiningZoneScanner).
+
+Planned (not active): `SettlementTick` → `SettlementBridge.js` → `SettlementModule.js` → ImmigrationManager, ZoneManager, StockpileManager, TaskAssignmentEngine, HousingManager, NPCStateMachine. `store._settlementModule` is never set yet, so the bridge branch is skipped.
 
 NPC states: `IDLE → THINKING → WORKING_MINE/WORKING_HAUL/WORKING_BUILD → EATING/SLEEPING → LEAVING`
 
@@ -87,9 +76,7 @@ NPC states: `IDLE → THINKING → WORKING_MINE/WORKING_HAUL/WORKING_BUILD → E
 
 | Worker | Purpose |
 |--------|---------|
-| `chunkWorker.js` | Terrain generation via simplex noise (seeded) |
-| `meshBuilder.js` | Block arrays → Three.js geometry (face culling) |
-| `terrainGenerator.js` | Height maps, biomes, ore distribution |
+| `chunkWorker.js` | Seeded terrain generation (height maps, biomes, ores) and block → geometry meshing with face culling and LOD |
 
 WorkerPool caps at `Math.min(navigator.hardwareConcurrency, 4)` threads.
 
@@ -99,14 +86,11 @@ WorkerPool caps at `Math.min(navigator.hardwareConcurrency, 4)` threads.
 - **`src/data/zoneTypes.js`** — Zone type definitions (MINING, STOCKPILE, FARMING, BUILDING, RESTRICTED).
 - **`src/data/blockDrops.js`** — Block → loot tables, calculated via `calculateDrops(blockType, toolTier)`.
 - **`src/data/spells.js`** — Spell definitions with cooldowns and mana costs.
-- **`src/shared/config.js`** — Building types, tiers, dimensions, costs, resource types, grid config.
+- **`src/data/buildings.js`** — Building blueprints for the construction system.
 
 ### Persistence
 
-Save/load in `src/persistence/`:
-- `BrowserSaveManager.js` — localStorage + IndexedDB fallback
-- `GameStateSerializer.js` — Handles Maps, Sets serialization
-- `SaveVersionManager.js` — Schema migrations (current: v3)
+Save/load in `src/persistence/Game3DSaveManager.js` (IndexedDB `voxel3d-saves`, schema v6, migrations inline in `migrateSave`). Main state + all modified chunks are written in one transaction. `TestNotesManager.js` stores QA tracker notes.
 
 ### Chunk System Constants
 
@@ -134,9 +118,8 @@ Save/load in `src/persistence/`:
 - `src/App3D.jsx` — Main 3D game component entry point
 - `src/components/3d/Experience.jsx` — Scene setup, entity rendering, tick orchestration
 - `src/stores/useGameStore.js` — Central Zustand store (~1650 lines)
-- `src/GameManager.js` — Module-based game state initialization
-- `src/core/ModuleOrchestrator.js` — Module coordination
+- `src/persistence/Game3DSaveManager.js` — Save/load
 - `src/data/tuning.js` — All gameplay balance constants
 - `src/systems/chunks/ChunkManager.js` — Terrain chunk loading/unloading
-- `src/modules/settlement/SettlementModule.js` — Settlement tick orchestration
-- `src/modules/settlement/SettlementBridge.js` — Module ↔ Store bridge
+- `src/components/3d/SettlementTick.jsx` — Live settlement simulation
+- `src/modules/settlement/SettlementBridge.js` — Planned module ↔ store bridge

@@ -8,7 +8,10 @@
   "orientation": "any",
   "background_color": "#0f0f23",
   "theme_color": "#e94560",
-  "categories": ["games", "entertainment"],
+  "categories": [
+    "games",
+    "entertainment"
+  ],
   "icons": [
     {
       "src": "icons/icon-72x72.png",
@@ -57,22 +60,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshots/gameplay-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Gameplay on desktop"
-    },
-    {
-      "src": "screenshots/gameplay-narrow.png",
-      "sizes": "720x1280",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Gameplay on mobile"
     }
   ],
   "prefer_related_applications": false,
